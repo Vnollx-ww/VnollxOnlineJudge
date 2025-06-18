@@ -1,6 +1,8 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.mapper.UserMapper">
     <insert id="batchInsert">
-        INSERT INTO submission (
+        INSERT INTO submissions (
         user_name, problem_name, status, create_time,
         language, uid, pid, time, code, cid
         )

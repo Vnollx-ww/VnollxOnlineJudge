@@ -29,6 +29,9 @@ public class UserServiceImpl implements UserService {
         if(user==null){
             return Result.LogicError("用户不存在");
         }
+        if (!Objects.equals(user.getPassword(), password)){
+            return Result.LogicError("密码错误，请重试");
+        }
         String token= Jwt.generateToken(String.valueOf(user.getId()));
         return Result.Success(token,"登录成功");
     }

@@ -790,7 +790,7 @@
         authButtons.innerHTML = `
                 <div class="user-greeting-container">
                     <span class="user-greeting" id="userGreeting">
-                        ${greetingIcon} ${currentHour < 12 ? '早上好' : currentHour < 18 ? '下午好' : '晚上好'}，${currentUser.name}
+                        ${greetingIcon} ${currentHour < 12 ? '早上好' : currentHour < 18 ? '下午好' : '晚上好'}，${localStorage.getItem('name')}
                         <div class="user-menu" id="userMenu">
                             <a href="/user/${id}" class="user-menu-item">我的主页</a>
                             <a href="mysubmission.html" class="user-menu-item">我的提交</a>

@@ -106,17 +106,7 @@
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
-            <version>3.5.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
-            <version>3.5.13</version> <!-- 与 MyBatis-Plus 兼容的版本 -->
-        </dependency>
-        <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis-spring</artifactId>
-            <version>3.0.3</version> <!-- 兼容 Spring Boot 2.7.x -->
+            <version>3.5.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
