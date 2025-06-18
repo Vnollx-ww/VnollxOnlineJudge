@@ -86,7 +86,7 @@ public class SubmissionConsumer {
             submissionMap.put("userName", userName);
             submissionMap.put("title", title);
             submissionMap.put("code",code); // 大代码压缩
-            submissionMap.put("result", result);
+            submissionMap.put("status", result);
             submissionMap.put("createTime", createTime);
             submissionMap.put("language", language);
             submissionMap.put("uid", String.valueOf(uid));
@@ -128,7 +128,14 @@ public class SubmissionConsumer {
 
                 Submission sub = new Submission();
                 sub.setUserName(submissionMap.get("userName"));
+                sub.setUid(Long.valueOf(submissionMap.get("uid")));
+                sub.setCid(Long.valueOf(submissionMap.get("cid")));
+                sub.setPid(Long.valueOf(submissionMap.get("pid")));
+                sub.setCreateTime(submissionMap.get("createTime"));
+                sub.setLanguage(submissionMap.get("language"));
+                sub.setTime(Integer.parseInt(submissionMap.get("time")));
                 sub.setProblemName(submissionMap.get("title"));
+                sub.setStatus(submissionMap.get("status"));
                 sub.setCode(submissionMap.get("code").length() > 8192 ?
                         decompress(submissionMap.get("code")) : submissionMap.get("code"));
                 // 设置其他字段...
