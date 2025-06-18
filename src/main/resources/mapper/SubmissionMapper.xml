@@ -1,0 +1,13 @@
+<mapper namespace="com.example.mapper.UserMapper">
+    <insert id="batchInsert">
+        INSERT INTO submission (
+        user_name, problem_name, status, create_time,
+        language, uid, pid, time, code, cid
+        )
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.user_name}, #{item.problem_name}, #{item.status}, #{item.create_time},
+            #{item.language}, #{item.uid}, #{item.pid}, #{item.time}, #{item.code}, #{item.cid})
+        </foreach>
+    </insert>
+</mapper>

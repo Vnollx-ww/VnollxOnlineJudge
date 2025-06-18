@@ -1,0 +1,108 @@
+#version: '3.8'
+
+services:
+  vnollx:
+    image: vnollx/vnollx:latest
+    container_name: vnollx
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      - mysql-master
+      - mysql-slave
+      - redis
+      - rabbitmq
+
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql-master
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: vnollxonlinejudge
+    volumes:
+      - mysql-master-data:/var/lib/mysql
+    command:
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --binlog-do-db=vnollxonlinejudge
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - app-network
+
+  mysql-slave:
+    image: mysql:8.0
+    container_name: mysql-slave
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: vnollxonlinejudge
+    volumes:
+      - mysql-slave-data:/var/lib/mysql
+    command:
+      - --server-id=2
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --replicate-do-db=vnollxonlinejudge
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --read-only=1
+      - --default-authentication-plugin=mysql_native_password
+    depends_on:
+      - mysql-master
+    networks:
+      - app-network
+
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - app-network
+
+  minio:
+    image: bitnami/minio:latest
+    container_name: minio
+    environment:
+      MINIO_ACCESS_KEY: vnollxvnollx           # 设置 MinIO 访问密钥
+      MINIO_SECRET_KEY: vnollxvnollxvnollx        # 设置 MinIO 秘密密钥
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"                             # 映射 MinIO 服务端口
+      - "9001:9001"                             # 映射 MinIO 控制台端口
+    volumes:
+      - minio-data:/data
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: some-rabbit
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # RabbitMQ management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - app-network
+
+volumes:
+  mysql-master-data:
+    driver: local
+  mysql-slave-data:
+    driver: local
+  minio-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+    

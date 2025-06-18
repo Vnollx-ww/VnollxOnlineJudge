@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${problem.id} + ' - ' + ${problem.title}"></title>
+
+    <!-- 核心样式库 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Markdown 相关资源 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"></script>
+
+    <!-- 代码编辑器样式 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/theme/monokai.min.css">
+
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #4a90e2;
+            --success: #66bb6a;
+            --danger: #ff4444;
+            --info: #29b6f6;
+            --bg-light: #f8fafc;
+            --border-radius: 12px;
+        }
+
+        body {
+            background: #f9fafb;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .problem-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+
+        .info-card {
+            background: white;
+            margin-bottom: 25px;
+        }
+
+        .problem-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .problem-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 2.2rem;
+            color: var(--primary);
+        }
+
+        .problem-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .meta-item i {
+            color: var(--primary);
+            font-size: 1.1em;
+        }
+
+        .code-preview {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 18px;
+            font-family: 'Fira Code', monospace;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .code-editor-container {
+            background: white;
+            border-radius: var(--border-radius);
+            margin-top: 30px;
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .CodeMirror {
+            border-radius: 8px;
+            height: 500px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .submit-btn {
+            background: var(--primary);
+            color: white;
+            padding: 12px 30px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(26,115,232,0.2);
+        }
+
+        .submit-btn:hover {
+            background: #155eb4;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(26,115,232,0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 6px rgba(26,115,232,0.2);
+        }
+
+        .status-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 24px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            font-size: 1.05rem;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #66bb6a;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #b71c1c;
+            border-left: 4px solid #ff4444;
+        }
+
+        .status-info {
+            background: #e3f2fd;
+            color: #0d47a1;
+            border-left: 4px solid #1a73e8;
+        }
+
+        /* Markdown 专用样式 */
+        .markdown-content {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3 {
+            color: var(--primary);
+            margin: 1.2em 0 0.6em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.3em;
+        }
+
+        .markdown-content pre {
+            background: #2d2d2d;
+            padding: 1em;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+
+        .markdown-content code {
+            font-family: 'Fira Code', monospace;
+            background: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+        }
+
+        .markdown-content img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 1em 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .markdown-content table {
+            border-collapse: collapse;
+            margin: 1em 0;
+            width: 100%;
+        }
+
+        .markdown-content th,
+        .markdown-content td {
+            border: 1px solid #dfe2e5;
+            padding: 0.6em 1em;
+        }
+
+        .markdown-content th {
+            background-color: var(--bg-light);
+        }
+
+        @media (max-width: 768px) {
+            .problem-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .CodeMirror {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="problem-container">
+    <!-- 题目头部 -->
+    <div class="card info-card">
+        <div class="problem-header p-4">
+            <div class="problem-title">
+                <i class="fas fa-code text-primary"></i>
+                <span th:text="${problem.title}"></span>
+            </div>
+            <div class="problem-meta d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span th:text="'时间限制：' + ${problem.timeLimit} + ' ms'"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-memory"></i>
+                        <span th:text="'内存限制：' + ${problem.memoryLimit} + ' MB'"></span>
+                    </div>
+                    <!-- 标签区域 -->
+                    <div class="meta-item">
+                        <i class="fas fa-tags text-primary"></i>
+                        <div id="tagsContainer" class="d-flex align-items-center gap-1"></div>
+                    </div>
+                </div>
+                <a href="#"
+                   class="btn btn-primary btn-sm d-flex align-items-center gap-1 transition-colors duration-300 hover:opacity-90"
+                   th:href="@{/solve/list/{id}(id=${problem.id})}"
+                   target="_self">
+                    <i class="fas fa-book-open"></i>
+                    <span>查看题解</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 题目描述 -->
+    <div class="card info-card">
+        <div class="card-header bg-light d-flex align-items-center p-4">
+            <i class="fas fa-file-alt text-primary me-3"></i>
+            <h4 class="mb-0">题目描述</h4>
+        </div>
+        <div class="card-body p-4 markdown-content" th:text="${problem.description}"></div>
+    </div>
+
+    <!-- 输入格式 -->
+    <div class="card info-card">
+        <div class="card-header bg-light d-flex align-items-center p-4">
+            <i class="fas fa-file-alt text-primary me-3"></i>
+            <h4 class="mb-0">输入格式</h4>
+        </div>
+        <div class="card-body p-4 markdown-content" th:text="${problem.inputFormat}"></div>
+    </div>
+
+    <!-- 输出格式 -->
+    <div class="card info-card">
+        <div class="card-header bg-light d-flex align-items-center p-4">
+            <i class="fas fa-file-alt text-primary me-3"></i>
+            <h4 class="mb-0">输出格式</h4>
+        </div>
+        <div class="card-body p-4 markdown-content" th:text="${problem.outputFormat}"></div>
+    </div>
+
+    <!-- 输入输出样例 -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light d-flex align-items-center p-3">
+                    <i class="fas fa-sign-in-alt text-primary me-2"></i>
+                    <h5 class="mb-0">输入样例</h5>
+                </div>
+                <div class="card-body p-4 code-preview" th:utext="${problem.inputExample}"></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light d-flex align-items-center p-3">
+                    <i class="fas fa-sign-out-alt text-primary me-2"></i>
+                    <h5 class="mb-0">输出样例</h5>
+                </div>
+                <div class="card-body p-4 code-preview" th:utext="${problem.outputExample}"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示 -->
+    <div class="card info-card mt-4">
+        <div class="card-header bg-light d-flex align-items-center p-4">
+            <i class="fas fa-lightbulb text-primary me-3"></i>
+            <h4 class="mb-0">提示</h4>
+        </div>
+        <div class="card-body p-4 markdown-content" th:text="${problem.hint}"></div>
+    </div>
+
+    <!-- 代码提交区域 -->
+    <div class="card code-editor-container mt-5">
+        <form id="submitForm">
+            <input type="hidden" name="problemId" th:value="${problem.id}">
+            <div class="mb-3">
+                <label for="languageSelect" class="form-label">选择编程语言</label>
+                <select id="languageSelect" name="language" class="form-select">
+                    <option value="cpp17">C++17</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                </select>
+            </div>
+            <div id="judgeStatus" class="mb-3">
+                <div id="statusAlert" class="alert" style="display: none;"></div>
+            </div>
+
+            <div class="mb-4">
+                <textarea id="codeEditor" name="code"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-paper-plane me-2"></i> 提交代码
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 核心脚本 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 代码编辑器脚本 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/clike/clike.min.js"></script>
+
+<script>
+    marked.setOptions({
+        breaks: true,
+        highlight: function(code, lang) {
+            const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language: validLang }).value;
+        },
+        extensions: [
+            {
+                name: 'math',
+                level: 'inline',
+                start(src) { return src.indexOf('$'); },
+                tokenizer(src, tokens) {
+                    const match = src.match(/^\$+([^$\n]+?)\$+/);
+                    if (match) {
+                        return {
+                            type: 'math',
+                            raw: match[0],
+                            text: match[1].trim()
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `<span class="math">\\(${token.text}\\)</span>`;
+                }
+            }
+        ]
+    });
+
+    // 渲染 Markdown 元素
+    function renderMarkdownElements() {
+        document.querySelectorAll('.markdown-content').forEach(element => {
+            const rawText = element.textContent;
+            const parsedMarkdown = marked.parse(rawText);
+            const safeHtml = DOMPurify.sanitize(parsedMarkdown, {
+                ADD_TAGS: ['iframe'],
+                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
+            });
+            element.innerHTML = safeHtml;
+
+            // 渲染数学公式
+            MathJax.typesetPromise();
+
+            // 高亮代码块
+            element.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        });
+    }
+
+    // 代码编辑器初始化
+    const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        lineNumbers: true,
+        mode: 'text/x-c++src',
+        theme: 'monokai',
+        indentUnit: 4,
+        lineWrapping: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        extraKeys: {
+            "Ctrl-S": saveDraft,
+            "Tab": cm => cm.replaceSelection("    ")
+        }
+    });
+
+    const languageSelect = document.getElementById('languageSelect');
+    languageSelect.addEventListener('change', () => {
+        const selectedLanguage = languageSelect.value;
+        if (selectedLanguage === 'cpp17') {
+            editor.setOption('mode', 'text/x-c++src');
+            editor.setValue(`#include <iostream>
+using namespace std;
+
+int main() {
+    // 请在此处编写你的代码
+
+    return 0;
+}
+`);
+        } else if (selectedLanguage === 'python') {
+            editor.setOption('mode', 'python');
+            editor.setValue(`# 请在此处编写你的代码
+
+`);
+        } else if (selectedLanguage === 'java') {
+            editor.setOption('mode', 'text/x-java');
+            editor.setValue(`public class Main {
+    public static void main(String[] args) {
+        // 请在此处编写你的代码
+    }
+}
+`);
+        }
+    });
+
+    // 新增获取标签函数
+    async function fetchProblemTags(problemId, token) {
+        try {
+            const formdata=new FormData();
+            formdata.append('token',token);
+            formdata.append('pid',problemId);
+            const response = await fetch('/problem/gettags', {
+                method: 'POST',
+                body: formdata
+            });
+            const data = await response.json();
+
+            if (data.code !== 200) throw new Error(data.msg || '获取标签失败');
+            return data.data || [];
+        } catch (error) {
+            console.error('标签获取失败:', error);
+            showToast('标签加载失败，请重试', 'error');
+            return [];
+        }
+    }
+
+    // 辅助函数
+    function saveDraft() {
+        localStorage.setItem('codeDraft', editor.getValue());
+        showToast('代码草稿已自动保存', 'info', 2000);
+    }
+
+    function showToast(message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `status-toast show status-${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // 页面加载初始化
+    window.addEventListener('DOMContentLoaded', async () => {
+        if (!localStorage.getItem('token')) {
+            showToast('请先登录！', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1500);
+            return;
+        }
+
+        // 初始化代码编辑器
+        editor.refresh();
+        if (typeof DOMPurify !== 'undefined') {
+            renderMarkdownElements();
+        }
+// 初始设置为C++17并加载模板
+        const languageSelect = document.getElementById('languageSelect');
+        languageSelect.value = 'cpp17'; // 确保下拉框显示正确
+        languageSelect.dispatchEvent(new Event('change')); // 触发语言变更事件
+
+        if (typeof DOMPurify !== 'undefined') {
+            renderMarkdownElements();
+        }
+        // 加载标签
+        const problemId = document.querySelector('input[name="problemId"]').value;
+        const token = localStorage.getItem('token');
+        const tagsContainer = document.getElementById('tagsContainer');
+
+        if (problemId) {
+            const tags = await fetchProblemTags(problemId, token);
+            if (tags.length > 0) {
+                tags.forEach(tag => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'badge bg-secondary text-wrap';
+                    tagElement.style.fontSize = '0.85rem';
+                    tagElement.style.padding = '0.25rem 0.6rem';
+                    tagElement.textContent = tag.name || tag; // 兼容字符串/对象格式
+                    tagsContainer.appendChild(tagElement);
+                });
+            } else {
+                const noTags = document.createElement('span');
+                noTags.className = 'text-muted';
+                noTags.style.fontSize = '0.9rem';
+                noTags.textContent = '无标签';
+                tagsContainer.appendChild(noTags);
+            }
+        }
+    });
+    function formatTime(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+    // 表单提交处理
+    document.getElementById('submitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const statusAlert = document.getElementById('statusAlert');
+        const originalButtonText = submitBtn.innerHTML;
+        const option = languageSelect.value;
+        statusAlert.style.display = 'block';
+        statusAlert.className = 'alert alert-info';
+        statusAlert.textContent = '评测中，请稍候...';
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>提交中...';
+
+        try {
+            const formData = new FormData();
+            formData.append('code', editor.getValue());
+            formData.append('pid', document.querySelector('input[name="problemId"]').value);
+            formData.append('token', localStorage.getItem('token'));
+            formData.append('option', option);
+            formData.append('cid',"0");
+            formData.append('uname',localStorage.getItem('name'));
+            const currentDate = new Date();
+            const formattedTime = formatTime(currentDate);
+            formData.append("create_time",formattedTime);
+            const response = await fetch('/problem/submit', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            const resultMessage = data.msg.replace(/(\d+)/g, '<strong>$1</strong>');
+
+            if (data.code === 200) {
+                statusAlert.className = 'alert alert-success';
+                statusAlert.innerHTML = `判题结果：${resultMessage}`;
+            } else {
+                statusAlert.className = 'alert alert-danger';
+                statusAlert.innerHTML = `错误：${resultMessage}`;
+            }
+        } catch (error) {
+            statusAlert.className = 'alert alert-danger';
+            statusAlert.textContent = '网络连接异常，请检查网络后重试';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalButtonText;
+        }
+    });
+</script>
+</body>
+</html>

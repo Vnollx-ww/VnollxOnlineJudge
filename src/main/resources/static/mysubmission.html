@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>提交记录 - VnollxOJ</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet"> <!-- 确保图标库引入 -->
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+            background-color: #f8fafc;
+            color: #2d3748;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        /* 返回首页按钮样式 */
+        .back-home-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            background-color: #1a73e8;
+            color: white;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            text-decoration: none;
+        }
+
+        .back-home-btn:hover {
+            background-color: #1565c0;
+        }
+
+        .back-home-btn i {
+            margin-right: 0.5rem;
+        }
+
+        /* 表格样式 */
+        .submissions-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border-collapse: collapse;
+        }
+
+        .submissions-table th,
+        .submissions-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .submissions-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .submissions-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* 状态标签 */
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+        }
+
+        .correct {
+            background-color: #f0fff4;
+            color: #38a169;
+        }
+
+        .incorrect {
+            background-color: #fff5f5;
+            color: #c53030;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+        }
+
+        .page-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+
+        .page-btn.disabled {
+            color: #a0aec0;
+            cursor: not-allowed;
+            background-color: #edf2f7;
+            border-color: #edf2f7;
+        }
+
+        .ellipsis {
+            padding: 0.5rem 1rem;
+            color: #718096;
+            cursor: default;
+        }
+
+        /* 加载状态 */
+        .loading {
+            padding: 2rem;
+            text-align: center;
+            color: #718096;
+        }
+
+        .error {
+            color: #c53030;
+            background: #fff5f5;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 60%;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            overflow-x: auto;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .clickable-id {
+            color: #1a73e8;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <a href="index.html" class="back-home-btn">
+            <i class="fa-solid fa-house"></i>
+            退回到首页
+        </a>
+        <h1 style="flex-grow: 1; text-align: center; margin: 0;">我的提交记录</h1>
+        <div style="width: 134px;"></div> <!-- 占位元素，与按钮宽度一致 -->
+    </div>
+
+    <table class="submissions-table">
+        <thead>
+        <tr>
+            <th style="width: 10%;">提交ID</th>
+            <th style="width: 25%;">题目名称</th>
+            <th style="width: 15%; text-align: center;">状态</th>
+            <th style="width: 12%;">用时</th>
+            <th style="width: 23%;">提交时间</th>
+            <th style="width: 15%;">语言</th>
+        </tr>
+        </thead>
+        <tbody id="submissions-list">
+        <tr class="loading">
+            <td colspan="6">加载提交记录中...</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<!-- 模态框 -->
+<div id="codeModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <pre id="codeContent"></pre>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+    const PAGINATION_SHOW_COUNT = 5; // 显示的页数数量
+    const PAGE_SIZE = 10;
+
+    async function getTotalSubmissions() {
+        try {
+            const formData = new FormData();
+            formData.append('token', localStorage.getItem('token'));
+            const response = await fetch('/submission/count', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.code !== 200) throw new Error(data.msg || '获取总数失败');
+            return data.data;
+        } catch (error) {
+            showError(error.message);
+            return 0;
+        }
+    }
+
+    async function fetchSubmissions(page) {
+        const tbody = document.getElementById('submissions-list');
+        const paginationDiv = document.getElementById('pagination');
+
+        tbody.innerHTML = '<tr class="loading"><td colspan="6">加载提交记录中...</td></tr>';
+        paginationDiv.style.display = 'none';
+
+        currentPage = page;
+        const offset = (page - 1) * PAGE_SIZE;
+
+        try {
+            const formData = new FormData();
+            formData.append('offset', offset);
+            formData.append('size', PAGE_SIZE);
+            formData.append('token', localStorage.getItem('token'));
+
+            const response = await fetch('/submission/getlistbyuid', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.code !== 200) throw new Error(data.msg || '获取数据失败');
+
+            renderSubmissions(data.data);
+            await updatePagination();
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            paginationDiv.style.display = 'flex';
+        }
+    }
+
+    function renderSubmissions(submissions) {
+        const tbody = document.getElementById('submissions-list');
+        tbody.innerHTML = '';
+
+        if (submissions.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #718096;">
+                        暂无提交记录
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        submissions.forEach(sub => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><span class="clickable-id">#${sub.id}</span></td>
+                <td>
+                    <a href="/problem/${sub.pid}" style="color: #1a73e8; text-decoration: none;">
+                        ${sub.problemName}
+                    </a>
+                </td>
+                <td style="text-align: center;">
+                    <span class="status ${getStatusClass(sub.status)}">
+                        ${sub.status}
+                    </span>
+                </td>
+                <td>${sub.time}ms</td>
+                <td>${sub.createTime}</td>
+                <td>${sub.language}</td>
+            `;
+            tbody.appendChild(row);
+
+            const idSpan = row.querySelector('.clickable-id');
+            idSpan.addEventListener('click', () => {
+                const modal = document.getElementById('codeModal');
+                const codeContent = document.getElementById('codeContent');
+                codeContent.textContent = sub.code;
+                modal.style.display = 'block';
+            });
+        });
+    }
+
+    async function updatePagination() {
+        const total = await getTotalSubmissions();
+        totalPages = Math.ceil(total / PAGE_SIZE);
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = '';
+
+        if (totalPages === 0) return;
+
+        // 生成上一页按钮
+        const prevButton = document.createElement('button');
+        prevButton.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+        prevButton.innerHTML = '« 上一页';
+        prevButton.onclick = () => currentPage > 1 && fetchSubmissions(currentPage - 1);
+        paginationDiv.appendChild(prevButton);
+
+        // 计算显示范围
+        let start = Math.max(1, currentPage - Math.floor(PAGINATION_SHOW_COUNT / 2));
+        let end = Math.min(totalPages, start + PAGINATION_SHOW_COUNT - 1);
+
+        if (end - start + 1 < PAGINATION_SHOW_COUNT) {
+            start = Math.max(1, totalPages - PAGINATION_SHOW_COUNT + 1);
+        }
+
+        // 起始省略号
+        if (start > 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-btn ellipsis';
+            ellipsis.textContent = '...';
+            paginationDiv.appendChild(ellipsis);
+        }
+
+        // 页码按钮
+        for (let i = start; i <= end; i++) {
+            const button = document.createElement('button');
+            button.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+            button.textContent = i;
+            button.onclick = () => fetchSubmissions(i);
+            paginationDiv.appendChild(button);
+        }
+
+        // 结束省略号
+        if (end < totalPages) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-btn ellipsis';
+            ellipsis.textContent = '...';
+            paginationDiv.appendChild(ellipsis);
+        }
+
+        // 生成下一页按钮
+        const nextButton = document.createElement('button');
+        nextButton.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextButton.innerHTML = '下一页 »';
+        nextButton.onclick = () => currentPage < totalPages && fetchSubmissions(currentPage + 1);
+        paginationDiv.appendChild(nextButton);
+    }
+
+    function getStatusClass(status) {
+        if (status === '答案正确') {
+            return 'correct';
+        }
+        return 'incorrect';
+    }
+
+    function showError(message) {
+        const tbody = document.getElementById('submissions-list');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="error">
+                    ${message}
+                </td>
+            </tr>
+        `;
+    }
+
+    // 关闭模态框
+    const modal = document.getElementById('codeModal');
+    const closeBtn = document.querySelector('.close');
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    };
+
+    window.onload = () => {
+        if(!localStorage.getItem('token')) {
+            alert("请先登录！");
+            window.location.href = 'index.html';
+        }
+        fetchSubmissions(1);
+    };
+</script>
+</body>
+</html>

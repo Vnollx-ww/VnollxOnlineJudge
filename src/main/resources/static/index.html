@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VnollxOnlineJudge - 算法刷题平台</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #4a90e2;
+            --accent: #66bb6a;
+            --text: #2d3748;
+            --bg: #f8fafc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+        }
+
+        body {
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo::before {
+            content: "⚡";
+            font-size: 1.4em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        .nav-links a::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .auth-buttons a {
+            padding: 0.6rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .auth-buttons a:first-child {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .auth-buttons a:last-child {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(26, 115, 232, 0.3);
+        }
+
+        .auth-buttons a:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2);
+        }
+
+        .hero {
+            padding: 8rem 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
+            transform: rotate(15deg);
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.1;
+            color: var(--primary);
+            letter-spacing: -0.03em;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: #4a5568;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.7;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: var(--primary);
+            color: white;
+            padding: 1.2rem 3rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: 0 4px 6px rgba(26, 115, 232, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        .cta-button::after {
+            content: "→";
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+
+        .cta-button:hover::after {
+            transform: translateX(3px);
+        }
+
+        footer {
+            background: white;
+            padding: 3rem 2rem;
+            margin-top: 6rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        footer p {
+            max-width: 1280px;
+            margin: 0 auto;
+            color: #4a5568;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        footer a {
+            color: var(--text);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        footer a:hover {
+            color: var(--primary);
+        }
+
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2.5rem 3rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            max-width: 400px;
+            width: 100%;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 1.2rem;
+            color: #4a5568;
+            cursor: pointer;
+            background: none;
+            border: none;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: var(--primary);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px rgba(26, 115, 232, 0.3);
+        }
+
+        .login-btn:focus {
+            outline: none;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .register-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .register-link a:hover {
+            color: #0d47a1;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .auth-buttons {
+                gap: 0.5rem;
+            }
+
+            .auth-buttons a {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .modal-content {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            header {
+                padding: 1rem;
+            }
+
+            .logo {
+                font-size: 1.4rem;
+            }
+
+            .hero {
+                padding: 6rem 1.5rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .cta-button {
+                width: 100%;
+                justify-content: center;
+                padding: 1rem;
+            }
+
+            .modal-content {
+                padding: 1.5rem;
+            }
+        }
+
+        /* 新增用户问候样式 */
+        .user-greeting {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            color: var(--primary);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.1);
+            position: relative;
+        }
+
+        .user-greeting::before {
+            font-size: 1.2em;
+        }
+
+        /* 新增Toast样式 */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            opacity: 0;
+            transform: translateY(20px) translateX(-50%);
+            transition: all 0.3s ease;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0) translateX(-50%);
+        }
+
+        .toast-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #66bb6a;
+        }
+
+        .toast-error {
+            background-color: #ffebee;
+            color: #b71c1c;
+            border-left: 4px solid #ff4444;
+        }
+
+        .toast-info {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            border-left: 4px solid #1a73e8;
+        }
+
+        .toast::before {
+            font-size: 1.2em;
+        }
+
+        .toast-success::before {
+            content: "✅";
+        }
+
+        .toast-error::before {
+            content: "❌";
+        }
+
+        .toast-info::before {
+            content: "ℹ️";
+        }
+
+        /* 新增用户菜单样式 */
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 0.8rem 0;
+            min-width: 160px;
+            display: none;
+            z-index: 100;
+        }
+
+        .user-greeting:hover .user-menu {
+            display: block;
+        }
+
+        .user-menu-item {
+            padding: 0.5rem 1.5rem;
+            color: var(--text);
+            text-decoration: none;
+            display: block;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            background-color: white; /* 统一菜单项背景颜色 */
+        }
+
+        .user-menu-item:hover {
+            background: #f0f4ff;
+            color: var(--primary);
+        }
+
+        /* 添加确认弹窗样式 */
+        .logout-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1001;
+        }
+
+        .modal-content-inner {
+            text-align: center;
+            padding: 3rem 2.5rem;
+        }
+
+        .icon-container {
+            width: 64px;
+            height: 64px;
+            background: #fff3cd;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .warning-icon {
+            width: 32px;
+            height: 32px;
+            color: #ffb703;
+        }
+
+        .modal-message {
+            color: #4a5568;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .cancel-btn, .confirm-btn {
+            padding: 0.8rem 2.2rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .cancel-btn {
+            background: #f5f7fa;
+            color: #4a5568;
+            border: 1px solid #d1d5db;
+        }
+
+        .cancel-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .confirm-btn {
+            background: #ff4444;
+            color: white;
+            box-shadow: 0 2px 4px rgba(255, 68, 68, 0.2);
+        }
+
+        .confirm-btn:hover {
+            background: #ff6b6b;
+            box-shadow: 0 4px 6px rgba(255, 68, 68, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* 适配现有响应式 */
+        @media (max-width: 480px) {
+            .modal-content-inner {
+                padding: 2rem 1.5rem;
+            }
+
+            .modal-message {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <div class="nav-container">
+        <a href="/" class="logo">VnollxOJ</a>
+        <div class="nav-links">
+            <a href="problem.html">题目列表</a>
+            <a href="submission.html">提交列表</a>
+            <a href="ranklist.html">排行榜</a>
+            <a href="competition.html">比赛</a>
+            <a href="about.html">关于</a>
+        </div>
+        <div class="auth-buttons" id="authButtons">
+            <a href="#" id="loginBtn">登录</a>
+            <a href="#" id="registerBtn">注册</a>
+        </div>
+    </div>
+</header>
+
+<div class="login-modal" id="loginModal">
+    <div class="modal-content">
+        <button class="close-btn" id="closeModal">&times;</button>
+        <h2 class="modal-title">用户登录</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label" for="email">邮箱地址</label>
+                <input type="email" class="form-input" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">登录密码</label>
+                <input type="password" class="form-input" id="password" name="password" required>
+            </div>
+            <button type="submit" class="login-btn">立即登录</button>
+        </form>
+        <p class="register-link">
+            还没有账号？<a href="#" id="goToRegister">立即注册</a>
+        </p>
+    </div>
+</div>
+
+<div class="login-modal" id="registerModal">
+    <div class="modal-content">
+        <button class="close-btn" id="closeRegisterModal">&times;</button>
+        <h2 class="modal-title">用户注册</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label class="form-label" for="regName">姓名</label>
+                <input type="text" class="form-input" id="regName" name="name" required minlength="2"
+                       maxlength="20">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="regEmail">邮箱地址</label>
+                <input type="email" class="form-input" id="regEmail" name="email" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="regPassword">登录密码</label>
+                <input type="password" class="form-input" id="regPassword" name="password" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="regRepassword">重复密码</label>
+                <input type="password" class="form-input" id="regRepassword" name="repassword" required>
+            </div>
+            <button type="submit" class="login-btn">立即注册</button>
+        </form>
+        <p class="register-link">
+            已有账号？<a href="#" id="goToLogin">立即登录</a>
+        </p>
+    </div>
+</div>
+
+<!-- 在footer之后添加确认退出模态窗 -->
+<div class="logout-confirm-modal" id="logoutConfirmModal">
+    <div class="modal-content">
+        <button class="close-btn" id="closeLogoutModal">&times;</button>
+        <div class="modal-content-inner">
+            <div class="icon-container">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="warning-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374H18.48c1.73 0 2.813-1.874 1.948-3.374L13.978 3.347c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.008v.008H12v-.008h-.008zm0 3.75h.008v.008H12v-.008h-.008z" />
+                </svg>
+            </div>
+            <h3 class="modal-title">退出登录</h3>
+            <p class="modal-message">确定要退出当前账号吗？</p>
+            <div class="button-group">
+                <button type="button" class="cancel-btn" id="cancelLogout">取消</button>
+                <button type="button" class="confirm-btn" id="confirmLogout">确认退出</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">用代码解决算法难题</h1>
+        <p class="hero-subtitle">
+            精选1000+算法题目，支持Python/Java/C++等多种语言在线提交，实时评测系统助你快速提升编程能力
+        </p>
+        <p class="hero-subtitle">任何一个伟大的思想，都有一个微不足道的开始。</p>
+        <a href="problem.html" class="cta-button">立即开始挑战</a>
+    </div>
+</section>
+
+<footer>
+    <p>
+        <span>&copy; 2025 VnollxOnlineJudge</span>
+        <a href="#privacy">隐私政策</a>
+        <a href="#terms">服务条款</a>
+        <a href="#contact">联系我们</a>
+    </p>
+</footer>
+
+<script>
+    const loginModal = document.getElementById('loginModal');
+    const registerModal = document.getElementById('registerModal');
+    const authButtons = document.getElementById('authButtons');
+    let currentUser = null;
+    let id;
+    // 新增Toast显示函数
+    function showToast(message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} show`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // 事件委托处理登录/注册按钮
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('#loginBtn')) {
+            loginModal.style.display = 'flex';
+        } else if (e.target.matches('#registerBtn')) {
+            registerModal.style.display = 'flex';
+        }
+    });
+
+    // 关闭模态窗
+    document.querySelectorAll('.close-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            loginModal.style.display = 'none';
+            registerModal.style.display = 'none';
+        });
+    });
+
+    // 背景点击关闭
+    document.querySelectorAll('.login-modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    // 切换注册/登录模态窗
+    document.getElementById('goToRegister').addEventListener('click', () => {
+        loginModal.style.display = 'none';
+        registerModal.style.display = 'flex';
+    });
+
+    document.getElementById('goToLogin').addEventListener('click', () => {
+        registerModal.style.display = 'none';
+        loginModal.style.display = 'flex';
+    });
+
+    // 用户信息处理
+    async function getUserInfo() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const formdata = new FormData();
+        formdata.append('token', token);
+        try {
+            const response = await fetch('/user/get', {
+                method: 'POST',
+                body: formdata
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                currentUser = data.data;
+                id=data.data.id;
+                name=data.data.name;
+                localStorage.setItem('id',id);
+                localStorage.setItem('name',name)
+                renderUserInfo();
+            } else {
+                localStorage.removeItem('token');
+                renderLoginButtons();
+                showToast('登录状态已过期，请重新登录', 'error');
+            }
+        } catch (error) {
+            localStorage.removeItem('token');
+            renderLoginButtons();
+            showToast('获取用户信息失败，请检查网络连接', 'error');
+        }
+    }
+
+    function renderUserInfo() {
+        const currentHour = new Date().getHours();
+        let greetingIcon;
+        if (currentHour < 12) {
+            greetingIcon = '🌞'; // 早晨图标
+        } else if (currentHour < 18) {
+            greetingIcon = '🌇'; // 下午图标
+        } else {
+            greetingIcon = '🌙'; // 晚上图标
+        }
+
+        authButtons.innerHTML = `
+                <div class="user-greeting-container">
+                    <span class="user-greeting" id="userGreeting">
+                        ${greetingIcon} ${currentHour < 12 ? '早上好' : currentHour < 18 ? '下午好' : '晚上好'}，${currentUser.name}
+                        <div class="user-menu" id="userMenu">
+                            <a href="/user/${id}" class="user-menu-item">我的主页</a>
+                            <a href="mysubmission.html" class="user-menu-item">我的提交</a>
+                            <a href="set.html" class="user-menu-item">我的设置</a>
+                            <a href="index.html" class="user-menu-item" id="logoutBtn">退出</a>
+                        </div>
+                    </span>
+                </div>
+            `;
+
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            showLogoutConfirm();
+        });
+    }
+
+    function renderLoginButtons() {
+        authButtons.innerHTML = `
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="registerBtn">注册</a>
+            `;
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('token');
+        currentUser = null;
+        renderLoginButtons();
+        showToast('已退出登录', 'info');
+    }
+
+    function showLogoutConfirm() {
+        const logoutModal = document.getElementById('logoutConfirmModal');
+        logoutModal.style.display = 'flex';
+    }
+
+    // 关闭确认弹窗
+    document.getElementById('closeLogoutModal').addEventListener('click', () => {
+        document.getElementById('logoutConfirmModal').style.display = 'none';
+    });
+
+    document.querySelector('.logout-confirm-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            e.currentTarget.style.display = 'none';
+        }
+    });
+
+    // 处理确认退出
+    document.getElementById('confirmLogout').addEventListener('click', () => {
+        handleLogout();
+        document.getElementById('logoutConfirmModal').style.display = 'none';
+    });
+
+    document.getElementById('cancelLogout').addEventListener('click', () => {
+        document.getElementById('logoutConfirmModal').style.display = 'none';
+    });
+
+    // 登录处理
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!email || !password) {
+            showToast('请填写完整的邮箱和密码', 'error');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('password', password);
+
+        try {
+            const response = await fetch('/user/login', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                showToast('登录成功', 'success');
+                localStorage.setItem('token', data.data);
+                loginModal.style.display = 'none';
+                getUserInfo();
+            } else {
+                showToast(data.msg || '登录失败，请检查邮箱和密码', 'error');
+            }
+        } catch (error) {
+            showToast('网络请求失败，请重试', 'error');
+        }
+    });
+
+    // 注册处理
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        if (formData.get('password') !== formData.get('repassword')) {
+            showToast('两次输入的密码不一致', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/user/register', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                showToast('注册成功，请登录', 'success');
+                registerModal.style.display = 'none';
+                loginModal.style.display = 'flex';
+            } else {
+                showToast(data.msg || '注册失败，请检查信息', 'error');
+            }
+        } catch (error) {
+            showToast('网络请求失败，请重试', 'error');
+        }
+    });
+
+    // 初始化检查登录状态
+    window.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('token');
+        if (token) getUserInfo();
+        else {
+            showToast('请先登录','error');
+        }
+    });
+</script>
+</body>
+
+</html>
