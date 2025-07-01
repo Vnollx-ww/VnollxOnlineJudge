@@ -7,7 +7,6 @@ import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.utils.*;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +28,8 @@ public class ProblemServiceImpl implements ProblemService {
     private SubmissionProducer submissionProducer;
     @Autowired
     private JedisPool jedisPool;
+    @Autowired
+    private User_Solver_ProblemsMapper user_solver_problemsMapper;
     @Override
     public Result createProblem(String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip) {
         try {
@@ -156,6 +157,27 @@ public class ProblemServiceImpl implements ProblemService {
             logger.error("获取搜索题目数量失败: ", e);
             return Result.SystemError("服务器错误，请联系管理员");
         }
+    }
+
+    @Override
+    public Result judgeIsSolve(long pid, long uid, long cid) {
+        User_Solved_Problems userSolvedProblems=user_solver_problemsMapper.judgeUserIsPass(pid,uid,cid);
+        if (userSolvedProblems!=null){
+            return Result.Success("true","true");
+        }
+        return Result.Success("false","false");
+    }
+
+    @Override
+    public void updatePassCount(long pid, int ok) {
+        problemMapper.updatePassCount(pid,ok);
+        Result.Success("修改题目通过数成功");
+    }
+
+    @Override
+    public void addUserSolveRecord(long pid, long uid, long cid) {
+        user_solver_problemsMapper.createUserSolveProblem(uid,pid,cid);
+
     }
 
 }

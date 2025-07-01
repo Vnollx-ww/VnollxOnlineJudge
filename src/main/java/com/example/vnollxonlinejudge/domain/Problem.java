@@ -166,6 +166,16 @@ public class Problem {
     @Column(name = "pass_count")
     private int passCount;
 
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
     @Column(name = "open")
     private boolean open;
+    @Column(name = "version")
+    private int version;
 }

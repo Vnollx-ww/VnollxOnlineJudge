@@ -44,4 +44,10 @@ public interface ProblemMapper {
             "submit_count = submit_count + 1 " +    // 提交次数直接+1（假设每次提交都计数）
             "WHERE id = #{pid}")
     void updatePassCount(long pid,int ok);
+    @Update("UPDATE problems " +
+            "SET pass_count = pass_count + #{ok}, " +  // 用逗号分隔字段，参数用#{ok}
+            "submit_count = submit_count + 1," +    // 提交次数直接+1（假设每次提交都计数）
+            "version = version+1 "+
+            "WHERE id = #{pid}  AND version = #{oldVersion}")
+    int updatePassCountWithOptimisticLock(long pid,int ok,int oldVersion);
 }

@@ -1,9 +1,6 @@
 package com.example.vnollxonlinejudge.service;
 
-import com.example.vnollxonlinejudge.domain.Problem;
 import com.example.vnollxonlinejudge.utils.Result;
-
-import java.util.List;
 
 public interface ProblemService {
     Result createProblem(String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
@@ -21,4 +18,7 @@ public interface ProblemService {
     Result getProblemListByKeywords(String name, long pid, int offset, int size);
 
     Result getCountByKeywords(String name, long pid);
+    Result judgeIsSolve(long pid,long uid,long cid);
+    void updatePassCount(long pid, int ok);
+    void addUserSolveRecord(long pid,long uid,long cid);
 }

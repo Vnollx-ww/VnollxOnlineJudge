@@ -245,5 +245,9 @@ public class CompetitionServiceImpl implements CompetitionService {
         }
     }
 
-
+    @Override
+    public void addUserRecord(long cid, long uid, String uname) {
+        competition_usersMapper.createRecord(cid,uid,uname);
+        Result.Success("添加用户至比赛成功");
+    }
 }

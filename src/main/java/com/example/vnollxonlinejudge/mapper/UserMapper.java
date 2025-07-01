@@ -15,7 +15,7 @@ public interface UserMapper {
     User getUserByEmail(String email);
     @Select("SELECT * FROM users WHERE name = #{name}")
     User getUserByName(String name);
-    @Update("UPDATE users SET submit_count=submit_count+1,pass_count = pass_count + #{ok} WHERE id = #{uid}")
+    @Update("UPDATE users SET submit_count=submit_count+1,pass_count = pass_count + #{ok}  WHERE id = #{uid}")
     void updateSubmitCount(long uid,int ok);
     @Select("SELECT * FROM users")
     List<User> getAllUser();

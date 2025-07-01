@@ -134,4 +134,10 @@ public class UserServiceImpl implements UserService {
             return Result.SystemError("服务器错误，请联系管理员");
         }
     }
+
+    @Override
+    public Result updateSubmitCount(long uid, int ok) {
+        userMapper.updateSubmitCount(uid,ok);
+        return Result.Success("修改用户提交数成功");
+    }
 }

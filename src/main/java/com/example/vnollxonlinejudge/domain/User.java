@@ -73,9 +73,19 @@ public class User {
         return passCount;
     }
 
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
     public void setPassCount(int passCount) {
         this.passCount = passCount;
     }
     @Column(name = "pass_count")
     private int passCount;
+    @Column(name = "version")
+    private int version;
 }

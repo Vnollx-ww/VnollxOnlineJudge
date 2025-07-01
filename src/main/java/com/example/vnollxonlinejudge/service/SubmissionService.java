@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.service;
 
+import com.example.vnollxonlinejudge.domain.Submission;
 import com.example.vnollxonlinejudge.utils.Result;
 
 public interface SubmissionService {
@@ -16,4 +17,5 @@ public interface SubmissionService {
     Result getAllSubmissionCount();
     Result getSubmissionByStatusAndLanguage(String status,String language,int offset,int size);
     Result getCountByStatusAndLanguage(String status,String language);
+    String processSubmission(Submission submission);
 }

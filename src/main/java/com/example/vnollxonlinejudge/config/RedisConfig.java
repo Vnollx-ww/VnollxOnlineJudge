@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.config;
 
 import com.example.vnollxonlinejudge.redis.listener.CompetitionExpirationListener;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -13,8 +14,8 @@ import redis.clients.jedis.JedisPoolConfig;
 public class RedisConfig {
 
     // Redis 服务器配置
-    private final String HOST = "localhost";
-    private final int PORT = 6379;
+    private String HOST="localhost";
+    private int PORT=6379;
     private final int TIMEOUT = 2000;
 
     // 连接池配置参数
@@ -39,14 +40,6 @@ public class RedisConfig {
     @Bean
     public JedisPool jedisPool(JedisPoolConfig jedisPoolConfig) {
         return new JedisPool(jedisPoolConfig, HOST, PORT, TIMEOUT);
-    }
-    public Jedis getJedis(JedisPool jedisPool) {
-        return jedisPool.getResource();
-    }
-    public void close(Jedis jedis) {
-        if (jedis != null) {
-            jedis.close();
-        }
     }
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory) {

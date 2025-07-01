@@ -12,4 +12,5 @@ public interface UserService {
     Result getAllUser();
     Result updatePassword(String old_password,String password,long uid);
     Result updateUserInfo(String email,String name,long uid);
+    Result updateSubmitCount(long uid,int ok);
 }

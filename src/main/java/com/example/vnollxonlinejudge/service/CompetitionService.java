@@ -13,4 +13,5 @@ public interface CompetitionService {
     Result getUserList(long cid);
     Result judgeIsOpenById(String now, long id);
     Result judgeIsEndById(String now,long id);
+    void addUserRecord(long cid, long uid, String uname);
 }
