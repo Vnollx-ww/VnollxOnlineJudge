@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Table(name = "solves")
 public class Solve {

@@ -6,6 +6,7 @@ import com.example.vnollxonlinejudge.domain.*;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.ProblemService;
+import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +28,9 @@ public class ProblemServiceImpl implements ProblemService {
     @Autowired
     private SubmissionProducer submissionProducer;
     @Autowired
-    private JedisPool jedisPool;
-    @Autowired
     private User_Solver_ProblemsMapper user_solver_problemsMapper;
+    @Autowired
+    private RedisService redisService;
     @Override
     public Result createProblem(String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip) {
         try {
@@ -76,20 +77,16 @@ public class ProblemServiceImpl implements ProblemService {
         Problem problem=null;
         if(cid==0){problem = problemMapper.getProblemById(pid);}
         else{
-            try (Jedis jedis = jedisPool.getResource()) {
-                String cacheKey = "competition:" + cid + ":problems";
-                String problemsJson = jedis.get(cacheKey);
+            String cacheKey = "competition:" + cid + ":problems";
+            String problemsJson =redisService.getValueByKey(cacheKey);
+            if (problemsJson!=null){
                 TypeReference<Map<Integer, Problem>> typeRef = new TypeReference<Map<Integer, Problem>>() {
                 };
                 Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
-                if (problemMap!=null){
-                    problem = problemMap.get((int) pid);
-                }
-                else{
-                    problem = problemMapper.getProblemById(pid);
-                }
-            }catch (Exception e) {
-                logger.error("Redis操作异常", e);
+                problem = problemMap.get((int) pid);
+            }
+            else{
+                problem = problemMapper.getProblemById(pid);
             }
         }
         if (problem==null) {
@@ -160,12 +157,9 @@ public class ProblemServiceImpl implements ProblemService {
     }
 
     @Override
-    public Result judgeIsSolve(long pid, long uid, long cid) {
+    public boolean judgeIsSolve(long pid, long uid, long cid) {
         User_Solved_Problems userSolvedProblems=user_solver_problemsMapper.judgeUserIsPass(pid,uid,cid);
-        if (userSolvedProblems!=null){
-            return Result.Success("true","true");
-        }
-        return Result.Success("false","false");
+        return userSolvedProblems != null;
     }
 
     @Override

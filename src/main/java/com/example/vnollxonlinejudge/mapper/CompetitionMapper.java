@@ -4,7 +4,6 @@ import com.example.vnollxonlinejudge.domain.Competition;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
-import org.checkerframework.checker.units.qual.C;
 
 import java.util.List;
 

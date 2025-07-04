@@ -25,12 +25,12 @@ public class SubmissionProducer {
             Message message = MessageBuilder
                     .withBody(objectMapper.writeValueAsBytes(submission))
                     .setPriority(priority)
-                    .setReplyTo("reply.queue")
+                    .setReplyTo("replyQueue")
                     .setCorrelationId(correlationId)
                     .build();
             Message responseMessage = rabbitTemplate.sendAndReceive(
-                    "submission.exchange",
-                    "submission.routing.key",
+                    "submission",
+                    "submission.publish",
                     message
             );
             if (responseMessage == null) {

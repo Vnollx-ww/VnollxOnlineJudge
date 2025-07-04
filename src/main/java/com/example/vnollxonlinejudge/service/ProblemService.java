@@ -18,7 +18,7 @@ public interface ProblemService {
     Result getProblemListByKeywords(String name, long pid, int offset, int size);
 
     Result getCountByKeywords(String name, long pid);
-    Result judgeIsSolve(long pid,long uid,long cid);
+    boolean judgeIsSolve(long pid,long uid,long cid);
     void updatePassCount(long pid, int ok);
     void addUserSolveRecord(long pid,long uid,long cid);
 }

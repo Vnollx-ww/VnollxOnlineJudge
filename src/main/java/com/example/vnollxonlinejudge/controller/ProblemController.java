@@ -3,12 +3,16 @@ package com.example.vnollxonlinejudge.controller;
 import com.example.vnollxonlinejudge.domain.Problem;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.utils.Result;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.mybatis.logging.Logger;
+import org.mybatis.logging.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 @RestController
 @RequestMapping("/problem")
@@ -17,14 +21,13 @@ public class ProblemController {
     private ProblemService problemService;
     @GetMapping("/{id}")
     public ModelAndView problemDetail(@PathVariable Long id) {
-        Result result = problemService.getProblemInfo(id,0);
         ModelAndView modelAndView = new ModelAndView();
-        Problem problem= (Problem) result.getData();
-
-        if (result.getData() == null) {
+        Result result = problemService.getProblemInfo(id, 0);
+        Problem problem = (Problem) result.getData();
+        if (problem == null) {
             modelAndView.setViewName("error/404");
         } else {
-            modelAndView.addObject("problem", result.getData());
+            modelAndView.addObject("problem", problem);
             modelAndView.setViewName("problem");
         }
         return modelAndView;

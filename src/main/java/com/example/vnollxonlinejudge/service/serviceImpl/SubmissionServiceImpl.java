@@ -10,12 +10,10 @@ import com.example.vnollxonlinejudge.utils.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,20 +25,20 @@ public class SubmissionServiceImpl implements SubmissionService {
     private static final Logger logger = LoggerFactory.getLogger(ProblemService.class);
     @Autowired
     private SubmissionMapper submissionMapper;
+    //// 使用 setter 注入代替构造器注入
     @Autowired
     private ProblemService problemService;
     @Autowired
-    private UserService userService;
+    private RedisService redisService;
+    //// 使用 setter 注入代替构造器注入
     @Autowired
-    private JedisPool jedisPool;
+    private UserService userService;
     @Autowired
     private CompetitionService competitionService;
     @Autowired
     private LockManager lockManager;
     @Autowired
     private JudgeService judgeService;
-    @Autowired
-    private RedisService redisService;
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
     private static final String USER_PENALTY_KEY = "competition_user_penalty:%d:%s"; // cid:uid
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
@@ -161,6 +159,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     @Override
     public String processSubmission(Submission submission) {
+        //初始化所有键和信息！！！
         long pid=submission.getPid();
         long uid=submission.getUid();
         long cid=submission.getCid();
@@ -169,7 +168,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         String option=submission.getLanguage();
         String create_time=submission.getCreateTime();
         Problem problem=null;
-        Result result=problemService.judgeIsSolve(pid,uid,cid);
+        boolean ok=problemService.judgeIsSolve(pid,uid,cid);
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null;
         if (cid != 0) {
             timeOutKey=String.format(TIME_OUT_KEY,cid);
@@ -178,106 +177,76 @@ public class SubmissionServiceImpl implements SubmissionService {
             rankingKey = String.format(RANKING_KEY, cid);
             problemPassKey = String.format(PROBLEM_PASS_KEY, cid, pid);
             problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, pid);
-            long ttlSeconds=0;
-            try (Jedis jedis = jedisPool.getResource()) {
-                String endTimeStr=jedis.get(timeOutKey);
-                ttlSeconds= TimeUtils.calculateTTL(endTimeStr);
-                if (!jedis.exists(userPassKey)) {
-                    jedis.setex(userPassKey, ttlSeconds + 600, "0");
-                }
-                if (!jedis.exists(userPenaltyKey)) {
-                    jedis.setex(userPenaltyKey, ttlSeconds + 600, "0");
-                }
-                if (!jedis.exists(rankingKey)) {
-                    competitionService.addUserRecord(cid,uid,userName);
-                    long initialScore = calculateScore(0, 0);
-                    jedis.zadd(rankingKey, initialScore, userName);
-                    jedis.expire(rankingKey, ttlSeconds + 600);
-                }
-            }catch (Exception e) {
-                logger.error("Redis操作异常", e);
+            String endTimeStr=redisService.getValueByKey(timeOutKey);
+            long ttlSeconds= TimeUtils.calculateTTL(endTimeStr);;
+            redisService.setkey(userPassKey,"0",ttlSeconds+600);
+            redisService.setkey(userPenaltyKey,"0",ttlSeconds+600);
+            if (redisService.addToSetByKey(rankingKey,calculateScore(0,0),userName,ttlSeconds+600)){
+                competitionService.addUserRecord(cid,uid,userName);
             }
+
         }
+        //初始化所有键和信息！！！
+
+
+        //获取题目信息！！！！
         if (cid == 0) problem = (Problem) problemService.getProblemInfo(pid,0).getData();
         else{
-            try (Jedis jedis = jedisPool.getResource()) {
-                String cacheKey = "competition:" + cid + ":problems";
-                String problemsJson = jedis.get(cacheKey);
-                TypeReference<Map<Integer, Problem>> typeRef = new TypeReference<Map<Integer, Problem>>() {
-                };
-                Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
-                problem = problemMap.get((int) pid);
-            }catch (Exception e) {
-                logger.error("Redis操作异常", e);
-            }
+            //String cacheKey = "competition:" + cid + ":problems";
+            StringBuffer cacheKey=new StringBuffer();
+            cacheKey.append("competition:").append(cid).append(":problems");
+            String problemsJson = redisService.getValueByKey(cacheKey.toString());
+            TypeReference<Map<Integer, Problem>> typeRef = new TypeReference<Map<Integer, Problem>>() {
+            };
+            Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
+            problem = problemMap.get((int) pid);
         }
         if (problem==null) {return "题目不存在或已被删除";}
-        String str=judgeService.judge(problem,code,option);
-        if (str.contains("答案正确")) {
-            if (result.getData() == "false") {
-                problemService.addUserSolveRecord(pid,uid,cid);
-                if (cid == 0) {
-                    userService.updateSubmitCount(uid,1);
+        //获取题目信息！！！！
+
+        //提交后对题目提交数，用户提交数进行处理！！！！
+        RunResult res=judgeService.judge(problem,code,option);
+        if (res.getStatus().equals("答案正确")) { //如果问题通过
+            if (!ok) { //是否首次通过
+                problemService.addUserSolveRecord(pid,uid,cid); //对问题添加通过记录
+                if (cid == 0) { //如果非比赛
+                    userService.updateSubmitCount(uid,1);//用户通过数加一，用户自己不太可能同时提交多次，所以无需加锁
                     Object lock = lockManager.getLock(pid);
                     synchronized (lock) {
-                        problemService.updatePassCount(pid,1);
+                        problemService.updatePassCount(pid,1);//题目通过数也加一
                     }
                 } else {
-                    try (Jedis jedis = jedisPool.getResource()) {
-                        long passCount = jedis.incr(userPassKey);
-                        jedis.incr(problemPassKey);
-                        jedis.incr(problemSubmitKey);
-                        int penaltyTime = Integer.parseInt(jedis.get(userPenaltyKey));
-
-                        long newScore = calculateScore((int) passCount, penaltyTime);
-                        jedis.zadd(rankingKey, newScore, userName);
-                    }catch (Exception e) {
-                        logger.error("Redis操作异常", e);
-                    }
+                    redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,userName);//如果是比赛那就需要更新缓存了
                 }
             }
-        } else {
+        } else {//未通过
             if (cid == 0) {
-                userService.updateSubmitCount(uid,0);
+                userService.updateSubmitCount(uid,0);//如果非比赛，提交总数加一
                 Object lock = lockManager.getLock(pid);
                 synchronized (lock) {
-                    problemService.updatePassCount(pid,0);
+                    problemService.updatePassCount(pid,0);//问题提交数也加一
                 }
-            } else if (result.getData() == "false") {
-                try (Jedis jedis = jedisPool.getResource()) {
-                    long newPenalty = jedis.incrBy(userPenaltyKey, 20);
-                    jedis.incr(problemSubmitKey);
-                    int passCount = Integer.parseInt(jedis.get(userPassKey));
-                    long newScore = calculateScore(passCount, (int) newPenalty);
-                    jedis.zadd(rankingKey, newScore, userName);
-                }catch (Exception e) {
-                    logger.error("Redis操作异常", e);
-                }
+            } else if (!ok) {
+                redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,userName);//是比赛，而且之前也没通过，那就需要罚时了
             }
         }
+        //提交后对题目提交数，用户提交数进行处理！！！！
 
-        Pattern chinesePattern = Pattern.compile("[\\u4e00-\\u9fa5]+");
-        Matcher chineseMatcher = chinesePattern.matcher(str);
-        String chinese = "";
-        if (chineseMatcher.find()) {
-            chinese = chineseMatcher.group();
-        }
-        Pattern numberPattern = Pattern.compile("\\d+");
-        Matcher numberMatcher = numberPattern.matcher(str);
-        String number = "";
-        if (numberMatcher.find()) {
-            number = numberMatcher.group();
-        }
+        //提交记录写入缓存，缓存定期同步数据库！！！！
         String language="";
         if(Objects.equals(option, "java"))language="Java";
         else if(Objects.equals(option, "python"))language="Python";
         else language="C++";
         redisService.cacheSubmission(
-                userName, problem.getTitle(), code, chinese,
+                userName, problem.getTitle(), code, res.getStatus(),
                 create_time, language, uid, pid,
-                Integer.parseInt(number), cid
+                (int)res.getRunTime(), cid
         );
+        return res.getStatus();
+    }
 
-        return chinese;
+    @Override
+    public void batchInsert(List<Submission> submissions) {
+        submissionMapper.batchInsert(submissions);
     }
 }

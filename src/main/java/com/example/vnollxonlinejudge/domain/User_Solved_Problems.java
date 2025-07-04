@@ -1,7 +1,6 @@
 package com.example.vnollxonlinejudge.domain;
 
-import javax.persistence.Column;
-import javax.persistence.Table;
+import jakarta.persistence.*;
 
 @Table(name = "user_solver_problems")
 public class User_Solved_Problems {

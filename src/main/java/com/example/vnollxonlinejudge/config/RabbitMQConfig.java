@@ -4,6 +4,7 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -33,22 +34,22 @@ public class RabbitMQConfig {
     public Queue submissionQueue() {
         Map<String, Object> queueArgs = new HashMap<>();
         queueArgs.put("x-max-priority", 10);
-        return new Queue("submission.queue", true, false, false, queueArgs);
+        return new Queue("submissionQueue", true, false, false, queueArgs);
     }
     @Bean
     public Queue replyQueue() {
-        return new Queue("reply.queue", true);
+        return new Queue("replyQueue", true);
     }
 
     @Bean
     public DirectExchange submissionExchange() {
-        return new DirectExchange("submission.exchange");
+        return new DirectExchange("submission");
     }
     @Bean
     public Binding binding(Queue submissionQueue, DirectExchange submissionExchange) {
         return BindingBuilder.bind(submissionQueue)
                 .to(submissionExchange)
-                .with("submission.routing.key");
+                .with("submission.publish");
     }
     @Bean
     public ConnectionFactory connectionFactory() {
@@ -57,6 +58,7 @@ public class RabbitMQConfig {
         factory.setPort(port);
         factory.setUsername(username);
         factory.setPassword(password);
+
         return factory;
     }
     @Bean
@@ -65,6 +67,14 @@ public class RabbitMQConfig {
         template.setMessageConverter(jsonMessageConverter());
         template.setReplyTimeout(10000);
         return template;
+    }
+    @Bean
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(jsonMessageConverter());
+        factory.setPrefetchCount(1); // 设置basicQos为1
+        return factory;
     }
     @Bean
     public MessageConverter jsonMessageConverter() {

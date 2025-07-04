@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableRabbit // 添加此注解
 @MapperScan("com.example.vnollxonlinejudge.mapper")
+
 public class VnollxOnlineJudgeApplication {
 
     public static void main(String[] args) {

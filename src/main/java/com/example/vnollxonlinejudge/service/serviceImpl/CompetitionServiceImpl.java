@@ -5,6 +5,7 @@ import com.alibaba.fastjson.TypeReference;
 import com.example.vnollxonlinejudge.domain.*;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.CompetitionService;
+import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.utils.Result;
 import com.example.vnollxonlinejudge.utils.TimeUtils;
@@ -26,17 +27,13 @@ public class CompetitionServiceImpl implements CompetitionService {
     @Autowired
     private CompetitionMapper competitionMapper;
     @Autowired
-    private UserMapper userMapper;
-    @Autowired
     private Competition_ProblemsMapper competition_problemsMapper;
     @Autowired
     private Competition_UsersMapper competition_usersMapper;
     @Autowired
     private ProblemMapper problemMapper;
     @Autowired
-    private SubmissionMapper submissionMapper;
-    @Autowired
-    private JedisPool jedisPool;
+    private RedisService redisService;
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d"; // cid:pid
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
@@ -104,12 +101,10 @@ public class CompetitionServiceImpl implements CompetitionService {
     @Override
     public Result getProblemList(long cid) {
         try {
-            Jedis jedis=jedisPool.getResource();
             String cacheKey = "competition:" + cid + ":problems";
-            String problemsJson = jedis.get(cacheKey);
+            String problemsJson = redisService.getValueByKey(cacheKey);
             List<Problem> problems = new ArrayList<>();
-            if (problemsJson != null&&jedis.ttl(cacheKey)>600) {
-                // 直接从缓存反序列化为 Map<Integer, Problem>
+            if (problemsJson != null&&redisService.getTtl(cacheKey)>600) {
                 TypeReference<Map<Integer, Problem>> typeRef = new TypeReference<Map<Integer, Problem>>() {};
                 Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
                 // 设置提交和通过次数
@@ -117,20 +112,18 @@ public class CompetitionServiceImpl implements CompetitionService {
                     String passKey = String.format(PROBLEM_PASS_KEY, cid, p.getId());
                     String submitKey = String.format(PROBLEM_SUBMIT_KEY, cid, p.getId()); // 假设存在提交次数的key
                     // 获取并设置通过次数和提交次数（增加空值处理）
-                    String passCount = jedis.get(passKey);
-                    String submitCount = jedis.get(submitKey);
+                    String passCount = redisService.getValueByKey(passKey);
+                    String submitCount = redisService.getValueByKey(submitKey);
                     p.setPassCount(passCount != null ? Integer.parseInt(passCount) : 0);
                     p.setSubmitCount(submitCount != null ? Integer.parseInt(submitCount) : 0);
                     problems.add(p);
                 }
-
                 // 将更新后的 Map 重新序列化为 JSON 并存储回 Redis
                 String updatedProblemsJson = JSON.toJSONString(problemMap);
                 String timeOutKey = String.format(TIME_OUT_KEY, cid);
-                String endTimeStr = jedis.get(timeOutKey);
+                String endTimeStr=redisService.getValueByKey(timeOutKey);
                 long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
-                jedis.setex(cacheKey, ttlSeconds+600, updatedProblemsJson);
-                System.out.println("从缓存拿取数据啦");
+                redisService.setkey(cacheKey,updatedProblemsJson,ttlSeconds+600);
 
             } else {
                 List<Competition_Problem> pids = competition_problemsMapper.getProblemList(cid);
@@ -141,11 +134,11 @@ public class CompetitionServiceImpl implements CompetitionService {
                     Problem problem = problemMapper.getProblemById(competitionProblem.getProblemId());
                     String problemSubmitKey=String.format(PROBLEM_SUBMIT_KEY, cid, problem.getId());
                     String problemPassKey=String.format(PROBLEM_PASS_KEY, cid, problem.getId());
-                    if (!jedis.exists(problemSubmitKey)&&ttlSeconds>0) {
+                    if (!redisService.IsExists(problemSubmitKey)&&ttlSeconds>0) {
                         problem.setSubmitCount(0);
                         problem.setPassCount(0);
-                        jedis.setex(problemSubmitKey, ttlSeconds+600, "0");
-                        jedis.setex(problemPassKey, ttlSeconds+600, "0");
+                        redisService.setkey(problemSubmitKey,"0",ttlSeconds+600);
+                        redisService.setkey(problemPassKey,"0",ttlSeconds+600);
                     }
                     if(ttlSeconds<0){
                         problem.setSubmitCount(competitionProblem.getSubmitCount());
@@ -159,12 +152,11 @@ public class CompetitionServiceImpl implements CompetitionService {
                         problemMap.put(p.getId(), p);
                     }
                     String updatedProblemsJson = JSON.toJSONString(problemMap);
-                    jedis.setex(cacheKey, ttlSeconds+600, updatedProblemsJson);
+                    redisService.setkey(cacheKey,updatedProblemsJson,ttlSeconds+600);
                     String timeOutKey=String.format(TIME_OUT_KEY,cid);
-                    jedis.setex(timeOutKey,ttlSeconds,endTimeStr);
+                    redisService.setkey(timeOutKey,endTimeStr,ttlSeconds);
                 }
             }
-            jedis.close();
             return Result.Success(problems, "获取比赛题目列表成功");
         } catch (Exception e) {
             logger.error("查询比赛题目列表失败: ", e);
@@ -176,10 +168,9 @@ public class CompetitionServiceImpl implements CompetitionService {
     public Result getUserList(long cid) {
         try {
             String rankingKey = String.format(RANKING_KEY, cid);
-            Jedis jedis=jedisPool.getResource();
             List<User> users = new ArrayList<>();
-            if(jedis.ttl(rankingKey)!=-2){
-                List<Tuple> userTuples = jedis.zrangeWithScores(rankingKey, 0, -1);
+            if(redisService.getTtl(rankingKey)!=-2){
+                List<Tuple> userTuples = redisService.getZset(rankingKey);
                 for (Tuple tuple : userTuples) {
                     String userName = tuple.getElement();
                     //double score = tuple.getScore();
@@ -187,8 +178,8 @@ public class CompetitionServiceImpl implements CompetitionService {
                     user.setName(userName);
                     String userPassKey = String.format(USER_PASS_COUNT_KEY, cid, userName);
                     String userPenaltyKey = String.format(USER_PENALTY_KEY, cid, userName);
-                    user.setPassCount(Integer.parseInt(jedis.get(userPassKey)));
-                    user.setPenaltyTime(Integer.parseInt(jedis.get(userPenaltyKey)));
+                    user.setPassCount(Integer.parseInt(redisService.getValueByKey(userPassKey)));
+                    user.setPenaltyTime(Integer.parseInt(redisService.getValueByKey(userPenaltyKey)));
                     users.add(user);
                 }
             }else{
@@ -201,7 +192,6 @@ public class CompetitionServiceImpl implements CompetitionService {
                     users.add(u);
                 }
             }
-            jedis.close();
             return Result.Success(users, "获取比赛用户列表成功");
         } catch (Exception e) {
             logger.error("查询比赛用户列表失败: ", e);

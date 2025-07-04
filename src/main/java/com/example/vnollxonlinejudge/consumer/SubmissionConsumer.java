@@ -12,6 +12,7 @@ import com.example.vnollxonlinejudge.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -21,7 +22,6 @@ import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
-import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,8 +45,9 @@ public class SubmissionConsumer {
     @Autowired
     private SubmissionService submissionService;
 
-    @RabbitListener(queues = "submission.queue")
+    @RabbitListener(queues = "submissionQueue")
     public void handleSubmission(Message message)  {
+
         try {
             Submission submission = objectMapper.readValue(
                     message.getBody(),
