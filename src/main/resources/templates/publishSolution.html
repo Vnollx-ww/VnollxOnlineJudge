@@ -7,6 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <!-- 引入 Markdown 解析库和代码高亮库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.min.css">
+    <!-- 添加 KaTeX 支持数学公式 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
     <style type="text/tailwindcss">
         @layer utilities {
             .content-auto {
@@ -17,6 +26,47 @@
             }
             .transition-height {
                 transition: max-height 0.3s ease;
+            }
+            /* Markdown 预览样式 */
+            .markdown-preview h1 {
+                @apply text-2xl font-bold my-4 text-gray-800;
+            }
+            .markdown-preview h2 {
+                @apply text-xl font-bold my-3 text-gray-800;
+            }
+            .markdown-preview h3 {
+                @apply text-lg font-bold my-2 text-gray-800;
+            }
+            .markdown-preview p {
+                @apply my-2 text-gray-700 leading-relaxed;
+            }
+            .markdown-preview ul, .markdown-preview ol {
+                @apply pl-6 my-2 text-gray-700;
+            }
+            .markdown-preview ul {
+                @apply list-disc;
+            }
+            .markdown-preview ol {
+                @apply list-decimal;
+            }
+            .markdown-preview a {
+                @apply text-primary hover:underline;
+            }
+            .markdown-preview blockquote {
+                @apply border-l-4 border-gray-300 pl-4 italic text-gray-600 my-3;
+            }
+            .markdown-preview pre {
+                @apply bg-gray-900 text-gray-100 p-4 rounded-lg my-4 overflow-x-auto;
+            }
+            .markdown-preview code {
+                @apply font-mono text-sm;
+            }
+            /* 数学公式样式 */
+            .katex {
+                @apply text-lg;
+            }
+            .katex-display {
+                @apply my-4 overflow-x-auto;
             }
         }
     </style>
@@ -76,21 +126,31 @@
         </div>
 
         <div class="mb-6">
-            <label for="solutionContent" class="block text-lg font-medium text-gray-700 mb-2">
-                题解内容 <span class="text-red-500">*</span>
-            </label>
-            <textarea id="solutionContent" name="content" rows="12"
+            <div class="flex justify-between items-center mb-2">
+                <label for="solutionContent" class="block text-lg font-medium text-gray-700">
+                    题解内容（支持 Markdown 格式和 LaTeX 数学公式） <span class="text-red-500">*</span>
+                </label>
+                <button type="button" id="previewBtn"
+                        class="px-4 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all flex items-center">
+                    <i class="fa fa-eye mr-1"></i> 预览
+                </button>
+            </div>
+            <textarea id="solutionContent" name="content" rows="15"
                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none resize-none"
-                      placeholder="请输入详细的题解内容（可以包含思路、代码和解释）..." required></textarea>
+                      placeholder="请输入详细的题解内容（支持 Markdown 格式和 LaTeX 数学公式）：
+- 标题：# 一级标题 ## 二级标题
+- 代码块：```java 代码 ```
+- 列表：- 项目1 或 1. 项目1
+- 链接：[文本](url)
+- 图片：![alt](url)
+- 数学公式：行内公式 $a^2 + b^2 = c^2$，块级公式 $$\sum_{i=1}^n i = \frac{n(n+1)}{2}$$
+..." required></textarea>
             <div class="text-right text-sm text-gray-500 mt-1">
                 <span id="charCount">0</span> 字符
             </div>
         </div>
 
-
-
         <div class="flex justify-end gap-3 mt-8">
-
             <button type="submit"
                     class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all shadow-md hover:shadow-lg flex items-center">
                 <i class="fa fa-paper-plane mr-2"></i>
@@ -100,7 +160,26 @@
     </form>
 </main>
 
-
+<!-- 预览模态框 -->
+<div id="previewModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <div class="border-b px-6 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">Markdown 预览</h3>
+            <button id="closePreviewBtn" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="fa fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6" id="previewContent">
+            <!-- 预览内容将在这里渲染 -->
+        </div>
+        <div class="border-t px-6 py-4 flex justify-end">
+            <button id="editBtn"
+                    class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
+                返回编辑
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- 提示 Toast -->
 <div id="toastContainer" class="fixed bottom-4 right-4 z-50"></div>
@@ -108,33 +187,35 @@
 <span th:text="${problem.id}" style="display: none;" id="id"></span>
 <span th:text="${problem.description}" style="display: none;" id="description"></span>
 <script>
-    // 题目数据（示例数据，实际会从模板中获取）
+    // 题目数据
     const problem = {
         id: document.getElementById("id").textContent,
         title: document.getElementById("title").textContent,
         description: document.getElementById("description").textContent,
     };
 
-    // 标签管理
-    const tags = [];
-    const tagInput = document.getElementById('tagInput');
-    const tagContainer = document.getElementById('tagContainer');
-    const addTagBtn = document.getElementById('addTagBtn');
-
-    // 字符计数
+    // DOM 元素
     const solutionContent = document.getElementById('solutionContent');
     const charCount = document.getElementById('charCount');
-
-    // 模态框
     const previewBtn = document.getElementById('previewBtn');
     const previewModal = document.getElementById('previewModal');
     const closePreviewBtn = document.getElementById('closePreviewBtn');
     const editBtn = document.getElementById('editBtn');
     const previewContent = document.getElementById('previewContent');
-
-    // 表单
     const solutionForm = document.getElementById('solutionForm');
     const solutionTitle = document.getElementById('solutionTitle');
+
+    // 初始化 Marked 解析器（配置代码高亮和数学公式）
+    marked.setOptions({
+        highlight: function(code, lang) {
+            if (lang && hljs.getLanguage(lang)) {
+                return hljs.highlight(code, { language: lang }).value;
+            }
+            return hljs.highlightAuto(code).value;
+        },
+        breaks: true, // 支持换行
+        gfm: true // 支持 GitHub Flavored Markdown
+    });
 
     // 页面加载完成后执行
     document.addEventListener('DOMContentLoaded', () => {
@@ -146,38 +227,68 @@
         // 初始化事件监听
         initEventListeners();
 
-        // 显示字符计数
+        // 初始化字符计数
         updateCharCount();
     });
 
     // 初始化所有事件监听
     function initEventListeners() {
-
-
         // 字符计数
         solutionContent.addEventListener('input', updateCharCount);
 
+        // 预览功能
+        previewBtn.addEventListener('click', showPreview);
+        closePreviewBtn.addEventListener('click', hidePreview);
+        editBtn.addEventListener('click', hidePreview);
+        // 点击模态框外部关闭
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) hidePreview();
+        });
 
         // 表单提交
         solutionForm.addEventListener('submit', handleSubmit);
     }
-
-
-
-
 
     // 更新字符计数
     function updateCharCount() {
         const count = solutionContent.value.length;
         charCount.textContent = count;
 
-        // 接近最大长度时显示警告
-        if (count > 4000) {
+        // 接近最大长度时显示警告（根据需求调整阈值）
+        if (count > 5000) {
             charCount.classList.add('text-red-500');
         } else {
             charCount.classList.remove('text-red-500');
         }
     }
+
+    // 显示预览
+    function showPreview() {
+        const markdown = solutionContent.value || '请输入 Markdown 内容...';
+        // 解析 Markdown 为 HTML
+        const html = marked.parse(markdown);
+        previewContent.innerHTML = `<div class="markdown-preview">${html}</div>`;
+        // 显示模态框
+        previewModal.style.display = 'flex';
+        // 高亮代码块
+        document.querySelectorAll('#previewContent pre code').forEach((el) => {
+            hljs.highlightElement(el);
+        });
+        // 渲染数学公式
+        renderMathInElement(previewContent, {
+            delimiters: [
+                {left: '$$', right: '$$', display: true},
+                {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+        });
+    }
+
+    // 隐藏预览
+    function hidePreview() {
+        previewModal.style.display = 'none';
+    }
+
     // 处理表单提交
     async function handleSubmit(e) {
         e.preventDefault();
@@ -208,8 +319,9 @@
             formData.append('name', localStorage.getItem('name'));
             formData.append('pid', problem.id);
             formData.append('content', solutionContent.value);
-            formData.append('title',solutionTitle.value);
-            formData.append('pname',problem.title);
+            formData.append('title', solutionTitle.value);
+            formData.append('pname', problem.title);
+
             // 显示加载状态
             const submitBtn = solutionForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;

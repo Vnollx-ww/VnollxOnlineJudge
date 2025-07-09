@@ -763,6 +763,7 @@
                 name=data.data.name;
                 localStorage.setItem('id',id);
                 localStorage.setItem('name',name)
+                localStorage.setItem('identity',data.data.identity);
                 renderUserInfo();
             } else {
                 localStorage.removeItem('token');
@@ -787,20 +788,24 @@
             greetingIcon = '🌙'; // 晚上图标
         }
 
-        authButtons.innerHTML = `
-                <div class="user-greeting-container">
-                    <span class="user-greeting" id="userGreeting">
-                        ${greetingIcon} ${currentHour < 12 ? '早上好' : currentHour < 18 ? '下午好' : '晚上好'}，${localStorage.getItem('name')}
-                        <div class="user-menu" id="userMenu">
-                            <a href="/user/${id}" class="user-menu-item">我的主页</a>
-                            <a href="mysubmission.html" class="user-menu-item">我的提交</a>
-                            <a href="set.html" class="user-menu-item">我的设置</a>
-                            <a href="index.html" class="user-menu-item" id="logoutBtn">退出</a>
-                        </div>
-                    </span>
-                </div>
-            `;
+        const identity = localStorage.getItem('identity');
+        const isAdmin = identity === 'ADMIN' || identity === 'SUPER_ADMIN';
+        const adminMenuItem = isAdmin ? '<a href="admin.html" class="user-menu-item">管理员界面</a>' : '';
 
+        authButtons.innerHTML = `
+    <div class="user-greeting-container">
+        <span class="user-greeting" id="userGreeting">
+            ${greetingIcon} ${currentHour < 12 ? '早上好' : currentHour < 18 ? '下午好' : '晚上好'}，${localStorage.getItem('name')}
+            <div class="user-menu" id="userMenu">
+                <a href="/user/${id}" class="user-menu-item">我的主页</a>
+                <a href="mysubmission.html" class="user-menu-item">我的提交</a>
+                <a href="set.html" class="user-menu-item">我的设置</a>
+                ${adminMenuItem}
+                <a href="index.html" class="user-menu-item" id="logoutBtn">退出</a>
+            </div>
+        </span>
+    </div>
+`;
 
         document.getElementById('logoutBtn').addEventListener('click', function(e) {
             e.preventDefault();

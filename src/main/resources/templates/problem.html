@@ -13,28 +13,31 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/default.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"></script>
 
     <!-- 代码编辑器样式 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/github.min.css">
 
     <style>
         :root {
             --primary: #1a73e8;
             --secondary: #4a90e2;
-            --success: #66bb6a;
-            --danger: #ff4444;
-            --info: #29b6f6;
-            --bg-light: #f8fafc;
-            --border-radius: 12px;
+            --success: #2ea44f;
+            --danger: #d73a49;
+            --info: #0366d6;
+            --bg-light: #f6f8fa;
+            --border-radius: 6px;
+            --border-color: #e1e4e8;
         }
 
         body {
-            background: #f9fafb;
-            font-family: 'Segoe UI', sans-serif;
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: #24292e;
         }
 
         .problem-container {
@@ -45,18 +48,15 @@
 
         .card {
             border-radius: var(--border-radius);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
         }
 
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-        }
-
-        .info-card {
-            background: white;
-            margin-bottom: 25px;
+        .card-header {
+            background-color: var(--bg-light);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
         }
 
         .problem-header {
@@ -70,15 +70,16 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 2.2rem;
+            font-size: 2rem;
             color: var(--primary);
+            font-weight: 600;
         }
 
         .problem-meta {
             display: flex;
             gap: 20px;
             font-size: 0.95rem;
-            color: #64748b;
+            color: #586069;
         }
 
         .meta-item {
@@ -90,144 +91,187 @@
 
         .meta-item i {
             color: var(--primary);
-            font-size: 1.1em;
+            font-size: 1em;
         }
 
         .code-preview {
             background: var(--bg-light);
-            border-radius: 8px;
-            padding: 18px;
-            font-family: 'Fira Code', monospace;
-            line-height: 1.6;
-            white-space: pre-wrap;
+            border-radius: var(--border-radius);
+            padding: 16px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            line-height: 1.45;
+            white-space: pre;
             overflow-x: auto;
+            font-size: 85%;
+            border: 1px solid var(--border-color);
         }
 
         .code-editor-container {
             background: white;
             border-radius: var(--border-radius);
             margin-top: 30px;
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
+            padding: 20px;
+            border: 1px solid var(--border-color);
         }
 
         .CodeMirror {
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             height: 500px;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.5;
         }
 
         .submit-btn {
-            background: var(--primary);
+            background: var(--success);
             color: white;
-            padding: 12px 30px;
+            padding: 8px 24px;
             border-radius: var(--border-radius);
             font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(26,115,232,0.2);
+            transition: all 0.2s;
+            border: none;
         }
 
         .submit-btn:hover {
-            background: #155eb4;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(26,115,232,0.3);
+            background: #2c974b;
+            transform: translateY(-1px);
         }
 
         .submit-btn:active {
             transform: translateY(0);
-            box-shadow: 0 2px 6px rgba(26,115,232,0.2);
         }
 
-        .status-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 14px 24px;
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-            font-size: 1.05rem;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .status-toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .status-success {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-left: 4px solid #66bb6a;
-        }
-
-        .status-error {
-            background: #ffebee;
-            color: #b71c1c;
-            border-left: 4px solid #ff4444;
-        }
-
-        .status-info {
-            background: #e3f2fd;
-            color: #0d47a1;
-            border-left: 4px solid #1a73e8;
-        }
-
-        /* Markdown 专用样式 */
+        /* GitHub风格的Markdown样式 */
         .markdown-content {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             line-height: 1.6;
+            word-wrap: break-word;
+            padding: 16px;
         }
 
         .markdown-content h1,
-        .markdown-content h2,
-        .markdown-content h3 {
-            color: var(--primary);
-            margin: 1.2em 0 0.6em;
-            border-bottom: 1px solid #eee;
+        .markdown-content h2 {
             padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .markdown-content h1 {
+            font-size: 2em;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5em;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 16px;
         }
 
         .markdown-content pre {
-            background: #2d2d2d;
-            padding: 1em;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1em 0;
+            background: var(--bg-light);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            overflow: auto;
+            margin: 16px 0;
+            border: 1px solid var(--border-color);
+            line-height: 1.45;
         }
 
         .markdown-content code {
-            font-family: 'Fira Code', monospace;
-            background: rgba(175, 184, 193, 0.2);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background: rgba(27,31,35,0.05);
             padding: 0.2em 0.4em;
-            border-radius: 4px;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+
+        .markdown-content pre code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
         }
 
         .markdown-content img {
             max-width: 100%;
-            border-radius: 8px;
-            margin: 1em 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-sizing: content-box;
+            background-color: #fff;
+            margin: 16px 0;
         }
 
         .markdown-content table {
+            border-spacing: 0;
             border-collapse: collapse;
-            margin: 1em 0;
+            display: block;
             width: 100%;
+            overflow: auto;
+            margin: 16px 0;
         }
 
         .markdown-content th,
         .markdown-content td {
-            border: 1px solid #dfe2e5;
-            padding: 0.6em 1em;
+            padding: 6px 13px;
+            border: 1px solid var(--border-color);
         }
 
         .markdown-content th {
+            font-weight: 600;
+            background: var(--bg-light);
+        }
+
+        .markdown-content tr {
+            background-color: #fff;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .markdown-content tr:nth-child(2n) {
             background-color: var(--bg-light);
+        }
+
+        .markdown-content blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid var(--border-color);
+            margin: 0 0 16px 0;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            padding-left: 2em;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content li {
+            word-wrap: break-all;
+        }
+
+        .markdown-content li > p {
+            margin-top: 16px;
+        }
+
+        .markdown-content li + li {
+            margin-top: 0.25em;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 22px;
+            color: #0366d6;
+            background-color: #f1f8ff;
+            border-radius: 2em;
+            margin-right: 8px;
+            margin-bottom: 8px;
         }
 
         @media (max-width: 768px) {
@@ -265,11 +309,11 @@
                     <!-- 标签区域 -->
                     <div class="meta-item">
                         <i class="fas fa-tags text-primary"></i>
-                        <div id="tagsContainer" class="d-flex align-items-center gap-1"></div>
+                        <div id="tagsContainer" class="d-flex align-items-center flex-wrap gap-1"></div>
                     </div>
                 </div>
                 <a href="#"
-                   class="btn btn-primary btn-sm d-flex align-items-center gap-1 transition-colors duration-300 hover:opacity-90"
+                   class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
                    th:href="@{/solve/list/{id}(id=${problem.id})}"
                    target="_self">
                     <i class="fas fa-book-open"></i>
@@ -281,60 +325,54 @@
 
     <!-- 题目描述 -->
     <div class="card info-card">
-        <div class="card-header bg-light d-flex align-items-center p-4">
-            <i class="fas fa-file-alt text-primary me-3"></i>
+        <div class="card-header">
             <h4 class="mb-0">题目描述</h4>
         </div>
-        <div class="card-body p-4 markdown-content" th:text="${problem.description}"></div>
+        <div class="markdown-content" th:text="${problem.description}"></div>
     </div>
 
     <!-- 输入格式 -->
     <div class="card info-card">
-        <div class="card-header bg-light d-flex align-items-center p-4">
-            <i class="fas fa-file-alt text-primary me-3"></i>
+        <div class="card-header">
             <h4 class="mb-0">输入格式</h4>
         </div>
-        <div class="card-body p-4 markdown-content" th:text="${problem.inputFormat}"></div>
+        <div class="markdown-content" th:text="${problem.inputFormat}"></div>
     </div>
 
     <!-- 输出格式 -->
     <div class="card info-card">
-        <div class="card-header bg-light d-flex align-items-center p-4">
-            <i class="fas fa-file-alt text-primary me-3"></i>
+        <div class="card-header">
             <h4 class="mb-0">输出格式</h4>
         </div>
-        <div class="card-body p-4 markdown-content" th:text="${problem.outputFormat}"></div>
+        <div class="markdown-content" th:text="${problem.outputFormat}"></div>
     </div>
 
     <!-- 输入输出样例 -->
     <div class="row g-4 mt-4">
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header bg-light d-flex align-items-center p-3">
-                    <i class="fas fa-sign-in-alt text-primary me-2"></i>
+                <div class="card-header">
                     <h5 class="mb-0">输入样例</h5>
                 </div>
-                <div class="card-body p-4 code-preview" th:utext="${problem.inputExample}"></div>
+                <div class="code-preview" th:utext="${problem.inputExample}"></div>
             </div>
         </div>
         <div class="col-md-6">
             <div class="card h-100">
-                <div class="card-header bg-light d-flex align-items-center p-3">
-                    <i class="fas fa-sign-out-alt text-primary me-2"></i>
+                <div class="card-header">
                     <h5 class="mb-0">输出样例</h5>
                 </div>
-                <div class="card-body p-4 code-preview" th:utext="${problem.outputExample}"></div>
+                <div class="code-preview" th:utext="${problem.outputExample}"></div>
             </div>
         </div>
     </div>
 
     <!-- 提示 -->
     <div class="card info-card mt-4">
-        <div class="card-header bg-light d-flex align-items-center p-4">
-            <i class="fas fa-lightbulb text-primary me-3"></i>
+        <div class="card-header">
             <h4 class="mb-0">提示</h4>
         </div>
-        <div class="card-body p-4 markdown-content" th:text="${problem.hint}"></div>
+        <div class="markdown-content" th:text="${problem.hint}"></div>
     </div>
 
     <!-- 代码提交区域 -->
@@ -370,14 +408,19 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- 代码编辑器脚本 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/clike/clike.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.3/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
 
 <script>
+    // 配置marked.js以符合GitHub风格
     marked.setOptions({
+        gfm: true,
         breaks: true,
+        pedantic: false,
+        smartLists: true,
+        smartypants: false,
         highlight: function(code, lang) {
             const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
             return hljs.highlight(code, { language: validLang }).value;
@@ -404,7 +447,7 @@
         ]
     });
 
-    // 渲染 Markdown 元素
+    // 渲染Markdown内容
     function renderMarkdownElements() {
         document.querySelectorAll('.markdown-content').forEach(element => {
             const rawText = element.textContent;
@@ -416,7 +459,9 @@
             element.innerHTML = safeHtml;
 
             // 渲染数学公式
-            MathJax.typesetPromise();
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise();
+            }
 
             // 高亮代码块
             element.querySelectorAll('pre code').forEach((block) => {
@@ -429,7 +474,7 @@
     const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
         lineNumbers: true,
         mode: 'text/x-c++src',
-        theme: 'monokai',
+        theme: 'github',
         indentUnit: 4,
         lineWrapping: true,
         autoCloseBrackets: true,
@@ -470,12 +515,12 @@ int main() {
         }
     });
 
-    // 新增获取标签函数
+    // 获取题目标签
     async function fetchProblemTags(problemId, token) {
         try {
-            const formdata=new FormData();
-            formdata.append('token',token);
-            formdata.append('pid',problemId);
+            const formdata = new FormData();
+            formdata.append('token', token);
+            formdata.append('pid', problemId);
             const response = await fetch('/problem/gettags', {
                 method: 'POST',
                 body: formdata
@@ -499,14 +544,26 @@ int main() {
 
     function showToast(message, type = 'info', duration = 3000) {
         const toast = document.createElement('div');
-        toast.className = `status-toast show status-${type}`;
+        toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '1000';
+        toast.style.transition = 'opacity 0.3s ease';
         toast.textContent = message;
         document.body.appendChild(toast);
 
         setTimeout(() => {
-            toast.classList.remove('show');
+            toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
         }, duration);
+    }
+
+    function formatTime(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
     // 页面加载初始化
@@ -519,19 +576,15 @@ int main() {
             return;
         }
 
-        // 初始化代码编辑器
-        editor.refresh();
-        if (typeof DOMPurify !== 'undefined') {
-            renderMarkdownElements();
-        }
-// 初始设置为C++17并加载模板
-        const languageSelect = document.getElementById('languageSelect');
-        languageSelect.value = 'cpp17'; // 确保下拉框显示正确
-        languageSelect.dispatchEvent(new Event('change')); // 触发语言变更事件
+        // 初始设置为C++17并加载模板
+        languageSelect.value = 'cpp17';
+        languageSelect.dispatchEvent(new Event('change'));
 
+        // 渲染Markdown内容
         if (typeof DOMPurify !== 'undefined') {
             renderMarkdownElements();
         }
+
         // 加载标签
         const problemId = document.querySelector('input[name="problemId"]').value;
         const token = localStorage.getItem('token');
@@ -542,10 +595,8 @@ int main() {
             if (tags.length > 0) {
                 tags.forEach(tag => {
                     const tagElement = document.createElement('span');
-                    tagElement.className = 'badge bg-secondary text-wrap';
-                    tagElement.style.fontSize = '0.85rem';
-                    tagElement.style.padding = '0.25rem 0.6rem';
-                    tagElement.textContent = tag.name || tag; // 兼容字符串/对象格式
+                    tagElement.className = 'tag';
+                    tagElement.textContent = tag.name || tag;
                     tagsContainer.appendChild(tagElement);
                 });
             } else {
@@ -557,15 +608,7 @@ int main() {
             }
         }
     });
-    function formatTime(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    }
+
     // 表单提交处理
     document.getElementById('submitForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -587,11 +630,12 @@ int main() {
             formData.append('pid', document.querySelector('input[name="problemId"]').value);
             formData.append('token', localStorage.getItem('token'));
             formData.append('option', option);
-            formData.append('cid',"0");
-            formData.append('uname',localStorage.getItem('name'));
+            formData.append('cid', "0");
+            formData.append('uname', localStorage.getItem('name'));
             const currentDate = new Date();
             const formattedTime = formatTime(currentDate);
-            formData.append("create_time",formattedTime);
+            formData.append("create_time", formattedTime);
+
             const response = await fetch('/problem/submit', {
                 method: 'POST',
                 body: formData

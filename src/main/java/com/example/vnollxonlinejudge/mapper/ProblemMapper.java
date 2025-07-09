@@ -28,7 +28,7 @@ public interface ProblemMapper {
     void updateProblem(long id,String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
 
 
-    @Select("SELECT * FROM problems Where open =1 LIMIT #{size} OFFSET #{offset}")
+    @Select("SELECT * FROM problems Where id>#{offset} AND open =1 LIMIT #{size} ")
     List<Problem> getProblemList(int offset,int size);
 
     @Select("SELECT COUNT(*) FROM problems WHERE open = 1 ")
