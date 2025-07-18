@@ -1,9 +1,6 @@
 package com.example.vnollxonlinejudge.service;
-
-import com.example.vnollxonlinejudge.domain.Problem;
-import com.example.vnollxonlinejudge.utils.Result;
-import com.example.vnollxonlinejudge.utils.RunResult;
-
+import com.example.vnollxonlinejudge.common.result.Result;
 public interface JudgeService {
-    RunResult judge(Problem problem, String code, String language);
+
+    String judgeSubmit(String code, String option, long pid, long uid, long cid, String create_time, String uname, int time, int memory);
 }

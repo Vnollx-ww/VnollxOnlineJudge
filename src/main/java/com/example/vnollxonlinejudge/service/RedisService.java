@@ -1,21 +1,9 @@
 package com.example.vnollxonlinejudge.service;
 
-import ch.qos.logback.classic.turbo.TurboFilter;
-import com.example.vnollxonlinejudge.domain.Submission;
-import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-
-import jakarta.annotation.PostConstruct;
 import redis.clients.jedis.resps.Tuple;
 
 import java.util.*;
 
-import static com.example.vnollxonlinejudge.utils.CalculateScore.calculateScore;
 
 public interface RedisService {
     void cacheSubmission(String userName, String title, String code,
@@ -29,4 +17,5 @@ public interface RedisService {
     long getTtl(String key);
     List<Tuple> getZset(String key);
     boolean IsExists(String key);
+    boolean tryLock(String lockKey,int expireTime);
 }

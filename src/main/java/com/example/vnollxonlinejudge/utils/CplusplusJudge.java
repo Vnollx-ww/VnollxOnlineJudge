@@ -1,7 +1,11 @@
 package com.example.vnollxonlinejudge.utils;
 
+import com.example.vnollxonlinejudge.common.result.RunResult;
+import com.example.vnollxonlinejudge.service.ProblemService;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -15,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class CplusplusJudge {
+    private static final Logger logger = LoggerFactory.getLogger(CplusplusJudge.class);
     private static final String MINIO_ENDPOINT = "http://localhost:9000";
     private static final String MINIO_ACCESS_KEY = "vnollxvnollx";
     private static final String MINIO_SECRET_KEY = "vnollxvnollxvnollx";
@@ -122,6 +127,7 @@ public class CplusplusJudge {
                     }
                 } else {
                     finalResult.setStatus("判题错误");
+                    logger.error("判题过程中出错: ");  // 记录完整堆栈
                     finalResult.getFiles().setStderr("Failed to execute test case");
                 }
             }
@@ -134,6 +140,7 @@ public class CplusplusJudge {
         } catch (Exception e) {
             RunResult result = new RunResult();
             result.setStatus("判题错误");
+            logger.error("判题过程中出错: ", e);  // 记录完整堆栈
             result.setExitStatus(1);
             result.setFiles(new RunResult.Files());
             result.getFiles().setStderr("判题过程中出错: " + e.getMessage());

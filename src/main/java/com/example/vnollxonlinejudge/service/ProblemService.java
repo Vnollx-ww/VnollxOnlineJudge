@@ -1,23 +1,23 @@
 package com.example.vnollxonlinejudge.service;
+import com.example.vnollxonlinejudge.common.result.Result;
+import com.example.vnollxonlinejudge.domain.Problem;
 
-import com.example.vnollxonlinejudge.utils.Result;
+import java.util.List;
 
 public interface ProblemService {
-    Result createProblem(String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
+    void createProblem(String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
 
-    Result deleteProblem(long id);
-    Result updateProblem(long id,String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
+    void deleteProblem(long id);
+    void updateProblem(long id,String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
 
-    Result getProblemInfo(long pid,long cid);
+    Problem getProblemInfo(long pid, long cid);
 
-    Result submitCodeToProblem(String code,String option,long pid,long uid,long cid,String create_time,String uname);
+    List<Problem> getProblemList(int offset, int size);
+    int getProblemCount();
+    List<String> getTagNames(long pid);
+    List<Problem> getProblemListByKeywords(String name, long pid, int offset, int size);
 
-    Result getProblemList(int offset,int size);
-    Result getProblemCount();
-    Result getTagNames(long pid);
-    Result getProblemListByKeywords(String name, long pid, int offset, int size);
-
-    Result getCountByKeywords(String name, long pid);
+    int getCountByKeywords(String name, long pid);
     boolean judgeIsSolve(long pid,long uid,long cid);
     void updatePassCount(long pid, int ok);
     void addUserSolveRecord(long pid,long uid,long cid);

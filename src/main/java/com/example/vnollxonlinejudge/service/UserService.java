@@ -1,16 +1,17 @@
 package com.example.vnollxonlinejudge.service;
 
-
 import com.example.vnollxonlinejudge.domain.User;
-import com.example.vnollxonlinejudge.utils.Result;
+import com.example.vnollxonlinejudge.domain.UserSolvedProblem;
+
+import java.util.List;
 
 public interface UserService {
-    Result loginService(String email, String password);
-    Result registService(String name,String password,String email);
-    Result getUserById(long id);
-    Result getSolveProblem(long uid);
-    Result getAllUser();
-    Result updatePassword(String old_password,String password,long uid);
-    Result updateUserInfo(String email,String name,long uid);
-    Result updateSubmitCount(long uid,int ok);
+    String login(String email, String password);
+    void register(String name,String password,String email);
+    User getUserById(long id);
+    List<UserSolvedProblem> getSolveProblem(long uid);
+    List<User> getAllUser();
+    void updatePassword(String old_password,String password,long uid);
+    void updateUserInfo(String email,String name,long uid);
+    void updateSubmitCount(long uid,int ok);
 }

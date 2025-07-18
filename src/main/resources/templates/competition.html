@@ -405,7 +405,7 @@
             formData.append('token',localStorage.getItem('token'));
             const response = await fetch('/competition/judgeisopen', { method: 'POST', body: formData });
             const data = await response.json();
-            if (data.code === 200&&data.msg!=="") {
+            if (data.code !== 200&&data.msg!=="") {
                 showToast(data.msg || '竞赛未开放', 'error');
                 setTimeout(() => window.location.href = `/competition.html`, 1500);
                 return;
@@ -456,9 +456,9 @@
             });
 
             const data = await response.json();
+            console.log(data);
             const problemList = document.getElementById('problem-list');
             problemList.innerHTML = '';
-
             data.data.forEach((problem, index) => {
                 const row = document.createElement('tr');
                 const number = String.fromCharCode('A'.charCodeAt(0) + index);

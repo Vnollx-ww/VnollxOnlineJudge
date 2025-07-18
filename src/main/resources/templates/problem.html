@@ -249,7 +249,7 @@
         }
 
         .markdown-content li {
-            word-wrap: break-all;
+            word-wrap: break-word;
         }
 
         .markdown-content li > p {
@@ -300,11 +300,11 @@
                 <div>
                     <div class="meta-item">
                         <i class="fas fa-clock"></i>
-                        <span th:text="'时间限制：' + ${problem.timeLimit} + ' ms'"></span>
+                        <span id="time" th:text="'时间限制：' + ${problem.timeLimit} + ' ms'"></span>
                     </div>
                     <div class="meta-item">
                         <i class="fas fa-memory"></i>
-                        <span th:text="'内存限制：' + ${problem.memoryLimit} + ' MB'"></span>
+                        <span id="memory" th:text="'内存限制：' + ${problem.memoryLimit} + ' MB'"></span>
                     </div>
                     <!-- 标签区域 -->
                     <div class="meta-item">
@@ -623,7 +623,14 @@ int main() {
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>提交中...';
+        const timeText = document.getElementById('time').textContent;
+// 提取纯数值：通过全角冒号":"分割，取后面部分再通过空格分割取第一个数字
+        const timeValue = timeText.split('：')[1].split(' ')[0];
 
+// 获取内存限制元素的文本（例如："内存限制：256 MB"）
+        const memoryText = document.getElementById('memory').textContent;
+// 提取纯数值：同上逻辑
+        const memoryValue = memoryText.split('：')[1].split(' ')[0];
         try {
             const formData = new FormData();
             formData.append('code', editor.getValue());
@@ -631,12 +638,14 @@ int main() {
             formData.append('token', localStorage.getItem('token'));
             formData.append('option', option);
             formData.append('cid', "0");
+            formData.append('time',timeValue);
+            formData.append('memory',memoryValue);
             formData.append('uname', localStorage.getItem('name'));
             const currentDate = new Date();
             const formattedTime = formatTime(currentDate);
             formData.append("create_time", formattedTime);
 
-            const response = await fetch('/problem/submit', {
+            const response = await fetch('/judge/submit', {
                 method: 'POST',
                 body: formData
             });

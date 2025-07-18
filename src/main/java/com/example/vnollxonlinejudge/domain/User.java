@@ -1,58 +1,21 @@
 package com.example.vnollxonlinejudge.domain;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
-@Table(name = "users")
-@Entity
+@Table(name = "user")
+@Data
 public class User {
     // 注意属性名要与数据表中的字段名一致
     // 主键自增int(10)对应long
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
 
-    public int getPenaltyTime() {
-        return penaltyTime;
-    }
-
-    public void setPenaltyTime(int penaltyTime) {
-        this.penaltyTime = penaltyTime;
-    }
     @Column(name = "penalty_time")
     private int penaltyTime;
     @Column(name = "name")
     private String name;
-    public String getPassword() {
-        return password;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     @Column(name = "password")
     private String password;
@@ -61,42 +24,17 @@ public class User {
     @Column(name = "submit_count")
     private int submitCount;
 
-    public int getSubmitCount() {
-        return submitCount;
-    }
-
-    public void setSubmitCount(int submitCount) {
-        this.submitCount = submitCount;
-    }
-
-    public int getPassCount() {
-        return passCount;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public void setPassCount(int passCount) {
-        this.passCount = passCount;
-    }
     @Column(name = "pass_count")
     private int passCount;
     @Column(name = "version")
     private int version;
 
-    public String getIdentity() {
-        return identity;
-    }
-
-    public void setIdentity(String identity) {
-        this.identity = identity;
-    }
-
     @Column(name="identity")
     private String identity;
+    public User(String name,String password,String email){
+        this.name=name;
+        this.password=password;
+        this.email=email;
+    }
+    public User(){}
 }

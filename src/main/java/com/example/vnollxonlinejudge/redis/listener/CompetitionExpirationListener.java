@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.example.vnollxonlinejudge.domain.Problem;
 import com.example.vnollxonlinejudge.mapper.*;
+import com.example.vnollxonlinejudge.service.CompetitionProblemService;
+import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import com.example.vnollxonlinejudge.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +26,9 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
     @Autowired
     private JedisPool jedisPool;
     @Autowired
-    private Competition_UsersMapper competitionUsersMapper;
+    private CompetitionUserService competitionUserService;
     @Autowired
-    private Competition_ProblemsMapper competitionProblemsMapper;
+    private CompetitionProblemService competitionProblemService;
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
     private static final String USER_PENALTY_KEY = "competition_user_penalty:%d:%s"; // cid:uid
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
@@ -102,8 +104,8 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
             int passCount = Integer.parseInt(jedis.get(userPassKey));
             int penaltyTime = Integer.parseInt(jedis.get(userPenaltyKey));
             // 更新数据库记录
-            competitionUsersMapper.updatePenaltyTime(userName,cid,penaltyTime);
-            competitionUsersMapper.updatePassCount(userName,passCount);
+            competitionUserService.updatePenaltyTime(userName,cid,penaltyTime);
+            competitionUserService.updatePassCount(userName,passCount);
         }
     }
 
@@ -118,14 +120,14 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
             Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
 
             for (Problem problem : problemMap.values()) {
-                int pid = problem.getId();
+                long pid = problem.getId();
                 String problemPassKey = String.format(PROBLEM_PASS_KEY, cid, pid);
                 String problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, pid);
 
                 int passCount = Integer.parseInt(jedis.get(problemPassKey));
                 int submitCount = Integer.parseInt(jedis.get(problemSubmitKey));
 
-                competitionProblemsMapper.updateCount(pid,passCount,submitCount,cid);
+                competitionProblemService.updateCount(pid,passCount,submitCount,cid);
             }
         }
     }

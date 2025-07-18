@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.producer;
 
 
+import com.example.vnollxonlinejudge.domain.JudgeInfo;
 import com.example.vnollxonlinejudge.domain.Submission;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,18 +20,18 @@ public class SubmissionProducer {
     private RabbitTemplate rabbitTemplate;
     @Autowired
     private ObjectMapper objectMapper;
-    public String sendSubmission(int priority, Submission submission){
+    public String sendSubmission(int priority, JudgeInfo judgeInfo){
         try {
             String correlationId = UUID.randomUUID().toString();
             Message message = MessageBuilder
-                    .withBody(objectMapper.writeValueAsBytes(submission))
+                    .withBody(objectMapper.writeValueAsBytes(judgeInfo))
                     .setPriority(priority)
                     .setReplyTo("replyQueue")
                     .setCorrelationId(correlationId)
                     .build();
             Message responseMessage = rabbitTemplate.sendAndReceive(
-                    "submission",
-                    "submission.publish",
+                    "judge",
+                    "judge.submit",
                     message
             );
             if (responseMessage == null) {

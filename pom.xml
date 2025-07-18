@@ -113,7 +113,25 @@
             <artifactId>guava</artifactId>
             <version>32.1.3-jre</version> <!-- 升级到最新稳定版 -->
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
 
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.32</version> <!-- 检查最新版本 -->
+            <scope>provided</scope> <!-- 仅编译时使用 -->
+        </dependency>
     </dependencies>
 
     <build>

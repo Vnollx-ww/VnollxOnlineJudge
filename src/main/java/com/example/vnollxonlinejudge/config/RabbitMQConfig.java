@@ -43,13 +43,13 @@ public class RabbitMQConfig {
 
     @Bean
     public DirectExchange submissionExchange() {
-        return new DirectExchange("submission");
+        return new DirectExchange("judge");
     }
     @Bean
     public Binding binding(Queue submissionQueue, DirectExchange submissionExchange) {
         return BindingBuilder.bind(submissionQueue)
                 .to(submissionExchange)
-                .with("submission.publish");
+                .with("judge.submit");
     }
     @Bean
     public ConnectionFactory connectionFactory() {

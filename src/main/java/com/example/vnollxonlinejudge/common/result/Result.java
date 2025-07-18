@@ -1,4 +1,4 @@
-package com.example.vnollxonlinejudge.utils;
+package com.example.vnollxonlinejudge.common.result;
 
 public class Result<T> {
     private int code;

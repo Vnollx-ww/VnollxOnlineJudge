@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.utils;
 
+import com.example.vnollxonlinejudge.common.result.RunResult;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import org.springframework.core.ParameterizedTypeReference;

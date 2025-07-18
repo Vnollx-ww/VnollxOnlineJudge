@@ -2,18 +2,18 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 
 import com.example.vnollxonlinejudge.domain.Submission;
-import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
-import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-
+import com.example.vnollxonlinejudge.common.result.Result;
 import jakarta.annotation.PostConstruct;
+import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.resps.Tuple;
 
 import java.util.*;
@@ -22,7 +22,7 @@ import static com.example.vnollxonlinejudge.utils.CalculateScore.calculateScore;
 
 @Service
 public class RedisServiceImpl implements RedisService {
-    private static final Logger logger = LoggerFactory.getLogger(ProblemService.class);
+    private static final Logger logger = LoggerFactory.getLogger(RedisService.class);
     private static final String SUBMISSION_QUEUE_KEY = "submission:queue";
     private static final String SUBMISSION_LOCK_KEY = "submission:lock";
     private static final int BATCH_SIZE = 50;
@@ -32,26 +32,17 @@ public class RedisServiceImpl implements RedisService {
     @Autowired
     private SubmissionService submissionService;
 
-
     @PostConstruct
     public void init() {
         new Thread(this::scheduledFlushTask).start();
     }
-    private void scheduledFlushTask() {
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                Thread.sleep(FLUSH_INTERVAL);
-                flushSubmissionsToDB();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.warn("刷写线程被中断", e);
-            }
-        }
+    @Scheduled(fixedRate = 5000)
+    public void scheduledFlushTask() {
+        flushSubmissionsToDB();
     }
     private void flushSubmissionsToDB() {
         String lockId = null;
         Jedis jedis = null;
-
         try {
             jedis = jedisPool.getResource();
             lockId = acquireLock(jedis, SUBMISSION_LOCK_KEY, 5000);
@@ -160,8 +151,6 @@ public class RedisServiceImpl implements RedisService {
             if (!jedis.exists(key)) {
                 jedis.setex(key, seconds, value);
             }
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
     }
 
@@ -169,10 +158,7 @@ public class RedisServiceImpl implements RedisService {
     public String getValueByKey(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.get(key);
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
-        return null;
     }
 
     @Override
@@ -184,8 +170,6 @@ public class RedisServiceImpl implements RedisService {
                 jedis.expire(key, seconds + 600);
                 return true;
             }
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
         return false;
     }
@@ -200,8 +184,6 @@ public class RedisServiceImpl implements RedisService {
 
             long newScore = calculateScore((int) passCount, penaltyTime);
             jedis.zadd(rankingKey, newScore, userName);
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
     }
 
@@ -213,8 +195,6 @@ public class RedisServiceImpl implements RedisService {
             int passCount = Integer.parseInt(jedis.get(userPassKey));
             long newScore = calculateScore(passCount, (int) newPenalty);
             jedis.zadd(rankingKey, newScore, userName);
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
     }
 
@@ -222,29 +202,29 @@ public class RedisServiceImpl implements RedisService {
     public long getTtl(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.ttl(key);
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
-        return 0;
     }
 
     @Override
     public List<Tuple> getZset(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.zrangeWithScores(key, 0, -1);
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
-        return null;
     }
 
     @Override
     public boolean IsExists(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.exists(key);
-        }catch (Exception e) {
-            logger.error("Redis操作异常", e);
         }
-        return false;
+    }
+    @Override
+    public boolean tryLock(String lockKey,int expireTime) {
+        String requestId = UUID.randomUUID().toString();
+        try (Jedis jedis = jedisPool.getResource()) {
+            SetParams setParams = SetParams.setParams().nx().px(expireTime);
+            String result = jedis.set(lockKey, requestId, setParams);
+            return "OK".equals(result);
+        }
     }
 }

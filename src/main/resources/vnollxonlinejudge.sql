@@ -43,13 +43,13 @@ create table competition_problems
     constraint problem_id
         unique (problem_id, competition_id),
     constraint competition_problems_ibfk_1
-        foreign key (problem_id) references problems (id),
+        foreign key (problem_id) references problem (id),
     constraint competition_problems_ibfk_2
-        foreign key (competition_id) references competitions (id)
+        foreign key (competition_id) references competition (id)
 );
 
 create index competition_id
-    on competition_problems (competition_id);
+    on competition_problem (competition_id);
 
 create table solves
 (
@@ -97,14 +97,14 @@ create table problem_tags
     constraint idx_problem_tag
         unique (problem_id, tag_name),
     constraint fk_problem_tags_tag_name
-        foreign key (tag_name) references tags (name),
+        foreign key (tag_name) references tag (name),
     constraint problem_tags_ibfk_1
-        foreign key (problem_id) references problems (id)
+        foreign key (problem_id) references problem (id)
             on delete cascade
 );
 
 create index idx_problem_id
-    on problem_tags (problem_id);
+    on problem_tag (problem_id);
 
 create table user_solved_problems
 (
@@ -115,7 +115,7 @@ create table user_solved_problems
 );
 
 create index problem_id
-    on user_solved_problems (problem_id);
+    on user_solved_problem (problem_id);
 
 create table users
 (
@@ -141,13 +141,13 @@ create table competition_users
     constraint unique_competition_user
         unique (competition_id, user_id),
     constraint competition_users_ibfk_1
-        foreign key (competition_id) references competitions (id)
+        foreign key (competition_id) references competition (id)
             on update cascade on delete cascade,
     constraint competition_users_ibfk_2
-        foreign key (user_id) references users (id)
+        foreign key (user_id) references user (id)
             on update cascade on delete cascade
 );
 
 create index user_id
-    on competition_users (user_id);
+    on competition_user (user_id);
 

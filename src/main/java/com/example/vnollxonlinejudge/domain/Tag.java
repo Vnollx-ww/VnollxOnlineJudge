@@ -1,12 +1,11 @@
 package com.example.vnollxonlinejudge.domain;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
-@Table(name = "tags")
+@Table(name = "tag")
+@Data
 public class Tag {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
     @Column(name = "name")
     private String name;
 

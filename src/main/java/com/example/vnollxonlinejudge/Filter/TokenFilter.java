@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebFilter(filterName = "TokenFilter", urlPatterns = {"/user/*", "/problem/*","/submission/*","/solve/*","/competition/*"})
+@WebFilter(filterName = "TokenFilter", urlPatterns = {"/user/*", "/problem/*","/submission/*","/solve/*","/competition/*","/judge/*"})
 public class TokenFilter implements Filter {
     private static final String TOKEN_PARAM = "token";
     private static final String[] EXCLUDED_PATHS = {

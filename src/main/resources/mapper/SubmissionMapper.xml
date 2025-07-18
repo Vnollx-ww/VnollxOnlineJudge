@@ -2,7 +2,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.vnollxonlinejudge.mapper.SubmissionMapper">
     <insert id="batchInsert">
-        INSERT INTO submissions (
+        INSERT INTO submission (
         user_name, problem_name, status, create_time,
         language, uid, pid, time, code, cid
         )

@@ -2,18 +2,10 @@ package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.domain.Problem;
 import com.example.vnollxonlinejudge.service.ProblemService;
-import com.example.vnollxonlinejudge.utils.Result;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.mybatis.logging.Logger;
-import org.mybatis.logging.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
-
-import jakarta.servlet.http.HttpServletRequest;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-
+import com.example.vnollxonlinejudge.common.result.Result;
 @RestController
 @RequestMapping("/problem")
 public class ProblemController {
@@ -22,8 +14,7 @@ public class ProblemController {
     @GetMapping("/{id}")
     public ModelAndView problemDetail(@PathVariable Long id) {
         ModelAndView modelAndView = new ModelAndView();
-        Result result = problemService.getProblemInfo(id, 0);
-        Problem problem = (Problem) result.getData();
+        Problem problem = problemService.getProblemInfo(id, 0);
         if (problem == null) {
             modelAndView.setViewName("error/404");
         } else {
@@ -33,68 +24,87 @@ public class ProblemController {
         return modelAndView;
     }
     @PostMapping("/create")
-    public Result createProblem(@RequestParam String title, @RequestParam String description,@RequestParam String timelimit,@RequestParam String memorylimit,@RequestParam String difficulty,@RequestParam String inputexample,@RequestParam String outputexample,@RequestParam String datazip){
-        return problemService.createProblem(title,description,Integer.parseInt(timelimit),Integer.parseInt(memorylimit),difficulty,inputexample,outputexample,datazip);
+    public Result createProblem(
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam String timelimit,@RequestParam String memorylimit,
+            @RequestParam String difficulty,@RequestParam String inputexample,
+            @RequestParam String outputexample,@RequestParam String datazip
+    ){
+        problemService.createProblem(
+                title,description,Integer.parseInt(timelimit),
+                Integer.parseInt(memorylimit),difficulty,
+                inputexample,outputexample,datazip
+        );
+        return Result.Success("创建题目成功");
     }
     @PostMapping("/delete")
     public Result deleteProblem(@RequestParam String id){
-        return problemService.deleteProblem(Long.parseLong(id));
+        problemService.deleteProblem(Long.parseLong(id));
+        return Result.Success("删除题目成功");
     }
     @PostMapping("/get")
     public Result getProblemById(@RequestParam String id){
-        return problemService.getProblemInfo(Long.parseLong(id),0);
-    }
-    @PostMapping("/submit")
-    public Result submitCodeToProblem(
-            @RequestParam String code,
-            @RequestParam String option,
-            @RequestParam String pid,
-            @RequestParam String uname,
-            HttpServletRequest request,
-            @RequestParam String cid,
-            @RequestParam String create_time // 直接接收字符串
-    ) {
-        String userId = (String) request.getAttribute("uid");
-        return problemService.submitCodeToProblem(
-                code,
-                option,
-                Long.parseLong(pid),
-                Long.parseLong(userId),
-                Long.parseLong(cid),
-                create_time,
-                uname
-        );
+        return Result.Success(problemService.getProblemInfo(Long.parseLong(id),0),"获取题目信息成功");
     }
     @PostMapping("/update")
-    public Result updateProblem(@RequestParam String id,@RequestParam String title, @RequestParam String description,@RequestParam String timelimit,@RequestParam String memorylimit,@RequestParam String difficulty,@RequestParam String inputexample,@RequestParam String outputexample,@RequestParam String datazip){
-        return problemService.updateProblem(Long.parseLong(id),title,description,Integer.parseInt(timelimit),Integer.parseInt(memorylimit),difficulty,inputexample,outputexample,datazip);
+    public Result updateProblem(
+            @RequestParam String id,@RequestParam String title,
+            @RequestParam String description,@RequestParam String timelimit,
+            @RequestParam String memorylimit,@RequestParam String difficulty,
+            @RequestParam String inputexample,@RequestParam String outputexample,
+            @RequestParam String datazip
+    ){
+        problemService.updateProblem(
+                Long.parseLong(id),title,description,
+                Integer.parseInt(timelimit),Integer.parseInt(memorylimit),
+                difficulty,inputexample,outputexample,datazip
+        );
+        return Result.Success("更新题目信息成功");
     }
     @PostMapping("/getlist")
     public Result getProblemList(@RequestParam String offset,@RequestParam String size){
-        return problemService.getProblemList(Integer.parseInt(size)*Integer.parseInt(offset),Integer.parseInt(size));
+        return Result.Success(
+                problemService.getProblemList(
+                        Integer.parseInt(size)*Integer.parseInt(offset),Integer.parseInt(size)
+                )
+                ,"获取题目列表成功");
     }
     @PostMapping("/count")
     public Result getProblemCount(){
-        return problemService.getProblemCount();
+        return Result.Success(problemService.getProblemCount(),"获取题目总数成功");
     }
     @PostMapping("/gettags")
     public Result getTags(@RequestParam long pid){
-        return problemService.getTagNames(pid);
+
+        return Result.Success(problemService.getTagNames(pid),"获取题目标签成功");
     }
     @PostMapping("/search")
     public Result getProblemListByKeyWords(@RequestParam String keywords,@RequestParam String offset,@RequestParam String size){
         if(keywords != null && !keywords.isEmpty() && keywords.chars().allMatch(Character::isDigit)){
-            return problemService.getProblemListByKeywords(keywords,Long.parseLong(keywords),Integer.parseInt(offset),Integer.parseInt(size));
+            return Result.Success(
+                    problemService.getProblemListByKeywords(
+                            keywords,Long.parseLong(keywords),
+                            Integer.parseInt(offset),Integer.parseInt(size)
+                    )
+            ,"搜索题目成功");
         }else{
-            return problemService.getProblemListByKeywords(keywords,0,Integer.parseInt(offset),Integer.parseInt(size));
+            return Result.Success(
+                    problemService.getProblemListByKeywords(
+                            keywords,0,Integer.parseInt(offset),Integer.parseInt(size)
+                    )
+                    ,"搜索题目成功");
         }
     }
     @PostMapping("/search/count")
     public Result getCountByKeyWords(@RequestParam String keywords){
         if(keywords != null && !keywords.isEmpty() && keywords.chars().allMatch(Character::isDigit)){
-            return problemService.getCountByKeywords(keywords,Long.parseLong(keywords));
+            return Result.Success(
+                    problemService.getCountByKeywords(keywords,Long.parseLong(keywords))
+                    ,"获取关键字题目总数成功");
         }else{
-            return problemService.getCountByKeywords(keywords,0);
+            return Result.Success(
+                    problemService.getCountByKeywords(keywords,0)
+                    ,"获取关键字题目总数成功");
         }
     }
 }

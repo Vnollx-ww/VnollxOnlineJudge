@@ -1,17 +1,20 @@
 package com.example.vnollxonlinejudge.service;
+import com.example.vnollxonlinejudge.common.result.Result;
+import com.example.vnollxonlinejudge.domain.Competition;
+import com.example.vnollxonlinejudge.domain.Problem;
+import com.example.vnollxonlinejudge.domain.User;
 
-import com.example.vnollxonlinejudge.utils.Result;
+import java.util.List;
 
 public interface CompetitionService {
-    Result getCompetitionById(long id);
+    Competition getCompetitionById(long id);
 
-    Result createCompetition(String title,String description,String begin_time,String end_time,String password);
-    Result getCompetitionList();
-    Result confirmPassword(Long id,String password);
+    void createCompetition(String title,String description,String begin_time,String end_time,String password);
+    List<Competition> getCompetitionList();
+    void confirmPassword(Long id,String password);
 
-    Result getProblemList(long cid);
-    Result getUserList(long cid);
-    Result judgeIsOpenById(String now, long id);
-    Result judgeIsEndById(String now,long id);
-    void addUserRecord(long cid, long uid, String uname);
+    List<Problem> getProblemList(long cid);
+    List<User> getUserList(long cid);
+    void judgeIsOpenById(String now, long id);
+    void judgeIsEndById(String now,long id);
 }

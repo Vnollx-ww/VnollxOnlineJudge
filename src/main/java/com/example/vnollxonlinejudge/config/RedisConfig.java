@@ -14,32 +14,39 @@ import redis.clients.jedis.JedisPoolConfig;
 public class RedisConfig {
 
     // Redis 服务器配置
-    private String HOST="localhost";
-    private int PORT=6379;
-    private final int TIMEOUT = 2000;
+    @Value("${spring.data.redis.host}")
+    private String host;
+    @Value("${spring.data.redis.port}")
+    private int port;
+    @Value("${spring.data.redis.timeout}")
+    private int timeout;
 
-    // 连接池配置参数
-    private final int MAX_TOTAL = 100;
-    private final int MAX_IDLE = 10;
-    private final int MIN_IDLE = 5;
-    private final boolean TEST_ON_BORROW = true;
-    private final boolean TEST_ON_RETURN = true;
+    @Value("${spring.data.redis.jedis.pool.max-active}")
+    private int maxTotal;
+
+    @Value("${spring.data.redis.jedis.pool.max-idle}")
+    private int maxIdle;
+
+    @Value("${spring.data.redis.jedis.pool.min-idle}")
+    private int minIdle;
+
 
     @Bean
     public JedisPoolConfig jedisPoolConfig() {
+
         JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxTotal(MAX_TOTAL);
-        config.setMaxIdle(MAX_IDLE);
-        config.setMinIdle(MIN_IDLE);
-        config.setTestOnBorrow(TEST_ON_BORROW);
-        config.setTestOnReturn(TEST_ON_RETURN);
+        config.setMaxTotal(maxTotal);
+        config.setMaxIdle(maxIdle);
+        config.setMinIdle(minIdle);
+        config.setTestOnBorrow(true);
+        config.setTestOnReturn(true);
         config.setJmxEnabled(false); // 禁用 JMX
         return config;
     }
 
     @Bean
     public JedisPool jedisPool(JedisPoolConfig jedisPoolConfig) {
-        return new JedisPool(jedisPoolConfig, HOST, PORT, TIMEOUT);
+        return new JedisPool(jedisPoolConfig, host, port, timeout);
     }
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory) {

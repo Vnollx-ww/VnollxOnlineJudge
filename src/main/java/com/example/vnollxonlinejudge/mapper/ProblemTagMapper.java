@@ -1,0 +1,13 @@
+package com.example.vnollxonlinejudge.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.vnollxonlinejudge.domain.ProblemTag;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
+
+@Mapper
+public interface ProblemTagMapper extends BaseMapper<ProblemTag> {
+
+}

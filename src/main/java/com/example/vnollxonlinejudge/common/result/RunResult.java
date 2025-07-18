@@ -1,4 +1,4 @@
-package com.example.vnollxonlinejudge.utils;
+package com.example.vnollxonlinejudge.common.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

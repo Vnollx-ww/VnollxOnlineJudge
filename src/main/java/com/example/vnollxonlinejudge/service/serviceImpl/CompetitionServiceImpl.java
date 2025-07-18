@@ -2,36 +2,32 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.domain.*;
+import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
-import com.example.vnollxonlinejudge.service.CompetitionService;
-import com.example.vnollxonlinejudge.service.RedisService;
-import com.example.vnollxonlinejudge.service.UserService;
-import com.example.vnollxonlinejudge.utils.Result;
+import com.example.vnollxonlinejudge.service.*;
 import com.example.vnollxonlinejudge.utils.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.resps.Tuple;
-
+import com.example.vnollxonlinejudge.common.result.Result;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-public class CompetitionServiceImpl implements CompetitionService {
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Competition> implements CompetitionService {
+    private static final Logger logger = LoggerFactory.getLogger(CompetitionService.class);
     @Autowired
-    private CompetitionMapper competitionMapper;
+    private CompetitionUserService competitionUserService;
     @Autowired
-    private Competition_ProblemsMapper competition_problemsMapper;
+    private CompetitionProblemService competitionProblemService;
     @Autowired
-    private Competition_UsersMapper competition_usersMapper;
-    @Autowired
-    private ProblemMapper problemMapper;
+    private ProblemService problemService;
     @Autowired
     private RedisService redisService;
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
@@ -41,66 +37,49 @@ public class CompetitionServiceImpl implements CompetitionService {
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
     @Override
-    public Result getCompetitionById(long id) {
-        try {
-            Competition competition = competitionMapper.getCompetitionById(id);
-            if (competition == null) {
-                return Result.LogicError("比赛不存在");
-            }
-            competition.setPassword("无权限查看");
-            return Result.Success(competition, "获取比赛信息成功");
-        }catch (Exception e) {
-            logger.error("查询比赛失败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
+    public Competition getCompetitionById(long id) {
+        Competition competition = this.baseMapper.selectById(id);
+        if (competition == null) {
+            throw new BusinessException("比赛不存在");
         }
+        competition.setPassword("无权限查看"); // 隐藏密码信息
+        return competition;
     }
     @Override
-    public Result createCompetition(String title, String description, String begin_time, String end_time, String password) {
-        try {
-            boolean ok=false;
-            if(!Objects.equals(password, ""))ok=true;
-            competitionMapper.createCompetition(title,description,begin_time,end_time,password,ok);
-            return Result.Success("创建比赛成功");
-        } catch (Exception e) {
-            logger.error("创建比赛失败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
+    public void createCompetition(String title, String description, String begin_time, String end_time, String password) {
+        boolean hasPassword = !Objects.equals(password, "");
+        Competition competition = new Competition();
+        competition.setTitle(title);
+        competition.setDescription(description);
+        competition.setBeginTime(begin_time);
+        competition.setEndTime(end_time);
+        competition.setPassword(password);
+        competition.setNeedPassword(hasPassword);;
+
+        this.save(competition);
+    }
+
+    @Override
+    public List<Competition> getCompetitionList() {
+        List<Competition> competitionList = this.list();
+        // 隐藏所有竞赛的密码信息
+        competitionList.forEach(c -> c.setPassword("无权限查看"));
+        return competitionList;
+    }
+
+    @Override
+    public void confirmPassword(Long id,String password) {
+        Competition competition = this.getById(id);
+        if (competition == null) {
+            throw new BusinessException("比赛不存在");
+        }
+        if (!Objects.equals(competition.getPassword(), password)) {
+            throw new BusinessException("密码错误");
         }
     }
 
     @Override
-    public Result getCompetitionList() {
-        try {
-            List<Competition> competitionList=competitionMapper.getCompetitionList();
-            for (Competition competition : competitionList) {
-                competition.setPassword("无权限查看");
-            }
-            return Result.Success(competitionList,"查询比赛列表成功");
-        } catch (Exception e) {
-            logger.error("查询比赛失列表败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
-        }
-    }
-
-    @Override
-    public Result confirmPassword(Long id,String password) {
-        try{
-            Competition competition=competitionMapper.getCompetitionById(id);
-            if(competition==null){
-                return Result.LogicError("比赛不存在");
-            }
-            if(!Objects.equals(competition.getPassword(), password)){
-                return Result.LogicError("密码错误");
-            }
-            return Result.Success("密码正确");
-        }catch (Exception e){
-            logger.error("验证密码失败: ",e);
-            return Result.SystemError("服务器错误，请联系管理员");
-        }
-    }
-
-    @Override
-    public Result getProblemList(long cid) {
-        try {
+    public List<Problem> getProblemList(long cid) {
             String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey(cacheKey);
             List<Problem> problems = new ArrayList<>();
@@ -126,12 +105,14 @@ public class CompetitionServiceImpl implements CompetitionService {
                 redisService.setkey(cacheKey,updatedProblemsJson,ttlSeconds+600);
 
             } else {
-                List<Competition_Problem> pids = competition_problemsMapper.getProblemList(cid);
+                List<CompetitionProblem> pids = competitionProblemService.getProblemList(cid);
                 problems = new ArrayList<>();
-                String endTimeStr = competitionMapper.getEndTimeById(cid);
+                QueryWrapper<Competition> wrapper=new QueryWrapper<>();
+                wrapper.eq("id",cid).select("end_time");
+                String endTimeStr = this.baseMapper.selectOne(wrapper).getEndTime();
                 long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
-                for (Competition_Problem competitionProblem : pids) {
-                    Problem problem = problemMapper.getProblemById(competitionProblem.getProblemId());
+                for (CompetitionProblem competitionProblem : pids) {
+                    Problem problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid);
                     String problemSubmitKey=String.format(PROBLEM_SUBMIT_KEY, cid, problem.getId());
                     String problemPassKey=String.format(PROBLEM_PASS_KEY, cid, problem.getId());
                     if (!redisService.IsExists(problemSubmitKey)&&ttlSeconds>0) {
@@ -147,7 +128,7 @@ public class CompetitionServiceImpl implements CompetitionService {
                     problems.add(problem);
                 }
                 if (!problems.isEmpty()&&ttlSeconds>0) {
-                    Map<Integer, Problem> problemMap = new HashMap<>();
+                    Map<Long,Problem> problemMap = new HashMap<>();
                     for (Problem p : problems) {
                         problemMap.put(p.getId(), p);
                     }
@@ -157,87 +138,72 @@ public class CompetitionServiceImpl implements CompetitionService {
                     redisService.setkey(timeOutKey,endTimeStr,ttlSeconds);
                 }
             }
-            return Result.Success(problems, "获取比赛题目列表成功");
-        } catch (Exception e) {
-            logger.error("查询比赛题目列表失败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
-        }
+            return problems;
     }
 
     @Override
-    public Result getUserList(long cid) {
-        try {
+    public List<User> getUserList(long cid) {
             String rankingKey = String.format(RANKING_KEY, cid);
             List<User> users = new ArrayList<>();
-            if(redisService.getTtl(rankingKey)!=-2){
+        // 从Redis获取排名
+            if (redisService.getTtl(rankingKey) >600) {
                 List<Tuple> userTuples = redisService.getZset(rankingKey);
-                for (Tuple tuple : userTuples) {
-                    String userName = tuple.getElement();
-                    //double score = tuple.getScore();
-                    User user =new User();
-                    user.setName(userName);
-                    String userPassKey = String.format(USER_PASS_COUNT_KEY, cid, userName);
-                    String userPenaltyKey = String.format(USER_PENALTY_KEY, cid, userName);
+                userTuples.forEach(tuple -> {
+                    User user = new User();
+                    user.setName(tuple.getElement());
+                    String userPassKey = String.format(USER_PASS_COUNT_KEY, cid, user.getName());
+                    String userPenaltyKey = String.format(USER_PENALTY_KEY, cid, user.getName());
+
                     user.setPassCount(Integer.parseInt(redisService.getValueByKey(userPassKey)));
                     user.setPenaltyTime(Integer.parseInt(redisService.getValueByKey(userPenaltyKey)));
                     users.add(user);
-                }
-            }else{
-                List<Competition_User> competitionUsers=competition_usersMapper.getUserList(cid);
-                for (Competition_User competitionUser:competitionUsers){
-                    User u=new User();
-                    u.setPenaltyTime(competitionUser.getPenaltyTime());
-                    u.setPassCount(competitionUser.getPassCount());
-                    u.setName(competitionUser.getName());
-                    users.add(u);
-                }
-            }
-            return Result.Success(users, "获取比赛用户列表成功");
-        } catch (Exception e) {
-            logger.error("查询比赛用户列表失败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
-        }
-    }
-
-    @Override
-    public Result judgeIsOpenById(String now, long id) {
-        try {
-            String beginTime = competitionMapper.getBeginTimeById(id);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime nowDateTime = LocalDateTime.parse(now, formatter);
-            LocalDateTime beginDateTime = LocalDateTime.parse(beginTime, formatter);
-            if (nowDateTime.isBefore(beginDateTime)) {
-                return Result.Success("比赛暂未开始，请遵守规则，并不要企图通过url访问到题目");
+                });
             } else {
-                return Result.Success("");
+                // 从数据库获取用户列表
+                QueryWrapper<CompetitionUser> wrapper = new QueryWrapper<>();
+                wrapper.eq("competition_id",cid);
+                List<CompetitionUser> competitionUsers = competitionUserService.getUserList(cid);
+                for (CompetitionUser cu : competitionUsers) {
+                    User user = new User();
+                    user.setName(cu.getName());
+                    user.setPassCount(cu.getPassCount());
+                    user.setPenaltyTime(cu.getPenaltyTime());
+                    users.add(user);
+                }
             }
-        } catch (Exception e) {
-            logger.error("查询比赛信息失败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
+
+            return users;
+    }
+
+    @Override
+    public void judgeIsOpenById(String now, long id) {
+        QueryWrapper<Competition> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("begin_time")
+                .eq("id", id);
+
+        Competition competition = this.baseMapper.selectOne(queryWrapper);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime nowDateTime = LocalDateTime.parse(now, formatter);
+        LocalDateTime beginDateTime = LocalDateTime.parse(competition.getBeginTime(), formatter);
+        if (nowDateTime.isBefore(beginDateTime)) {
+            throw new BusinessException("比赛暂未开始，请遵守规则");
         }
     }
 
     @Override
-    public Result judgeIsEndById(String now,long id) {
-        try {
-            String endTime = competitionMapper.getEndTimeById(id);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            LocalDateTime nowDateTime = LocalDateTime.parse(now, formatter);
-            LocalDateTime endDateTime = LocalDateTime.parse(endTime, formatter);
-            if (nowDateTime.isAfter(endDateTime)) {
-                return Result.Success("比赛已结束，无法提交题目");
-            } else {
-                return Result.Success("");
-            }
-        } catch (Exception e) {
-            logger.error("查询比赛信息失败: ", e);
-            return Result.SystemError("服务器错误，请联系管理员");
+    public void judgeIsEndById(String now,long id) {
+        QueryWrapper<Competition> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("end_time")
+                .eq("id", id);
+
+        Competition competition = this.baseMapper.selectOne(queryWrapper);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime nowDateTime = LocalDateTime.parse(now, formatter);
+        LocalDateTime endDateTime = LocalDateTime.parse(competition.getEndTime(), formatter);
+        if (nowDateTime.isAfter(endDateTime)) {
+            throw new BusinessException("比赛已结束，无法提交题目");
         }
     }
 
-    @Override
-    public void addUserRecord(long cid, long uid, String uname) {
-        competition_usersMapper.createRecord(cid,uid,uname);
-        Result.Success("添加用户至比赛成功");
-    }
 }
