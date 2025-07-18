@@ -8,15 +8,23 @@ VnollxOnlineJudge 是一款功能全面的在线编程评测系统（OJ），面
 ## 🔧 技术栈与架构
 
 ### 核心技术选型
-| 技术栈                 | 说明                             |
-|---------------------|--------------------------------|
-| **Spring Boot**     | 快速构建后端服务，集成自动化配置与依赖管理          |
-| **MyBatis-Plus**    | ORM框架，简化数据库操作，支持高效CRUD与条件查询    |
-| **MySQL**           | 主数据库，存储用户信息、题目数据、提交记录等核心业务数据   |
+| 技术栈                 | 说明                                  |
+|---------------------|-------------------------------------|
+| **Spring Boot**     | 快速构建后端服务，集成自动化配置与依赖管理               |
+| **MyBatis-Plus**    | ORM框架，简化数据库操作，支持高效CRUD与条件查询         |
+| **MySQL**           | 主数据库，存储用户信息、题目数据、提交记录等核心业务数据        |
 | **Redis**           | 缓存热点数据（如排行榜、用户会话），支持原子操作（AC数/通过数统计） |
-| **RabbitMQ**        | 消息队列，缓冲代码评测请求，实现异步处理与流量削峰      |
-| **MinIO**           | 对象存储，安全存储题测试用例代码文件             |
-| **go-Judge,Docker** | 容器化部署评测沙箱，隔离代码执行环境，保障系统安全      |
+| **RabbitMQ**        | 消息队列，缓冲代码评测请求，实现异步处理与流量削峰           |
+| **RustFs**          | 对象存储，安全高效存储题测试用例代码文件                |
+| **go-Judge,Docker** | 容器化部署评测沙箱，隔离代码执行环境，保障系统安全           |
+### 高级特性
+全局异常处理：基于Spring AOP的统一异常拦截器，规范化错误响应格式
+
+虚拟线程支持：JDK21+虚拟线程启用，提升并发处理能力
+
+异步刷写线程池：独立线程池处理日志/提交记录等异步持久化操作（参见AsyncTaskConfig）
+
+智能限流：基于Redis的API级限流保护
 
 ### 系统架构图
 ![img_1.png](img_1.png)
@@ -36,7 +44,7 @@ VnollxOnlineJudge 是一款功能全面的在线编程评测系统（OJ），面
 
 ### ⚖️ 评测模块
 - **多语言支持**：Java、C++、Python（可扩展Go/JavaScript等）
-- **异步评测**：提交请求入RabbitMQ队列，后台worker消费并执行，对消息进行持久化和手动消息确认保证数据不丢失
+- **异步评测**：提交请求入RabbitMQ队列，后台worker消费并执行，异步存储评测记录，对消息进行持久化和手动消息确认保证数据不丢失
 - **结果反馈**：返回运行时间、内存占用、错误详情（如编译错误日志、运行时异常）
 
 ### 🏆 比赛模块
@@ -56,10 +64,11 @@ VnollxOnlineJudge 是一款功能全面的在线编程评测系统（OJ），面
 |---------|---------------------------------------------------|
 | 题目AC数统计 | Redis原子操作（INCR），键过期事件同步至MySQL，采用缓存过期缓冲策略保证数据最终一致性 |
 | 比赛排行榜   | Redis ZSet存储（用户ID+分数(通过AC数和罚时计算)），O(logN)复杂度查询    |
-| 评测请求峰值  | RabbitMQ队列缓冲，动态扩容评测worker实例                       |
+| 评测请求峰值  | RabbitMQ队列缓冲，异步存储评测记录，动态扩容评测worker实例              |
 | 热点题目访问  | Redis缓存题目详情，减少MySQL查询                             |
 | 提交记录存储  | Redis List暂存，定时任务批量写入MySQL（降低IO压力）                |
 | 数据库主从复制 | 将读写请求分开，降低主库压力，后续为了实现高可用，可采用故障自动转移，当主库故障时，从库自动升级  |
+| 虚拟线程    | 替换传统线程池，配置spring.threads.virtual.enabled=true，单机支持万级并发请求  |
 ---
 
 ## 📦 快速部署
@@ -67,11 +76,11 @@ VnollxOnlineJudge 是一款功能全面的在线编程评测系统（OJ），面
 ### 环境要求
 | 软件       | 版本要求          | 说明                      |
 |----------|---------------|-------------------------|
-| JDK      | 11+           | Spring Boot 3.0+依赖      |
+| JDK      | 21+           | Spring Boot 3.0+依赖      |
 | MySQL    | 8.0+          | 需开启UTF-8mb4字符集          |
 | Redis    | 6.0+          | 需启用持久化（RDB/AOF）         |
 | RabbitMQ | 3.10+         | 安装rabbitmq-management插件 |
-| MinIO    | RELEASE.2023* | 对象存储服务                  |
+| RustFs   | 1.0.0-alpha.28 | 对象存储服务                  |
 | Docker   | 20.10+        | 用于容器化部署                 |
 | Go-Judge | 最新版           | 用于代码沙箱隔离                |
 
@@ -82,7 +91,7 @@ git clone https://github.com/Vnollx-ww/VnollxOnlineJudge.git
 #### 2. 初始化数据库
 运行位于/src/main/resources下的vnollxonlinejudge.sql文件
 #### 3. 配置修改# 修改 application.properties
-修改MYSQL,Redis,RabbitMq,Minio配置
+修改MYSQL,Redis,RabbitMq,RustFs配置
 #### 4. 构建与启动# 打包（跳过测试）
 mvn clean package -DskipTests
 #### 5. 采用docker本地部署
@@ -92,7 +101,7 @@ mvn clean package -DskipTests
 java -jar target/vnollx-oj-1.0.0.jar --spring.profiles.active=prod
 #### 5. 验证部署
 - 访问项目主页：`http://localhost:8080
-- 访问MinIO控制台：`http://localhost:9001`（默认账号/密码：minioadmin/minioadmin）
+- 访问RustFs控制台：`http://localhost:9001`（默认账号/密码：minioadmin/minioadmin）
 
 ---
 
