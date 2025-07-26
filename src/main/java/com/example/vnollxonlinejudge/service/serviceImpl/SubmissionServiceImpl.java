@@ -3,10 +3,12 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.domain.Problem;
-import com.example.vnollxonlinejudge.domain.Submission;
+import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.dto.response.submission.SubmissionResponse;
+import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
 import com.example.vnollxonlinejudge.service.*;
@@ -15,10 +17,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.example.vnollxonlinejudge.common.result.Result;
-import java.util.*;
 
-import static com.example.vnollxonlinejudge.utils.CalculateScore.calculateScore;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.example.vnollxonlinejudge.utils.GetScore.calculateScore;
 
 @Service
 public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submission> implements SubmissionService {
@@ -38,88 +41,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
 
-
-    @Override
-    public void createSubmission(String code,String user_name,String problem_name, String status, String create_time, String language,long uid,long pid, int time,long cid) {
-            Submission submission = new Submission();
-            submission.setUserName(user_name);
-            submission.setProblemName(problem_name);
-            submission.setCode(code);
-            submission.setStatus(status);
-            submission.setCreateTime(create_time);
-            submission.setLanguage(language);
-            submission.setUid(uid);
-            submission.setPid(pid);
-            submission.setTime(time);
-            submission.setCid(cid);
-
-            this.save(submission);
-    }
-
-    @Override
-    public List<Submission> getSubmission(int offset, int size) {
-            Page<Submission> page = new Page<>(offset, size, false);
-            QueryWrapper<Submission> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("cid", 0).orderByDesc("id");
-            Page<Submission> result = this.page(page, queryWrapper);
-            return result.getRecords();
-    }
-
-    @Override
-    public List<Submission> getSubmissionByUid(long uid,int offset, int size) {
-            Page<Submission> page = new Page<>(offset, size, false);
-            QueryWrapper<Submission> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("uid", uid)
-                    .eq("cid", 0)
-                    .orderByDesc("id");
-            Page<Submission> result = this.page(page, queryWrapper);
-            return result.getRecords();
-    }
-    public Submission getSubmissionById(long id){
+    public SubmissionResponse getSubmissionById(long id){
             Submission submission = this.getById(id);
             if (submission == null) {
                 throw  new BusinessException("提交记录不存在");
             }
-            return submission;
-    }
-    @Override
-    public int getSubmissionCount(long uid){
-            QueryWrapper<Submission> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("uid", uid).eq("cid", 0);
-            return (int) this.count(queryWrapper);
-    }
-
-    @Override
-    public int getSubmissionCountByCid(long cid) {
-            QueryWrapper<Submission> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("cid", cid);
-            return (int) this.count(queryWrapper);
-    }
-
-    @Override
-    public List<Submission> getSubmissionByCid(long cid,int offset,int size) {
-            Page<Submission> page = new Page<>(offset, size, false);
-            QueryWrapper<Submission> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("cid", cid).orderByDesc("id");
-            Page<Submission> result = this.page(page, queryWrapper);
-            return result.getRecords();
-    }
-
-    @Override
-    public int getAllSubmissionCount(){
-            QueryWrapper<Submission> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("cid", 0);
-            return (int) this.count(queryWrapper);
-    }
-
-    @Override
-    public List<Submission> getSubmissionByStatusAndLanguage(String status, String language, int offset, int size) {
-        return baseMapper.getSubmissionByStatusAndLanguage(status, language, offset, size);
-    }
-
-    @Override
-    public int getCountByStatusAndLanguage(String status, String language) {
-            return baseMapper.getCountByStatusAndLanguage(status, language);
+            return new SubmissionResponse(submission);
     }
 
     @Override
@@ -132,7 +59,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         String code=submission.getCode();
         String option=submission.getLanguage();
         String create_time=submission.getCreateTime();
-        Problem problem=null;
+        ProblemResponse problem=null;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null;
         if (cid != 0) {
             timeOutKey=String.format(TIME_OUT_KEY,cid);
@@ -151,16 +78,14 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
 
         }
         //初始化所有键和信息！！！
-
-
         //获取题目信息！！！！
         if (cid == 0) problem = problemService.getProblemInfo(pid,0);
         else{
             //String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey("competition:" + cid + ":problems");
-            TypeReference<Map<Integer, Problem>> typeRef = new TypeReference<Map<Integer, Problem>>() {
+            TypeReference<Map<Integer, ProblemResponse>> typeRef = new TypeReference<Map<Integer, ProblemResponse>>() {
             };
-            Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
+            Map<Integer, ProblemResponse> problemMap = JSON.parseObject(problemsJson, typeRef);
             problem = problemMap.get((int) pid);
         }
         //获取题目信息！！！！
@@ -201,5 +126,53 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     @Override
     public void batchInsert(List<Submission> submissions) {
         baseMapper.batchInsert(submissions);
+    }
+
+    @Override
+    public void deleteSubmissionsByPid(long pid) {
+        QueryWrapper<Submission>wrapper=new QueryWrapper<>();
+        wrapper.eq("pid",pid);
+        this.baseMapper.delete(wrapper);
+    }
+
+    @Override
+    public List<SubmissionResponse> getSubmissionList(long cid, long uid, String language, String status, int pageNum, int pageSize) {
+        Page<Submission> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<Submission> wrapper=new QueryWrapper<>();
+        if (cid!=0){
+            wrapper.eq("cid",cid);
+        }
+        if (uid!=0){
+            wrapper.eq("uid",uid);
+        }
+        if (StringUtils.isNotBlank(language)){
+            wrapper.eq("language",language);
+        }
+        if (StringUtils.isNotBlank(status)){
+            wrapper.eq("status",status);
+        }
+        wrapper.orderByDesc("id");
+        Page<Submission> result = this.page(page, wrapper);
+        return result.getRecords().stream()
+                .map(SubmissionResponse::new)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public long getCount(long cid, long uid, String language, String status) {
+        QueryWrapper<Submission> wrapper=new QueryWrapper<>();
+        if (cid!=0){
+            wrapper.eq("cid",cid);
+        }
+        if (uid!=0){
+            wrapper.eq("uid",uid);
+        }
+        if (StringUtils.isNotBlank(language)){
+            wrapper.eq("language",language);
+        }
+        if (StringUtils.isNotBlank(status)){
+            wrapper.eq("status",status);
+        }
+        return this.count(wrapper);
     }
 }

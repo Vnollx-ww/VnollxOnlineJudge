@@ -2,7 +2,7 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.domain.UserSolvedProblem;
+import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.mapper.UserSolvedProblemMapper;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import org.springframework.stereotype.Service;

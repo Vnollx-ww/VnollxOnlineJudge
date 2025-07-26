@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目列表 - VnollxOJ</title>
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+            background-color: #f8fafc;
+            color: #2d3748;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            width: 100%;
+        }
+
+        /* 返回首页按钮样式 */
+        .back-home-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-home-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+        }
+
+        /* 搜索框样式 */
+        .search-container {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .search-input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            flex-grow: 1;
+        }
+
+        .search-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-button:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+        }
+
+        /* 题目表格样式 */
+        .problems-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border-collapse: collapse;
+        }
+
+        .problems-table th,
+        .problems-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .problems-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .problems-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* 难度标签 */
+        .difficulty {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+        }
+
+        .easy {
+            background-color: #f0fff4;
+            color: #38a169;
+        }
+
+        .medium {
+            background-color: #fff5f0;
+            color: #dd6b20;
+        }
+
+        .hard {
+            background-color: #fff5f5;
+            color: #c53030;
+        }
+
+        /* 通过率样式 */
+        .pass-rate {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .high-rate {
+            background-color: #f0fff4;
+            color: #38a169;
+        }
+
+        .medium-rate {
+            background-color: #e9f2d9;
+            color: #5a882b;
+        }
+
+        .low-rate {
+            background-color: #fff5f5;
+            color: #c53030;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+        }
+
+        .page-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+
+        .page-btn.disabled {
+            color: #a0aec0;
+            cursor: not-allowed;
+            background-color: #edf2f7;
+            border-color: #edf2f7;
+        }
+
+        .ellipsis {
+            padding: 0.5rem 1rem;
+            color: #718096;
+            cursor: default;
+        }
+
+        /* 加载状态 */
+        .loading {
+            padding: 2rem;
+            text-align: center;
+            color: #718096;
+        }
+
+        .error {
+            color: #c53030;
+            background: #fff5f5;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        /* 新增Toast样式 */
+        .toast {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(-50%) scale(0.95);
+            transition: all 0.3s ease-out;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        .toast.error {
+            background-color: #fff5f5;
+            color: #c53030;
+            border: 1px solid #ffebee;
+        }
+
+        .toast.success {
+            background-color: #f0fff4;
+            color: #38a169;
+            border: 1px solid #e5f7eb;
+        }
+    </style>
+</head>
+<body>
+<button class="back-home-btn" onclick="window.location.href = 'index.html'">返回首页</button>
+<div class="container">
+    <h1 style="margin-bottom: 2rem;">题目列表</h1>
+    <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="输入题目编号或名称">
+        <button id="search-button" class="search-button">搜索</button>
+    </div>
+    <table class="problems-table">
+        <thead>
+        <tr>
+            <th style="width: 10%;">题号</th>
+            <th style="width: 40%;">题目名称</th>
+            <th style="width: 15%;">难度</th>
+            <th style="width: 12%; text-align: center;">提交次数</th>
+            <th style="width: 12%; text-align: center;">通过次数</th>
+            <th style="width: 11%; text-align: center;">通过率</th>
+        </tr>
+        </thead>
+        <tbody id="problems-list">
+        <tr class="loading">
+            <td colspan="6">加载题目中...</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+    const PAGINATION_SHOW_COUNT = 5; // 显示的页数数量
+    let searchKeyword = '';
+
+    // 新增Toast显示函数
+    function showToast(message, type = 'error') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type} show`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        // 自动消失
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300); // 动画时间后移除元素
+        }, 3000); // 显示3秒
+    }
+
+    // 获取题目总数
+    async function getTotalCount() {
+        try {
+            const params = new URLSearchParams({
+                keyword: searchKeyword
+            });
+            const url = searchKeyword
+                ? `/problem/count?${params.toString()}`
+                : '/problem/count';
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const data = await response.json();
+            if (data.code!== 200) throw new Error(data.msg || '获取题目总数失败');
+            return data.data; // 假设后端返回的data是总数
+        } catch (error) {
+            showError(error.message);
+            return 0;
+        }
+    }
+
+    // 获取题目列表
+    async function getProblemList(page) {
+        const tbody = document.getElementById('problems-list');
+        const paginationDiv = document.getElementById('pagination');
+
+        // 显示加载状态
+        tbody.innerHTML = '<tr class="loading"><td colspan="6">加载题目中...</td></tr>';
+        paginationDiv.style.display = 'none';
+
+        currentPage = page;
+        const size = 10; // 每页显示数量
+        try {
+            const params = new URLSearchParams({
+                offset: currentPage-1,   // 当前页码
+                size: size,        // 每页数据量
+                keyword: searchKeyword // 搜索关键词（可选）
+            });
+            const baseUrl = '/problem/list';
+            const fullUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}` // JWT Token
+                }
+            });
+            const data = await response.json();
+            if (data.code!== 200) throw new Error(data.msg || '获取题目列表失败');
+
+            renderProblems(data.data);
+            await updatePagination(); // 等待分页更新完成
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            paginationDiv.style.display = 'flex';
+        }
+    }
+
+    // 渲染题目列表
+    function renderProblems(problems) {
+        const tbody = document.getElementById('problems-list');
+        tbody.innerHTML = '';
+
+        if (problems.length === 0) {
+            tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #718096;">
+                            暂无题目
+                        </td>
+                    </tr>
+                `;
+            return;
+        }
+
+        problems.forEach(problem => {
+            const passRate = calculatePassRate(problem.submitCount, problem.passCount);
+            const rateClass = getRateClass(passRate);
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                    <td>#${problem.id}</td>
+                    <td>
+                        <a href="/problem/${problem.id}" style="color: #1a73e8; text-decoration: none;">
+                            ${problem.title}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="difficulty ${getDifficultyClass(problem.difficulty)}">
+                            ${problem.difficulty}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">${problem.submitCount}</td>
+                    <td style="text-align: center;">${problem.passCount}</td>
+                    <td style="text-align: center;">
+                        <span class="pass-rate ${rateClass}">
+                            ${passRate}%
+                        </span>
+                    </td>
+                `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // 计算通过率
+    function calculatePassRate(submitCount, passCount) {
+        if (submitCount === 0) return 0;
+        return Math.round((passCount / submitCount) * 10000) / 100; // 保留两位小数
+    }
+
+    // 获取通过率样式类
+    function getRateClass(rate) {
+        if (rate >= 60) return 'high-rate';
+        if (rate >= 30) return'medium-rate';
+        return 'low-rate';
+    }
+
+    // 更新分页按钮
+    async function updatePagination() {
+        const total = await getTotalCount();
+        totalPages = Math.ceil(total / 10);
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = '';
+
+        if (totalPages === 0) return;
+
+        // 生成首页和上一页按钮
+        const prevButton = document.createElement('button');
+        prevButton.className = `page-btn ${currentPage === 1? 'disabled' : ''}`;
+        prevButton.innerHTML = '« 上一页';
+        prevButton.onclick = () => currentPage > 1 && getProblemList(currentPage - 1);
+        paginationDiv.appendChild(prevButton);
+
+        // 计算显示范围
+        let start = Math.max(1, currentPage - Math.floor(PAGINATION_SHOW_COUNT / 2));
+        let end = Math.min(totalPages, start + PAGINATION_SHOW_COUNT - 1);
+
+        // 处理起始页过小的情况
+        if (end - start + 1 < PAGINATION_SHOW_COUNT) {
+            start = Math.max(1, totalPages - PAGINATION_SHOW_COUNT + 1);
+        }
+
+        // 显示起始页省略号
+        if (start > 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-btn ellipsis';
+            ellipsis.textContent = '...';
+            paginationDiv.appendChild(ellipsis);
+        }
+
+        // 生成中间页码按钮
+        for (let i = start; i <= end; i++) {
+            const button = document.createElement('button');
+            button.className = `page-btn ${i === currentPage? 'active' : ''}`;
+            button.textContent = i;
+            button.onclick = () => getProblemList(i);
+            paginationDiv.appendChild(button);
+        }
+
+        // 显示结束页省略号
+        if (end < totalPages) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-btn ellipsis';
+            ellipsis.textContent = '...';
+            paginationDiv.appendChild(ellipsis);
+        }
+
+        // 生成下一页和末页按钮
+        const nextButton = document.createElement('button');
+        nextButton.className = `page-btn ${currentPage === totalPages? 'disabled' : ''}`;
+        nextButton.innerHTML = '下一页 »';
+        nextButton.onclick = () => currentPage < totalPages && getProblemList(currentPage + 1);
+        paginationDiv.appendChild(nextButton);
+    }
+
+    // 获取难度样式类
+    function getDifficultyClass(difficulty) {
+        switch (difficulty.toLowerCase()) {
+            case '简单':
+                return 'easy';
+            case '中等':
+                return'medium';
+            case '困难':
+                return 'hard';
+            default:
+                return '';
+        }
+    }
+
+    // 显示错误信息
+    function showError(message) {
+        const tbody = document.getElementById('problems-list');
+        tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="error">
+                        ${message}
+                    </td>
+                </tr>
+            `;
+    }
+
+    // 搜索功能
+    function searchProblems() {
+        searchKeyword = document.getElementById('search-input').value.trim();
+        getProblemList(1);
+    }
+
+    document.getElementById('search-button').addEventListener('click', searchProblems);
+
+    window.onload = () => {
+        if (localStorage.getItem('token') === null) {
+            showToast('请先登录！', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html'; // 跳转登录页
+            }, 1500); // 等待toast显示后跳转
+        } else {
+            getProblemList(1);
+        }
+    };
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 package com.example.vnollxonlinejudge.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.example.vnollxonlinejudge.domain.User;
+import com.example.vnollxonlinejudge.model.entity.User;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;

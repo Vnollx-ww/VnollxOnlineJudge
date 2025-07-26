@@ -3,12 +3,14 @@ package com.example.vnollxonlinejudge.consumer;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.example.vnollxonlinejudge.common.result.RunResult;
-import com.example.vnollxonlinejudge.domain.*;
+import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.service.UserService;
+import com.example.vnollxonlinejudge.strategy.judge.JudgeStrategy;
+import com.example.vnollxonlinejudge.strategy.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -34,6 +36,8 @@ public class SubmissionConsumer {
     private RabbitTemplate rabbitTemplate;
     @Autowired
     private SubmissionService submissionService;
+    @Autowired
+    private JudgeStrategyFactory judgeStrategyFactory;
     @RabbitListener(queues = "submissionQueue")
     public void handleSubmission(Message message)  {
 
@@ -57,16 +61,13 @@ public class SubmissionConsumer {
         }
     }
     private RunResult processSubmission(JudgeInfo judgeInfo) {
-        RunResult res=new RunResult();
-        String dataZipUrl=judgeInfo.getPid()+".zip";
-        if(Objects.equals(judgeInfo.getLanguage(), "cpp17")){
-            res = CplusplusJudge.Judge(judgeInfo.getCode(), dataZipUrl,
-                    judgeInfo.getTime(), judgeInfo.getMemory());
-        }else if(Objects.equals(judgeInfo.getLanguage(), "java")){
-            res = JavaJudge.Judge(judgeInfo.getCode(), dataZipUrl,
-                    judgeInfo.getTime(), judgeInfo.getMemory());
-        }
-        return res;
+        JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
+        return strategy.judge(
+                judgeInfo.getCode(),
+                judgeInfo.getPid() + ".zip",
+                judgeInfo.getTime(),
+                judgeInfo.getMemory()
+        );
     }
     @Async
     public void asyncProcessSubmission(JudgeInfo judgeInfo,String status,int runTime) {

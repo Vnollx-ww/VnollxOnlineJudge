@@ -1,13 +1,20 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.common.result.Result;
-import com.example.vnollxonlinejudge.domain.Competition;
-import com.example.vnollxonlinejudge.domain.Problem;
+import com.example.vnollxonlinejudge.model.dto.request.competition.ConfirmPasswordRequest;
+import com.example.vnollxonlinejudge.model.dto.request.competition.GetCompetitionStatusRequest;
+import com.example.vnollxonlinejudge.model.dto.response.competition.CompetitionResponse;
+import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.dto.response.user.UserResponse;
+import com.example.vnollxonlinejudge.model.entity.Competition;
+import com.example.vnollxonlinejudge.model.entity.Problem;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/competition")
@@ -18,7 +25,7 @@ public class CompetitionController {
     private ProblemService problemService;
     @GetMapping("/{id}")
     public ModelAndView competitionDetail(@PathVariable Long id) {
-        Competition competition = competitionService.getCompetitionById(id);
+        CompetitionResponse competition = competitionService.getCompetitionById(id);
         ModelAndView modelAndView = new ModelAndView();
         if (competition == null) {
             modelAndView.setViewName("error/404");
@@ -30,7 +37,7 @@ public class CompetitionController {
     }
     @GetMapping("/ranklist/{id}")
     public ModelAndView competitionRankListDetail(@PathVariable Long id) {
-        Competition competition = competitionService.getCompetitionById(id);
+        CompetitionResponse  competition = competitionService.getCompetitionById(id);
         ModelAndView modelAndView = new ModelAndView();
         if (competition == null) {
             modelAndView.setViewName("error/404");
@@ -42,7 +49,7 @@ public class CompetitionController {
     }
     @GetMapping("/submission/{id}")
     public ModelAndView competitionSubmissionDetail(@PathVariable Long id) {
-        Competition competition = competitionService.getCompetitionById(id);
+        CompetitionResponse  competition = competitionService.getCompetitionById(id);
         ModelAndView modelAndView = new ModelAndView();
         if (competition == null) {
             modelAndView.setViewName("error/404");
@@ -54,7 +61,7 @@ public class CompetitionController {
     }
     @GetMapping("/problem/{cid}/{pid}")
     public ModelAndView competitionProblemDetail(@PathVariable Long cid, @PathVariable Long pid) {
-        Problem problem= problemService.getProblemInfo(pid,cid);
+        ProblemResponse problem= problemService.getProblemInfo(pid,cid);
         ModelAndView modelAndView = new ModelAndView();
         if (problem== null) {
             modelAndView.setViewName("error/404");
@@ -64,41 +71,36 @@ public class CompetitionController {
         }
         return modelAndView;
     }
-    @PostMapping("/create")
-    public Result createCompetition(@RequestParam String title,@RequestParam String description,@RequestParam String begin_time,@RequestParam String end_time,@RequestParam String password){
-        competitionService.createCompetition(title,description,begin_time,end_time,password);
-        return Result.Success("创建比赛成功！！！");
-    }
-    @PostMapping("/getlist")
-    public Result getCompetitionList(){
+    @GetMapping("/list")
+    public Result<List<CompetitionResponse>> getCompetitionList(){
 
         return Result.Success(competitionService.getCompetitionList()
                 , "获取比赛列表成功！！！");
     }
-    @PostMapping("/confirm")
-    public Result confirmPassword(@RequestParam String id,@RequestParam String password){
-        competitionService.confirmPassword(Long.parseLong(id),password);
-        return Result.Success("密码正确，欢迎进入比赛");
-    }
-    @PostMapping("/getproblemlist")
-    public Result getProblemList(@RequestParam String id){
+    @GetMapping("/list-problem")
+    public Result<List<ProblemResponse>> getProblemList(@RequestParam String id){
         return Result.Success(competitionService.getProblemList(Long.parseLong(id))
                 ,"获取比赛题目列表成功");
     }
-    @PostMapping("getuserlist")
-    public Result getUserList(@RequestParam String id){
+    @GetMapping("/list-user")
+    public Result<List<UserResponse>> getUserList(@RequestParam String id){
 
         return Result.Success(competitionService.getUserList(Long.parseLong(id))
                 ,"获取比赛用户列表成功");
     }
-    @PostMapping("judgeisopen")
-    public Result judgeIsOpenById(@RequestParam String now,@RequestParam String id){
-        competitionService.judgeIsOpenById(now,Long.parseLong(id));
+    @PostMapping("/confirm")
+    public Result<Void> confirmPassword(@RequestBody ConfirmPasswordRequest req){
+        competitionService.confirmPassword(Long.parseLong(req.getId()),req.getPassword());
+        return Result.Success("密码正确，欢迎进入比赛");
+    }
+    @PostMapping("/judgeIsOpen")
+    public Result<Void> judgeIsOpenById(@RequestBody GetCompetitionStatusRequest req){
+        competitionService.judgeIsOpenById(req.getNow(),Long.parseLong(req.getId()));
         return Result.Success("比赛开放中");
     }
-    @PostMapping("judgeisend")
-    public Result judgeIsEndById(@RequestParam String now,@RequestParam String id){
-        competitionService.judgeIsEndById(now,Long.parseLong(id));
+    @PostMapping("/judgeIsEnd")
+    public Result<Void> judgeIsEndById(@RequestBody GetCompetitionStatusRequest req){
+        competitionService.judgeIsEndById(req.getNow(),Long.parseLong(req.getId()));
         return Result.Success("比赛开放中");
     }
 }

@@ -1,7 +1,7 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
 
-import com.example.vnollxonlinejudge.domain.Submission;
+import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import org.slf4j.Logger;
@@ -11,14 +11,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
-import com.example.vnollxonlinejudge.common.result.Result;
 import jakarta.annotation.PostConstruct;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.resps.Tuple;
 
 import java.util.*;
 
-import static com.example.vnollxonlinejudge.utils.CalculateScore.calculateScore;
+import static com.example.vnollxonlinejudge.utils.GetScore.calculateScore;
 
 @Service
 public class RedisServiceImpl implements RedisService {
@@ -225,6 +224,13 @@ public class RedisServiceImpl implements RedisService {
             SetParams setParams = SetParams.setParams().nx().px(expireTime);
             String result = jedis.set(lockKey, requestId, setParams);
             return "OK".equals(result);
+        }
+    }
+
+    @Override
+    public void deleteKey(String key) {
+        try (Jedis jedis=jedisPool.getResource()){
+            jedis.del(key);
         }
     }
 }

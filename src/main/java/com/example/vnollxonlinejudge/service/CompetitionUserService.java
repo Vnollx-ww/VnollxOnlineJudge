@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.service;
 
-import com.example.vnollxonlinejudge.domain.CompetitionUser;
+import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
 
 import java.util.List;
 

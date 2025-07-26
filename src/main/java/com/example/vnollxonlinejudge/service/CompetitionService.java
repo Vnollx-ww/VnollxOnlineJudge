@@ -1,20 +1,23 @@
 package com.example.vnollxonlinejudge.service;
 import com.example.vnollxonlinejudge.common.result.Result;
-import com.example.vnollxonlinejudge.domain.Competition;
-import com.example.vnollxonlinejudge.domain.Problem;
-import com.example.vnollxonlinejudge.domain.User;
+import com.example.vnollxonlinejudge.model.dto.response.competition.CompetitionResponse;
+import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.dto.response.user.UserResponse;
+import com.example.vnollxonlinejudge.model.entity.Competition;
+import com.example.vnollxonlinejudge.model.entity.Problem;
+import com.example.vnollxonlinejudge.model.entity.User;
 
 import java.util.List;
 
 public interface CompetitionService {
-    Competition getCompetitionById(long id);
+    CompetitionResponse getCompetitionById(long id);
 
     void createCompetition(String title,String description,String begin_time,String end_time,String password);
-    List<Competition> getCompetitionList();
+    List<CompetitionResponse> getCompetitionList();
     void confirmPassword(Long id,String password);
 
-    List<Problem> getProblemList(long cid);
-    List<User> getUserList(long cid);
+    List<ProblemResponse> getProblemList(long cid);
+    List<UserResponse> getUserList(long cid);
     void judgeIsOpenById(String now, long id);
     void judgeIsEndById(String now,long id);
 }

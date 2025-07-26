@@ -4,7 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.domain.*;
+import com.example.vnollxonlinejudge.model.dto.response.competition.CompetitionResponse;
+import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.dto.response.user.UserResponse;
+import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.*;
@@ -18,6 +21,7 @@ import com.example.vnollxonlinejudge.common.result.Result;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Competition> implements CompetitionService {
@@ -37,13 +41,12 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
     @Override
-    public Competition getCompetitionById(long id) {
+    public CompetitionResponse getCompetitionById(long id) {
         Competition competition = this.baseMapper.selectById(id);
         if (competition == null) {
             throw new BusinessException("比赛不存在");
         }
-        competition.setPassword("无权限查看"); // 隐藏密码信息
-        return competition;
+        return new CompetitionResponse(competition);
     }
     @Override
     public void createCompetition(String title, String description, String begin_time, String end_time, String password) {
@@ -60,11 +63,11 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     }
 
     @Override
-    public List<Competition> getCompetitionList() {
+    public List<CompetitionResponse> getCompetitionList() {
         List<Competition> competitionList = this.list();
-        // 隐藏所有竞赛的密码信息
-        competitionList.forEach(c -> c.setPassword("无权限查看"));
-        return competitionList;
+        return competitionList.stream()
+                .map(CompetitionResponse::new)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -79,15 +82,15 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     }
 
     @Override
-    public List<Problem> getProblemList(long cid) {
+    public List<ProblemResponse> getProblemList(long cid) {
             String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey(cacheKey);
-            List<Problem> problems = new ArrayList<>();
+            List<ProblemResponse> problems = new ArrayList<>();
             if (problemsJson != null&&redisService.getTtl(cacheKey)>600) {
-                TypeReference<Map<Integer, Problem>> typeRef = new TypeReference<Map<Integer, Problem>>() {};
-                Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
+                TypeReference<Map<Integer, ProblemResponse>> typeRef = new TypeReference<Map<Integer, ProblemResponse>>() {};
+                Map<Integer, ProblemResponse> problemMap = JSON.parseObject(problemsJson, typeRef);
                 // 设置提交和通过次数
-                for (Problem p : problemMap.values()) {
+                for (ProblemResponse p : problemMap.values()) {
                     String passKey = String.format(PROBLEM_PASS_KEY, cid, p.getId());
                     String submitKey = String.format(PROBLEM_SUBMIT_KEY, cid, p.getId()); // 假设存在提交次数的key
                     // 获取并设置通过次数和提交次数（增加空值处理）
@@ -112,7 +115,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 String endTimeStr = this.baseMapper.selectOne(wrapper).getEndTime();
                 long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
                 for (CompetitionProblem competitionProblem : pids) {
-                    Problem problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid);
+                    ProblemResponse problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid);
                     String problemSubmitKey=String.format(PROBLEM_SUBMIT_KEY, cid, problem.getId());
                     String problemPassKey=String.format(PROBLEM_PASS_KEY, cid, problem.getId());
                     if (!redisService.IsExists(problemSubmitKey)&&ttlSeconds>0) {
@@ -128,8 +131,8 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                     problems.add(problem);
                 }
                 if (!problems.isEmpty()&&ttlSeconds>0) {
-                    Map<Long,Problem> problemMap = new HashMap<>();
-                    for (Problem p : problems) {
+                    Map<Long,ProblemResponse> problemMap = new HashMap<>();
+                    for (ProblemResponse p : problems) {
                         problemMap.put(p.getId(), p);
                     }
                     String updatedProblemsJson = JSON.toJSONString(problemMap);
@@ -142,7 +145,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     }
 
     @Override
-    public List<User> getUserList(long cid) {
+    public List<UserResponse> getUserList(long cid) {
             String rankingKey = String.format(RANKING_KEY, cid);
             List<User> users = new ArrayList<>();
         // 从Redis获取排名
@@ -172,7 +175,9 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 }
             }
 
-            return users;
+            return users.stream()
+                    .map(UserResponse::new)
+                    .collect(Collectors.toList());
     }
 
     @Override

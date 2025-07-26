@@ -18,4 +18,5 @@ public interface RedisService {
     List<Tuple> getZset(String key);
     boolean IsExists(String key);
     boolean tryLock(String lockKey,int expireTime);
+    void deleteKey(String key);
 }

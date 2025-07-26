@@ -1,8 +1,8 @@
 package com.example.vnollxonlinejudge.producer;
 
 
-import com.example.vnollxonlinejudge.domain.JudgeInfo;
-import com.example.vnollxonlinejudge.domain.Submission;
+import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
+import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

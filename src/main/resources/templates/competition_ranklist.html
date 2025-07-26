@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>比赛详情 - VnollxOJ</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #16a34a;
+            --warning-color: #ea580c;
+            --danger-color: #dc2626;
+            --neutral-light: #f8fafc;
+            --neutral-medium: #e2e8f0;
+            --neutral-dark: #475569;
+        }
+        .hidden {
+            display: none !important;
+        }
+        body {
+            background-color: var(--neutral-light);
+            line-height: 1.6;
+            font-family: 'Inter', 'PingFang SC', sans-serif;
+        }
+
+        /* 加载动画样式 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: rgba(255, 255, 255, 0.8);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary-color);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 导航栏样式 */
+        .navbar {
+            background-color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .nav-button {
+            padding: 0.75rem 1.5rem;
+            background-color: transparent;
+            color: var(--neutral-dark);
+            border-radius: 0.375rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background-color: var(--neutral-medium);
+            color: var(--primary-color);
+        }
+
+        .nav-button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* 模态框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 30rem;
+            max-width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        /* 提示框样式 */
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 1001;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .toast.success {
+            background-color: #d1fae5;
+            color: var(--success-color);
+        }
+
+        .toast.error {
+            background-color: #fee2e2;
+            color: var(--danger-color);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 比赛信息卡片样式 */
+        .info-card {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .info-card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--neutral-dark);
+            margin-bottom: 1rem;
+        }
+
+        .info-card-subtitle {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neutral-dark);
+        }
+
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .status-running {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .info-text {
+            color: var(--neutral-dark);
+            margin-top: 0.5rem;
+        }
+
+        /* 排行榜表格样式 */
+        .rank-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            margin-top: 2rem;
+        }
+
+        .rank-table th,
+        .rank-table td {
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .rank-table th {
+            background-color: var(--neutral-medium);
+            color: var(--neutral-dark);
+        }
+
+        .rank-table tr:nth-child(even) {
+            background-color: var(--neutral-light);
+        }
+
+        .rank-table .rank {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .rank-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 24px rgba(0, 0, 0, 0.08);
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .rank-table thead {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .rank-table th {
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.875rem;
+        }
+
+        .rank-table td {
+            padding: 1.25rem 1.5rem;
+            color: var(--neutral-dark);
+            border-bottom: 1px solid var(--neutral-medium);
+        }
+
+        .rank-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .rank-table tr:hover td {
+            background-color: rgba(37, 99, 235, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .rank-table .rank {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .rank-table .rank::before {
+            content: "#";
+            position: absolute;
+            left: 0;
+            opacity: 0.6;
+            font-weight: 500;
+        }
+
+        .accepted-count {
+            color: var(--success-color);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .penalty-time {
+            color: var(--neutral-dark);
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+
+        /* 前三名特殊样式 */
+        .rank-table tr:first-child .rank { color: #f59e0b; }
+        .rank-table tr:nth-child(2) .rank { color: #94a3b8; }
+        .rank-table tr:nth-child(3) .rank { color: #a855f7; }
+
+        .rank-table tr:first-child td { background: rgba(245, 158, 11, 0.03); }
+        .rank-table tr:nth-child(2) td { background: rgba(148, 163, 184, 0.03); }
+        .rank-table tr:nth-child(3) td { background: rgba(168, 85, 247, 0.03); }
+
+        @media (max-width: 768px) {
+            .rank-table th,
+            .rank-table td {
+                padding: 1rem;
+            }
+            .rank-table th {
+                font-size: 0.75rem;
+            }
+            .rank-table .rank {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<!-- 导航栏 -->
+<div class="navbar">
+    <div class="container mx-auto flex justify-center py-4 space-x-4">
+        <a th:href="@{/competition/{id}(id=${competition.id})}" class="nav-button">比赛详情</a>
+        <a th:href="@{/competition/ranklist/{id}(id=${competition.id})}" class="nav-button active">比赛排行榜</a>
+        <button type="button"  class="nav-button" id="submissionButton">比赛提交记录</button>
+    </div>
+</div>
+
+<!-- 密码验证模态框 -->
+<div class="modal-overlay" id="passwordModal">
+    <div class="modal-content">
+        <h3 class="info-card-title">请输入比赛密码</h3>
+        <div class="mb-4">
+            <input type="password" id="passwordInput" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500">
+        </div>
+        <div class="flex justify-end">
+            <button class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" onclick="verifyPassword()">验证</button>
+        </div>
+    </div>
+</div>
+
+<!-- 加载动画 -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+</div>
+
+<div class="container mx-auto p-8" id="mainContent" style="display: none;">
+    <div class="info-card">
+        <h2 class="info-card-title">比赛排行榜</h2>
+        <table class="rank-table" id="rankTable">
+            <thead>
+            <tr>
+                <th style="width: 15%;">排名</th>
+                <th style="width: 40%;">用户名</th>
+                <th style="width: 25%;">通过题数</th>
+                <th style="width: 20%;">总罚时</th>
+            </tr>
+            </thead>
+            <tbody id="rankList">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<span th:text="${competition.id}" style="display: none;" id="competitionId"></span>
+<span th:text="${competition.needPassword}" style="display: none;" id="needPassword"></span>
+<span id="competition-end-time" th:text="${competition.endTime}" style="display: none"></span></p>
+<script>
+    const competitionId = document.getElementById('competitionId').textContent;
+    const needPassword = document.getElementById('needPassword').textContent === 'true';
+    const mainContent = document.getElementById('mainContent');
+    const rankList = document.getElementById('rankList');
+    let userData = [];
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type} show`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function hideLoading() {
+        const loadingElement = document.getElementById('loading');
+        loadingElement.style.display = 'none';
+    }
+
+    function showLoading() {
+        const loadingElement = document.getElementById('loading');
+        loadingElement.style.display = 'flex';
+    }
+
+    async function verifyPassword() {
+        const password = document.getElementById('passwordInput').value.trim();
+        if (!competitionId) return showToast('比赛信息错误', 'error');
+
+        try {
+            showLoading();
+            const id=competitionId;
+            const response = await fetch('/competition/confirm', {
+                method: 'POST',
+                body: JSON.stringify({id, password}),
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'  // 明确指定JSON格式
+                }
+            });
+
+            const result = await response.json();
+            if (result.code === 200) {
+                closeModal();
+                const key = "competition-" + competitionId+"-"+localStorage.getItem('name');
+                localStorage.setItem(key, toString(Math.floor(Date.now() / 1000))); // 存储访问时间
+                mainContent.style.display = 'block';
+                fetchUserList();
+                showToast('验证成功，欢迎访问比赛', 'success');
+            } else {
+                showToast(result.msg || '密码验证失败，请重试', 'error');
+            }
+        } catch (error) {
+            showToast('网络请求失败，请检查网络连接', 'error');
+            console.error('Verification error:', error);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('passwordModal');
+        modal.classList.remove('show');
+    }
+
+    window.addEventListener('load', async () => {
+        showLoading();
+
+        // 检查是否需要密码验证
+        if (needPassword) {
+            const now = Math.floor(Date.now() / 1000);
+            const key = "competition-" + document.getElementById('competitionId').textContent+"-"+localStorage.getItem('name');
+            const before = localStorage.getItem(key);
+            if (before === null || now - parseInt(before) >= 86400) {
+                document.getElementById('passwordModal').classList.add('show');
+                localStorage.removeItem(key);
+            } else {
+                mainContent.style.display = 'block';
+                await fetchUserList();
+            }
+        } else {
+            mainContent.style.display = 'block';
+            await fetchUserList();
+        }
+    });
+
+    async function fetchUserList() {
+        try {
+            showLoading();
+            const params = new URLSearchParams({
+                id:competitionId
+            });
+            const response = await fetch(`/competition/list-user?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            const result = await response.json();
+            if (result.code === 200) {
+                userData = result.data;
+
+                // 排序逻辑：通过量降序，罚时升序
+                userData.sort((a, b) => {
+                    if (a.passCount!== b.pass_Count) {
+                        return b.passCount - a.passCount;
+                    } else {
+                        return a.penaltyTime - b.penaltyTime;
+                    }
+                });
+
+                renderRankList();
+            } else {
+                showToast(result.msg || '获取用户列表失败', 'error');
+            }
+        } catch (error) {
+            showToast('网络请求失败，请检查网络连接', 'error');
+            console.error('Fetch user list error:', error);
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function renderRankList() {
+        rankList.innerHTML = '';
+        userData.forEach((user, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                    <td class="rank">${index + 1}</td>
+                    <td>${user.name}</td>
+                    <td><span class="accepted-count"><i class="fas fa-check-circle"></i>${user.passCount}</span></td>
+                    <td class="penalty-time">${formatTime(user.penaltyTime)}</td>
+                `;
+            rankList.appendChild(tr);
+        });
+    }
+
+    // 新增时间格式化函数
+    function formatTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    const submissionButton = document.getElementById('submissionButton');
+
+    // 定义目标URL（保留Thymeleaf表达式）
+    const targetUrl = `/competition/submission/${competitionId}`;
+    submissionButton.addEventListener('click', function() {
+        const endTime = new Date(document.getElementById('competition-end-time').textContent);
+        const now = new Date();
+        const diff = endTime - now;
+        if(diff>0){
+            showToast('比赛期间暂无法查看提交记录', 'error');
+            return ;
+        }
+        setTimeout(() => {window.location.href = targetUrl;});
+    });
+</script>
+</body>
+
+</html>

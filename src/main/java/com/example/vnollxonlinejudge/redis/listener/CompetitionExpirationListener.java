@@ -2,7 +2,7 @@ package com.example.vnollxonlinejudge.redis.listener;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
-import com.example.vnollxonlinejudge.domain.Problem;
+import com.example.vnollxonlinejudge.model.entity.Problem;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
 import com.example.vnollxonlinejudge.service.CompetitionUserService;

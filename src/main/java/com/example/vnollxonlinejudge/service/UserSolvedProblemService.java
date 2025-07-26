@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.service;
 
-import com.example.vnollxonlinejudge.domain.UserSolvedProblem;
+import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 
 import java.util.List;
 

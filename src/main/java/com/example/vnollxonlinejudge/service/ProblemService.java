@@ -1,23 +1,24 @@
 package com.example.vnollxonlinejudge.service;
 import com.example.vnollxonlinejudge.common.result.Result;
-import com.example.vnollxonlinejudge.domain.Problem;
+import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.entity.Problem;
+import com.example.vnollxonlinejudge.model.entity.Tag;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface ProblemService {
-    void createProblem(String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
+    void createProblem(String title, String description, int timeLimit, int memoryLimit, String difficulty, String inputFormat, String outputFormat, String inputExample, String outputExample, String hint, String open, MultipartFile testCaseFile, List<String> tags);
 
-    void deleteProblem(long id);
-    void updateProblem(long id,String title, String description, int timelimit, int memorylimit, String difficulty, String inputexample, String outputexample, String datazip);
+    void deleteProblemByAdmin(long id);
+    void updateProblem(long id, String title, String description, int timeLimit, int memoryLimit, String difficulty, String inputFormat, String outputFormat, String inputExample, String outputExample, String hint,String open, MultipartFile testCaseFile, List<String> tags);
 
-    Problem getProblemInfo(long pid, long cid);
+    ProblemResponse getProblemInfo(long pid, long cid);
 
-    List<Problem> getProblemList(int offset, int size);
-    int getProblemCount();
     List<String> getTagNames(long pid);
-    List<Problem> getProblemListByKeywords(String name, long pid, int offset, int size);
+    List<ProblemResponse> getProblemList(String name, long pid, int offset, int size,boolean ok);
 
-    int getCountByKeywords(String name, long pid);
+    Long getCount(String keyword, long pid,boolean ok);
     boolean judgeIsSolve(long pid,long uid,long cid);
     void updatePassCount(long pid, int ok);
     void addUserSolveRecord(long pid,long uid,long cid);

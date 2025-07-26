@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>在线判题系统使用指南</title>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+            warning: '#F59E0B',
+            danger: '#EF4444',
+            dark: '#1F2937',
+            light: '#F9FAFB',
+            'gray-100': '#F3F4F6',
+            'gray-200': '#E5E7EB',
+            'gray-300': '#D1D5DB',
+            'gray-400': '#9CA3AF',
+            'gray-500': '#6B7280',
+            'gray-600': '#4B5563',
+            'gray-700': '#374151',
+            'gray-800': '#1F2937',
+            'gray-900': '#111827',
+          },
+          fontFamily: {
+            inter: ['Inter', 'sans-serif'],
+            mono: ['Consolas', 'Monaco', 'monospace']
+          },
+          boxShadow: {
+            'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .tab-active {
+        @apply bg-primary text-white;
+      }
+      .code-block {
+        @apply bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto font-mono text-sm;
+      }
+      .tip-box {
+        @apply bg-blue-50 border-l-4 border-primary p-4 rounded-r-lg my-4;
+      }
+      .warning-box {
+        @apply bg-orange-50 border-l-4 border-warning p-4 rounded-r-lg my-4;
+      }
+      .nav-link {
+        @apply px-4 py-2 rounded-lg transition-all duration-200 hover:bg-primary/10;
+      }
+      .nav-link.active {
+        @apply bg-primary/10 text-primary font-medium;
+      }
+    }
+  </style>
+</head>
+<body class="font-inter bg-gray-100 text-gray-800 min-h-screen flex flex-col">
+<!-- 导航栏 -->
+<nav class="bg-white shadow-md sticky top-0 z-50 transition-all duration-300">
+  <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+    <div class="flex items-center space-x-2">
+      <i class="fa fa-code text-primary text-2xl"></i>
+      <h1 class="text-xl font-bold text-gray-800">Vnollx 在线判题系统</h1>
+    </div>
+
+    <div class="md:hidden">
+      <button class="text-gray-700 focus:outline-none">
+        <i class="fa fa-bars text-xl"></i>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- 主要内容 -->
+<main class="flex-1 container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <!-- 页面标题 -->
+    <div class="text-center mb-10">
+      <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold text-gray-800 mb-4">在线判题系统使用指南</h1>
+      <p class="text-gray-600 max-w-2xl mx-auto">详细了解如何在本系统中提交代码，避免常见错误，提高解题效率</p>
+    </div>
+
+    <!-- 警告提示 -->
+    <div class="warning-box flex items-start">
+      <div class="flex-shrink-0 mr-3">
+        <i class="fa fa-exclamation-triangle text-warning text-xl"></i>
+      </div>
+      <div>
+        <h3 class="font-semibold text-gray-800">重要提示</h3>
+        <p class="text-gray-700 mt-1">提交代码前请仔细阅读本指南，避免因格式问题导致判题失败。</p>
+      </div>
+    </div>
+
+    <!-- 语言选择标签 -->
+    <div class="mb-6">
+      <div class="flex flex-wrap bg-white rounded-lg shadow-card overflow-hidden">
+        <button class="tablinks tab-active px-6 py-3 text-sm font-medium flex-1 transition-all duration-200 hover:bg-primary/10 focus:outline-none" onclick="openLanguage(event, 'python')">
+          <i class="fa fa-code mr-2"></i>Python
+        </button>
+        <button class="tablinks px-6 py-3 text-sm font-medium flex-1 transition-all duration-200 hover:bg-primary/10 focus:outline-none" onclick="openLanguage(event, 'java')">
+          <i class="fa fa-coffee mr-2"></i>Java
+        </button>
+        <button class="tablinks px-6 py-3 text-sm font-medium flex-1 transition-all duration-200 hover:bg-primary/10 focus:outline-none" onclick="openLanguage(event, 'cpp')">
+          <i class="fa fa-cube mr-2"></i>C++
+        </button>
+        <button class="tablinks px-6 py-3 text-sm font-medium flex-1 transition-all duration-200 hover:bg-primary/10 focus:outline-none" onclick="openLanguage(event, 'general')">
+          <i class="fa fa-info-circle mr-2"></i>通用规则
+        </button>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div id="python" class="tabcontent bg-white rounded-lg shadow-card p-6 mb-8">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+          <i class="fa fa-code text-xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 ml-3">Python 提交规范</h2>
+      </div>
+
+      <div class="tip-box flex items-start">
+        <div class="flex-shrink-0 mr-3 text-primary">
+          <i class="fa fa-lightbulb-o text-xl"></i>
+        </div>
+        <div>
+          <p class="text-gray-700">Python 是解释型语言，直接提交源代码，不需要编译。</p>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-keyboard-o text-primary mr-2"></i>输入输出规范
+        </h3>
+        <div class="code-block">
+<pre>
+# 读取单个整数
+n = int(input())
+
+# 读取一行多个整数（如输入"1 2 3"）
+nums = list(map(int, input().split()))
+
+# 读取多行输入
+n = int(input())
+for _ in range(n):
+    data = input().split()
+    # 处理数据
+
+# 输出
+print("结果:", ans)
+</pre>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-bug text-primary mr-2"></i>常见错误
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">错误类型</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原因</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">解决方案</th>
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">ValueError</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">尝试用int()转换包含空格的字符串</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">使用split()分割输入</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Time Limit Exceeded</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">算法效率低或死循环</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">优化算法复杂度</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">IndentationError</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">缩进不正确</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">检查所有代码块的缩进</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-file-code-o text-primary mr-2"></i>示例代码
+        </h3>
+        <div class="code-block">
+<pre>
+# A+B Problem 示例
+a, b = map(int, input().split())
+print(a + b)
+</pre>
+        </div>
+      </div>
+    </div>
+
+    <div id="java" class="tabcontent bg-white rounded-lg shadow-card p-6 mb-8 hidden">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+          <i class="fa fa-coffee text-xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 ml-3">Java 提交规范</h2>
+      </div>
+
+      <div class="warning-box flex items-start">
+        <div class="flex-shrink-0 mr-3 text-warning">
+          <i class="fa fa-exclamation-circle text-xl"></i>
+        </div>
+        <div>
+          <p class="text-gray-700"><strong>特别注意：</strong> Java 类名必须为 <strong>Main</strong>，且不能有package声明！</p>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-file-text-o text-primary mr-2"></i>基本结构
+        </h3>
+        <div class="code-block">
+<pre>
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        // 你的代码
+        sc.close();
+    }
+}
+</pre>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-keyboard-o text-primary mr-2"></i>输入输出
+        </h3>
+        <div class="code-block">
+<pre>
+// 读取一个整数
+int n = sc.nextInt();
+
+// 读取一行多个整数
+String[] nums = sc.nextLine().split(" ");
+int[] arr = new int[nums.length];
+for (int i = 0; i < nums.length; i++) {
+    arr[i] = Integer.parseInt(nums[i]);
+}
+
+// 输出
+System.out.println("结果: " + result);
+</pre>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-bug text-primary mr-2"></i>常见问题
+        </h3>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          <li>类名不是Main会导致编译错误</li>
+          <li>忘记关闭Scanner可能导致资源泄漏</li>
+          <li>使用package声明会导致判题失败</li>
+          <li>Java程序启动较慢，注意时间限制</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="cpp" class="tabcontent bg-white rounded-lg shadow-card p-6 mb-8 hidden">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+          <i class="fa fa-cube text-xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 ml-3">C++ 提交规范</h2>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-file-text-o text-primary mr-2"></i>基本结构
+        </h3>
+        <div class="code-block">
+<pre>
+#include &lt;iostream&gt;
+using namespace std;
+
+int main() {
+    // 你的代码
+    return 0;
+}
+</pre>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-keyboard-o text-primary mr-2"></i>输入输出优化
+        </h3>
+        <div class="code-block">
+<pre>
+// 提高C++输入输出速度（大数据量时使用）
+ios::sync_with_stdio(false);
+cin.tie(0);
+
+// 读取一个整数
+int n;
+cin >> n;
+
+// 读取一行多个整数
+int arr[100];
+for (int i = 0; i < n; i++) {
+    cin >> arr[i];
+}
+
+// 输出
+cout << "结果: " << ans << endl;
+</pre>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-bug text-primary mr-2"></i>注意事项
+        </h3>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          <li>不要使用conio.h等非标准库</li>
+          <li>数组大小要足够（避免越界）</li>
+          <li>变量要初始化</li>
+          <li>使用endl会刷新缓冲区，大数据量时使用'\n'</li>
+        </ul>
+      </div>
+    </div>
+
+    <div id="general" class="tabcontent bg-white rounded-lg shadow-card p-6 mb-8 hidden">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary">
+          <i class="fa fa-info-circle text-xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-800 ml-3">通用提交规则</h2>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-cogs text-primary mr-2"></i>判题流程
+        </h3>
+        <ol class="list-decimal pl-5 space-y-2 text-gray-700">
+          <li>提交代码到判题系统</li>
+          <li>系统编译（如需要）并执行代码</li>
+          <li>用测试用例验证输出</li>
+          <li>返回判题结果</li>
+        </ol>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-exclamation-triangle text-primary mr-2"></i>所有语言通用规则
+        </h3>
+        <ul class="list-disc pl-5 space-y-2 text-gray-700">
+          <li>程序必须从标准输入读取数据</li>
+          <li>结果必须输出到标准输出</li>
+          <li>不要尝试访问文件系统或网络</li>
+          <li>不要使用危险系统调用</li>
+          <li>禁止任何形式的作弊行为</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+          <i class="fa fa-table text-primary mr-2"></i>结果状态说明
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">含义</th>
+            </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-700">Accepted</td>
+              <td class="px-6 py-4 text-sm text-gray-900">答案正确</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-700">Wrong Answer</td>
+              <td class="px-6 py-4 text-sm text-gray-900">答案错误</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-700">Compile Error</td>
+              <td class="px-6 py-4 text-sm text-gray-900">编译失败</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-orange-700">Time Limit Exceeded</td>
+              <td class="px-6 py-4 text-sm text-gray-900">超过时间限制</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-yellow-700">Runtime Error</td>
+              <td class="px-6 py-4 text-sm text-gray-900">运行时错误</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-700">Memory Limit Exceeded</td>
+              <td class="px-6 py-4 text-sm text-gray-900">超过内存限制</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 text-gray-300 py-8">
+  <div class="container mx-auto px-4">
+    <div class="flex flex-col md:flex-row justify-between items-center">
+      <div class="mb-6 md:mb-0">
+        <div class="flex items-center justify-center md:justify-start">
+          <i class="fa fa-code text-primary text-2xl mr-2"></i>
+          <h2 class="text-xl font-bold text-white">Vnollx 在线判题系统</h2>
+        </div>
+        <p class="mt-2 text-gray-400 text-center md:text-left">提升编程技能的理想平台</p>
+      </div>
+      <div class="flex space-x-6">
+        <a href="https://github.com/Vnollx-ww" class="text-gray-400 hover:text-white transition-colors duration-200">
+          <i class="fa fa-github text-xl"></i>
+        </a>
+        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+          <i class="fa fa-twitter text-xl"></i>
+        </a>
+        <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">
+          <i class="fa fa-envelope text-xl"></i>
+        </a>
+      </div>
+    </div>
+    <div class="mt-8 pt-6 border-t border-gray-700 text-center text-gray-500 text-sm">
+      <p>© 2025 Vnollx 在线判题系统 | 如有问题请联系管理员</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function openLanguage(evt, languageName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" tab-active", "");
+    }
+    document.getElementById(languageName).style.display = "block";
+    evt.currentTarget.className += " tab-active";
+
+    // 平滑滚动到内容顶部
+    document.querySelector('.tabcontent').scrollIntoView({
+      behavior: 'smooth'
+    });
+  }
+
+  // 导航栏滚动效果
+  window.addEventListener('scroll', function() {
+    const nav = document.querySelector('nav');
+    if (window.scrollY > 50) {
+      nav.classList.add('py-2');
+      nav.classList.add('shadow-lg');
+    } else {
+      nav.classList.remove('py-2');
+      nav.classList.remove('shadow-lg');
+    }
+  });
+</script>
+</body>
+</html>

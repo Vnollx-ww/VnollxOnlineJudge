@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户中心 - VnollxOJ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .profile-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .problem-list {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+        }
+        .problem-item:hover {
+            background-color: #f8fafc;
+        }
+        .stat-badge {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        .problem-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- 用户信息卡片 -->
+    <div class="profile-card p-6 mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800" id="user-name"><span th:text="${user.name}"></span></h1>
+            </div>
+            <div class="flex space-x-4">
+                <!-- 提交统计 -->
+                <div class="stat-card p-4 rounded-xl w-32 text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="submit-count"> <span th:text="${user.submitCount}"></span></div>
+                    <div class="text-sm text-gray-600">提交次数</div>
+                </div>
+                <!-- 通过统计 -->
+                <div class="stat-card p-4 rounded-xl w-32 text-center">
+                    <div class="text-2xl font-bold text-green-600" id="pass-count"> <span th:text="${user.passCount}"></span></div>
+                    <div class="text-sm text-gray-600">通过题目数量</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 隐藏元素存储用户 ID -->
+    <span id="userid" th:text="${user.id}" style="display: none;"></span>
+    <!-- 已解决问题列表 -->
+    <div class="problem-list rounded-xl shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800">已解决问题列表</h3>
+        </div>
+        <div class="p-4" id="problem-list">
+            <div class="text-center text-gray-500 py-4">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 获取用户信息
+
+    // 获取已解决问题列表
+    async function fetchSolvedProblems() {
+        const problemList = document.getElementById('problem-list');
+        try {
+            const targetSpan = document.getElementById('userid');
+            const userId = targetSpan.textContent;
+            const params = new URLSearchParams({
+                uid:userId
+            });
+            const response = await fetch(`/user/solved-problems?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                }
+            });
+
+            const { code, data, msg } = await response.json();
+
+            if (code !== 200) {
+                problemList.innerHTML = `
+                <div class="text-center py-4 text-red-500">
+                    ${msg || '获取数据失败'}
+                </div>
+            `;
+                return;
+            }
+
+            if (data.length === 0) {
+                problemList.innerHTML = `
+                <div class="text-center py-4 text-gray-500">
+                    暂无已解决问题
+                </div>
+            `;
+                return;
+            }
+
+            // 关键修改：使用 problem.problem_id 而非 problem.id
+            problemList.innerHTML = data.map(problem => `
+            <a href="/problem/${problem.problemId}"
+               class="group block mb-2 last:mb-0">
+                <div class="problem-item flex items-center justify-between px-4 py-3
+                           border border-gray-200 rounded-lg
+                           hover:border-blue-300 hover:bg-blue-50
+                           transition-all duration-200">
+                    <div class="flex items-center">
+                        <span class="text-sm font-mono px-2 py-1 mr-3
+                                   bg-gray-100 rounded-md text-blue-600
+                                   border border-gray-300">
+                            #${problem.problemId}
+                        </span>
+                        <span class="text-gray-600 text-sm">
+                            查看题目详情
+                        </span>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5 text-gray-400 group-hover:text-blue-500
+                                transition-colors"
+                         fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M9 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            </a>
+        `).join('');
+        } catch (error) {
+            problemList.innerHTML = `
+            <div class="text-center py-4 text-red-500">
+                网络请求失败，请稍后重试
+            </div>
+        `;
+        }
+    }
+
+    // 初始化
+    window.onload = async () => {
+        if (!localStorage.getItem('token')) {
+            alert('请先登录！');
+            window.location.href = '/login';
+            return;
+        }
+
+        await fetchSolvedProblems();
+    };
+</script>
+</body>
+</html>

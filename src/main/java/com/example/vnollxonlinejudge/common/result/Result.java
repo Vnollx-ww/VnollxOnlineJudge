@@ -36,8 +36,8 @@ public class Result<T> {
         this.data = data;
     }
 
-    public static Result Success(String msg) {
-        Result result = new Result<>();
+    public static <T> Result<T> Success(String msg) {
+        Result<T> result = new Result<>();
         result.setCode(200);
         result.setMsg(msg);
         return result;
@@ -57,18 +57,23 @@ public class Result<T> {
         return result;
     }
 
-    public static Result SystemError(String msg) {
-        Result result = new Result();
+    public static  <T> Result<T> SystemError(String msg) {
+        Result<T> result = new Result<>();
         result.setCode(500);
         result.setMsg(msg);
         return result;
     }
 
-    public static Result LogicError(String msg){
-        Result result = new Result();
+    public static  <T> Result<T> LogicError(String msg){
+        Result<T> result = new Result<>();
         result.setCode(400);
         result.setMsg(msg);
         return result;
     }
-
+    public static  <T> Result<T> AuthenticationError(String msg){
+        Result<T> result = new Result<>();
+        result.setCode(401);
+        result.setMsg(msg);
+        return result;
+    }
 }

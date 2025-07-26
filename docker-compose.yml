@@ -18,7 +18,7 @@ services:
     image: mysql:8.0
     container_name: mysql-master
     ports:
-      - "3308:3306"  # 主库映射到 3308
+      - "3308:3308"  # 主库映射到 3308
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: vnollxonlinejudge
@@ -27,6 +27,7 @@ services:
     volumes:
       - mysql-master-data:/var/lib/mysql
     command:
+      - --port=3308  # 关键！让 MySQL 在容器内监听 3308
       - --server-id=1
       - --log-bin=mysql-bin
       - --binlog-format=ROW
@@ -41,13 +42,14 @@ services:
     image: mysql:8.0
     container_name: mysql-slave
     ports:
-      - "3309:3306"  # 从库映射到 3309
+      - "3309:3309"  # 从库映射到 3309
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: vnollxonlinejudge
     volumes:
       - mysql-slave-data:/var/lib/mysql
     command:
+      - --port=3309  # 关键！让 MySQL 在容器内监听 3308
       - --server-id=2
       - --log-bin=mysql-bin
       - --binlog-format=ROW
@@ -85,7 +87,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:management
-    container_name: some-rabbit
+    container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
@@ -96,7 +98,13 @@ services:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
       - app-network
-
+  go-judge:
+    image: criyle/go-judge:latest
+    container_name: go-judge
+    ports:
+      - "5050:5050"
+    networks:
+      - app-network
 volumes:
   mysql-master-data:
     driver: local
@@ -110,4 +118,3 @@ volumes:
 networks:
   app-network:
     driver: bridge
-    

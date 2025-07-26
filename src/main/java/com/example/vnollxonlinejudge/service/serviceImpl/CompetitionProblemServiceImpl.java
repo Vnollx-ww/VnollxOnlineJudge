@@ -2,7 +2,7 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.domain.CompetitionProblem;
+import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.mapper.CompetitionProblemMapper;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
 import org.springframework.stereotype.Service;

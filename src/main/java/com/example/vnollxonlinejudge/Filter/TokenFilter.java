@@ -7,19 +7,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebFilter(filterName = "TokenFilter", urlPatterns = {"/user/*", "/problem/*","/submission/*","/solve/*","/competition/*","/judge/*"})
+@WebFilter(filterName = "TokenFilter", urlPatterns = {"/user/*", "/problem/*","/submission/*","/solve/*","/competition/*","/judge/*","/admin/*","/tag/*","/notification/*"})
 public class TokenFilter implements Filter {
-    private static final String TOKEN_PARAM = "token";
+    private static final String AUTH_HEADER = "Authorization";
+    private static final String TOKEN_PREFIX = "Bearer ";
     private static final String[] EXCLUDED_PATHS = {
             "/user/login",
             "/user/register",
+            "/user/forget",
             "/problem/\\d+",
             "/user/\\d+",
             "/submission/\\d+",
             "/solve/\\d+",
             "/solve/list/\\d+",
             "/competition/\\d+",
-            "/competition/problem/\\d+/\\d+", // 新增路径
+            "/competition/problem/\\d+/\\d+",
             "/competition/ranklist/\\d+",
             "/competition/submission/\\d+",
             "/solve/publish/\\d+"
@@ -31,42 +33,53 @@ public class TokenFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         String requestURI = request.getRequestURI();
+
+        // Check for excluded paths
         for (String path : EXCLUDED_PATHS) {
             if (path.contains("\\d+")) {
-                // 处理动态路由匹配
+                // Handle dynamic route matching
                 if (requestURI.matches("^" + path.replace("\\d+", "\\d+") + "$")) {
                     filterChain.doFilter(request, response);
                     return;
                 }
             } else if (requestURI.startsWith(path)) {
-                // 如果是排除路径，直接放行
+                // If it's an excluded path, let it pass
                 filterChain.doFilter(request, response);
                 return;
             }
         }
 
-        // 从 form-data 中获取 Token
-        String token = request.getParameter(TOKEN_PARAM);
-
-        // 检查 Token 是否存在或为空
-        if (token == null || token.trim().isEmpty()) {
+        // Get token from Authorization header
+        String authHeader = request.getHeader(AUTH_HEADER);
+        if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().println("未找到token");
+            response.getWriter().println("不是哥们都不传token，你还想访问？");
             return;
         }
 
-        // 验证 Token 有效性
+        // Extract the token
+        String token = authHeader.substring(TOKEN_PREFIX.length());
+
+        // Check if token is empty
+        if (token.trim().isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().println("Token是空的，哥们");
+            return;
+        }
+
+        // Validate Token
         if (!Jwt.validateToken(token)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().println("无效token");
+            response.getWriter().println("无效的Token");
             return;
         }
 
-        // 解析用户 ID
+        // Parse user ID
         String userId = Jwt.getUserIdFromToken(token);
+        String identity=Jwt.getUserIdentityFromToken(token);
         request.setAttribute("uid", userId);
-
-        // 允许请求继续处理
+        request.setAttribute("identity",identity);
+        // Allow the request to proceed
         filterChain.doFilter(request, response);
     }
 }

@@ -1,5 +1,5 @@
 # 阶段1：构建环境
-FROM eclipse-temurin:17-jdk-focal AS builder
+FROM eclipse-temurin:21-jdk-jammy AS builder
 
 # 配置APT使用阿里云源（国内加速）
 RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
@@ -17,7 +17,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # 阶段2：运行环境
-FROM eclipse-temurin:17-jre-jammy
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 COPY --from=builder /build/target/*.jar app.jar
 EXPOSE 8080

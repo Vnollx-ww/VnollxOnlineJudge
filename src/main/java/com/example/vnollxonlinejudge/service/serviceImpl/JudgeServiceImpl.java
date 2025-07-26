@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
-import com.example.vnollxonlinejudge.domain.JudgeInfo;
+import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
