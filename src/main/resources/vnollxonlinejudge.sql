@@ -12,6 +12,20 @@ create table competition
 )
     charset = utf8mb4;
 
+create table notification
+(
+    id          bigint auto_increment
+        primary key,
+    title       varchar(255)                       not null,
+    description text                               null,
+    create_time datetime default CURRENT_TIMESTAMP null,
+    author      varchar(20)                        null
+)
+    charset = utf8mb4;
+
+create index notification_id_index
+    on notification (id);
+
 create table problem
 (
     id             bigint auto_increment
@@ -84,7 +98,8 @@ create table submission
     uid          bigint           null,
     problem_name varchar(255)     null,
     code         text             null,
-    cid          bigint default 0 null
+    cid          bigint default 0 null,
+    memory       int              not null comment '内存占用'
 )
     charset = utf8mb4;
 
@@ -120,14 +135,15 @@ create table user
 (
     id           int auto_increment
         primary key,
-    name         varchar(255)               not null,
-    password     varchar(255)               not null,
-    email        varchar(255)               not null,
-    submit_count int                        null,
-    pass_count   int                        null,
-    penalty_time int         default 0      null,
-    version      int         default 1      null,
-    identity     varchar(50) default 'USER' not null,
+    name         varchar(255)                  not null,
+    password     varchar(255) default '123456' null,
+    email        varchar(255)                  not null,
+    submit_count int                           null,
+    pass_count   int                           null,
+    penalty_time int          default 0        null,
+    version      int          default 1        null,
+    identity     varchar(50)  default 'USER'   not null,
+    salt         varchar(255)                  not null comment '盐值',
     constraint email
         unique (email)
 )
