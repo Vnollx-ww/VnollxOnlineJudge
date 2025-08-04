@@ -1,4 +1,4 @@
-package com.example.vnollxonlinejudge.strategy.judge;
+package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.common.result.RunResult;
 

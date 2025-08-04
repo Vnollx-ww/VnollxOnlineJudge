@@ -4,12 +4,12 @@
     <insert id="batchInsert">
         INSERT INTO submission (
         user_name, problem_name, status, create_time,
-        language, uid, pid, time, code, cid
+        language, uid, pid, time,memory, code, cid
         )
         VALUES
         <foreach collection="list" item="item" separator=",">
             (#{item.userName}, #{item.problemName}, #{item.status}, #{item.createTime},
-            #{item.language}, #{item.uid}, #{item.pid}, #{item.time}, #{item.code}, #{item.cid})
+            #{item.language}, #{item.uid}, #{item.pid}, #{item.time}, #{item.memory},#{item.code}, #{item.cid})
         </foreach>
     </insert>
 </mapper>

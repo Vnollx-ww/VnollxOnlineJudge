@@ -9,8 +9,8 @@ import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.service.UserService;
-import com.example.vnollxonlinejudge.strategy.judge.JudgeStrategy;
-import com.example.vnollxonlinejudge.strategy.judge.JudgeStrategyFactory;
+import com.example.vnollxonlinejudge.judge.JudgeStrategy;
+import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class SubmissionConsumer {
             );
             RunResult result = processSubmission(judgeInfo);
             // 异步处理提交记录
-            asyncProcessSubmission(judgeInfo,result.getStatus(),(int)result.getRunTime());
+            asyncProcessSubmission(judgeInfo,result.getStatus(),(int)result.getRunTime(), (int) result.getMemory());
             String replyTo = message.getMessageProperties().getReplyTo();
             String correlationId = message.getMessageProperties().getCorrelationId();
             Message response = MessageBuilder
@@ -70,7 +70,7 @@ public class SubmissionConsumer {
         );
     }
     @Async
-    public void asyncProcessSubmission(JudgeInfo judgeInfo,String status,int runTime) {
+    public void asyncProcessSubmission(JudgeInfo judgeInfo,String status,int runTime,int runMemory) {
         Submission submission = new Submission(
                 judgeInfo.getCode(),
                 judgeInfo.getLanguage(),
@@ -80,7 +80,8 @@ public class SubmissionConsumer {
                 judgeInfo.getCreateTime(),
                 judgeInfo.getUname(),
                 status,
-                runTime
+                runTime,
+                runMemory
         );
         submissionService.processSubmission(submission);
     }

@@ -1,8 +1,9 @@
-package com.example.vnollxonlinejudge.strategy.judge;
+package com.example.vnollxonlinejudge.judge;
 
 
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;

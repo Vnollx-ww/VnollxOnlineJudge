@@ -55,7 +55,8 @@ public class AdminUserController {
     public Result<Long> getUserCount(@RequestParam(required = false) String keyword,
                                      HttpServletRequest request) {
         Long adminId = getCurrentAdminId(request);
-        Long count =  userService.getCount(keyword, adminId);
+        String identity = (String) request.getAttribute("identity");
+        Long count =  userService.getCountByAdmin(keyword, identity);
         return Result.Success(count, "获取搜索用户总数成功");
     }
 

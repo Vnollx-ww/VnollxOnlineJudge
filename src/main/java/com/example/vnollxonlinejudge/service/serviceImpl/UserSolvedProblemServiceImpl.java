@@ -1,7 +1,9 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.mapper.UserSolvedProblemMapper;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
@@ -42,5 +44,12 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
                 .eq(UserSolvedProblem::getProblemId, pid)
                 .eq(UserSolvedProblem::getCompetitionId, cid);
         return this.baseMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public void deleteCompetition(long cid) {
+        QueryWrapper<UserSolvedProblem> wrapper=new QueryWrapper<>();
+        wrapper.eq("competition_id",cid);
+        this.baseMapper.delete(wrapper);
     }
 }

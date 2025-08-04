@@ -12,12 +12,16 @@ import java.util.List;
 public interface CompetitionService {
     CompetitionResponse getCompetitionById(long id);
 
-    void createCompetition(String title,String description,String begin_time,String end_time,String password);
-    List<CompetitionResponse> getCompetitionList();
+    void createCompetition(String title,String description,String beginTime,String endTime,String password,boolean needPassword);
+    void updateCompetition(long id,String title,String description,String beginTime,String endTime,String password,boolean needPassword);
+    List<CompetitionResponse> getCompetitionList(int pageNum,int pageSize,String keyword);
+    Long getCount(String keyword);
     void confirmPassword(Long id,String password);
 
     List<ProblemResponse> getProblemList(long cid);
     List<UserResponse> getUserList(long cid);
-    void judgeIsOpenById(String now, long id);
+    Boolean judgeIsOpenById(String now, long id);
     void judgeIsEndById(String now,long id);
+    void deleteCompetition(long id);
+    void addNumber(long id);
 }

@@ -63,6 +63,7 @@ public class RedisServiceImpl implements RedisService {
                 sub.setCreateTime(submissionMap.get("createTime"));
                 sub.setLanguage(submissionMap.get("language"));
                 sub.setTime(Integer.parseInt(submissionMap.get("time")));
+                sub.setMemory(Integer.parseInt(submissionMap.get("memory")));
                 sub.setProblemName(submissionMap.get("title"));
                 sub.setStatus(submissionMap.get("status"));
                 sub.setCode(submissionMap.get("code"));
@@ -90,7 +91,7 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public void cacheSubmission(String userName, String title, String code,
                                 String result, String createTime, String language,
-                                long uid, long pid, int time, long cid) {
+                                long uid, long pid, int time, int memory,long cid) {
         try (Jedis jedis = jedisPool.getResource()) {
             Map<String, String> submissionMap = new HashMap<>();
             submissionMap.put("userName", userName);
@@ -102,8 +103,8 @@ public class RedisServiceImpl implements RedisService {
             submissionMap.put("uid", String.valueOf(uid));
             submissionMap.put("pid", String.valueOf(pid));
             submissionMap.put("time", String.valueOf(time));
+            submissionMap.put("memory",String.valueOf(memory));
             submissionMap.put("cid", String.valueOf(cid));
-
             // 使用Redis Hash存储每条记录
             String submissionId = "sub:" + System.currentTimeMillis() + ":" + UUID.randomUUID();
             jedis.hmset(submissionId, submissionMap);
@@ -174,14 +175,13 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void updateIfPass(String userPassKey, String userPenaltyKey, String problemPassKey, String problemSubmitKey, String rankingKey, String userName) {
+    public void updateIfPass(String userPassKey, String userPenaltyKey, String problemPassKey, String problemSubmitKey, String rankingKey, String userName,long penalty) {
         try (Jedis jedis = jedisPool.getResource()) {
             long passCount = jedis.incr(userPassKey);
             jedis.incr(problemPassKey);
             jedis.incr(problemSubmitKey);
-            int penaltyTime = Integer.parseInt(jedis.get(userPenaltyKey));
-
-            long newScore = calculateScore((int) passCount, penaltyTime);
+            long newPenalty=jedis.incrBy(userPenaltyKey,penalty);
+            long newScore = calculateScore((int) passCount, (int) newPenalty);
             jedis.zadd(rankingKey, newScore, userName);
         }
     }

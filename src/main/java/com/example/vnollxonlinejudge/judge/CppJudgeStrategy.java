@@ -1,4 +1,4 @@
-package com.example.vnollxonlinejudge.strategy.judge;
+package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.common.result.RunResult;
 import io.minio.GetObjectArgs;
@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
@@ -19,7 +18,10 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -46,11 +48,11 @@ public class CppJudgeStrategy implements JudgeStrategy {
     public RunResult judge(String code, String dataZipUrl, int timeLimit, int memoryLimit) {
         RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
         result.setRunTime(result.getTime() / 1000000);
-
+        result.setMemory(result.getMemory()/1048576);
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus("答案正确");
             case "Time Limit Exceeded" -> result.setStatus("时间超出限制");
-            case "Memory Limit Exceeded" -> result.setStatus("内存超出限制");
+            case "Signalled" -> result.setStatus("内存超出限制");
         }
 
         return result;
@@ -124,6 +126,9 @@ public class CppJudgeStrategy implements JudgeStrategy {
                     finalResult.setRunTime(Math.max(finalResult.getRunTime(), result.getRunTime()));
 
                     if (!"Accepted".equals(result.getStatus())) {
+                        if (finalResult.getStatus().equals("Signalled")){
+                            finalResult.setMemory(memoryLimitMB * 1024 * 1024);
+                        }
                         finalResult.setStatus(result.getStatus());
                         return finalResult;
                     }

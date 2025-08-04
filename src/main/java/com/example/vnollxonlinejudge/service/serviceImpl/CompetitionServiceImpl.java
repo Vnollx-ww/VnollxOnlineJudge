@@ -3,6 +3,9 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.dto.response.competition.CompetitionResponse;
 import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
@@ -12,10 +15,12 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.*;
 import com.example.vnollxonlinejudge.utils.TimeUtils;
+import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.resps.Tuple;
 import com.example.vnollxonlinejudge.common.result.Result;
 import java.time.LocalDateTime;
@@ -34,11 +39,16 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     private ProblemService problemService;
     @Autowired
     private RedisService redisService;
+    @Autowired
+    private UserSolvedProblemService userSolvedProblemService;
+    @Autowired
+    private SubmissionService submissionService;
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d"; // cid:pid
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
     private static final String USER_PENALTY_KEY = "competition_user_penalty:%d:%s"; // cid:uid
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
+    private static final String TIME_BEGIN_KEY="competition_time_begin:%d";
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
     @Override
     public CompetitionResponse getCompetitionById(long id) {
@@ -49,25 +59,62 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         return new CompetitionResponse(competition);
     }
     @Override
-    public void createCompetition(String title, String description, String begin_time, String end_time, String password) {
-        boolean hasPassword = !Objects.equals(password, "");
+    public void createCompetition(String title, String description, String beginTime, String endTime, String password,boolean needPassword) {
         Competition competition = new Competition();
         competition.setTitle(title);
         competition.setDescription(description);
-        competition.setBeginTime(begin_time);
-        competition.setEndTime(end_time);
+        competition.setBeginTime(beginTime);
+        competition.setEndTime(endTime);
         competition.setPassword(password);
-        competition.setNeedPassword(hasPassword);;
+        competition.setNeedPassword(needPassword);;
 
         this.save(competition);
     }
 
     @Override
-    public List<CompetitionResponse> getCompetitionList() {
-        List<Competition> competitionList = this.list();
+    public void updateCompetition(long id, String title, String description, String beginTime, String endTime, String password, boolean needPassword) {
+        Competition competition=this.getById(id);
+        if (competition==null){
+            throw new BusinessException("比赛不存在或已被删除");
+        }
+        competition.setTitle(title);
+        competition.setDescription(description);
+        competition.setBeginTime(beginTime);
+        competition.setEndTime(endTime);
+        competition.setPassword(password);
+        competition.setNeedPassword(needPassword);
+        this.updateById(competition);
+    }
+
+    @Override
+    public List<CompetitionResponse> getCompetitionList(int pageNum,int pageSize,String keyword) {
+        QueryWrapper<Competition> wrapper=new QueryWrapper<>();
+        List<Competition> competitionList;
+        if (StringUtils.isNotBlank(keyword)){
+            wrapper.like("title",keyword);
+            Page<Competition> page = new Page<>(pageNum, pageSize);
+            competitionList=this.page(page, wrapper).getRecords();
+        }
+        else{
+            if (pageNum==0){
+                competitionList = this.list(wrapper);
+                competitionList.forEach(competition -> competition.setPassword("*******"));
+            }
+            else{
+                Page<Competition> page = new Page<>(pageNum, pageSize);
+                competitionList=this.page(page, wrapper).getRecords();
+            }
+        }
         return competitionList.stream()
                 .map(CompetitionResponse::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Long getCount(String keyword) {
+        QueryWrapper<Competition>wrapper=new QueryWrapper<>();
+        wrapper.like("title",keyword);
+        return this.count(wrapper);
     }
 
     @Override
@@ -85,6 +132,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     public List<ProblemResponse> getProblemList(long cid) {
             String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey(cacheKey);
+            String timeOutKey = String.format(TIME_OUT_KEY, cid);
             List<ProblemResponse> problems = new ArrayList<>();
             if (problemsJson != null&&redisService.getTtl(cacheKey)>600) {
                 TypeReference<Map<Integer, ProblemResponse>> typeRef = new TypeReference<Map<Integer, ProblemResponse>>() {};
@@ -102,7 +150,6 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 }
                 // 将更新后的 Map 重新序列化为 JSON 并存储回 Redis
                 String updatedProblemsJson = JSON.toJSONString(problemMap);
-                String timeOutKey = String.format(TIME_OUT_KEY, cid);
                 String endTimeStr=redisService.getValueByKey(timeOutKey);
                 long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
                 redisService.setkey(cacheKey,updatedProblemsJson,ttlSeconds+600);
@@ -111,8 +158,10 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 List<CompetitionProblem> pids = competitionProblemService.getProblemList(cid);
                 problems = new ArrayList<>();
                 QueryWrapper<Competition> wrapper=new QueryWrapper<>();
-                wrapper.eq("id",cid).select("end_time");
-                String endTimeStr = this.baseMapper.selectOne(wrapper).getEndTime();
+                wrapper.eq("id",cid).select("end_time,begin_time");
+                Competition competition=this.baseMapper.selectOne(wrapper);
+                String endTimeStr = competition.getEndTime();
+                String beginTimeStr=competition.getBeginTime();
                 long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
                 for (CompetitionProblem competitionProblem : pids) {
                     ProblemResponse problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid);
@@ -137,8 +186,9 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                     }
                     String updatedProblemsJson = JSON.toJSONString(problemMap);
                     redisService.setkey(cacheKey,updatedProblemsJson,ttlSeconds+600);
-                    String timeOutKey=String.format(TIME_OUT_KEY,cid);
                     redisService.setkey(timeOutKey,endTimeStr,ttlSeconds);
+                    String timeBeginKey=String.format(TIME_BEGIN_KEY,cid);
+                    redisService.setkey(timeBeginKey,beginTimeStr,ttlSeconds);
                 }
             }
             return problems;
@@ -181,7 +231,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     }
 
     @Override
-    public void judgeIsOpenById(String now, long id) {
+    public Boolean judgeIsOpenById(String now, long id) {
         QueryWrapper<Competition> queryWrapper = new QueryWrapper<>();
         queryWrapper.select("begin_time")
                 .eq("id", id);
@@ -194,6 +244,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         if (nowDateTime.isBefore(beginDateTime)) {
             throw new BusinessException("比赛暂未开始，请遵守规则");
         }
+        return competition.getNeedPassword();
     }
 
     @Override
@@ -211,4 +262,21 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         }
     }
 
+    @Override
+    @Transactional
+    public void deleteCompetition(long id) {
+        this.baseMapper.deleteById(id);
+        competitionUserService.deleteCompetiton(id);
+        competitionProblemService.deleteCompetition(id);
+        submissionService.deleteSubmissionsByCid(id);
+        userSolvedProblemService.deleteCompetition(id);
+    }
+
+    @Override
+    public void addNumber(long id) {
+        LambdaUpdateWrapper<Competition> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.setSql("number = number + 1")
+                .eq(Competition::getId, id);
+        this.update(updateWrapper);
+    }
 }

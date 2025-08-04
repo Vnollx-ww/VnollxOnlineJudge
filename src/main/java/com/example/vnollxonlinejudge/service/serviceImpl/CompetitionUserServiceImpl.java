@@ -7,12 +7,16 @@ import com.example.vnollxonlinejudge.model.entity.Competition;
 import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.CompetitionUserMapper;
+import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.CompetitionUserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
 public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMapper, CompetitionUser> implements CompetitionUserService {
+    @Autowired
+    private CompetitionService competitionService;
     @Override
     public List<CompetitionUser> getUserList(Long cid) {
         return lambdaQuery()
@@ -53,5 +57,13 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
         record.setCompetitionId(cid);
         record.setUserId(uid);
         save(record);
+        competitionService.addNumber(cid);
+    }
+
+    @Override
+    public void deleteCompetiton(long id) {
+        QueryWrapper<CompetitionUser> wrapper=new QueryWrapper<>();
+        wrapper.eq("competition_id",id);
+        this.baseMapper.delete(wrapper);
     }
 }

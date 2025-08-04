@@ -74,7 +74,7 @@ public class CompetitionController {
     @GetMapping("/list")
     public Result<List<CompetitionResponse>> getCompetitionList(){
 
-        return Result.Success(competitionService.getCompetitionList()
+        return Result.Success(competitionService.getCompetitionList(0,0,null)
                 , "获取比赛列表成功！！！");
     }
     @GetMapping("/list-problem")
@@ -94,7 +94,7 @@ public class CompetitionController {
         return Result.Success("密码正确，欢迎进入比赛");
     }
     @PostMapping("/judgeIsOpen")
-    public Result<Void> judgeIsOpenById(@RequestBody GetCompetitionStatusRequest req){
+    public Result<Boolean> judgeIsOpenById(@RequestBody GetCompetitionStatusRequest req){
         competitionService.judgeIsOpenById(req.getNow(),Long.parseLong(req.getId()));
         return Result.Success("比赛开放中");
     }
@@ -103,4 +103,4 @@ public class CompetitionController {
         competitionService.judgeIsEndById(req.getNow(),Long.parseLong(req.getId()));
         return Result.Success("比赛开放中");
     }
-}
+ }

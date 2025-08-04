@@ -274,6 +274,54 @@
             margin-bottom: 8px;
         }
 
+        /* 美化的判题结果弹框 */
+        .status-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            font-size: 1.05rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 300px;
+            max-width: 450px;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-success {
+            background: #f0fff4;
+            color: #22543d;
+            border-left: 4px solid #38a169;
+        }
+
+        .status-error {
+            background: #fff5f5;
+            color: #742a2a;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .status-info {
+            background: #edf2ff;
+            color: #2c5282;
+            border-left: 4px solid #4299e1;
+        }
+
+        .status-toast i {
+            font-size: 1.3em;
+        }
+
         @media (max-width: 768px) {
             .problem-header {
                 flex-direction: column;
@@ -283,6 +331,11 @@
 
             .CodeMirror {
                 height: 350px;
+            }
+
+            .status-toast {
+                min-width: auto;
+                max-width: calc(100% - 40px);
             }
         }
     </style>
@@ -452,11 +505,10 @@
         document.querySelectorAll('.markdown-content').forEach(element => {
             const rawText = element.textContent;
             const parsedMarkdown = marked.parse(rawText);
-            const safeHtml = DOMPurify.sanitize(parsedMarkdown, {
+            element.innerHTML = DOMPurify.sanitize(parsedMarkdown, {
                 ADD_TAGS: ['iframe'],
                 ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
             });
-            element.innerHTML = safeHtml;
 
             // 渲染数学公式
             if (typeof MathJax !== 'undefined') {
@@ -543,16 +595,39 @@ int main() {
         showToast('代码草稿已自动保存', 'info', 2000);
     }
 
+    // 显示美化的提示框
     function showToast(message, type = 'info', duration = 3000) {
+        // 移除已存在的toast
+        const existingToast = document.querySelector('.status-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        // 创建新的toast
         const toast = document.createElement('div');
-        toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
-        toast.style.zIndex = '1000';
-        toast.style.transition = 'opacity 0.3s ease';
-        toast.textContent = message;
+        toast.className = `status-toast status-${type}`;
+
+        // 根据类型添加不同的图标
+        let icon = '';
+        if (type === 'success') {
+            icon = '<i class="fas fa-check-circle"></i>';
+        } else if (type === 'error') {
+            icon = '<i class="fas fa-times-circle"></i>';
+        } else {
+            icon = '<i class="fas fa-info-circle"></i>';
+        }
+
+        toast.innerHTML = `${icon}<span>${message}</span>`;
         document.body.appendChild(toast);
 
+        // 显示动画
         setTimeout(() => {
-            toast.style.opacity = '0';
+            toast.classList.add('show');
+        }, 10);
+
+        // 自动消失
+        setTimeout(() => {
+            toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
         }, duration);
     }
@@ -615,58 +690,62 @@ int main() {
         e.preventDefault();
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
-        const statusAlert = document.getElementById('statusAlert');
         const originalButtonText = submitBtn.innerHTML;
         const option = languageSelect.value;
-        if (option==="java"){
+
+        if (option === "java") {
             showToast("暂不支持用Java提交，请等待", 'error');
-            return ;
+            return;
         }
-        statusAlert.style.display = 'block';
-        statusAlert.className = 'alert alert-info';
-        statusAlert.textContent = '评测中，请稍候...';
+
+        // 显示提交中的提示
+        showToast('评测中，请稍候...', 'info', 10000);
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>提交中...';
+
+        // 提取时间和内存限制
         const timeText = document.getElementById('time').textContent;
-// 提取纯数值：通过全角冒号":"分割，取后面部分再通过空格分割取第一个数字
         const timeValue = timeText.split('：')[1].split(' ')[0];
 
-// 获取内存限制元素的文本（例如："内存限制：256 MB"）
         const memoryText = document.getElementById('memory').textContent;
-// 提取纯数值：同上逻辑
         const memoryValue = memoryText.split('：')[1].split(' ')[0];
+
         try {
             const currentDate = new Date();
-            const code=editor.getValue();
-            const pid=document.querySelector('input[name="problemId"]').value;
-            const uname=localStorage.getItem('name');
-            const cid="0";
-            const create_time=formatTime(currentDate);
-            const time=timeValue;
-            const memory=memoryValue;
+            const code = editor.getValue();
+            const pid = document.querySelector('input[name="problemId"]').value;
+            const uname = localStorage.getItem('name');
+            const cid = "0";
+            const create_time = formatTime(currentDate);
+            const time = timeValue;
+            const memory = memoryValue;
+
             const response = await fetch('/judge/submit', {
                 method: 'POST',
-                body: JSON.stringify({code,option,pid,uname,cid, create_time,time,memory}),
+                body: JSON.stringify({ code, option, pid, uname, cid, create_time, time, memory }),
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                    'Content-Type': 'application/json'  // 明确指定JSON格式
+                    'Content-Type': 'application/json'
                 }
             });
 
             const data = await response.json();
-            const resultMessage = data.msg.replace(/(\d+)/g, '<strong>$1</strong>');
 
+            // 显示结果提示
             if (data.code === 200) {
-                statusAlert.className = 'alert alert-success';
-                statusAlert.innerHTML = `判题结果：${resultMessage}`;
+                if(data.msg==="答案正确"){
+                    showToast(`${data.msg}！`, 'success', 5000);
+                }
+                else{
+                    showToast(`${data.msg}！`, 'error', 5000);
+                }
             } else {
-                statusAlert.className = 'alert alert-danger';
-                statusAlert.innerHTML = `错误：${resultMessage}`;
+                showToast(`${data.msg}！`, 'error', 5000);
             }
+
         } catch (error) {
-            statusAlert.className = 'alert alert-danger';
-            statusAlert.textContent = '网络连接异常，请检查网络后重试';
+            showToast('网络连接异常，请检查网络后重试', 'error');
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalButtonText;

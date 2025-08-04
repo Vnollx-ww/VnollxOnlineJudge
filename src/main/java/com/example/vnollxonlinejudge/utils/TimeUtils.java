@@ -22,4 +22,16 @@ public class TimeUtils {
             return 24 * 60 * 60; // 默认24小时
         }
     }
+    public static long calculateMin(String beginTimeStr,String createTimeStr) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date beginTime = sdf.parse(beginTimeStr);
+            Date createTime = sdf.parse(createTimeStr);
+            return (createTime.getTime() - beginTime.getTime()) / 60000;
+        }catch (ParseException e) {
+            logger.error("解析比赛结束时间失败，使用默认过期时间24小时", e);
+            return 24 * 60 * 60; // 默认24小时
+        }
+
+    }
 }

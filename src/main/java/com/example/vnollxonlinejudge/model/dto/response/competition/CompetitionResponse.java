@@ -15,6 +15,7 @@ public class CompetitionResponse {
     private String beginTime;
     private String endTime;
     private Boolean needPassword;
+    private String password;
     public CompetitionResponse(){}
     public CompetitionResponse(Competition competition){
         this.id=competition.getId();
@@ -24,5 +25,6 @@ public class CompetitionResponse {
         this.description=competition.getDescription();
         this.number=competition.getNumber();
         this.needPassword=competition.getNeedPassword();
+        this.password=competition.getPassword();
     }
 }

@@ -80,7 +80,10 @@ public class UserController {
     public Result<List<UserResponse>> getAllUser(){
             return Result.Success(userService.getAllUser(),"获取用户列表成功");
     }
-
+    @GetMapping("/count")
+    public Result<Long> getCount(){
+        return Result.Success(userService.getCount(),"获取用户数量成功");
+    }
     @PutMapping("/forget")
     public Result<Void> forgetPassword(@RequestBody ForgetPasswordRequest req){
         userService.forgetPassword(req.getNewPassword(),req.getEmail(),req.getVerifyCode());

@@ -7,4 +7,5 @@ public interface ProblemTagService {
     void deleteRelated(String name);
     void deleteTagByProblem(long pid);
     void addRelated(String name,long pid);
+    List<Long> getProblemByTag(String name);
 }

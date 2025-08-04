@@ -17,6 +17,7 @@ public class SubmissionResponse {
     private String createTime;
     private String language;
     private int time;
+    private int memory;
     private Long uid;
     private Long pid;
     public SubmissionResponse(){
@@ -31,6 +32,7 @@ public class SubmissionResponse {
         this.createTime=submission.getCreateTime();
         this.language=submission.getLanguage();
         this.time=submission.getTime();
+        this.memory=submission.getMemory();
         this.uid=submission.getUid();
         this.pid=submission.getPid();
     }

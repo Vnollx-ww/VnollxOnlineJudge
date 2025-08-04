@@ -7,7 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
-public class Jwt {
+public class JwtToken {
     // 注意：密钥长度必须至少256位（32字节）以符合HS256安全要求
     private static final String SECRET_KEY_STRING = "vnollxvnollxvnollxvnollxvnollx12"; // 加长密钥
     private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes());

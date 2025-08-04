@@ -51,4 +51,11 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
                 .map(TagResponse::new)  // 或者 user -> new UserResponse(user)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public TagResponse getTag(String name) {
+        QueryWrapper<Tag> wrapper=new QueryWrapper<>();
+        wrapper.eq("name",name);
+        return new TagResponse(this.getOne(wrapper));
+    }
 }

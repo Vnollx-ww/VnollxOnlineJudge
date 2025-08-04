@@ -490,13 +490,14 @@
     <table class="submissions-table">
         <thead>
         <tr>
-            <th style="width: 10%;">提交ID</th>
-            <th style="width: 20%;">题目名称</th>
-            <th style="width: 15%;">作者</th>
-            <th style="width: 15%; text-align: center;">状态</th>
-            <th style="width: 12%;">用时</th>
-            <th style="width: 18%;">提交时间</th>
-            <th style="width: 10%;">语言</th>
+            <th style="width: 8%;">提交ID</th>
+            <th style="width: 22%;">题目名称</th>
+            <th style="width: 12%;">作者</th>
+            <th style="width: 10%; text-align: center;">状态</th>
+            <th style="width: 10%;">用时</th>
+            <th style="width: 10%;">内存占用</th>
+            <th style="width: 20%;">提交时间</th>
+            <th style="width: 8%;">语言</th>
         </tr>
         </thead>
         <tbody id="submissions-list">
@@ -581,6 +582,7 @@
             if (onlyMySubmissions) {
                 params.append("uid", localStorage.getItem('token'));
             }
+            params.append("cid","0");
             params.append("pageNum",page);
             params.append("pageSize",PAGE_SIZE);
             const response = await fetch(`/submission/list?${params.toString()}`, {
@@ -636,6 +638,7 @@
                         </span>
                     </td>
                     <td>${sub.time}ms</td>
+                    <td>${sub.memory}MB</td>
                     <td>${sub.createTime}</td>
                     <td>${sub.language}</td>
                 `;

@@ -1,4 +1,4 @@
-package com.example.vnollxonlinejudge.strategy.judge;
+package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.common.result.RunResult;
 import io.minio.GetObjectArgs;
@@ -18,7 +18,8 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -43,7 +44,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
     public RunResult judge(String code, String dataZipUrl, int timeLimit, int memoryLimit) {
         RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
         result.setRunTime(result.getTime() / 1000000);
-
+        result.setMemory(result.getMemory()/1048576);
         // 状态码转换
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus("答案正确");

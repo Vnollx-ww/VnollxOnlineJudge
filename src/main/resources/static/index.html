@@ -12,6 +12,7 @@
             --accent: #66bb6a;
             --text: #2d3748;
             --bg: #f8fafc;
+            --light-blue: rgba(26, 115, 232, 0.05);
         }
 
         * {
@@ -25,8 +26,10 @@
             line-height: 1.6;
             color: var(--text);
             background: var(--bg);
+            overflow-x: hidden;
         }
 
+        /* 导航栏滚动效果 */
         header {
             background: white;
             padding: 1rem 2rem;
@@ -34,6 +37,14 @@
             position: sticky;
             top: 0;
             z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        header.scrolled {
+            padding: 0.8rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
         }
 
         .nav-container {
@@ -51,11 +62,22 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
         }
 
         .logo::before {
             content: "⚡";
             font-size: 1.4em;
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover::before {
+            transform: rotate(15deg);
         }
 
         .nav-links {
@@ -70,6 +92,11 @@
             font-weight: 500;
             position: relative;
             padding: 0.5rem 0;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
         }
 
         .nav-links a::after {
@@ -98,6 +125,7 @@
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s;
+            transform: translateY(0);
         }
 
         .auth-buttons a:first-child {
@@ -113,7 +141,7 @@
         }
 
         .auth-buttons a:hover {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
             box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2);
         }
 
@@ -134,6 +162,66 @@
             height: 200%;
             background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
             transform: rotate(15deg);
+            animation: pulse 20s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: rotate(15deg) scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: rotate(15deg) scale(1.1);
+                opacity: 1;
+            }
+            100% {
+                transform: rotate(15deg) scale(1);
+                opacity: 0.8;
+            }
+        }
+
+        /* 浮动装饰元素 */
+        .floating-shape {
+            position: absolute;
+            background: rgba(26, 115, 232, 0.05);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        .shape-1 {
+            width: 150px;
+            height: 150px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            bottom: 15%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .shape-3 {
+            width: 100px;
+            height: 100px;
+            top: 60%;
+            left: 25%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(10deg);
+            }
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
         }
 
         .hero-content {
@@ -148,6 +236,9 @@
             line-height: 1.1;
             color: var(--primary);
             letter-spacing: -0.03em;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s forwards 0.3s;
         }
 
         .hero-subtitle {
@@ -156,6 +247,45 @@
             max-width: 600px;
             margin: 0 auto 2.5rem;
             line-height: 1.7;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s forwards 0.6s;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 4rem;
+            margin: 4rem 0 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s forwards 0.9s;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            position: relative;
+            display: inline-block;
+            width: 100px;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .cta-button {
@@ -171,11 +301,31 @@
             text-decoration: none;
             box-shadow: 0 4px 6px rgba(26, 115, 232, 0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.8s forwards 1.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
         }
 
         .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 12px rgba(26, 115, 232, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(26, 115, 232, 0.3);
         }
 
         .cta-button::after {
@@ -186,6 +336,94 @@
 
         .cta-button:hover::after {
             transform: translateX(3px);
+        }
+
+        /* 特性展示区 */
+        .features {
+            padding: 8rem 2rem;
+            background: white;
+        }
+
+        .features-container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto 6rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .feature-card {
+            background: var(--bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .feature-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: rgba(26, 115, 232, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .feature-desc {
+            color: #6b7280;
+            line-height: 1.7;
         }
 
         footer {
@@ -209,10 +447,27 @@
             color: var(--text);
             text-decoration: none;
             transition: color 0.2s;
+            position: relative;
+            padding: 0.2rem 0;
+        }
+
+        footer a::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--primary);
+            transition: width 0.3s ease;
         }
 
         footer a:hover {
             color: var(--primary);
+        }
+
+        footer a:hover::after {
+            width: 100%;
         }
 
         .login-modal {
@@ -226,22 +481,33 @@
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .login-modal.show {
+            opacity: 1;
         }
 
         .modal-content {
             background: white;
-            padding: 1.8rem 2rem; /* 减小内边距 */
+            padding: 1.8rem 2rem;
             border-radius: 16px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-            max-width: 380px; /* 稍微减小最大宽度 */
+            max-width: 380px;
             width: 100%;
             position: relative;
+            transform: translateY(20px) scale(0.95);
+            transition: all 0.3s ease;
         }
 
-        /* 条款模态框样式 */
+        .login-modal.show .modal-content {
+            transform: translateY(0) scale(1);
+        }
+
         .terms-modal {
             max-width: 800px;
-            padding: 2rem 2.5rem; /* 条款模态框保持稍大的内边距 */
+            padding: 2rem 2.5rem;
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -277,18 +543,25 @@
             cursor: pointer;
             background: none;
             border: none;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .close-btn:hover {
             color: var(--primary);
+            background: rgba(26, 115, 232, 0.05);
         }
 
         .modal-title {
-            font-size: 1.5rem; /* 从1.8rem减小 */
+            font-size: 1.5rem;
             color: var(--text);
             text-align: center;
-            margin-bottom: 1.5rem; /* 减小标题下方间距 */
+            margin-bottom: 1.5rem;
         }
         .form-group {
             margin-bottom: 1.2rem;
@@ -307,19 +580,20 @@
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             font-size: 1rem;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
         }
 
         .form-input:focus {
             outline: none;
             border-color: var(--primary);
             box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+            transform: translateY(-2px);
         }
 
         .login-btn {
             width: 100%;
-            padding: 0.9rem 2rem; /* 稍微减小按钮内边距 */
-            font-size: 1rem; /* 减小按钮文字大小 */
+            padding: 0.9rem 2rem;
+            font-size: 1rem;
             background: var(--primary);
             color: white;
             border: none;
@@ -327,12 +601,29 @@
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(26, 115, 232, 0.2);
-            transition: transform 0.2s;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .login-btn:hover::before {
+            left: 100%;
         }
 
         .login-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 8px rgba(26, 115, 232, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(26, 115, 232, 0.3);
         }
 
         .login-btn:focus {
@@ -350,11 +641,28 @@
             color: var(--primary);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            position: relative;
+            padding: 0.1rem 0;
+        }
+
+        .register-link a::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--primary);
+            transition: width 0.3s;
         }
 
         .register-link a:hover {
             color: #0d47a1;
+        }
+
+        .register-link a:hover::after {
+            width: 100%;
         }
 
         @media (max-width: 768px) {
@@ -375,14 +683,26 @@
                 font-size: 0.9rem;
             }
 
-            .modal-content {
-                padding: 2rem;
+            .hero-stats {
+                gap: 2rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                gap: 2rem;
             }
         }
 
         @media (max-width: 480px) {
             header {
                 padding: 1rem;
+            }
+
+            header.scrolled {
+                padding: 0.8rem 1rem;
             }
 
             .logo {
@@ -397,6 +717,12 @@
                 font-size: 2rem;
             }
 
+            .hero-stats {
+                flex-direction: column;
+                gap: 1.5rem;
+                align-items: center;
+            }
+
             .cta-button {
                 width: 100%;
                 justify-content: center;
@@ -404,12 +730,16 @@
             }
 
             .modal-content {
-                padding: 1.2rem; /* 进一步减小小屏幕下的内边距 */
+                padding: 1.2rem;
                 margin: 0 0.8rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
             }
         }
 
-        /* 新增用户问候样式 */
+        /* 用户问候样式 */
         .user-greeting {
             display: flex;
             align-items: center;
@@ -421,13 +751,20 @@
             font-weight: 600;
             box-shadow: 0 2px 8px rgba(26, 115, 232, 0.1);
             position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-greeting:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
         }
 
         .user-greeting::before {
             font-size: 1.2em;
         }
 
-        /* 新增Toast样式 */
+        /* Toast样式 */
         .toast {
             position: fixed;
             bottom: 2rem;
@@ -486,11 +823,11 @@
             content: "ℹ️";
         }
 
-        /* 新增用户菜单样式 */
+        /* 用户菜单样式 */
         .user-menu {
             position: absolute;
             top: 100%;
-            left: 0;
+            right: 0;
             background: white;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -498,10 +835,13 @@
             min-width: 160px;
             display: none;
             z-index: 100;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
         }
 
-        .user-greeting:hover .user-menu {
+        .user-greeting-container:hover .user-menu {
             display: block;
+            transform: translateY(0);
         }
 
         .user-menu-item {
@@ -510,16 +850,17 @@
             text-decoration: none;
             display: block;
             font-size: 0.95rem;
-            transition: background 0.2s;
-            background-color: white; /* 统一菜单项背景颜色 */
+            transition: all 0.2s;
+            background-color: white;
         }
 
         .user-menu-item:hover {
             background: #f0f4ff;
             color: var(--primary);
+            transform: translateX(3px);
         }
 
-        /* 添加确认弹窗样式 */
+        /* 退出确认模态窗 */
         .logout-confirm-modal {
             position: fixed;
             top: 0;
@@ -531,6 +872,12 @@
             align-items: center;
             justify-content: center;
             z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .logout-confirm-modal.show {
+            opacity: 1;
         }
 
         .modal-content-inner {
@@ -572,6 +919,8 @@
             border-radius: 8px;
             font-weight: 500;
             transition: all 0.2s;
+            cursor: pointer;
+            border: none;
         }
 
         .cancel-btn {
@@ -582,6 +931,7 @@
 
         .cancel-btn:hover {
             background: #e5e7eb;
+            transform: translateY(-2px);
         }
 
         .confirm-btn {
@@ -593,10 +943,9 @@
         .confirm-btn:hover {
             background: #ff6b6b;
             box-shadow: 0 4px 6px rgba(255, 68, 68, 0.3);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
-        /* 适配现有响应式 */
         @media (max-width: 480px) {
             .modal-content-inner {
                 padding: 2rem 1.5rem;
@@ -625,7 +974,24 @@
             border-radius: 8px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .get-code-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .get-code-btn:not(:disabled):hover::before {
+            left: 100%;
         }
 
         .get-code-btn:disabled {
@@ -635,7 +1001,7 @@
 
         .get-code-btn:not(:disabled):hover {
             background: #0d47a1;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
         /* 忘记密码链接样式 */
@@ -648,10 +1014,28 @@
             color: var(--primary);
             text-decoration: none;
             font-size: 0.9rem;
+            transition: all 0.2s;
+            position: relative;
+            padding: 0.1rem 0;
+        }
+
+        .forgot-password-link a::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--primary);
+            transition: width 0.3s;
         }
 
         .forgot-password-link a:hover {
-            text-decoration: underline;
+            text-decoration: none;
+        }
+
+        .forgot-password-link a:hover::after {
+            width: 100%;
         }
     </style>
 </head>
@@ -665,7 +1049,7 @@
             <a href="submission.html">提交列表</a>
             <a href="ranklist.html">排行榜</a>
             <a href="competition.html">比赛</a>
-            <a href="notification.html">通知</a>
+            <a href="notification.html">使用指南</a>
             <a href="about.html">关于</a>
         </div>
         <div class="auth-buttons" id="authButtons">
@@ -675,6 +1059,98 @@
     </div>
 </header>
 
+<div class="hero">
+    <!-- 浮动装饰元素 -->
+    <div class="floating-shape shape-1"></div>
+    <div class="floating-shape shape-2"></div>
+    <div class="floating-shape shape-3"></div>
+
+    <div class="hero-content">
+        <h1 class="hero-title">用代码解决算法难题</h1>
+        <p class="hero-subtitle">
+            精选1000+算法题目，支持Python/Java/C++等多种语言在线提交，实时评测系统助你快速提升编程能力
+        </p>
+        <p class="hero-subtitle">任何一个伟大的思想，都有一个微不足道的开始。</p>
+
+        <a href="problem.html" class="cta-button">立即开始挑战</a>
+    </div>
+</div>
+
+<!-- 特性展示区 -->
+<section class="features">
+    <div class="features-container">
+        <h2 class="section-title">平台特色</h2>
+        <p class="section-subtitle">
+            我们提供全方位的算法训练支持，帮助你高效提升编程能力，轻松应对各类算法挑战
+        </p>
+
+        <div class="features-grid">
+            <div class="feature-card" data-delay="0">
+                <div class="feature-icon">📚</div>
+                <h3 class="feature-title">丰富的题目资源</h3>
+                <p class="feature-desc">
+                    1000+道精选算法题，覆盖基础到进阶难度，分类清晰，包含详细解题思路和参考答案，满足不同阶段学习者的需求。
+                </p>
+            </div>
+
+            <div class="feature-card" data-delay="100">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">实时评测系统</h3>
+                <p class="feature-desc">
+                    高效的在线评测系统，提交代码后立即获得反馈，包含详细的错误信息和运行时间、内存占用等性能指标。
+                </p>
+            </div>
+
+            <div class="feature-card" data-delay="200">
+                <div class="feature-icon">🏆</div>
+                <h3 class="feature-title">竞赛与排名</h3>
+                <p class="feature-desc">
+                    定期举办算法竞赛，真实模拟比赛环境，个人和团队排行榜实时更新，激发学习动力，见证成长历程。
+                </p>
+            </div>
+
+            <div class="feature-card" data-delay="300">
+                <div class="feature-icon">👥</div>
+                <h3 class="feature-title">社区交流</h3>
+                <p class="feature-desc">
+                    活跃的用户社区，支持题解分享和讨论，与志同道合的开发者交流学习经验，共同进步。
+                </p>
+            </div>
+
+            <div class="feature-card" data-delay="400">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">学习数据分析</h3>
+                <p class="feature-desc">
+                    记录你的学习轨迹和解题数据，生成个人能力分析报告，帮助你发现薄弱环节，优化学习计划。
+                </p>
+            </div>
+
+            <div class="feature-card" data-delay="500">
+                <div class="feature-icon">🌍</div>
+                <h3 class="feature-title">多语言支持</h3>
+                <p class="feature-desc">
+                    支持Python、Java、C++等多种主流编程语言，满足不同开发者的使用习惯。
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>
+        <span>&copy; 2025 VnollxOnlineJudge</span>
+        <a id="privacyLink">隐私政策</a>
+        <a id="termsLink">服务条款</a>
+        <a id="contactLink">联系我们</a>
+    </p>
+    <div style="text-align: center; margin-top: 20px; color: #666;">
+        <img src="https://beian.mps.gov.cn/web/assets/logo01.6189a29f.png" alt="备案图标" style="width: 20px; height: 20px; display: inline-block; margin-right: 5px;">
+        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=50010802006523" rel="noreferrer" target="_blank">渝公网安备50010802006523号</a><br>
+        <a href="https://beian.miit.gov.cn/#/Integrated/index">渝ICP备2025055483号-1</a>
+    </div>
+</footer>
+
+<!-- 模态框 -->
 <div class="login-modal" id="loginModal">
     <div class="modal-content">
         <button class="close-btn" id="closeModal">&times;</button>
@@ -881,30 +1357,6 @@
     </div>
 </div>
 
-<section class="hero">
-    <div class="hero-content">
-        <h1 class="hero-title">用代码解决算法难题</h1>
-        <p class="hero-subtitle">
-            精选1000+算法题目，支持Python/Java/C++等多种语言在线提交，实时评测系统助你快速提升编程能力
-        </p>
-        <p class="hero-subtitle">任何一个伟大的思想，都有一个微不足道的开始。</p>
-        <a href="problem.html" class="cta-button">立即开始挑战</a>
-    </div>
-</section>
-<footer>
-    <p>
-        <span>&copy; 2025 VnollxOnlineJudge</span>
-        <a href="#privacy" id="privacyLink">隐私政策</a>
-        <a href="#terms" id="termsLink">服务条款</a>
-        <a href="#contact" id="contactLink">联系我们</a>
-    </p>
-    <div style="text-align: center; margin-top: 20px; color: #666;">
-        <img src="https://beian.mps.gov.cn/web/assets/logo01.6189a29f.png" alt="备案图标" style="width: 20px; height: 20px; display: inline-block; margin-right: 5px;">
-        <a href="https://beian.mps.gov.cn/#/query/webSearch?code=50010802006523" rel="noreferrer" target="_blank">渝公网安备50010802006523号</a><br>
-        <a href="https://beian.miit.gov.cn/#/Integrated/index">渝ICP备2025055483号-1</a>
-    </div>
-</footer>
-
 <script>
     const loginModal = document.getElementById('loginModal');
     const registerModal = document.getElementById('registerModal');
@@ -912,6 +1364,7 @@
     const termsModal = document.getElementById('termsModal');
     const contactModal = document.getElementById('contactModal');
     const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const logoutConfirmModal = document.getElementById('logoutConfirmModal');
     let currentUser = null;
     let id;
     let codeTimer = null;
@@ -919,9 +1372,14 @@
     // 显示Toast
     function showToast(message, type = 'info', duration = 3000) {
         const toast = document.createElement('div');
-        toast.className = `toast toast-${type} show`;
+        toast.className = `toast toast-${type}`;
         toast.textContent = message;
         document.body.appendChild(toast);
+
+        // 触发动画
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
 
         setTimeout(() => {
             toast.classList.remove('show');
@@ -950,25 +1408,99 @@
         }, 1000);
     }
 
+    // 导航栏滚动效果
+    window.addEventListener('scroll', () => {
+        const header = document.querySelector('header');
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+
+        // 检查元素是否在视口中
+        const featureCards = document.querySelectorAll('.feature-card');
+        featureCards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            const isVisible = rect.top < window.innerHeight - 100;
+
+            if (isVisible && !card.classList.contains('animated')) {
+                card.classList.add('animated');
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, parseInt(card.dataset.delay));
+            }
+        });
+    });
+
+    // 数字计数动画
+    function animateNumbers() {
+        const numberElements = document.querySelectorAll('.stat-number');
+
+        numberElements.forEach(element => {
+            const target = parseInt(element.dataset.target);
+            const duration = 2000; // 动画持续时间（毫秒）
+            const frameDuration = 1000 / 60; // 每帧持续时间
+            const totalFrames = Math.round(duration / frameDuration);
+            let frame = 0;
+
+            const startCount = 0;
+            const increment = target / totalFrames;
+
+            const updateCount = () => {
+                frame++;
+                const currentCount = Math.round(startCount + increment * frame);
+
+                if (frame <= totalFrames) {
+                    element.textContent = currentCount.toLocaleString();
+                    requestAnimationFrame(updateCount);
+                } else {
+                    element.textContent = target.toLocaleString();
+                }
+            };
+
+            updateCount();
+        });
+    }
+
+    // 显示模态框
+    function showModal(modal) {
+        modal.style.display = 'flex';
+        // 触发动画
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+        document.body.style.overflow = 'hidden'; // 防止背景滚动
+    }
+
+    // 隐藏模态框
+    function hideModal(modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // 恢复滚动
+        }, 300);
+    }
+
     // 事件委托处理登录/注册/条款按钮
     document.addEventListener('click', (e) => {
         if (e.target.matches('#loginBtn')) {
-            loginModal.style.display = 'flex';
+            showModal(loginModal);
         } else if (e.target.matches('#registerBtn')) {
-            registerModal.style.display = 'flex';
+            showModal(registerModal);
         } else if (e.target.matches('#privacyLink')) {
             e.preventDefault();
-            privacyModal.style.display = 'flex';
+            showModal(privacyModal);
         } else if (e.target.matches('#termsLink')) {
             e.preventDefault();
-            termsModal.style.display = 'flex';
+            showModal(termsModal);
         } else if (e.target.matches('#contactLink')) {
             e.preventDefault();
-            contactModal.style.display = 'flex';
+            showModal(contactModal);
         } else if (e.target.matches('#forgotPasswordLink')) {
             e.preventDefault();
-            loginModal.style.display = 'none';
-            forgotPasswordModal.style.display = 'flex';
+            hideModal(loginModal);
+            setTimeout(() => showModal(forgotPasswordModal), 300);
         }
     });
 

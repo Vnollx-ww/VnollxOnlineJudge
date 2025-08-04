@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.dto.response.tag.TagResponse;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
@@ -174,6 +175,10 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             }
             else{
                 wrapper.like("title", keyword);
+            }
+            List<Long> pids=problemTagService.getProblemByTag(keyword);
+            if (pids != null && !pids.isEmpty()) {
+                wrapper.or().in("id", pids);
             }
         }
         wrapper.last("LIMIT " + offset + "," + size);

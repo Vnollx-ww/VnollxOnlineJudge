@@ -3,12 +3,11 @@ package com.example.vnollxonlinejudge.controller;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.vnollxonlinejudge.model.dto.response.submission.SubmissionResponse;
 import com.example.vnollxonlinejudge.service.SubmissionService;
-import com.example.vnollxonlinejudge.utils.Jwt;
+import com.example.vnollxonlinejudge.utils.JwtToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import com.example.vnollxonlinejudge.common.result.Result;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Objects;
@@ -46,7 +45,7 @@ public class SubmissionController {
         long uidLong = 0;
         long cidLong = parseLongOrDefault(cid); // 默认值0
         if (StringUtils.isNotBlank(uid)){
-            uidLong= Long.parseLong(Objects.requireNonNull(Jwt.getUserIdFromToken(uid)));
+            uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));
         }
         return Result.Success(
                 submissionService.getSubmissionList(
@@ -69,7 +68,7 @@ public class SubmissionController {
         long uidLong = 0;
         long cidLong = parseLongOrDefault(cid); // 默认值0
         if (StringUtils.isNotBlank(uid)){
-            uidLong= Long.parseLong(Objects.requireNonNull(Jwt.getUserIdFromToken(uid)));
+            uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));
         }
 
         // 调用服务方法

@@ -14,4 +14,5 @@ public interface SubmissionService {
     void deleteSubmissionsByPid(long pid);
     List<SubmissionResponse> getSubmissionList(long cid,long uid,String language,String status,int pageNum,int pageSize);
     long getCount(long cid,long uid,String language,String status);
+    void deleteSubmissionsByCid(long cid);
 }

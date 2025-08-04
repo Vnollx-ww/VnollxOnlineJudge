@@ -44,4 +44,13 @@ public class ProblemTagServiceImpl extends ServiceImpl<ProblemTagMapper, Problem
         problemTag.setTagName(name);
         this.save(problemTag);
     }
+
+    @Override
+    public List<Long> getProblemByTag(String name) {
+        QueryWrapper<ProblemTag> wrapper=new QueryWrapper<>();
+        wrapper.eq("tag_name",name);
+        return this.list(wrapper).stream()
+                .map(ProblemTag::getProblemId)
+                .collect(Collectors.toList());
+    }
 }

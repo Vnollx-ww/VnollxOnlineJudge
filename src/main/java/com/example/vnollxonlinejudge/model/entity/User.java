@@ -15,6 +15,8 @@ public class User {
 
     @Column(name = "penalty_time")
     private int penaltyTime;
+    @Column(name="salt")
+    private String salt;
     @Column(name = "name")
     private String name;
 

@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
 import com.example.vnollxonlinejudge.model.dto.response.submission.SubmissionResponse;
+import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
@@ -40,6 +41,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d"; // cid:pid
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
+    private static final String TIME_BEGIN_KEY="competition_time_begin:%d";
 
     public SubmissionResponse getSubmissionById(long id){
             Submission submission = this.getById(id);
@@ -58,11 +60,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         String userName=submission.getUserName();
         String code=submission.getCode();
         String option=submission.getLanguage();
-        String create_time=submission.getCreateTime();
+        String createTime=submission.getCreateTime();
         ProblemResponse problem=null;
-        String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null;
+        String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
         if (cid != 0) {
             timeOutKey=String.format(TIME_OUT_KEY,cid);
+            timeBeginKey=String.format(TIME_BEGIN_KEY,cid);
             userPassKey = String.format(USER_PASS_COUNT_KEY, cid, userName);
             userPenaltyKey = String.format(USER_PENALTY_KEY, cid, userName);
             rankingKey = String.format(RANKING_KEY, cid);
@@ -98,7 +101,9 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     userService.updateSubmitCount(uid,1);//用户通过数加一，用户自己不太可能同时提交多次，所以无需加锁
                     problemService.updatePassCount(pid,1);//题目通过数也加一
                 } else {
-                    redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,userName);//如果是比赛那就需要更新缓存了
+                    String beginTimeStr=redisService.getValueByKey(timeBeginKey);
+                    long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
+                    redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,userName,penalty);//如果是比赛那就需要更新缓存了
                 }
             }
         } else {//未通过
@@ -118,8 +123,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         else language="C++";
         redisService.cacheSubmission(
                 userName, problem.getTitle(), code, submission.getStatus(),
-                create_time, language, uid, pid,
-                submission.getTime(), cid
+                createTime, language, uid, pid,
+                submission.getTime(), submission.getMemory(),cid
         );
     }
 
@@ -139,9 +144,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     public List<SubmissionResponse> getSubmissionList(long cid, long uid, String language, String status, int pageNum, int pageSize) {
         Page<Submission> page = new Page<>(pageNum, pageSize);
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
-        if (cid!=0){
-            wrapper.eq("cid",cid);
-        }
+        wrapper.eq("cid",cid);
         if (uid!=0){
             wrapper.eq("uid",uid);
         }
@@ -174,5 +177,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             wrapper.eq("status",status);
         }
         return this.count(wrapper);
+    }
+
+    @Override
+    public void deleteSubmissionsByCid(long cid) {
+        QueryWrapper<Submission> wrapper=new QueryWrapper<>();
+        wrapper.eq("cid",cid);
+        this.baseMapper.delete(wrapper);
     }
 }

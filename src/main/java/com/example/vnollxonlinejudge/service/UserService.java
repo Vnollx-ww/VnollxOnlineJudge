@@ -21,6 +21,7 @@ public interface UserService {
     void deleteUserByAdmin(long id);
     void addUserByAdmin(String name,String email,String identity);
     void updateUserInfoByAdmin(String email,String name,String identity,long uid);
-    long getCount(String keyword,long uid);
+    long getCountByAdmin(String keyword,String identity);
+    long getCount();
     List<UserResponse> getAllUser();
 }

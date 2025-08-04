@@ -1,6 +1,5 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
-import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 
@@ -12,20 +11,21 @@ import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.UserMapper;
-import com.example.vnollxonlinejudge.mapper.UserSolvedProblemMapper;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
-import com.example.vnollxonlinejudge.utils.Jwt;
+import com.example.vnollxonlinejudge.utils.JwtToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.vnollxonlinejudge.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static com.example.vnollxonlinejudge.utils.BCryptSalt.generateSalt;
+import static com.example.vnollxonlinejudge.utils.BCryptSalt.hashPasswordWithSalt;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
@@ -42,10 +42,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(user == null) {
             throw new BusinessException("用户不存在");
         }
-        if (!Objects.equals(user.getPassword(), password)) {
+        if (!Objects.equals(hashPasswordWithSalt(password, user.getSalt()), user.getPassword())) {
             throw new BusinessException("密码错误，请重试");
         }
-        return Jwt.generateToken(String.valueOf(user.getId()),user.getIdentity());
+        return JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity());
     }
 
     //@DS("master")
@@ -61,7 +61,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (lambdaQuery().eq(User::getName, name).exists()) {
             throw new BusinessException("用户名已存在");
         }
-        User user = new User(name,password,email);
+        String salt=generateSalt();
+        User user = new User(name,hashPasswordWithSalt(password,salt),email);
+        user.setSalt(salt);
         save(user);
     }
 
@@ -74,7 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         QueryWrapper<User> wrapper=new QueryWrapper<>();
         wrapper.eq("email",email);
         User user=this.baseMapper.selectOne(wrapper);
-        user.setPassword(newPassword);
+        user.setPassword(hashPasswordWithSalt(newPassword,user.getSalt()));
         this.updateById(user);
         redisService.deleteKey(key);
     }
@@ -147,10 +149,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(user == null) {
             throw new BusinessException("用户不存在");
         }
-        if(!Objects.equals(user.getPassword(), old_password)) {
+        if(!Objects.equals(user.getPassword(), hashPasswordWithSalt(old_password, user.getSalt()))) {
             throw new BusinessException("原密码不正确");
         }
-        user.setPassword(password);
+        user.setPassword(hashPasswordWithSalt(password,user.getSalt()));
         updateById(user);
     }
 
@@ -161,13 +163,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             String option,String verifyCode
     ) {
         String key=email+":update";
-        if (!redisService.IsExists(key)|| !Objects.equals(redisService.getValueByKey(key), verifyCode)){
-            throw new BusinessException("验证码错误");
+        if(option.equals("email")) {
+            if (!redisService.IsExists(key) || !Objects.equals(redisService.getValueByKey(key), verifyCode)) {
+                throw new BusinessException("验证码错误");
+            }
         }
         if (lambdaQuery().eq(User::getName, name).ne(User::getId, uid).exists()) {
             throw new BusinessException("用户名已存在");
         }
-        User user = new User();
+        User user=new User();
         user.setId(uid);
         user.setEmail(email);
         user.setName(name);
@@ -228,22 +232,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public long getCount(String keyword,long uid) {
+    public long getCountByAdmin(String keyword,String identity) {
         if (!StringUtils.isNotBlank(keyword)){
             return this.count();
         }
-        QueryWrapper<User> identityWrapper = new QueryWrapper<User>()
-                .select("identity")
-                .eq("id", uid);
-        User currentUser = this.getOne(identityWrapper);
 
-        if (currentUser == null) {
+        if (identity == null) {
             throw new BusinessException("您无权限");
         }
 
         QueryWrapper<User> wrapper=new QueryWrapper<>();
         // 如果是管理员，只查询普通用户
-        if ("ADMIN".equals(currentUser.getIdentity())) {
+        if ("ADMIN".equals(identity)) {
             wrapper.eq("identity", "USER");
         }
 
@@ -253,6 +253,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     .like("email", keyword));
         }
         return this.count(wrapper);
+    }
+
+    @Override
+    public long getCount() {
+        return this.count();
     }
 
     @Override

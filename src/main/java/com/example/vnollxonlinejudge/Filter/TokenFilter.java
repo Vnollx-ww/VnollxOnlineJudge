@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.Filter;
 
-import com.example.vnollxonlinejudge.utils.Jwt;
+import com.example.vnollxonlinejudge.utils.JwtToken;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,15 +68,15 @@ public class TokenFilter implements Filter {
         }
 
         // Validate Token
-        if (!Jwt.validateToken(token)) {
+        if (!JwtToken.validateToken(token)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().println("无效的Token");
             return;
         }
 
         // Parse user ID
-        String userId = Jwt.getUserIdFromToken(token);
-        String identity=Jwt.getUserIdentityFromToken(token);
+        String userId = JwtToken.getUserIdFromToken(token);
+        String identity= JwtToken.getUserIdentityFromToken(token);
         request.setAttribute("uid", userId);
         request.setAttribute("identity",identity);
         // Allow the request to proceed
