@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.model.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -7,14 +9,14 @@ import lombok.Data;
 @Data
 public class CompetitionUser {
     @Column(name = "competition_id")
-    private long competitionId;
+    private Long competitionId;
     @Column(name = "user_id")
-    private long userId;
+    private Long userId;
     @Column(name = "pass_count")
-    private int passCount;
+    private Integer passCount;
 
     @Column(name = "penalty_time")
-    private int penaltyTime;
+    private Integer penaltyTime;
     @Column(name = "name")
     private String name;
 }

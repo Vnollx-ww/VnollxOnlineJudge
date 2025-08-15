@@ -21,7 +21,6 @@ public class RedisExceptionAspect {
                     joinPoint.getSignature().getName(),
                     Arrays.toString(joinPoint.getArgs()),
                     e);
-         ;
         }
         return null;
     }

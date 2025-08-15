@@ -1,9 +1,7 @@
 package com.example.vnollxonlinejudge.aop.aspect;
 
-import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.exception.PermissionDeniedException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.tomcat.websocket.AuthenticationException;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;

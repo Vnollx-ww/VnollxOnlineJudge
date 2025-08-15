@@ -1,24 +1,24 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.exception.BusinessException;
-import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
-import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.mapper.CompetitionProblemMapper;
-import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
+import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
 import com.example.vnollxonlinejudge.service.ProblemService;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
+@Setter
 public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProblemMapper,CompetitionProblem>  implements CompetitionProblemService {
-    @Autowired
-    private ProblemService problemService;
+    @Autowired private ProblemService problemService;
     @Override
     public List<CompetitionProblem> getProblemList(Long cid) {
         return lambdaQuery()
@@ -27,16 +27,7 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
     }
 
     @Override
-    public void updatePassCount(long pid, int ok, long cid) {
-        update(new LambdaUpdateWrapper<CompetitionProblem>()
-                .setSql("pass_count = pass_count + " + ok)
-                .setSql("submit_count = submit_count + 1")
-                .eq(CompetitionProblem::getProblemId, pid)
-                .eq(CompetitionProblem::getCompetitionId, cid));
-    }
-
-    @Override
-    public void updateCount(long pid, int ok1, int ok2, long cid) {
+    public void updateCount(Long pid, int ok1, int ok2, Long cid) {
         update(new LambdaUpdateWrapper<CompetitionProblem>()
                 .setSql("pass_count = pass_count + " + ok1)
                 .setSql("submit_count = submit_count + " + ok2)
@@ -45,15 +36,15 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
     }
 
     @Override
-    public void deleteCompetition(long id) {
+    public void deleteCompetition(Long id) {
         QueryWrapper<CompetitionProblem> wrapper=new QueryWrapper<>();
         wrapper.eq("competition_id",id);
         this.baseMapper.delete(wrapper);
     }
 
     @Override
-    public void addRecord(long pid, long cid) {
-        ProblemResponse problemResponse=problemService.getProblemInfo(pid,0);
+    public void addRecord(Long pid, Long cid) {
+        ProblemVo problemResponse=problemService.getProblemInfo(pid,0L);
         if(problemResponse==null){
             throw new BusinessException("题目不存在");
         }

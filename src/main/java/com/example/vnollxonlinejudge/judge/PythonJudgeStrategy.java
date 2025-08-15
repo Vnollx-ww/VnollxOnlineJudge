@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.judge;
 
-import com.example.vnollxonlinejudge.common.result.RunResult;
+import com.example.vnollxonlinejudge.model.result.RunResult;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import org.slf4j.Logger;
@@ -26,22 +26,18 @@ import java.util.zip.ZipFile;
 @Component
 public class PythonJudgeStrategy implements JudgeStrategy {
     private final String RUN_URL;
-    private final String DELETE_URL;
-
-    @Autowired
-    public PythonJudgeStrategy(String goJudgeEndpoint) {
-        this.RUN_URL = goJudgeEndpoint + "/run";
-        this.DELETE_URL = goJudgeEndpoint + "/file/{fileId}";
-    }
-
+    private final MinioClient minioClient;
     private static final Logger logger = LoggerFactory.getLogger(PythonJudgeStrategy.class);
     private static final String MINIO_BUCKET_NAME = "problem";
-
     @Autowired
-    private MinioClient minioClient;
+    public PythonJudgeStrategy(String goJudgeEndpoint,MinioClient minioClient) {
+        this.RUN_URL = goJudgeEndpoint + "/run";
+        this.minioClient=minioClient;
+    }
+
 
     @Override
-    public RunResult judge(String code, String dataZipUrl, int timeLimit, int memoryLimit) {
+    public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
         RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
         result.setRunTime(result.getTime() / 1000000);
         result.setMemory(result.getMemory()/1048576);
@@ -56,7 +52,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
         return result;
     }
 
-    private RunResult judgeCode(String submittedCode, String zipFilePath, long timeLimitMs, long memoryLimitMB) {
+    private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
         try {
             // 1. 从MinIO下载测试用例ZIP
             InputStream zipStream = minioClient.getObject(
@@ -186,7 +182,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
         return content.toString().trim();
     }
 
-    private String buildRunPayload(String code, String input, long cpuLimit, long memoryLimit) {
+    private String buildRunPayload(String code, String input, Long cpuLimit, Long memoryLimit) {
         // 转义特殊字符
         String escapedCode = code.replace("\\", "\\\\")
                 .replace("\"", "\\\"")

@@ -4,6 +4,8 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,16 +22,14 @@ import java.util.*;
 import static com.example.vnollxonlinejudge.utils.GetScore.calculateScore;
 
 @Service
+@Setter
 public class RedisServiceImpl implements RedisService {
     private static final Logger logger = LoggerFactory.getLogger(RedisService.class);
     private static final String SUBMISSION_QUEUE_KEY = "submission:queue";
     private static final String SUBMISSION_LOCK_KEY = "submission:lock";
     private static final int BATCH_SIZE = 50;
-    private static final long FLUSH_INTERVAL = 5000;
-    @Autowired
-    private JedisPool jedisPool;
-    @Autowired
-    private SubmissionService submissionService;
+    @Autowired private JedisPool jedisPool;
+    @Autowired private SubmissionService submissionService;
 
     @PostConstruct
     public void init() {
@@ -44,7 +44,7 @@ public class RedisServiceImpl implements RedisService {
         Jedis jedis = null;
         try {
             jedis = jedisPool.getResource();
-            lockId = acquireLock(jedis, SUBMISSION_LOCK_KEY, 5000);
+            lockId = acquireLock(jedis, SUBMISSION_LOCK_KEY, 5000L);
             if (lockId == null) return ;
             long queueSize = jedis.llen(SUBMISSION_QUEUE_KEY);
             if (queueSize == 0) return ;
@@ -62,8 +62,8 @@ public class RedisServiceImpl implements RedisService {
                 sub.setPid(Long.valueOf(submissionMap.get("pid")));
                 sub.setCreateTime(submissionMap.get("createTime"));
                 sub.setLanguage(submissionMap.get("language"));
-                sub.setTime(Integer.parseInt(submissionMap.get("time")));
-                sub.setMemory(Integer.parseInt(submissionMap.get("memory")));
+                sub.setTime(Long.parseLong(submissionMap.get("time")));
+                sub.setMemory(Long.parseLong(submissionMap.get("memory")));
                 sub.setProblemName(submissionMap.get("title"));
                 sub.setStatus(submissionMap.get("status"));
                 sub.setCode(submissionMap.get("code"));
@@ -86,12 +86,11 @@ public class RedisServiceImpl implements RedisService {
                 jedis.close();
             }
         }
-        return ;
     }
     @Override
     public void cacheSubmission(String userName, String title, String code,
                                 String result, String createTime, String language,
-                                long uid, long pid, int time, int memory,long cid) {
+                                Long uid, Long pid, Long time, Long memory,Long cid) {
         try (Jedis jedis = jedisPool.getResource()) {
             Map<String, String> submissionMap = new HashMap<>();
             submissionMap.put("userName", userName);
@@ -120,7 +119,7 @@ public class RedisServiceImpl implements RedisService {
         }
     }
 
-    public String acquireLock(Jedis jedis, String lockKey, long expireMs) {
+    public String acquireLock(Jedis jedis, String lockKey, Long expireMs) {
         String identifier = UUID.randomUUID().toString();
         long end = System.currentTimeMillis() + expireMs;
 
@@ -146,7 +145,7 @@ public class RedisServiceImpl implements RedisService {
         }
     }
     @Override
-    public void setkey(String key, String value, long seconds) {
+    public void setKey(String key, String value, Long seconds) {
         try (Jedis jedis = jedisPool.getResource()) {
             if (!jedis.exists(key)) {
                 jedis.setex(key, seconds, value);
@@ -162,10 +161,10 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public boolean addToSetByKey(String key, long score, String userName, long seconds) {
+    public boolean addToSetByKey(String key, Long score, String userName, Long seconds) {
         try (Jedis jedis = jedisPool.getResource()) {
             if (!jedis.exists(key)) {
-                long initialScore = calculateScore(0, 0);
+                Long initialScore = calculateScore(0, 0);
                 jedis.zadd(key, initialScore, userName);
                 jedis.expire(key, seconds + 600);
                 return true;
@@ -175,13 +174,13 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
-    public void updateIfPass(String userPassKey, String userPenaltyKey, String problemPassKey, String problemSubmitKey, String rankingKey, String userName,long penalty) {
+    public void updateIfPass(String userPassKey, String userPenaltyKey, String problemPassKey, String problemSubmitKey, String rankingKey, String userName,Long penalty) {
         try (Jedis jedis = jedisPool.getResource()) {
             long passCount = jedis.incr(userPassKey);
             jedis.incr(problemPassKey);
             jedis.incr(problemSubmitKey);
             long newPenalty=jedis.incrBy(userPenaltyKey,penalty);
-            long newScore = calculateScore((int) passCount, (int) newPenalty);
+            Long newScore = calculateScore(Math.toIntExact(passCount), Math.toIntExact(newPenalty));
             jedis.zadd(rankingKey, newScore, userName);
         }
     }
@@ -192,13 +191,13 @@ public class RedisServiceImpl implements RedisService {
             long newPenalty = jedis.incrBy(userPenaltyKey, 20);
             jedis.incr(problemSubmitKey);
             int passCount = Integer.parseInt(jedis.get(userPassKey));
-            long newScore = calculateScore(passCount, (int) newPenalty);
+            Long newScore = calculateScore(passCount, Math.toIntExact(newPenalty));
             jedis.zadd(rankingKey, newScore, userName);
         }
     }
 
     @Override
-    public long getTtl(String key) {
+    public Long getTtl(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             return jedis.ttl(key);
         }

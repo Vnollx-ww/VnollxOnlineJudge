@@ -18,10 +18,10 @@ public class Solve {
     @Column(name = "content")
     private String content;
     @Column(name = "uid")
-    private long uid;
+    private Long uid;
 
     @Column(name = "pid")
-    private long pid;
+    private Long pid;
     @Column(name = "create_time")
     private String createTime;
     @Column(name = "title")

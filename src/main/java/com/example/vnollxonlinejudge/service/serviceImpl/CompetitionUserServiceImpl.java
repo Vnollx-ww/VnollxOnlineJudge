@@ -3,35 +3,26 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.model.entity.Competition;
 import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
-import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.CompetitionUserMapper;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.CompetitionUserService;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
+@Setter
 public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMapper, CompetitionUser> implements CompetitionUserService {
-    @Autowired
-    private CompetitionService competitionService;
+    @Autowired private CompetitionService competitionService;
     @Override
     public List<CompetitionUser> getUserList(Long cid) {
         return lambdaQuery()
                 .eq(CompetitionUser::getCompetitionId, cid)
                 .list();
     }
-
-    @Override
-    public CompetitionUser getUser(Long cid, Long uid) {
-        return lambdaQuery()
-                .eq(CompetitionUser::getCompetitionId, cid)
-                .eq(CompetitionUser::getUserId, uid)
-                .one();
-    }
-
     @Override
     public void updatePassCount(String name, int ok) {
         update(new LambdaUpdateWrapper<CompetitionUser>()
@@ -40,7 +31,7 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
     }
 
     @Override
-    public void updatePenaltyTime(String name, long cid, int time) {
+    public void updatePenaltyTime(String name, Long cid, int time) {
         update(new LambdaUpdateWrapper<CompetitionUser>()
                 .setSql("penalty_time = penalty_time + " + time)
                 .eq(CompetitionUser::getName, name)
@@ -49,7 +40,7 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
 
 
     @Override
-    public void createRecord(long cid, long uid, String name) {
+    public void createRecord(Long cid, Long uid, String name) {
         CompetitionUser record = new CompetitionUser();
         record.setPassCount(0);
         record.setName(name);
@@ -61,7 +52,7 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
     }
 
     @Override
-    public void deleteCompetiton(long id) {
+    public void deleteCompetition(Long id) {
         QueryWrapper<CompetitionUser> wrapper=new QueryWrapper<>();
         wrapper.eq("competition_id",id);
         this.baseMapper.delete(wrapper);

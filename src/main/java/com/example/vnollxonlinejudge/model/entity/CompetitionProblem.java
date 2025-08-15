@@ -14,10 +14,10 @@ public class CompetitionProblem {
     private Long  problemId;
 
     @Column(name = "pass_count")
-    private int passCount;
+    private Integer passCount;
     @Column(name = "submit_count")
-    private int submitCount;
+    private Integer submitCount;
 
     @Column(name = "competition_id")
-    private long competitionId;
+    private Long competitionId;
 }

@@ -6,12 +6,13 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
-import com.example.vnollxonlinejudge.model.dto.response.tag.TagResponse;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.*;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,18 +29,13 @@ import java.util.stream.Collectors;
 @Service
 public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> implements ProblemService {
     private static final Logger logger = LoggerFactory.getLogger(ProblemServiceImpl.class);
-    @Autowired
-    private ProblemTagService problemTagService;
-    @Autowired
-    private UserSolvedProblemService userSolvedProblemService;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private OssService ossService;
-    @Autowired
-    private SubmissionService submissionService;
-    @Autowired
-    private TagService tagService;
+    @Autowired private ProblemTagService problemTagService;
+    @Autowired private UserSolvedProblemService userSolvedProblemService;
+    @Autowired private RedisService redisService;
+    @Autowired private OssService ossService;
+    @Autowired private SubmissionService submissionService;
+    @Autowired private TagService tagService;
+
     @Override
     @Transactional
     public void createProblem(String title, String description, int timeLimit, int memoryLimit,
@@ -48,18 +43,13 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                               String inputExample, String outputExample, String hint,String open,
                               MultipartFile testCaseFile,List<String> tags
     ) {
-        Problem problem = new Problem();
-        problem.setTitle(title);
-        problem.setDescription(description);
-        problem.setTimeLimit(timeLimit);
-        problem.setMemoryLimit(memoryLimit);
-        problem.setDifficulty(difficulty);
-        problem.setInputFormat(inputFormat);
-        problem.setOutputFormat(outputFormat);
-        problem.setInputExample(inputExample);
-        problem.setOutputExample(outputExample);
-        problem.setHint(hint);
-        problem.setOpen(Objects.equals(open, "true"));
+        Problem problem = new Problem(
+                title,description,timeLimit
+                ,memoryLimit,difficulty,
+                inputFormat,outputFormat,
+                inputExample,outputExample,
+                hint,Objects.equals(open, "true")
+        );
         save(problem); // 插入数据库，获取自增ID
         problemTagService.deleteTagByProblem(problem.getId());
         for (String s:tags){
@@ -79,7 +69,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     @Transactional
-    public void deleteProblemByAdmin(long id) {
+    public void deleteProblemByAdmin(Long id) {
         Problem problem=this.getById(id);
         if (problem==null) {
             throw new BusinessException("题目不存在或已被删除");
@@ -95,7 +85,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     @Transactional
-    public void updateProblem(long id, String title, String description, int timeLimit,
+    public void updateProblem(Long id, String title, String description, int timeLimit,
                               int memoryLimit, String difficulty, String inputFormat,
                               String outputFormat, String inputExample,
                               String outputExample, String hint,String open, MultipartFile testCaseFile,
@@ -121,7 +111,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         problem.setOpen(Objects.equals(open, "true"));
         problemTagService.deleteTagByProblem(problem.getId());
         for (String s:tags){
-            System.out.println(s);
             tagService.createTag(s);
             problemTagService.addRelated(s,problem.getId());
         }
@@ -136,7 +125,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public ProblemResponse getProblemInfo(long pid, long cid) {
+    public ProblemVo getProblemInfo(Long pid, Long cid) {
         Problem problem;
         if (cid == 0) {
             problem = getById(pid);
@@ -145,9 +134,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             String problemsJson = redisService.getValueByKey(cacheKey);
             if (problemsJson != null) {
 
-                Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson,
-                        new TypeReference<Map<Integer, Problem>>() {});
-                problem = problemMap.get((int) pid);
+                Map<Long, Problem> problemMap = JSON.parseObject(problemsJson,
+                        new TypeReference<Map<Long, Problem>>() {});
+                problem = problemMap.get(pid);
             } else {
                 problem = getById(pid);
             }
@@ -155,15 +144,15 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         if (problem == null) {
             throw new BusinessException("题目不存在或已被删除");
         }
-        return new ProblemResponse(problem);
+        return new ProblemVo(problem);
     }
 
     @Override
-    public List<String> getTagNames(long pid){
+    public List<String> getTagNames(Long pid){
         return problemTagService.getTagNames(pid);
     }
     @Override
-    public List<ProblemResponse> getProblemList(String keyword, long pid, int offset, int size,boolean ok) {
+    public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
         if (!ok){
             wrapper.eq("open",1);
@@ -185,7 +174,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         List<Problem> problems=list(wrapper);
         return (!ok ? list(wrapper) : problems).stream()
                 .map(item -> {
-                    ProblemResponse response = new ProblemResponse(item);
+                    ProblemVo response = new ProblemVo(item);
                     if (ok) {
                         response.setTags(problemTagService.getTagNames(((Problem) item).getId()));
                     }
@@ -194,7 +183,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 .collect(Collectors.toList());
     }
     @Override
-    public Long getCount(String keyword, long pid,boolean ok) {
+    public Long getCount(String keyword, Long pid,boolean ok) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
         if (!ok)wrapper.eq("open",1);
         if (StringUtils.isNotBlank(keyword)){
@@ -209,13 +198,13 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public boolean judgeIsSolve(long pid, long uid, long cid) {
+    public boolean judgeIsSolve(Long pid, Long uid, Long cid) {
         UserSolvedProblem userSolvedProblems=userSolvedProblemService.judgeUserIsPass(pid,uid,cid);
         return userSolvedProblems != null;
     }
 
     @Override
-    public void updatePassCount(long pid, int ok) {
+    public void updatePassCount(Long pid, int ok) {
         // 使用MyBatis-Plus的update wrapper进行原子更新
         UpdateWrapper<Problem> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", pid)
@@ -225,7 +214,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public void addUserSolveRecord(long pid, long uid, long cid) {
+    public void addUserSolveRecord(Long pid, Long uid, Long cid) {
         userSolvedProblemService.createUserSolveProblem(uid,pid,cid);
     }
 }

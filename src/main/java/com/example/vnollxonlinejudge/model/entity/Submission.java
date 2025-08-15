@@ -29,8 +29,8 @@ public class Submission {
     private String createTime;
 
     private String language;
-    private int time;
-    private int memory;
+    private Long time;
+    private Long memory;
 
     @Column(name = "uid")
     private Long uid;
@@ -41,7 +41,7 @@ public class Submission {
     // 构造方法
     public Submission() {}
 
-    public Submission(String code, String language, Long pid, Long cid, Long uid, String createTime,String userName,String status,int time,int memory) {
+    public Submission(String code, String language, Long pid, Long cid, Long uid, String createTime,String userName,String status,Long time,Long memory) {
         this.code = code;
         this.language = language;
         this.pid = pid;

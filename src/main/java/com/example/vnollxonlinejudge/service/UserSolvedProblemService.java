@@ -5,8 +5,8 @@ import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import java.util.List;
 
 public interface UserSolvedProblemService {
-    void createUserSolveProblem(long uid,long pid,long cid);
-    List<UserSolvedProblem> getSolveProblem(long uid);
-    UserSolvedProblem judgeUserIsPass(long pid, long uid, long cid);
-    void deleteCompetition(long cid);
+    void createUserSolveProblem(Long uid,Long pid,Long cid);
+    List<UserSolvedProblem> getSolveProblem(Long uid);
+    UserSolvedProblem judgeUserIsPass(Long pid, Long uid, Long cid);
+    void deleteCompetition(Long cid);
 }

@@ -6,14 +6,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
-import com.example.vnollxonlinejudge.model.dto.response.submission.SubmissionResponse;
-import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
+import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
 import com.example.vnollxonlinejudge.service.*;
 import com.example.vnollxonlinejudge.utils.*;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,16 +26,13 @@ import java.util.stream.Collectors;
 import static com.example.vnollxonlinejudge.utils.GetScore.calculateScore;
 
 @Service
+@Setter
 public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submission> implements SubmissionService {
     private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
-    @Autowired
-    private ProblemService problemService;
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private CompetitionUserService competitionUserService;
+    @Autowired private ProblemService problemService;
+    @Autowired private RedisService redisService;
+    @Autowired private UserService userService;
+    @Autowired private CompetitionUserService competitionUserService;
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
     private static final String USER_PENALTY_KEY = "competition_user_penalty:%d:%s"; // cid:uid
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
@@ -43,25 +41,25 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
     private static final String TIME_BEGIN_KEY="competition_time_begin:%d";
 
-    public SubmissionResponse getSubmissionById(long id){
+    public SubmissionVo getSubmissionById(Long id){
             Submission submission = this.getById(id);
             if (submission == null) {
                 throw  new BusinessException("提交记录不存在");
             }
-            return new SubmissionResponse(submission);
+            return new SubmissionVo(submission);
     }
 
     @Override
     public void processSubmission(Submission submission) {
         //初始化所有键和信息！！！
-        long pid=submission.getPid();
-        long uid=submission.getUid();
-        long cid=submission.getCid();
+        Long pid=submission.getPid();
+        Long uid=submission.getUid();
+        Long cid=submission.getCid();
         String userName=submission.getUserName();
         String code=submission.getCode();
         String option=submission.getLanguage();
         String createTime=submission.getCreateTime();
-        ProblemResponse problem=null;
+        ProblemVo problem=null;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
         if (cid != 0) {
             timeOutKey=String.format(TIME_OUT_KEY,cid);
@@ -72,9 +70,9 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             problemPassKey = String.format(PROBLEM_PASS_KEY, cid, pid);
             problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, pid);
             String endTimeStr=redisService.getValueByKey(timeOutKey);
-            long ttlSeconds= TimeUtils.calculateTTL(endTimeStr);
-            redisService.setkey(userPassKey,"0",ttlSeconds+600);
-            redisService.setkey(userPenaltyKey,"0",ttlSeconds+600);
+            Long ttlSeconds= TimeUtils.calculateTTL(endTimeStr);
+            redisService.setKey(userPassKey,"0",ttlSeconds+600);
+            redisService.setKey(userPenaltyKey,"0",ttlSeconds+600);
             if (redisService.addToSetByKey(rankingKey,calculateScore(0,0),userName,ttlSeconds+600)){
                 competitionUserService.createRecord(cid,uid,userName);
             }
@@ -82,14 +80,14 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         //初始化所有键和信息！！！
         //获取题目信息！！！！
-        if (cid == 0) problem = problemService.getProblemInfo(pid,0);
+        if (cid == 0) problem = problemService.getProblemInfo(pid,0L);
         else{
             //String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey("competition:" + cid + ":problems");
-            TypeReference<Map<Integer, ProblemResponse>> typeRef = new TypeReference<Map<Integer, ProblemResponse>>() {
+            TypeReference<Map<Long, ProblemVo>> typeRef = new TypeReference<Map<Long, ProblemVo>>() {
             };
-            Map<Integer, ProblemResponse> problemMap = JSON.parseObject(problemsJson, typeRef);
-            problem = problemMap.get((int) pid);
+            Map<Long, ProblemVo> problemMap = JSON.parseObject(problemsJson, typeRef);
+            problem = problemMap.get(pid);
         }
         //获取题目信息！！！！
         boolean ok=problemService.judgeIsSolve(pid,uid,cid);
@@ -102,7 +100,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     problemService.updatePassCount(pid,1);//题目通过数也加一
                 } else {
                     String beginTimeStr=redisService.getValueByKey(timeBeginKey);
-                    long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
+                    Long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
                     redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,userName,penalty);//如果是比赛那就需要更新缓存了
                 }
             }
@@ -130,18 +128,18 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
 
     @Override
     public void batchInsert(List<Submission> submissions) {
-        baseMapper.batchInsert(submissions);
+        saveBatch(submissions);
     }
 
     @Override
-    public void deleteSubmissionsByPid(long pid) {
+    public void deleteSubmissionsByPid(Long pid) {
         QueryWrapper<Submission>wrapper=new QueryWrapper<>();
         wrapper.eq("pid",pid);
         this.baseMapper.delete(wrapper);
     }
 
     @Override
-    public List<SubmissionResponse> getSubmissionList(long cid, long uid, String language, String status, int pageNum, int pageSize) {
+    public List<SubmissionVo> getSubmissionList(Long cid, Long uid, String language, String status, int pageNum, int pageSize) {
         Page<Submission> page = new Page<>(pageNum, pageSize);
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         wrapper.eq("cid",cid);
@@ -157,12 +155,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         wrapper.orderByDesc("id");
         Page<Submission> result = this.page(page, wrapper);
         return result.getRecords().stream()
-                .map(SubmissionResponse::new)
+                .map(SubmissionVo::new)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public long getCount(long cid, long uid, String language, String status) {
+    public Long getCount(Long cid, Long uid, String language, String status) {
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         if (cid!=0){
             wrapper.eq("cid",cid);
@@ -180,7 +178,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
-    public void deleteSubmissionsByCid(long cid) {
+    public void deleteSubmissionsByCid(Long cid) {
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         wrapper.eq("cid",cid);
         this.baseMapper.delete(wrapper);

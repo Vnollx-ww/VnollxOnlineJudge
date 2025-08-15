@@ -2,11 +2,10 @@ package com.example.vnollxonlinejudge.producer;
 
 
 import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
-import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
@@ -14,12 +13,11 @@ import org.springframework.amqp.core.MessageBuilder;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class SubmissionProducer {
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
     public String sendSubmission(int priority, JudgeInfo judgeInfo){
         try {
             String correlationId = UUID.randomUUID().toString();

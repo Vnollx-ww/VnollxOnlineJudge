@@ -7,26 +7,21 @@ import com.example.vnollxonlinejudge.service.EmailService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.utils.CaptchaGenerator;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
-import org.apache.commons.mail.SimpleEmail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 
 @Service
+@Setter
 public class EmailServiceImpl implements EmailService {
-    @Autowired
-    private RedisService redisService;
-    @Autowired
-    private UserService userService;
-    private final EmailConfig emailConfig;
-
-    public EmailServiceImpl(EmailConfig emailConfig) {
-        this.emailConfig = emailConfig;
-    }
-
+    @Autowired private RedisService redisService;
+    @Autowired private UserService userService;
+    @Autowired private EmailConfig emailConfig;
     @Override
     public void sendEmail(String email, String option) {
         try {
@@ -64,14 +59,14 @@ public class EmailServiceImpl implements EmailService {
 
             // 3. 生成验证码并存储
             String verificationCode = CaptchaGenerator.generateCode();
-            redisService.setkey(key,verificationCode,60);
+            redisService.setKey(key,verificationCode,60L);
 
             // 4. 设置邮件基本信息
             mail.setFrom(emailConfig.getUserName(), "Vnollx在线评测系统");
             mail.addTo(email);
 
             // 根据操作类型设置主题和内容
-            String subject = "";
+            String subject ;
             String action = switch (option) {
                 case "register" -> {
                     subject = "【Vnollx】注册账号验证码";

@@ -7,13 +7,14 @@ import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.mapper.UserSolvedProblemMapper;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
 public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemMapper, UserSolvedProblem> implements UserSolvedProblemService {
     @Override
-    public void createUserSolveProblem(long uid, long pid, long cid) {
+    public void createUserSolveProblem(Long uid, Long pid, Long cid) {
         LambdaQueryWrapper<UserSolvedProblem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSolvedProblem::getUserId, uid)
                 .eq(UserSolvedProblem::getProblemId, pid)
@@ -30,7 +31,7 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
     }
 
     @Override
-    public List<UserSolvedProblem> getSolveProblem(long uid) {
+    public List<UserSolvedProblem> getSolveProblem(Long uid) {
         LambdaQueryWrapper<UserSolvedProblem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSolvedProblem::getUserId, uid)
                 .eq(UserSolvedProblem::getCompetitionId, 0);
@@ -38,7 +39,7 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
     }
 
     @Override
-    public UserSolvedProblem judgeUserIsPass(long pid, long uid, long cid) {
+    public UserSolvedProblem judgeUserIsPass(Long pid, Long uid, Long cid) {
         LambdaQueryWrapper<UserSolvedProblem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSolvedProblem::getUserId, uid)
                 .eq(UserSolvedProblem::getProblemId, pid)
@@ -47,7 +48,7 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
     }
 
     @Override
-    public void deleteCompetition(long cid) {
+    public void deleteCompetition(Long cid) {
         QueryWrapper<UserSolvedProblem> wrapper=new QueryWrapper<>();
         wrapper.eq("competition_id",cid);
         this.baseMapper.delete(wrapper);

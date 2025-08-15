@@ -51,7 +51,7 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
 
             try {
                 // 提取比赛ID
-                long cid = extractCompetitionId(expiredKey);
+                Long cid = extractCompetitionId(expiredKey);
                 if (cid > 0) {
                     syncCompetitionData(cid);
                 }
@@ -62,7 +62,7 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
         }
     }
 
-    private long extractCompetitionId(String key) {
+    private Long extractCompetitionId(String key) {
         try {
             // 从键名中提取比赛ID，例如 "competition:123:timeout"
             String[] parts = key.split(":");
@@ -72,10 +72,10 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
         } catch (NumberFormatException e) {
             logger.error("从键名中提取比赛ID失败: {}", key, e);
         }
-        return -1;
+        return -1L;
     }
 
-    private void syncCompetitionData(long cid) {
+    private void syncCompetitionData(Long cid) {
         logger.info("开始同步比赛ID={}的数据到数据库", cid);
 
         try (Jedis jedis = jedisPool.getResource()) {
@@ -89,7 +89,7 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
     }
 
     // 同步用户排名数据（与之前方案类似）
-    private void syncRankingData(Jedis jedis, long cid) {
+    private void syncRankingData(Jedis jedis, Long cid) {
         String rankingKey = String.format(RANKING_KEY, cid);
 
         // 获取所有用户排名（按分数从高到低）
@@ -110,7 +110,7 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
     }
 
     // 同步题目提交数据（与之前方案类似）
-    private void syncProblemData(Jedis jedis, long cid) {
+    private void syncProblemData(Jedis jedis, Long cid) {
         // 获取比赛的所有题目
         String cacheKey = "competition:" + cid + ":problems";
         String problemsJson = jedis.get(cacheKey);
@@ -120,7 +120,7 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
             Map<Integer, Problem> problemMap = JSON.parseObject(problemsJson, typeRef);
 
             for (Problem problem : problemMap.values()) {
-                long pid = problem.getId();
+                Long pid = problem.getId();
                 String problemPassKey = String.format(PROBLEM_PASS_KEY, cid, pid);
                 String problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, pid);
 

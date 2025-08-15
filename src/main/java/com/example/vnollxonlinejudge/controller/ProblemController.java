@@ -1,25 +1,23 @@
 package com.example.vnollxonlinejudge.controller;
 
-import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
-import com.example.vnollxonlinejudge.model.entity.Problem;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
-import com.example.vnollxonlinejudge.common.result.Result;
+import com.example.vnollxonlinejudge.model.result.Result;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/problem")
+@RequiredArgsConstructor
 public class ProblemController {
-    @Autowired
-    private ProblemService problemService;
+    private final ProblemService problemService;
     @GetMapping("/{id}")
     public ModelAndView problemDetail(@PathVariable Long id) {
         ModelAndView modelAndView = new ModelAndView();
-        ProblemResponse problem = problemService.getProblemInfo(id, 0);
+        ProblemVo problem = problemService.getProblemInfo(id, 0L);
         if (problem == null) {
             modelAndView.setViewName("error/404");
         } else {
@@ -29,16 +27,16 @@ public class ProblemController {
         return modelAndView;
     }
     @PostMapping("/get")
-    public Result<ProblemResponse> getProblemById(@RequestParam String id){
-        return Result.Success(problemService.getProblemInfo(Long.parseLong(id),0),"获取题目信息成功");
+    public Result<ProblemVo> getProblemById(@RequestParam String id){
+        return Result.Success(problemService.getProblemInfo(Long.parseLong(id),0L),"获取题目信息成功");
     }
     @GetMapping("/tags")
-    public Result<List<String>> getTags(@RequestParam long pid){
+    public Result<List<String>> getTags(@RequestParam Long pid){
 
         return Result.Success(problemService.getTagNames(pid),"获取题目标签成功");
     }
     @GetMapping("/list")
-    public Result<List<ProblemResponse>> getProblemList(@RequestParam(required = false) String keyword,@RequestParam String offset,@RequestParam String size){
+    public Result<List<ProblemVo>> getProblemList(@RequestParam(required = false) String keyword, @RequestParam String offset, @RequestParam String size){
         if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
             return Result.Success(
                     problemService.getProblemList(
@@ -49,7 +47,7 @@ public class ProblemController {
         }else{
             return Result.Success(
                     problemService.getProblemList(
-                            keyword,0,Integer.parseInt(offset),Integer.parseInt(size),false
+                            keyword,0L,Integer.parseInt(offset),Integer.parseInt(size),false
                     )
                     ,"搜索题目成功");
         }
@@ -62,7 +60,7 @@ public class ProblemController {
                     ,"获取关键字题目总数成功");
         }else{
             return Result.Success(
-                    problemService.getCount(keyword,0,false)
+                    problemService.getCount(keyword,0L,false)
                     ,"获取关键字题目总数成功");
         }
     }

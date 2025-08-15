@@ -3,9 +3,9 @@ package com.example.vnollxonlinejudge.service;
 import java.util.List;
 
 public interface ProblemTagService {
-    List<String> getTagNames(long pid);
+    List<String> getTagNames(Long pid);
     void deleteRelated(String name);
-    void deleteTagByProblem(long pid);
-    void addRelated(String name,long pid);
+    void deleteTagByProblem(Long pid);
+    void addRelated(String name,Long pid);
     List<Long> getProblemByTag(String name);
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.entity.ProblemTag;
 import com.example.vnollxonlinejudge.mapper.ProblemTagMapper;
 import com.example.vnollxonlinejudge.service.ProblemTagService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProblemTagServiceImpl extends ServiceImpl<ProblemTagMapper, ProblemTag> implements ProblemTagService {
     @Override
-    public List<String> getTagNames(long pid) {
+    public List<String> getTagNames(Long pid) {
         QueryWrapper<ProblemTag> wrapper = new QueryWrapper<>();
         wrapper.eq("problem_id", pid).select("tag_name");
         List<ProblemTag> problemTags = this.baseMapper.selectList(wrapper);
@@ -31,14 +32,14 @@ public class ProblemTagServiceImpl extends ServiceImpl<ProblemTagMapper, Problem
     }
 
     @Override
-    public void deleteTagByProblem(long pid) {
+    public void deleteTagByProblem(Long pid) {
         QueryWrapper<ProblemTag> wrapper=new QueryWrapper<>();
         wrapper.eq("problem_id",pid);
         this.baseMapper.delete(wrapper);
     }
 
     @Override
-    public void addRelated(String name, long pid) {
+    public void addRelated(String name, Long pid) {
         ProblemTag problemTag=new ProblemTag();
         problemTag.setProblemId(pid);
         problemTag.setTagName(name);

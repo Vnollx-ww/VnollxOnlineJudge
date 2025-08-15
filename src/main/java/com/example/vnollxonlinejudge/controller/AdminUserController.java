@@ -1,15 +1,15 @@
 package com.example.vnollxonlinejudge.controller;
 
-import com.example.vnollxonlinejudge.common.result.Result;
+import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.exception.BusinessException;
-import com.example.vnollxonlinejudge.model.dto.request.admin.AdminSaveUserRequest;
-import com.example.vnollxonlinejudge.model.dto.response.user.UserResponse;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveUserDTO;
+import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +17,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/user")
 @Validated
+@RequiredArgsConstructor
 public class AdminUserController {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * 提取当前管理员ID的公共方法
@@ -37,11 +37,11 @@ public class AdminUserController {
         }
     }
     @GetMapping("/list")
-    public Result<List<UserResponse>> getUserList(@RequestParam int pageNum, @RequestParam int pageSize,
-                                                  @RequestParam(required = false) String keyword,
-                                                  HttpServletRequest httpRequest) {
+    public Result<List<UserVo>> getUserList(@RequestParam int pageNum, @RequestParam int pageSize,
+                                            @RequestParam(required = false) String keyword,
+                                            HttpServletRequest httpRequest) {
         Long uid=getCurrentAdminId(httpRequest);
-        List<UserResponse> users=userService.getAllUserByAdmin(
+        List<UserVo> users=userService.getAllUserByAdmin(
                 pageNum,pageSize,
                 keyword,uid
         );
@@ -54,7 +54,6 @@ public class AdminUserController {
     @GetMapping("/count")
     public Result<Long> getUserCount(@RequestParam(required = false) String keyword,
                                      HttpServletRequest request) {
-        Long adminId = getCurrentAdminId(request);
         String identity = (String) request.getAttribute("identity");
         Long count =  userService.getCountByAdmin(keyword, identity);
         return Result.Success(count, "获取搜索用户总数成功");
@@ -64,7 +63,7 @@ public class AdminUserController {
      * 创建用户
      */
     @PostMapping("/add")
-    public Result<Void> createUser(@Valid @RequestBody AdminSaveUserRequest request) {
+    public Result<Void> createUser(@Valid @RequestBody AdminSaveUserDTO request) {
         userService.addUserByAdmin(request.getName(), request.getEmail(), request.getIdentity());
         return Result.Success("添加用户成功");
     }
@@ -73,7 +72,7 @@ public class AdminUserController {
      * 更新用户信息
      */
     @PutMapping("/update")
-    public Result<Void> updateUser(@Valid @RequestBody AdminSaveUserRequest request) {
+    public Result<Void> updateUser(@Valid @RequestBody AdminSaveUserDTO request) {
         // 确保路径参数和请求体中的ID一致
 
         userService.updateUserInfoByAdmin(

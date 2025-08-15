@@ -11,7 +11,7 @@ public class Competition {
     @TableId(type = IdType.AUTO)
     private Long  id;
     @Column(name = "number")
-    private int number;
+    private Integer number;
 
     @Column(name = "need_password")
     private Boolean needPassword;

@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.exception;
 
-import com.example.vnollxonlinejudge.common.result.Result;
+import com.example.vnollxonlinejudge.model.result.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;

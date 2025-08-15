@@ -4,11 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.TagMapper;
-import com.example.vnollxonlinejudge.model.dto.response.tag.TagResponse;
-import com.example.vnollxonlinejudge.model.dto.response.user.UserResponse;
+import com.example.vnollxonlinejudge.model.vo.tag.TagVo;
 import com.example.vnollxonlinejudge.model.entity.Tag;
 import com.example.vnollxonlinejudge.service.ProblemTagService;
 import com.example.vnollxonlinejudge.service.TagService;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +18,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Setter
 public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagService {
-    @Autowired
-    private ProblemTagService problemTagService;
+    @Autowired private ProblemTagService problemTagService;
     @Override
     public void createTag(String name) {
         QueryWrapper<Tag> wrapper=new QueryWrapper<>();
@@ -34,7 +35,7 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
 
     @Override
     @Transactional
-    public void deleteTag(long id) {
+    public void deleteTag(Long id) {
         QueryWrapper<Tag> wrapper=new QueryWrapper<>();
         wrapper.eq("id",id).select("name");
         Tag tag=this.baseMapper.selectOne(wrapper);
@@ -46,16 +47,10 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     }
 
     @Override
-    public List<TagResponse> getTagList() {
+    public List<TagVo> getTagList() {
         return this.list().stream()
-                .map(TagResponse::new)  // 或者 user -> new UserResponse(user)
+                .map(TagVo::new)  // 或者 user -> new UserResponse(user)
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public TagResponse getTag(String name) {
-        QueryWrapper<Tag> wrapper=new QueryWrapper<>();
-        wrapper.eq("name",name);
-        return new TagResponse(this.getOne(wrapper));
-    }
 }

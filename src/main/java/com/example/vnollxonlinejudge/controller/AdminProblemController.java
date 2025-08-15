@@ -1,15 +1,13 @@
 package com.example.vnollxonlinejudge.controller;
 
-import com.example.vnollxonlinejudge.common.result.Result;
-import com.example.vnollxonlinejudge.exception.BusinessException;
-import com.example.vnollxonlinejudge.model.dto.request.admin.AdminSaveProblemRequest;
-import com.example.vnollxonlinejudge.model.dto.response.problem.ProblemResponse;
+import com.example.vnollxonlinejudge.model.result.Result;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -19,25 +17,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/problem")
 @Validated
+@RequiredArgsConstructor
 public class AdminProblemController {
-    @Autowired
-    private ProblemService problemService;
-    private Long getCurrentAdminId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到管理员ID");
-        }
-
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("管理员ID格式错误");
-        }
-    }
-
+    private final ProblemService problemService;
     @PostMapping(value ="/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<Void> createProblem(
-            @Valid @ModelAttribute AdminSaveProblemRequest request
+            @Valid @ModelAttribute AdminSaveProblemDTO request
     ) {
         problemService.createProblem(
                 request.getTitle(),
@@ -63,7 +48,7 @@ public class AdminProblemController {
     }
     @PutMapping("/update")
     public Result<Void> updateProblem(
-            @Valid @ModelAttribute AdminSaveProblemRequest request
+            @Valid @ModelAttribute AdminSaveProblemDTO request
     ){
         problemService.updateProblem(
                 request.getId(),
@@ -91,12 +76,12 @@ public class AdminProblemController {
                     ,"获取关键字题目总数成功");
         }else{
             return Result.Success(
-                    problemService.getCount(keyword,0,true)
+                    problemService.getCount(keyword,0L,true)
                     ,"获取关键字题目总数成功");
         }
     }
     @GetMapping("/list")
-    public Result<List<ProblemResponse>> getProblemList(@RequestParam(required = false) String keyword,@RequestParam String offset,@RequestParam String size){
+    public Result<List<ProblemVo>> getProblemList(@RequestParam(required = false) String keyword, @RequestParam String offset, @RequestParam String size){
         if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
             return Result.Success(
                     problemService.getProblemList(
@@ -107,7 +92,7 @@ public class AdminProblemController {
         }else{
             return Result.Success(
                     problemService.getProblemList(
-                            keyword,0,Integer.parseInt(offset),Integer.parseInt(size),true
+                            keyword,0L,Integer.parseInt(offset),Integer.parseInt(size),true
                     )
                     ,"搜索题目成功");
         }

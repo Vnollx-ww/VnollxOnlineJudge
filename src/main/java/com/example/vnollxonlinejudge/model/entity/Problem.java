@@ -19,10 +19,10 @@ public class Problem {
     private String description;
 
     @Column(name = "time_limit")
-    private int timeLimit;
+    private Integer timeLimit;
 
     @Column(name = "memory_limit")
-    private int memoryLimit;
+    private Integer memoryLimit;
 
     @Column(name = "difficulty")
     private String difficulty;
@@ -46,13 +46,34 @@ public class Problem {
     private String outputFormat;
 
     @Column(name = "submit_count")
-    private int submitCount;
+    private Integer submitCount;
 
     @Column(name = "pass_count")
-    private int passCount;
+    private Integer passCount;
 
     @Column(name = "open")
-    private boolean open;
+    private Boolean open;
     @Column(name = "version")
-    private int version;
+    private Integer version;
+    public Problem(){}
+    public Problem(
+            String title,
+            String description,int timeLimit,
+            int memoryLimit,String difficulty,
+            String inputFormat,String outputFormat,
+            String inputExample,String outputExample,
+            String hint,Boolean open
+    ){
+        this.title=title;
+        this.description=description;
+        this.timeLimit=timeLimit;
+        this.memoryLimit=memoryLimit;
+        this.difficulty=difficulty;
+        this.inputFormat=inputFormat;
+        this.outputFormat=outputFormat;
+        this.inputExample=inputExample;
+        this.outputExample=outputExample;
+        this.hint=hint;
+        this.open=open;
+    }
 }

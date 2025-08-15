@@ -1,25 +1,25 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.example.vnollxonlinejudge.model.dto.response.submission.SubmissionResponse;
+import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
-import com.example.vnollxonlinejudge.common.result.Result;
+import com.example.vnollxonlinejudge.model.result.Result;
 
 import java.util.List;
 import java.util.Objects;
 
 @RestController
 @RequestMapping("/submission")
+@RequiredArgsConstructor
 public class SubmissionController {
-    @Autowired
-    private SubmissionService submissionService;
+    private final SubmissionService submissionService;
     @GetMapping("/{id}")
     public ModelAndView submissionDetail(@PathVariable Long id) {
-        SubmissionResponse submission = submissionService.getSubmissionById(id);
+        SubmissionVo submission = submissionService.getSubmissionById(id);
         ModelAndView modelAndView = new ModelAndView();
         if (submission == null) {
             modelAndView.setViewName("error/404");
@@ -30,11 +30,11 @@ public class SubmissionController {
         return modelAndView;
     }
     @GetMapping("/get")
-    public Result<SubmissionResponse> getSubmissionById(@RequestParam String id){
+    public Result<SubmissionVo> getSubmissionById(@RequestParam String id){
         return Result.Success(submissionService.getSubmissionById(Long.parseLong(id)),"获取提交记录成功");
     }
     @GetMapping("/list")
-    public Result<List<SubmissionResponse>> getSubmissionList(
+    public Result<List<SubmissionVo>> getSubmissionList(
             @RequestParam(required = false) String cid,
             @RequestParam(required = false) String uid,
             @RequestParam(required = false) String language,
@@ -42,8 +42,8 @@ public class SubmissionController {
             @RequestParam String pageNum,
             @RequestParam String pageSize
     ){
-        long uidLong = 0;
-        long cidLong = parseLongOrDefault(cid); // 默认值0
+        Long uidLong = 0L;
+        Long cidLong = parseLongOrDefault(cid); // 默认值0
         if (StringUtils.isNotBlank(uid)){
             uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));
         }
@@ -65,8 +65,8 @@ public class SubmissionController {
             @RequestParam(required = false) String language,
             @RequestParam(required = false) String status
     ){
-        long uidLong = 0;
-        long cidLong = parseLongOrDefault(cid); // 默认值0
+        long uidLong = 0L;
+        Long cidLong = parseLongOrDefault(cid); // 默认值0
         if (StringUtils.isNotBlank(uid)){
             uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));
         }
@@ -76,7 +76,7 @@ public class SubmissionController {
                 submissionService.getCount(cidLong, uidLong, language, status)
                 ,"获取提交记录列表成功");
     }
-    private long parseLongOrDefault(String value) {
+    private Long parseLongOrDefault(String value) {
         if (value == null || value.trim().isEmpty()) {
             return 0L;
         }

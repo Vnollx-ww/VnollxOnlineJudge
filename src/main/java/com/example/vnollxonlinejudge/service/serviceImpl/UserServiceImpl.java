@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.vnollxonlinejudge.model.dto.response.user.UserResponse;
+import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.exception.BusinessException;
@@ -14,6 +14,8 @@ import com.example.vnollxonlinejudge.mapper.UserMapper;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.vnollxonlinejudge.service.UserService;
@@ -28,13 +30,12 @@ import static com.example.vnollxonlinejudge.utils.BCryptSalt.generateSalt;
 import static com.example.vnollxonlinejudge.utils.BCryptSalt.hashPasswordWithSalt;
 
 @Service
+@Setter
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-    @Autowired
-    private UserSolvedProblemService userSolvedProblemService;
-    @Autowired
-    private RedisService redisService;
+    @Autowired private UserSolvedProblemService userSolvedProblemService;
+    @Autowired private RedisService redisService;
     //@DS("master")
     @Override
     public String login(String email, String password) {
@@ -83,13 +84,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     // @DS("slave")
     @Override
-    public UserResponse getUserById(long id) {
+    public UserVo getUserById(Long id) {
         User user = getById(id);
         if(user == null) {
             throw new BusinessException("用户不存在");
         }
         user.setPassword("无权限查看");
-        return new UserResponse(user);
+        return new UserVo(user);
     }
 
     @Override
@@ -101,13 +102,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     //@DS("slave")
     @Override
-    public List<UserSolvedProblem> getSolveProblem(long uid) {
+    public List<UserSolvedProblem> getSolveProblem(Long uid) {
         return userSolvedProblemService.getSolveProblem(uid);
     }
 
     //@DS("slave")
     @Override
-    public List<UserResponse> getAllUserByAdmin(int pageNum, int pageSize, String keyword, long uid) {
+    public List<UserVo> getAllUserByAdmin(int pageNum, int pageSize, String keyword, Long uid) {
         // 一次性获取用户信息，避免多次查询
         QueryWrapper<User> identityWrapper = new QueryWrapper<User>()
                 .select("identity")
@@ -138,13 +139,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.page(page, queryWrapper)
                 .getRecords()
                 .stream()
-                .map(UserResponse::new)  // 或者 user -> new UserResponse(user)
+                .map(UserVo::new)  // 或者 user -> new UserResponse(user)
                 .collect(Collectors.toList());
     }
 
     //@DS("master")
     @Override
-    public void updatePassword(String old_password, String password, long uid) {
+    public void updatePassword(String old_password, String password, Long uid) {
         User user = getById(uid);
         if(user == null) {
             throw new BusinessException("用户不存在");
@@ -159,7 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     //@DS("master")
     @Override
     public void updateUserInfo(
-            String email, String name, long uid,
+            String email, String name, Long uid,
             String option,String verifyCode
     ) {
         String key=email+":update";
@@ -180,7 +181,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
     //@DS("master")
     @Override
-    public void updateSubmitCount(long uid, int ok) {
+    public void updateSubmitCount(Long uid, int ok) {
         LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.setSql("submit_count = submit_count + 1") // 原子递增
                 .setSql("pass_count = pass_count + " + ok)
@@ -189,7 +190,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public void deleteUserByAdmin(long id) {
+    public void deleteUserByAdmin(Long id) {
         QueryWrapper<User> wrapper=new QueryWrapper<>();
         wrapper.eq("id",id);
         this.baseMapper.delete(wrapper);
@@ -216,7 +217,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public void updateUserInfoByAdmin(String email, String name, String identity, long uid) {
+    public void updateUserInfoByAdmin(String email, String name, String identity, Long uid) {
         if (lambdaQuery().eq(User::getEmail, email).ne(User::getId, uid).exists()) {
             throw new BusinessException("邮箱地址已存在");
         }
@@ -232,7 +233,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public long getCountByAdmin(String keyword,String identity) {
+    public Long getCountByAdmin(String keyword,String identity) {
         if (!StringUtils.isNotBlank(keyword)){
             return this.count();
         }
@@ -256,18 +257,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public long getCount() {
+    public Long getCount() {
         return this.count();
     }
 
     @Override
-    public List<UserResponse> getAllUser() {
+    public List<UserVo> getAllUser() {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.select("id", "name", "submit_count", "pass_count");
 
         return this.baseMapper.selectList(wrapper)
                 .stream()
-                .map(UserResponse::new)
+                .map(UserVo::new)
                 .collect(Collectors.toList());
     }
 }

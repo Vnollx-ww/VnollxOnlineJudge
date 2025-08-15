@@ -6,15 +6,15 @@ import lombok.Data;
 public class JudgeInfo {
     private String code;
     private String language;
-    private int time;
-    private int memory;
-    private long cid;
-    private long uid;
-    private long pid;
+    private Long time;
+    private Long memory;
+    private Long cid;
+    private Long uid;
+    private Long pid;
     private String uname;
 
     private String createTime;
-    public JudgeInfo(String code,String language,int time,int memory,long cid,long uid,long pid,String createTime,String uname){
+    public JudgeInfo(String code,String language,Long time,Long memory,Long cid,Long uid,Long pid,String createTime,String uname){
         this.code=code;
         this.language=language;
         this.time=time;

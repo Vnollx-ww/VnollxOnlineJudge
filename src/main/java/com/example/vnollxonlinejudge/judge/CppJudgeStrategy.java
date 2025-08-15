@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.judge;
 
-import com.example.vnollxonlinejudge.common.result.RunResult;
+import com.example.vnollxonlinejudge.model.result.RunResult;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import org.slf4j.Logger;
@@ -30,22 +30,22 @@ public class CppJudgeStrategy implements JudgeStrategy {
     private final String COMPILE_URL ;
     private final String RUN_URL  ;
     private final String DELETE_URL ;
+    private final MinioClient minioClient;
+    private static final Logger logger = LoggerFactory.getLogger(CppJudgeStrategy.class);
+    private static final String MINIO_BUCKET_NAME = "problem";
     @Autowired
-    public CppJudgeStrategy(String goJudgeEndpoint) {
+    public CppJudgeStrategy(String goJudgeEndpoint,MinioClient minioClient) {
         this.COMPILE_URL = goJudgeEndpoint + "/run";
         this.RUN_URL = goJudgeEndpoint + "/run";
         this.DELETE_URL = goJudgeEndpoint + "/file/{fileId}";
+        this.minioClient = minioClient;
     }
-    private static final Logger logger = LoggerFactory.getLogger(CppJudgeStrategy.class);
-    private static final String MINIO_BUCKET_NAME = "problem";
 
 
-    @Autowired
-    private MinioClient minioClient;
 
 
     @Override
-    public RunResult judge(String code, String dataZipUrl, int timeLimit, int memoryLimit) {
+    public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
         RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
         result.setRunTime(result.getTime() / 1000000);
         result.setMemory(result.getMemory()/1048576);
@@ -58,7 +58,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
         return result;
     }
 
-    private RunResult judgeCode(String submittedCode, String zipFilePath, long timeLimitMs, long memoryLimitMB) {
+    private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
         // 1. Compile code
         String binaryFileId = compileCode(submittedCode);
         if (binaryFileId == null) {
@@ -283,7 +283,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
     """, escapedCode);
     }
 
-    private String buildRunPayload(String input, String fileId, long cpuLimit, long memoryLimit) {
+    private String buildRunPayload(String input, String fileId, Long cpuLimit, Long memoryLimit) {
         input = input.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\r", "\\r")

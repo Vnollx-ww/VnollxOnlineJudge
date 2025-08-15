@@ -9,12 +9,12 @@ import lombok.Data;
 @Data
 public class User {
     // 注意属性名要与数据表中的字段名一致
-    // 主键自增int(10)对应long
+    // 主键自增int(10)对应Long
     @TableId(type = IdType.AUTO)
     private Long id;
 
     @Column(name = "penalty_time")
-    private int penaltyTime;
+    private Integer penaltyTime;
     @Column(name="salt")
     private String salt;
     @Column(name = "name")
@@ -25,12 +25,12 @@ public class User {
     @Column(name = "email")
     private String email;
     @Column(name = "submit_count")
-    private int submitCount;
+    private Integer submitCount;
 
     @Column(name = "pass_count")
-    private int passCount;
+    private Integer passCount;
     @Column(name = "version")
-    private int version;
+    private Integer version;
 
     @Column(name="identity")
     private String identity;

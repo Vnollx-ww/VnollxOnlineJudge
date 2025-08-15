@@ -1,18 +1,18 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.exception.BusinessException;
-import com.example.vnollxonlinejudge.model.dto.request.judge.SubmitCodeRequest;
+import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import jakarta.servlet.http.HttpServletRequest;
-import com.example.vnollxonlinejudge.common.result.Result;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.vnollxonlinejudge.model.result.Result;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/judge")
+@RequiredArgsConstructor
 public class JudgeController {
-    @Autowired
-    private JudgeService judgeService;
+    private final JudgeService judgeService;
     private Long getCurrentUserId(HttpServletRequest request) {
         String userId = (String) request.getAttribute("uid");
         if (userId == null || userId.trim().isEmpty()) {
@@ -26,9 +26,9 @@ public class JudgeController {
     }
     @PostMapping("/submit")
     public Result<String> judgeSubmit(
-        @RequestBody SubmitCodeRequest req,HttpServletRequest request
+            @RequestBody SubmitCodeDTO req, HttpServletRequest request
     ){
-        long userId = getCurrentUserId(request);
+        Long userId = getCurrentUserId(request);
         String result=judgeService.judgeSubmit(
                 req.getCode(),
                 req.getOption(),
@@ -37,8 +37,8 @@ public class JudgeController {
                 Long.parseLong(req.getCid()),
                 req.getCreate_time(),
                 req.getUname(),
-                Integer.parseInt(req.getTime()),
-                Integer.parseInt(req.getMemory())
+                Long.parseLong(req.getTime()),
+                Long.parseLong(req.getMemory())
         );
         return Result.Success(result,result);
     }

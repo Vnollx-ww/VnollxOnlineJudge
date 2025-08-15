@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.model.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 import jakarta.persistence.*;
 import lombok.Data;
 

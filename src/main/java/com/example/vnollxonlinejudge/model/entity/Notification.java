@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class Notification {
     @TableId(type = IdType.AUTO)
-    private long id;
+    private Long id;
     private String title;
     private String description;
     private String createTime;

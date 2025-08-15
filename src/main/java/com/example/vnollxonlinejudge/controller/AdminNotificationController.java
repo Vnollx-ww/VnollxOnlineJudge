@@ -1,11 +1,11 @@
 package com.example.vnollxonlinejudge.controller;
 
-import com.example.vnollxonlinejudge.common.result.Result;
-import com.example.vnollxonlinejudge.model.dto.request.admin.AdminSaveNotificationRequest;
-import com.example.vnollxonlinejudge.model.dto.response.notification.NotificationResponse;
+import com.example.vnollxonlinejudge.model.result.Result;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveNotificationDTO;
+import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
 import com.example.vnollxonlinejudge.service.NotificationService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,11 +14,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/notification")
 @Validated
+@RequiredArgsConstructor
 public class AdminNotificationController {
-    @Autowired
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
     @GetMapping("/list")
-    public Result<List<NotificationResponse>> getNotificationList(
+    public Result<List<NotificationVo>> getNotificationList(
             @RequestParam String pageNum,@RequestParam String pageSize,
             @RequestParam(required = false) String keyword
             ){
@@ -28,17 +28,17 @@ public class AdminNotificationController {
         );
     }
     @DeleteMapping("/delete/{id}")
-    public Result<Void> deleteNotification(@Valid @PathVariable long id){
+    public Result<Void> deleteNotification(@Valid @PathVariable Long id){
         notificationService.deleteNotification(id);
         return Result.Success("删除通知成功");
     }
     @PutMapping("/update/{id}")
-    public Result<Void> updateNotification(@RequestBody AdminSaveNotificationRequest req,@Valid @PathVariable long id){
+    public Result<Void> updateNotification(@RequestBody AdminSaveNotificationDTO req, @Valid @PathVariable Long id){
         notificationService.updateNotification(id,req.getTitle(),req.getDescription());
         return Result.Success("修改通知成功");
     }
     @PostMapping("/create")
-    public Result<Void> createNotification(@RequestBody AdminSaveNotificationRequest req){
+    public Result<Void> createNotification(@RequestBody AdminSaveNotificationDTO req){
         notificationService.createNotification(req.getTitle(),req.getDescription(),req.getAuthor());
         return Result.Success("创建通知成功");
     }
