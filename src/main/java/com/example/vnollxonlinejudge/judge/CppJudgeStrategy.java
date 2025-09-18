@@ -99,7 +99,9 @@ public class CppJudgeStrategy implements JudgeStrategy {
             finalResult.setFiles(new RunResult.Files());
             finalResult.getFiles().setStdout("");
             finalResult.getFiles().setStderr("");
-
+            finalResult.setRunTime(0L);
+            finalResult.setTime(0L);
+            finalResult.setMemory(0L);
             RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -116,10 +118,8 @@ public class CppJudgeStrategy implements JudgeStrategy {
                         entity,
                         new ParameterizedTypeReference<List<RunResult>>() {}
                 );
-
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     RunResult result = response.getBody().get(0);
-
                     // Accumulate time and memory
                     finalResult.setTime(Math.max(finalResult.getTime(), result.getTime()));
                     finalResult.setMemory(Math.max(finalResult.getMemory(), result.getMemory()));

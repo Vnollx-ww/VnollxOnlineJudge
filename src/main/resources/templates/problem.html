@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${problem.id} + ' - ' + ${problem.title}"></title>
+
+    <!-- 核心样式库 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Markdown 相关资源 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"></script>
+
+    <!-- 代码编辑器样式 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/github.min.css">
+
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #4a90e2;
+            --success: #2ea44f;
+            --danger: #d73a49;
+            --info: #0366d6;
+            --bg-light: #f6f8fa;
+            --border-radius: 6px;
+            --border-color: #e1e4e8;
+        }
+
+        body {
+            background: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.5;
+            color: #24292e;
+        }
+
+        .problem-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background-color: var(--bg-light);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+        }
+
+        .problem-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .problem-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 2rem;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .problem-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 0.95rem;
+            color: #586069;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .meta-item i {
+            color: var(--primary);
+            font-size: 1em;
+        }
+
+        .code-preview {
+            background: var(--bg-light);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            line-height: 1.45;
+            white-space: pre;
+            overflow-x: auto;
+            font-size: 85%;
+            border: 1px solid var(--border-color);
+        }
+
+        .code-editor-container {
+            background: white;
+            border-radius: var(--border-radius);
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .CodeMirror {
+            border-radius: var(--border-radius);
+            height: 500px;
+            border: 1px solid var(--border-color);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .submit-btn {
+            background: var(--success);
+            color: white;
+            padding: 8px 24px;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .submit-btn:hover {
+            background: #2c974b;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* GitHub风格的Markdown样式 */
+        .markdown-content {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            word-wrap: break-word;
+            padding: 16px;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2 {
+            padding-bottom: 0.3em;
+            border-bottom: 1px solid var(--border-color);
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+
+        .markdown-content h1 {
+            font-size: 2em;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5em;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+            margin-top: 24px;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content pre {
+            background: var(--bg-light);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            overflow: auto;
+            margin: 16px 0;
+            border: 1px solid var(--border-color);
+            line-height: 1.45;
+        }
+
+        .markdown-content code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background: rgba(27,31,35,0.05);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+
+        .markdown-content pre code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .markdown-content img {
+            max-width: 100%;
+            box-sizing: content-box;
+            background-color: #fff;
+            margin: 16px 0;
+        }
+
+        .markdown-content table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            display: block;
+            width: 100%;
+            overflow: auto;
+            margin: 16px 0;
+        }
+
+        .markdown-content th,
+        .markdown-content td {
+            padding: 6px 13px;
+            border: 1px solid var(--border-color);
+        }
+
+        .markdown-content th {
+            font-weight: 600;
+            background: var(--bg-light);
+        }
+
+        .markdown-content tr {
+            background-color: #fff;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .markdown-content tr:nth-child(2n) {
+            background-color: var(--bg-light);
+        }
+
+        .markdown-content blockquote {
+            padding: 0 1em;
+            color: #6a737d;
+            border-left: 0.25em solid var(--border-color);
+            margin: 0 0 16px 0;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            padding-left: 2em;
+            margin-top: 0;
+            margin-bottom: 16px;
+        }
+
+        .markdown-content li {
+            word-wrap: break-word;
+        }
+
+        .markdown-content li > p {
+            margin-top: 16px;
+        }
+
+        .markdown-content li + li {
+            margin-top: 0.25em;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 22px;
+            color: #0366d6;
+            background-color: #f1f8ff;
+            border-radius: 2em;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* 美化的判题结果弹框 */
+        .status-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            font-size: 1.05rem;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 300px;
+            max-width: 450px;
+        }
+
+        .status-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-success {
+            background: #f0fff4;
+            color: #22543d;
+            border-left: 4px solid #38a169;
+        }
+
+        .status-error {
+            background: #fff5f5;
+            color: #742a2a;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .status-info {
+            background: #edf2ff;
+            color: #2c5282;
+            border-left: 4px solid #4299e1;
+        }
+
+        .status-toast i {
+            font-size: 1.3em;
+        }
+
+        @media (max-width: 768px) {
+            .problem-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .CodeMirror {
+                height: 350px;
+            }
+
+            .status-toast {
+                min-width: auto;
+                max-width: calc(100% - 40px);
+            }
+        }
+
+        /* 评论区域样式 */
+        .comment-section {
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        .comment-section .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            border: none;
+        }
+
+        .comment-section .card-header h4 {
+            font-weight: 600;
+        }
+
+        .comment-form textarea {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .comment-form textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .comment-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .comment-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+        }
+
+        .comment-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .comment-author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-author .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .comment-author .name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .comment-time {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .comment-content {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .comment-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .comment-action {
+            background: none;
+            border: none;
+            color: #718096;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .comment-action:hover {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .comment-action.reply:hover {
+            color: #667eea;
+        }
+
+        .comment-action.delete:hover {
+            color: #e53e3e;
+        }
+
+        /* 回复区域样式 */
+        .reply-form {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: none;
+        }
+
+        .reply-form.show {
+            display: block;
+        }
+
+        .reply-form textarea {
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.75rem;
+            width: 100%;
+            min-height: 80px;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .reply-form textarea:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+
+        .reply-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .reply-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .reply-btn.primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .reply-btn.primary:hover {
+            background: #5a67d8;
+        }
+
+        .reply-btn.secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .reply-btn.secondary:hover {
+            background: #cbd5e0;
+        }
+
+        /* 子评论样式 */
+        .subcomment-list {
+            margin-top: 1rem;
+            padding-left: 2rem;
+            border-left: 2px solid #e2e8f0;
+        }
+
+        .subcomment-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .subcomment-item:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 空状态样式 */
+        .comment-list .text-center {
+            padding: 3rem 1rem;
+        }
+
+        .comment-list .text-center i {
+            color: #cbd5e0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .comment-item {
+                padding: 1rem;
+            }
+
+            .comment-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .subcomment-list {
+                padding-left: 1rem;
+            }
+
+            .comment-actions {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="problem-container">
+    <!-- 题目头部 -->
+    <div class="card info-card">
+        <div class="problem-header p-4">
+            <div class="problem-title">
+                <i class="fas fa-code text-primary"></i>
+                <span th:text="${problem.title}"></span>
+            </div>
+            <div class="problem-meta d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span id="time" th:text="'时间限制：' + ${problem.timeLimit} + ' ms'"></span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-memory"></i>
+                        <span id="memory" th:text="'内存限制：' + ${problem.memoryLimit} + ' MB'"></span>
+                    </div>
+                    <!-- 标签区域 -->
+                    <div class="meta-item">
+                        <i class="fas fa-tags text-primary"></i>
+                        <div id="tagsContainer" class="d-flex align-items-center flex-wrap gap-1"></div>
+                    </div>
+                </div>
+                <a href="#"
+                   class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+                   th:href="@{/solve/list/{id}(id=${problem.id})}"
+                   target="_self">
+                    <i class="fas fa-book-open"></i>
+                    <span>查看题解</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 题目描述 -->
+    <div class="card info-card">
+        <div class="card-header">
+            <h4 class="mb-0">题目描述</h4>
+        </div>
+        <div class="markdown-content" th:text="${problem.description}"></div>
+    </div>
+
+    <!-- 输入格式 -->
+    <div class="card info-card">
+        <div class="card-header">
+            <h4 class="mb-0">输入格式</h4>
+        </div>
+        <div class="markdown-content" th:text="${problem.inputFormat}"></div>
+    </div>
+
+    <!-- 输出格式 -->
+    <div class="card info-card">
+        <div class="card-header">
+            <h4 class="mb-0">输出格式</h4>
+        </div>
+        <div class="markdown-content" th:text="${problem.outputFormat}"></div>
+    </div>
+
+    <!-- 输入输出样例 -->
+    <div class="row g-4 mt-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">输入样例</h5>
+                </div>
+                <div class="code-preview" th:utext="${problem.inputExample}"></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">输出样例</h5>
+                </div>
+                <div class="code-preview" th:utext="${problem.outputExample}"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示 -->
+    <div class="card info-card mt-4">
+        <div class="card-header">
+            <h4 class="mb-0">提示</h4>
+        </div>
+        <div class="markdown-content" th:text="${problem.hint}"></div>
+    </div>
+
+    <!-- 代码提交区域 -->
+    <div class="card code-editor-container mt-5">
+        <form id="submitForm">
+            <input type="hidden" name="problemId" th:value="${problem.id}">
+            <div class="mb-3">
+                <label for="languageSelect" class="form-label">选择编程语言</label>
+                <select id="languageSelect" name="language" class="form-select">
+                    <option value="cpp">C++17</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                </select>
+            </div>
+            <div id="judgeStatus" class="mb-3">
+                <div id="statusAlert" class="alert" style="display: none;"></div>
+            </div>
+
+            <div class="mb-4">
+                <textarea id="codeEditor" name="code"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-paper-plane me-2"></i> 提交代码
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 评论区域 -->
+    <div class="card comment-section mt-5">
+        <div class="card-header">
+            <h4 class="mb-0">
+                <i class="fas fa-comments me-2"></i>评论讨论
+                <span class="badge bg-primary ms-2" id="commentCount">0</span>
+            </h4>
+        </div>
+        <div class="card-body">
+            <!-- 发表评论区域 -->
+            <div class="comment-form mb-4">
+                <div class="mb-3">
+                    <label for="commentContent" class="form-label">发表评论</label>
+                    <textarea id="commentContent" class="form-control" rows="4" placeholder="分享你的想法、解题思路或遇到的问题..."></textarea>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary" id="submitComment">
+                        <i class="fas fa-paper-plane me-2"></i>发表评论
+                    </button>
+                </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div id="commentList" class="comment-list">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                    <p>暂无评论，快来发表第一条评论吧！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 核心脚本 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 代码编辑器脚本 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+
+<script>
+    // 配置marked.js以符合GitHub风格
+    marked.setOptions({
+        gfm: true,
+        breaks: true,
+        pedantic: false,
+        smartLists: true,
+        smartypants: false,
+        highlight: function(code, lang) {
+            const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language: validLang }).value;
+        },
+        extensions: [
+            {
+                name: 'math',
+                level: 'inline',
+                start(src) { return src.indexOf('$'); },
+                tokenizer(src, tokens) {
+                    const match = src.match(/^\$+([^$\n]+?)\$+/);
+                    if (match) {
+                        return {
+                            type: 'math',
+                            raw: match[0],
+                            text: match[1].trim()
+                        };
+                    }
+                },
+                renderer(token) {
+                    return `<span class="math">\\(${token.text}\\)</span>`;
+                }
+            }
+        ]
+    });
+
+    // 渲染Markdown内容
+    function renderMarkdownElements() {
+        document.querySelectorAll('.markdown-content').forEach(element => {
+            const rawText = element.textContent;
+            const parsedMarkdown = marked.parse(rawText);
+            element.innerHTML = DOMPurify.sanitize(parsedMarkdown, {
+                ADD_TAGS: ['iframe'],
+                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling']
+            });
+
+            // 渲染数学公式
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise();
+            }
+
+            // 高亮代码块
+            element.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        });
+    }
+
+    // 代码编辑器初始化
+    const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        lineNumbers: true,
+        mode: 'text/x-c++src',
+        theme: 'github',
+        indentUnit: 4,
+        lineWrapping: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        extraKeys: {
+            "Ctrl-S": saveDraft,
+            "Tab": cm => cm.replaceSelection("    ")
+        }
+    });
+
+    const languageSelect = document.getElementById('languageSelect');
+    languageSelect.addEventListener('change', () => {
+        const selectedLanguage = languageSelect.value;
+        if (selectedLanguage === 'cpp') {
+            editor.setOption('mode', 'text/x-c++src');
+            editor.setValue(`#include <iostream>
+using namespace std;
+
+int main() {
+    // 请在此处编写你的代码
+
+    return 0;
+}
+`);
+        } else if (selectedLanguage === 'python') {
+            editor.setOption('mode', 'python');
+            editor.setValue(`# 请在此处编写你的代码
+
+`);
+        } else if (selectedLanguage === 'java') {
+            editor.setOption('mode', 'text/x-java');
+            editor.setValue(`public class Main {
+    public static void main(String[] args) {
+        // 请在此处编写你的代码
+    }
+}
+`);
+        }
+    });
+
+    // 获取题目标签
+    async function fetchProblemTags(problemId, token) {
+        try {
+            const params = new URLSearchParams({
+                pid:problemId
+            });
+            const response = await fetch(`/problem/tags?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (data.code !== 200) throw new Error(data.msg || '获取标签失败');
+            return data.data || [];
+        } catch (error) {
+            console.error('标签获取失败:', error);
+            showToast('标签加载失败，请重试', 'error');
+            return [];
+        }
+    }
+
+    // 辅助函数
+    function saveDraft() {
+        localStorage.setItem('codeDraft', editor.getValue());
+        showToast('代码草稿已自动保存', 'info', 2000);
+    }
+
+    // 显示美化的提示框
+    function showToast(message, type = 'info', duration = 3000) {
+        // 移除已存在的toast
+        const existingToast = document.querySelector('.status-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        // 创建新的toast
+        const toast = document.createElement('div');
+        toast.className = `status-toast status-${type}`;
+
+        // 根据类型添加不同的图标
+        let icon = '';
+        if (type === 'success') {
+            icon = '<i class="fas fa-check-circle"></i>';
+        } else if (type === 'error') {
+            icon = '<i class="fas fa-times-circle"></i>';
+        } else {
+            icon = '<i class="fas fa-info-circle"></i>';
+        }
+
+        toast.innerHTML = `${icon}<span>${message}</span>`;
+        document.body.appendChild(toast);
+
+        // 显示动画
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+
+        // 自动消失
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+
+    // 显示自定义确认对话框
+    function showConfirmDialog(message) {
+        return new Promise((resolve) => {
+            // 创建遮罩层
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            `;
+
+            // 创建对话框
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+                transform: scale(0.9);
+                transition: transform 0.3s ease;
+            `;
+
+            dialog.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-question-circle" style="font-size: 2rem; color: #667eea; margin-bottom: 12px;"></i>
+                    <p style="margin: 0; font-size: 1.1rem; color: #2d3748; line-height: 1.5;">${message}</p>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="confirmCancel" style="
+                        padding: 10px 20px;
+                        border: 1px solid #e2e8f0;
+                        background: white;
+                        color: #4a5568;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 0.95rem;
+                        transition: all 0.2s ease;
+                    ">取消</button>
+                    <button id="confirmOk" style="
+                        padding: 10px 20px;
+                        border: none;
+                        background: #e53e3e;
+                        color: white;
+                        border-radius: 6px;
+                        cursor: pointer;
+                        font-size: 0.95rem;
+                        transition: all 0.2s ease;
+                    ">确定</button>
+                </div>
+            `;
+
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            // 显示动画
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                dialog.style.transform = 'scale(1)';
+            }, 10);
+
+            // 绑定事件
+            const cancelBtn = dialog.querySelector('#confirmCancel');
+            const okBtn = dialog.querySelector('#confirmOk');
+
+            const cleanup = () => {
+                overlay.style.opacity = '0';
+                dialog.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    document.body.removeChild(overlay);
+                }, 300);
+            };
+
+            cancelBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+
+            okBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(true);
+            });
+
+            // 点击遮罩层关闭
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    cleanup();
+                    resolve(false);
+                }
+            });
+
+            // 按钮悬停效果
+            cancelBtn.addEventListener('mouseenter', () => {
+                cancelBtn.style.background = '#f7fafc';
+                cancelBtn.style.borderColor = '#cbd5e0';
+            });
+            cancelBtn.addEventListener('mouseleave', () => {
+                cancelBtn.style.background = 'white';
+                cancelBtn.style.borderColor = '#e2e8f0';
+            });
+
+            okBtn.addEventListener('mouseenter', () => {
+                okBtn.style.background = '#c53030';
+            });
+            okBtn.addEventListener('mouseleave', () => {
+                okBtn.style.background = '#e53e3e';
+            });
+        });
+    }
+
+    function formatTime(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    // 页面加载初始化
+    window.addEventListener('DOMContentLoaded', async () => {
+        if (!localStorage.getItem('token')) {
+            showToast('请先登录！', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1500);
+            return;
+        }
+
+        // 初始设置为C++17并加载模板
+        languageSelect.value = 'cpp';
+        languageSelect.dispatchEvent(new Event('change'));
+
+        // 渲染Markdown内容
+        if (typeof DOMPurify !== 'undefined') {
+            renderMarkdownElements();
+        }
+
+        // 加载标签
+        const problemId = document.querySelector('input[name="problemId"]').value;
+        const token = localStorage.getItem('token');
+        const tagsContainer = document.getElementById('tagsContainer');
+
+        if (problemId) {
+            const tags = await fetchProblemTags(problemId, token);
+            if (tags.length > 0) {
+                tags.forEach(tag => {
+                    const tagElement = document.createElement('span');
+                    tagElement.className = 'tag';
+                    tagElement.textContent = tag.name || tag;
+                    tagsContainer.appendChild(tagElement);
+                });
+            } else {
+                const noTags = document.createElement('span');
+                noTags.className = 'text-muted';
+                noTags.style.fontSize = '0.9rem';
+                noTags.textContent = '无标签';
+                tagsContainer.appendChild(noTags);
+            }
+        }
+    });
+
+    // 表单提交处理
+    document.getElementById('submitForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalButtonText = submitBtn.innerHTML;
+        const option = languageSelect.value;
+
+        if (option === "java") {
+            showToast("暂不支持用Java提交，请等待", 'error');
+            return;
+        }
+
+        // 显示提交中的提示
+        showToast('评测中，请稍候...', 'info', 10000);
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>提交中...';
+
+        // 提取时间和内存限制
+        const timeText = document.getElementById('time').textContent;
+        const timeValue = timeText.split('：')[1].split(' ')[0];
+
+        const memoryText = document.getElementById('memory').textContent;
+        const memoryValue = memoryText.split('：')[1].split(' ')[0];
+
+        try {
+            const currentDate = new Date();
+            const code = editor.getValue();
+            const pid = document.querySelector('input[name="problemId"]').value;
+            const uname = localStorage.getItem('name');
+            const cid = "0";
+            const create_time = formatTime(currentDate);
+            const time = timeValue;
+            const memory = memoryValue;
+
+            const response = await fetch('/judge/submit', {
+                method: 'POST',
+                body: JSON.stringify({ code, option, pid, uname, cid, create_time, time, memory }),
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            // 显示结果提示
+            if (data.code === 200) {
+                if(data.msg==="答案正确"){
+                    showToast(`${data.msg}！`, 'success', 5000);
+                }
+                else{
+                    showToast(`${data.msg}！`, 'error', 5000);
+                }
+            } else {
+                showToast(`${data.msg}！`, 'error', 5000);
+            }
+
+        } catch (error) {
+            showToast('网络连接异常，请检查网络后重试', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalButtonText;
+        }
+    });
+
+    // 评论功能相关代码
+    let currentProblemId = null;
+    let currentUserId = null;
+    let currentUsername = null;
+
+    // 初始化评论功能
+    function initCommentSystem() {
+        currentProblemId = document.querySelector('input[name="problemId"]').value;
+        currentUserId = localStorage.getItem('id');
+        currentUsername = localStorage.getItem('name');
+        
+        if (!currentUserId || !currentUsername) {
+            showToast('请先登录后再发表评论', 'error');
+            return;
+        }
+
+        // 加载评论列表
+        loadComments();
+        
+        // 绑定事件
+        bindCommentEvents();
+    }
+
+    // 绑定评论相关事件
+    function bindCommentEvents() {
+        // 发表评论
+        document.getElementById('submitComment').addEventListener('click', submitComment);
+        
+        // 使用事件委托处理回复和删除按钮
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('reply') || e.target.closest('.reply')) {
+                e.preventDefault();
+                const replyBtn = e.target.classList.contains('reply') ? e.target : e.target.closest('.reply');
+                const commentId = replyBtn.dataset.commentId;
+                showReplyForm(commentId);
+            } else if (e.target.classList.contains('delete') || e.target.closest('.delete')) {
+                e.preventDefault();
+                const deleteBtn = e.target.classList.contains('delete') ? e.target : e.target.closest('.delete');
+                const commentId = deleteBtn.dataset.commentId;
+                deleteComment(commentId);
+            } else if (e.target.classList.contains('submit-reply')) {
+                e.preventDefault();
+                const commentId = e.target.dataset.commentId;
+                submitReply(commentId);
+            } else if (e.target.classList.contains('cancel-reply')) {
+                e.preventDefault();
+                const commentId = e.target.dataset.commentId;
+                hideReplyForm(commentId);
+            }
+        });
+    }
+
+    // 加载评论列表
+    async function loadComments() {
+        try {
+            const response = await fetch(`/comment/list?pid=${currentProblemId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                renderComments(data.data);
+                updateCommentCount(data.data.length);
+            } else {
+                showToast('加载评论失败', 'error');
+            }
+        } catch (error) {
+            console.error('加载评论失败:', error);
+            showToast('网络连接异常，请检查网络后重试', 'error');
+        }
+    }
+
+    // 渲染评论列表
+    function renderComments(comments) {
+        const commentList = document.getElementById('commentList');
+        
+        if (!comments || comments.length === 0) {
+            commentList.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                    <p>暂无评论，快来发表第一条评论吧！</p>
+                </div>
+            `;
+            return;
+        }
+
+        commentList.innerHTML = comments.map(comment => renderCommentItem(comment)).join('');
+    }
+
+    // 渲染单个评论项
+    function renderCommentItem(comment) {
+        const isOwner = comment.userId == currentUserId;
+        const avatarText = comment.username ? comment.username.charAt(0).toUpperCase() : 'U';
+        
+        let subcommentsHtml = '';
+        if (comment.subcommentList && comment.subcommentList.length > 0) {
+            subcommentsHtml = `
+                <div class="subcomment-list">
+                    ${comment.subcommentList.map(subcomment => renderSubcommentItem(subcomment)).join('')}
+                </div>
+            `;
+        }
+
+        return `
+            <div class="comment-item" data-comment-id="${comment.id}">
+                <div class="comment-header">
+                    <div class="comment-author">
+                        <div class="avatar">${avatarText}</div>
+                        <span class="name">${comment.username || '匿名用户'}</span>
+                    </div>
+                    <div class="comment-time">${formatCommentTime(comment.createTime)}</div>
+                </div>
+                <div class="comment-content">${escapeHtml(comment.content)}</div>
+                <div class="comment-actions">
+                    <button class="comment-action reply" data-comment-id="${comment.id}">
+                        <i class="fas fa-reply me-1"></i>回复
+                    </button>
+                    ${isOwner ? `
+                        <button class="comment-action delete" data-comment-id="${comment.id}">
+                            <i class="fas fa-trash me-1"></i>删除
+                        </button>
+                    ` : ''}
+                </div>
+                <div class="reply-form" id="reply-form-${comment.id}">
+                    <textarea placeholder="回复 ${comment.username || '匿名用户'}..." rows="3"></textarea>
+                    <div class="reply-actions">
+                        <button class="reply-btn secondary cancel-reply" data-comment-id="${comment.id}">取消</button>
+                        <button class="reply-btn primary submit-reply" data-comment-id="${comment.id}">回复</button>
+                    </div>
+                </div>
+                ${subcommentsHtml}
+            </div>
+        `;
+    }
+
+    // 渲染子评论项
+    function renderSubcommentItem(subcomment) {
+        const isOwner = subcomment.userId == currentUserId;
+        const avatarText = subcomment.username ? subcomment.username.charAt(0).toUpperCase() : 'U';
+        
+        return `
+            <div class="subcomment-item" data-comment-id="${subcomment.id}">
+                <div class="comment-header">
+                    <div class="comment-author">
+                        <div class="avatar">${avatarText}</div>
+                        <span class="name">${subcomment.username || '匿名用户'}</span>
+                    </div>
+                    <div class="comment-time">${formatCommentTime(subcomment.createTime)}</div>
+                </div>
+                <div class="comment-content">${escapeHtml(subcomment.content)}</div>
+                <div class="comment-actions">
+                    ${isOwner ? `
+                        <button class="comment-action delete" data-comment-id="${subcomment.id}">
+                            <i class="fas fa-trash me-1"></i>删除
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // 发表评论
+    async function submitComment() {
+        const content = document.getElementById('commentContent').value.trim();
+        
+        if (!content) {
+            showToast('请输入评论内容', 'error');
+            return;
+        }
+
+        if (!currentUserId || !currentUsername) {
+            showToast('请先登录后再发表评论', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/comment/publish', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    problemId: parseInt(currentProblemId),
+                    parentId: null,
+                    username: currentUsername,
+                    content: content,
+                    createTime: new Date().toISOString()
+                })
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                showToast('评论发表成功', 'success');
+                document.getElementById('commentContent').value = '';
+                loadComments(); // 重新加载评论列表
+            } else {
+                showToast(data.msg || '评论发表失败', 'error');
+            }
+        } catch (error) {
+            console.error('发表评论失败:', error);
+            showToast('网络连接异常，请检查网络后重试', 'error');
+        }
+    }
+
+    // 显示回复表单
+    function showReplyForm(commentId) {
+        const replyForm = document.getElementById(`reply-form-${commentId}`);
+        if (replyForm) {
+            replyForm.classList.add('show');
+            replyForm.querySelector('textarea').focus();
+        }
+    }
+
+    // 隐藏回复表单
+    function hideReplyForm(commentId) {
+        const replyForm = document.getElementById(`reply-form-${commentId}`);
+        if (replyForm) {
+            replyForm.classList.remove('show');
+            replyForm.querySelector('textarea').value = '';
+        }
+    }
+
+    // 提交回复
+    async function submitReply(commentId) {
+        const replyForm = document.getElementById(`reply-form-${commentId}`);
+        const content = replyForm.querySelector('textarea').value.trim();
+        
+        if (!content) {
+            showToast('请输入回复内容', 'error');
+            return;
+        }
+
+        if (!currentUserId || !currentUsername) {
+            showToast('请先登录后再发表回复', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/comment/publish', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    problemId: parseInt(currentProblemId),
+                    parentId: parseInt(commentId),
+                    username: currentUsername,
+                    content: content,
+                    createTime: new Date().toISOString()
+                })
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                showToast('回复发表成功', 'success');
+                hideReplyForm(commentId);
+                loadComments(); // 重新加载评论列表
+            } else {
+                showToast(data.msg || '回复发表失败', 'error');
+            }
+        } catch (error) {
+            console.error('发表回复失败:', error);
+            showToast('网络连接异常，请检查网络后重试', 'error');
+        }
+    }
+
+    // 删除评论
+    async function deleteComment(commentId) {
+        // 使用自定义确认对话框
+        const confirmed = await showConfirmDialog('确定要删除这条评论吗？');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/comment/delete?commentId=${commentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                showToast('评论删除成功', 'success');
+                loadComments(); // 重新加载评论列表
+            } else {
+                showToast(data.msg || '评论删除失败', 'error');
+            }
+        } catch (error) {
+            console.error('删除评论失败:', error);
+            showToast('网络连接异常，请检查网络后重试', 'error');
+        }
+    }
+
+    // 更新评论数量
+    function updateCommentCount(count) {
+        const commentCountElement = document.getElementById('commentCount');
+        if (commentCountElement) {
+            commentCountElement.textContent = count;
+        }
+    }
+
+    // 转义HTML字符
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // 格式化时间（评论专用）
+    function formatCommentTime(timeString) {
+        const date = new Date(timeString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) { // 1分钟内
+            return '刚刚';
+        } else if (diff < 3600000) { // 1小时内
+            return Math.floor(diff / 60000) + '分钟前';
+        } else if (diff < 86400000) { // 1天内
+            return Math.floor(diff / 3600000) + '小时前';
+        } else if (diff < 2592000000) { // 30天内
+            return Math.floor(diff / 86400000) + '天前';
+        } else {
+            return date.toLocaleDateString();
+        }
+    }
+
+    // 页面加载完成后初始化评论系统
+    document.addEventListener('DOMContentLoaded', function() {
+        // 延迟初始化，确保其他功能先加载完成
+        setTimeout(initCommentSystem, 1000);
+    });
+</script>
+</body>
+</html>

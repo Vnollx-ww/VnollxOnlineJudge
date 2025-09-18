@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GoJudgeConfig {
-    @Value("http://localhost:5050")
+    @Value("http://go-judge:5050")
     private String goJudgeEndpoint;
 
     @Bean

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题目列表 - VnollxOJ</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding-top: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            width: 100%;
+        }
+
+        /* 返回首页按钮样式 */
+        .back-home-btn {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .back-home-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .back-home-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 搜索框样式 */
+        .search-container {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .search-input {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            flex-grow: 1;
+            font-size: 1rem;
+            transition: all 0.25s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .search-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: #3182ce;
+            color: white;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-button:hover {
+            background: #2b6cb0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(49, 130, 206, 0.1);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(49, 130, 206, 0.1);
+        }
+
+        /* 题目表格样式 */
+        .problems-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            border-collapse: collapse;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .problems-table:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        .problems-table th,
+        .problems-table td {
+            padding: 1.25rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .problems-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .problems-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .problems-table tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .problems-table a {
+            color: #2b6cb0;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .problems-table a:hover {
+            color: #1a4b8c;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* 难度标签 */
+        .difficulty {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: transform 0.2s ease;
+        }
+
+        .difficulty:hover {
+            transform: scale(1.05);
+        }
+
+        .easy {
+            background-color: #e6fffa;
+            color: #234e52;
+        }
+
+        .medium {
+            background-color: #fff8e6;
+            color: #5d4037;
+        }
+
+        .hard {
+            background-color: #ffebee;
+            color: #620000;
+        }
+
+        /* 通过率样式 */
+        .pass-rate {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .high-rate {
+            background-color: #e6fffa;
+            color: #234e52;
+        }
+
+        .medium-rate {
+            background-color: #e9f2d9;
+            color: #5a882b;
+        }
+
+        .low-rate {
+            background-color: #ffebee;
+            color: #c53030;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-size: 0.9rem;
+            min-width: 36px;
+            text-align: center;
+        }
+
+        .page-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .page-btn:active {
+            transform: translateY(0);
+        }
+
+        .page-btn.active {
+            background: #3182ce;
+            color: white;
+            border-color: #3182ce;
+            box-shadow: 0 2px 4px rgba(49, 130, 206, 0.1);
+        }
+
+        .page-btn.disabled {
+            color: #a0aec0;
+            cursor: not-allowed;
+            background-color: #f7fafc;
+            border-color: #edf2f7;
+        }
+
+        .page-btn.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .ellipsis {
+            padding: 0.5rem 1rem;
+            color: #718096;
+            cursor: default;
+            font-size: 0.9rem;
+        }
+
+        /* 加载状态 */
+        .loading {
+            padding: 3rem;
+            text-align: center;
+            color: #718096;
+        }
+
+        .loading::after {
+            content: "";
+            display: inline-block;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(156, 163, 175, 0.3);
+            border-radius: 50%;
+            border-top-color: #718096;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #c53030;
+            background: #fff5f5;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            text-align: center;
+            border: 1px solid #ffe3e3;
+        }
+
+        /* Toast样式 */
+        .toast {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(-50%) scale(0.95);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        .toast.error {
+            background-color: #fff5f5;
+            color: #c53030;
+            border: 1px solid #ffebee;
+        }
+
+        .toast.success {
+            background-color: #f0fff4;
+            color: #2e7d32;
+            border: 1px solid #e5f7eb;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .problems-table th:nth-child(4),
+            .problems-table td:nth-child(4),
+            .problems-table th:nth-child(5),
+            .problems-table td:nth-child(5) {
+                display: none;
+            }
+
+            .problems-table th,
+            .problems-table td {
+                padding: 0.75rem;
+            }
+
+            .problems-table th:nth-child(1) { width: 15%; }
+            .problems-table th:nth-child(2) { width: 55%; }
+            .problems-table th:nth-child(3) { width: 20%; }
+            .problems-table th:nth-child(6) { width: 10%; }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            .search-button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .back-home-btn {
+                top: 1rem;
+                left: 1rem;
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+
+            .page-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<button class="back-home-btn" onclick="window.location.href = 'index.html'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    返回首页
+</button>
+<div class="container">
+    <h1 style="margin-bottom: 1.5rem; color: #2d3748; font-weight: 600;">题目列表</h1>
+    <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="输入题目编号或名称和标签">
+        <button id="search-button" class="search-button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            搜索
+        </button>
+    </div>
+    <table class="problems-table">
+        <thead>
+        <tr>
+            <th style="width: 10%;">题号</th>
+            <th style="width: 40%;">题目名称</th>
+            <th style="width: 15%;">难度</th>
+            <th style="width: 12%; text-align: center;">提交次数</th>
+            <th style="width: 12%; text-align: center;">通过次数</th>
+            <th style="width: 11%; text-align: center;">通过率</th>
+        </tr>
+        </thead>
+        <tbody id="problems-list">
+        <tr class="loading">
+            <td colspan="6">加载题目中</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div id="pagination" class="pagination"></div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+    const PAGINATION_SHOW_COUNT = 5; // 显示的页数数量
+    let searchKeyword = '';
+
+    // 显示Toast提示
+    function showToast(message, type = 'error') {
+        // 先移除已有的toast
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        // 添加图标
+        let iconSvg = '';
+        if (type === 'error') {
+            iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+        } else {
+            iconSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+        }
+
+        toast.innerHTML = `${iconSvg}${message}`;
+        document.body.appendChild(toast);
+
+        // 触发显示动画
+        setTimeout(() => toast.classList.add('show'), 10);
+
+        // 自动消失
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // 获取题目总数
+    async function getTotalCount() {
+        try {
+            const params = new URLSearchParams({
+                keyword: searchKeyword
+            });
+            const url = searchKeyword
+                ? `/problem/count?${params.toString()}`
+                : '/problem/count';
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const data = await response.json();
+            if (data.code!== 200) throw new Error(data.msg || '获取题目总数失败');
+            return data.data;
+        } catch (error) {
+            showError(error.message);
+            return 0;
+        }
+    }
+
+    // 获取题目列表
+    async function getProblemList(page) {
+        const tbody = document.getElementById('problems-list');
+        const paginationDiv = document.getElementById('pagination');
+
+        // 显示加载状态
+        tbody.innerHTML = '<tr class="loading"><td colspan="6">加载题目中</td></tr>';
+        paginationDiv.style.display = 'none';
+
+        currentPage = page;
+        const size = 10; // 每页显示数量
+        try {
+            const params = new URLSearchParams({
+                offset: currentPage-1,
+                size: size,
+                keyword: searchKeyword
+            });
+            const baseUrl = '/problem/list';
+            const fullUrl = params.toString()? `${baseUrl}?${params.toString()}` : baseUrl;
+            const response = await fetch(fullUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const data = await response.json();
+            if (data.code!== 200) throw new Error(data.msg || '获取题目列表失败');
+
+            renderProblems(data.data);
+            await updatePagination();
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            paginationDiv.style.display = 'flex';
+        }
+    }
+
+    // 渲染题目列表
+    function renderProblems(problems) {
+        const tbody = document.getElementById('problems-list');
+        tbody.innerHTML = '';
+
+        if (problems.length === 0) {
+            tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #718096; padding: 2rem;">
+                            暂无匹配的题目
+                        </td>
+                    </tr>
+                `;
+            return;
+        }
+
+        problems.forEach(problem => {
+            const passRate = calculatePassRate(problem.submitCount, problem.passCount);
+            const rateClass = getRateClass(passRate);
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                    <td>#${problem.id}</td>
+                    <td>
+                        <a href="/problem/${problem.id}" style="color: #2b6cb0; text-decoration: none;">
+                            ${problem.title}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="difficulty ${getDifficultyClass(problem.difficulty)}">
+                            ${problem.difficulty}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">${problem.submitCount}</td>
+                    <td style="text-align: center;">${problem.passCount}</td>
+                    <td style="text-align: center;">
+                        <span class="pass-rate ${rateClass}">
+                            ${passRate}%
+                        </span>
+                    </td>
+                `;
+
+            // 添加行进入动画
+            row.style.opacity = '0';
+            row.style.transform = 'translateY(10px)';
+            row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+
+            tbody.appendChild(row);
+
+            // 触发动画
+            setTimeout(() => {
+                row.style.opacity = '1';
+                row.style.transform = 'translateY(0)';
+            }, 50 * Array.from(tbody.children).indexOf(row));
+        });
+    }
+
+    // 计算通过率
+    function calculatePassRate(submitCount, passCount) {
+        if (submitCount === 0) return 0;
+        return Math.round((passCount / submitCount) * 10000) / 100;
+    }
+
+    // 获取通过率样式类
+    function getRateClass(rate) {
+        if (rate >= 60) return 'high-rate';
+        if (rate >= 30) return'medium-rate';
+        return 'low-rate';
+    }
+
+    // 更新分页按钮
+    async function updatePagination() {
+        const total = await getTotalCount();
+        totalPages = Math.ceil(total / 10);
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = '';
+
+        if (totalPages === 0) return;
+
+        // 上一页按钮
+        const prevButton = document.createElement('button');
+        prevButton.className = `page-btn ${currentPage === 1? 'disabled' : ''}`;
+        prevButton.innerHTML = '« 上一页';
+        prevButton.onclick = () => currentPage > 1 && getProblemList(currentPage - 1);
+        paginationDiv.appendChild(prevButton);
+
+        // 计算显示范围
+        let start = Math.max(1, currentPage - Math.floor(PAGINATION_SHOW_COUNT / 2));
+        let end = Math.min(totalPages, start + PAGINATION_SHOW_COUNT - 1);
+
+        // 调整起始页
+        if (end - start + 1 < PAGINATION_SHOW_COUNT) {
+            start = Math.max(1, totalPages - PAGINATION_SHOW_COUNT + 1);
+        }
+
+        // 起始页省略号
+        if (start > 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-btn ellipsis';
+            ellipsis.textContent = '...';
+            paginationDiv.appendChild(ellipsis);
+        }
+
+        // 中间页码按钮
+        for (let i = start; i <= end; i++) {
+            const button = document.createElement('button');
+            button.className = `page-btn ${i === currentPage? 'active' : ''}`;
+            button.textContent = i;
+            button.onclick = () => getProblemList(i);
+            paginationDiv.appendChild(button);
+        }
+
+        // 结束页省略号
+        if (end < totalPages) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'page-btn ellipsis';
+            ellipsis.textContent = '...';
+            paginationDiv.appendChild(ellipsis);
+        }
+
+        // 下一页按钮
+        const nextButton = document.createElement('button');
+        nextButton.className = `page-btn ${currentPage === totalPages? 'disabled' : ''}`;
+        nextButton.innerHTML = '下一页 »';
+        nextButton.onclick = () => currentPage < totalPages && getProblemList(currentPage + 1);
+        paginationDiv.appendChild(nextButton);
+    }
+
+    // 获取难度样式类
+    function getDifficultyClass(difficulty) {
+        switch (difficulty.toLowerCase()) {
+            case '简单': return 'easy';
+            case '中等': return'medium';
+            case '困难': return 'hard';
+            default: return '';
+        }
+    }
+
+    // 显示错误信息
+    function showError(message) {
+        const tbody = document.getElementById('problems-list');
+        tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="error">
+                        ${message}
+                    </td>
+                </tr>
+            `;
+    }
+
+    // 搜索功能
+    function searchProblems() {
+        const input = document.getElementById('search-input');
+        const keyword = input.value.trim();
+
+        // 添加搜索动画效果
+        const button = document.getElementById('search-button');
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>搜索中...';
+
+        setTimeout(() => {
+            searchKeyword = keyword;
+            getProblemList(1).then(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+
+                // 添加搜索结果提示
+                if (keyword) {
+                    showToast(`已搜索: "${keyword}"`, 'success');
+                }
+            });
+        }, 300);
+    }
+
+    // 绑定搜索框回车事件
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            searchProblems();
+        }
+    });
+
+    document.getElementById('search-button').addEventListener('click', searchProblems);
+
+    window.onload = () => {
+        if (localStorage.getItem('token') === null) {
+            showToast('请先登录！', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1500);
+        } else {
+            getProblemList(1);
+        }
+    };
+</script>
+</body>
+</html>

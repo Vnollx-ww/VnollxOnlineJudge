@@ -14,7 +14,6 @@ import com.example.vnollxonlinejudge.mapper.UserMapper;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

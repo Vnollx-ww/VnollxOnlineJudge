@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员-用户管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#4080FF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129',
+                        light: '#F2F3F5'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 20px rgba(0, 0, 0, 0.08)',
+                        'card-hover': '0 8px 30px rgba(0, 0, 0, 0.12)',
+                        'button': '0 2px 5px rgba(22, 93, 255, 0.3)',
+                        'button-hover': '0 4px 12px rgba(22, 93, 255, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-icon {
+                @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
+                bg-white dark:bg-dark text-primary hover:bg-primary hover:text-white
+                rounded-xl hover:rounded-2xl transition-all duration-300 ease-linear
+                cursor-pointer;
+            }
+            .sidebar-tooltip {
+                @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
+                text-white bg-primary text-xs font-bold
+                transition-all duration-100 scale-0 origin-left;
+            }
+            .btn-primary {
+                @apply bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-button hover:shadow-button-hover transform hover:-translate-y-0.5;
+            }
+            .btn-secondary {
+                @apply bg-light hover:bg-light/80 text-dark font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .btn-danger {
+                @apply bg-danger hover:bg-danger/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .btn-success {
+                @apply bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 mt-2 text-dark bg-white border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all duration-200;
+            }
+            .search-input {
+                @apply pl-12; /* 增加左侧内边距，避免文字与图标重叠 */
+            }
+            .table-row {
+                @apply hover:bg-light/50 transition-all duration-200;
+            }
+            .pagination-btn {
+                @apply relative inline-flex items-center px-4 py-2 border text-sm font-medium;
+            }
+            .pagination-btn-active {
+                @apply bg-primary text-white border-primary;
+            }
+            .pagination-btn-inactive {
+                @apply bg-white text-gray-500 border-gray-300 hover:bg-gray-50;
+            }
+            .card {
+                @apply bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden;
+            }
+            .toast {
+                @apply fixed top-4 right-4 max-w-xs w-full rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 ease-in-out z-50 px-4 py-3 flex items-center;
+            }
+            .toast-success {
+                @apply bg-white border-l-4 border-success;
+            }
+            .toast-error {
+                @apply bg-white border-l-4 border-danger;
+            }
+            .toast-info {
+                @apply bg-white border-l-4 border-primary;
+            }
+            .search-icon {
+                @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg; /* 调整图标位置和大小 */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark antialiased">
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="hidden md:flex flex-col w-16 bg-white shadow-lg">
+        <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+            <div class="flex items-center justify-center h-16">
+                <i class="fa fa-shield text-primary text-2xl"></i>
+            </div>
+            <nav class="mt-5 flex-1 px-2 space-y-1">
+                <a href="admin-user.html" class="sidebar-icon group cursor-pointer">
+                    <i class="fa fa-users text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">用户管理</span>
+                </a>
+                <a href="admin-problem.html" class="sidebar-icon group cursor-pointer">
+                    <i class="fa fa-question-circle text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">题目管理</span>
+                </a>
+                <a href="admin-competition.html" class="sidebar-icon group cursor-pointer">
+                    <i class="fa fa-trophy text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">比赛管理</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top navbar -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-primary hover:bg-gray-100 focus:outline-none transition-colors duration-200">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <h1 class="ml-3 text-xl font-semibold">Vnollx在线评测系统 - 管理后台</h1>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="ml-3 relative">
+                            <div>
+                                <button type="button" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200">
+                                    <i class="fa fa-user-circle text-primary text-xl mr-2"></i>
+                                    <span class="font-medium">管理员</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+            <div class="max-w-7xl mx-auto">
+                <!-- Page header -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 lg:px-8 mb-8">
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                            用户列表
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-500">
+                            管理系统中的所有用户
+                        </p>
+                    </div>
+                    <div class="mt-4 flex md:mt-0 md:ml-4">
+                        <button id="add-user-btn" class="btn-primary flex items-center">
+                            <i class="fa fa-plus mr-2"></i> 新建用户
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User table -->
+                <div class="mt-8 card">
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6">
+                            <div class="flex items-center mb-4 md:mb-0">
+                                <div class="relative w-full md:w-64"> <!-- 限制搜索框最大宽度 -->
+                                    <span class="search-icon">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                    <input type="text" id="search-input" placeholder="搜索用户..." class="input-field search-input w-full">
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="refresh-btn" class="btn-secondary flex items-center">
+                                    <i class="fa fa-refresh mr-2"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    用户名
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    邮箱
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    身份
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    操作
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody id="user-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- User rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    显示 <span class="font-medium" id="showing-range-start">0</span> - <span class="font-medium" id="showing-range-end">0</span> 条，共 <span class="font-medium" id="total-count">0</span> 条记录
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination" id="pagination">
+                                    <!-- Pagination buttons will be dynamically inserted here -->
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div id="user-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden transform transition-all scale-95 opacity-0" id="modal-content">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 id="modal-title" class="text-lg font-medium text-gray-900">新建用户</h3>
+        </div>
+        <div class="px-6 py-4">
+            <form id="user-form">
+                <input type="hidden" id="user-id">
+                <div class="mb-4">
+                    <label for="user-name" class="block text-sm font-medium text-gray-700">用户名</label>
+                    <input type="text" id="user-name" class="input-field" required>
+                </div>
+                <div class="mb-4">
+                    <label for="user-email" class="block text-sm font-medium text-gray-700">邮箱</label>
+                    <input type="email" id="user-email" class="input-field" required>
+                </div>
+                <div class="mb-4">
+                    <label for="user-identity" class="block text-sm font-medium text-gray-700">身份</label>
+                    <select id="user-identity" class="input-field" required>
+                        <option value="USER">普通用户</option>
+                        <option value="ADMIN">管理员</option>
+                        <option value="SUPER_ADMIN">超级管理员</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <button id="cancel-modal" class="btn-secondary">取消</button>
+            <button id="save-user" class="btn-primary">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden transform transition-all scale-95 opacity-0" id="delete-modal-content">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">确认删除</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-gray-700">
+                你确定要删除用户 <span id="delete-username" class="font-medium"></span> 吗？此操作无法撤销。
+            </p>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <button id="cancel-delete" class="btn-secondary">取消</button>
+            <button id="confirm-delete" class="btn-danger">删除</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
+
+<script>
+    // DOM elements
+    const userTableBody = document.getElementById('user-table-body');
+    const addUserBtn = document.getElementById('add-user-btn');
+    const userModal = document.getElementById('user-modal');
+    const modalContent = document.getElementById('modal-content');
+    const deleteModal = document.getElementById('delete-modal');
+    const deleteModalContent = document.getElementById('delete-modal-content');
+    const cancelModal = document.getElementById('cancel-modal');
+    const saveUserBtn = document.getElementById('save-user');
+    const userForm = document.getElementById('user-form');
+    const modalTitle = document.getElementById('modal-title');
+    const cancelDelete = document.getElementById('cancel-delete');
+    const confirmDelete = document.getElementById('confirm-delete');
+    const deleteUsername = document.getElementById('delete-username');
+    const searchInput = document.getElementById('search-input');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const toastContainer = document.getElementById('toast-container');
+    const showingRangeStart = document.getElementById('showing-range-start');
+    const showingRangeEnd = document.getElementById('showing-range-end');
+    const totalCount = document.getElementById('total-count');
+    const pagination = document.getElementById('pagination');
+
+    // Pagination variables
+    let currentPage = 1;
+    const pageSize = 10; // Number of items per page
+    let totalUsers = 0;
+    let currentUserId = null;
+    let currentKeyword = '';
+    let users = [];
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchUserCount().then(() => {
+            fetchUsers();
+        });
+        // Event listeners
+        addUserBtn.addEventListener('click', openAddUserModal);
+        cancelModal.addEventListener('click', closeUserModal);
+        saveUserBtn.addEventListener('click', saveUser);
+        cancelDelete.addEventListener('click', closeDeleteModal);
+        confirmDelete.addEventListener('click', deleteUser);
+        refreshBtn.addEventListener('click', () => {
+            currentPage = 1;
+            currentKeyword = '';
+            searchInput.value = '';
+            fetchUsers();
+            fetchUserCount();
+        });
+
+        // Debounce search input to avoid too many requests
+        let searchTimeout;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentKeyword = searchInput.value.trim();
+                currentPage = 1;
+                fetchUsers();
+                fetchUserCount();
+            }, 500);
+        });
+    });
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} opacity-0 transform translate-x-full transition-all duration-300`;
+
+        let iconClass = '';
+        switch(type) {
+            case 'success':
+                iconClass = 'fa-check-circle text-success';
+                break;
+            case 'error':
+                iconClass = 'fa-exclamation-circle text-danger';
+                break;
+            case 'info':
+                iconClass = 'fa-info-circle text-primary';
+                break;
+            default:
+                iconClass = 'fa-check-circle text-success';
+        }
+
+        toast.innerHTML = `
+            <i class="fa ${iconClass} mr-3 text-xl"></i>
+            <p class="text-sm text-gray-800">${message}</p>
+        `;
+
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => {
+            toast.classList.remove('opacity-0', 'translate-x-full');
+        }, 10);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-x-full');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
+
+    // Fetch users from API with pagination and search
+    function fetchUsers() {
+        // Show loading state
+        userTableBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="px-6 py-12 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                    <p class="mt-2 text-sm text-gray-500">加载用户数据中...</p>
+                </td>
+            </tr>
+        `;
+
+        const params = new URLSearchParams({
+            pageNum: currentPage,
+            pageSize: pageSize,
+            keyword: currentKeyword
+        });
+        fetch(`/admin/user/list?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    users = data.data;
+                    renderUsers(users);
+                    updateShowingRange();
+                    renderPagination();
+                } else {
+                    showToast('获取用户列表失败: ' + (data.msg || '未知错误'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching users:', error);
+                showToast('网络错误，请重试', 'error');
+            });
+    }
+
+    // Fetch total user count for pagination
+    function fetchUserCount() {
+        return new Promise((resolve, reject) => {
+            const params = new URLSearchParams({
+                keyword: currentKeyword
+            });
+            fetch(`/admin/user/count?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        totalUsers = data.data;
+                        totalCount.textContent = totalUsers;
+                        renderPagination();
+                        updateShowingRange(); // 总记录数更新后，重新计算显示范围
+                        resolve();
+                    } else {
+                        showToast(data.msg,'error');
+
+                        if (data.code===401){
+                            setTimeout(() => {
+                                window.location.href = '/index.html';
+                            }, 1500);
+                        }
+                        reject(data.msg || '获取用户总数失败');
+                    }
+                })
+                .catch(error => {
+                    reject('网络错误，请重试');
+                });
+        });
+    }
+
+    // Update showing range text
+    function updateShowingRange() {
+        if(totalUsers === 0){
+            showingRangeStart.textContent = '0';
+            showingRangeEnd.textContent = '0';
+            return;
+        }
+        const start = (currentPage - 1) * pageSize + 1;
+        const end = Math.min(currentPage * pageSize, totalUsers);
+
+        showingRangeStart.textContent = start;
+        showingRangeEnd.textContent = end;
+    }
+
+    // Render pagination buttons
+    function renderPagination() {
+        if (totalUsers <= pageSize) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        const totalPages = Math.ceil(totalUsers / pageSize);
+        let paginationHTML = '';
+
+        // Previous button
+        paginationHTML += `
+        <button onclick="changePage(${currentPage - 1})"
+            ${currentPage === 1 ? 'disabled' : ''}
+            class="pagination-btn pagination-btn-inactive rounded-l-md">
+            <i class="fa fa-chevron-left text-xs"></i>
+        </button>
+    `;
+
+        // Page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        if (startPage > 1) {
+            paginationHTML += `
+            <button onclick="changePage(1)"
+                class="pagination-btn pagination-btn-inactive">
+                1
+            </button>
+            ${startPage > 2 ? '<span class="px-2 py-2">...</span>' : ''}
+        `;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+            <button onclick="changePage(${i})"
+                ${i === currentPage ? 'class="pagination-btn pagination-btn-active"' : 'class="pagination-btn pagination-btn-inactive"'}>
+                ${i}
+            </button>
+        `;
+        }
+
+        if (endPage < totalPages) {
+            paginationHTML += `
+            ${endPage < totalPages - 1 ? '<span class="px-2 py-2">...</span>' : ''}
+            <button onclick="changePage(${totalPages})"
+                class="pagination-btn pagination-btn-inactive">
+                ${totalPages}
+            </button>
+        `;
+        }
+
+        // Next button
+        paginationHTML += `
+        <button onclick="changePage(${currentPage + 1})"
+            ${currentPage === totalPages ? 'disabled' : ''}
+            class="pagination-btn pagination-btn-inactive rounded-r-md">
+            <i class="fa fa-chevron-right text-xs"></i>
+        </button>
+    `;
+
+        pagination.innerHTML = paginationHTML;
+    }
+
+    // Change page function (exposed to global scope for button clicks)
+    async function changePage(newPage) {
+        try {
+            await fetchUserCount();
+            const totalPages = Math.ceil(totalUsers / pageSize);
+
+            if (newPage < 1 || newPage > totalPages) return;
+
+            currentPage = newPage;
+            await fetchUsers();
+            renderPagination();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            showToast(error, 'error');
+        }
+    }
+
+    // Render users in the table
+    function renderUsers(users) {
+        if (users.length === 0) {
+            userTableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center">
+                        <i class="fa fa-search text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-sm text-gray-500">未找到用户记录</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        userTableBody.innerHTML = users.map(user => `
+            <tr class="table-row">
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span class="text-primary font-medium">${user.name.charAt(0)}</span>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">${user.email}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+            user.identity === 'ADMIN' ? 'bg-blue-100 text-blue-800' :
+                user.identity === 'SUPER_ADMIN' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+        }">
+                        ${user.identity === 'ADMIN' ? '管理员' : user.identity === 'SUPER_ADMIN' ? '超级管理员' : '普通用户'}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-primary hover:text-primary/80 mr-3 edit-user transition-colors duration-200" data-id="${user.id}">
+                        <i class="fa fa-pencil mr-1"></i> 编辑
+                    </button>
+                    <button class="text-danger hover:text-danger/80 delete-user transition-colors duration-200" data-id="${user.id}" data-name="${user.name}">
+                        <i class="fa fa-trash mr-1"></i> 删除
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Add event listeners to edit and delete buttons
+        document.querySelectorAll('.edit-user').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const userId = parseInt(btn.getAttribute('data-id'));
+                openEditUserModal(userId);
+            });
+        });
+
+        document.querySelectorAll('.delete-user').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const userId = parseInt(btn.getAttribute('data-id'));
+                const userName = btn.getAttribute('data-name');
+                openDeleteModal(userId, userName);
+            });
+        });
+    }
+
+    // Open add user modal
+    function openAddUserModal() {
+        modalTitle.textContent = '新建用户';
+        userForm.reset();
+        document.getElementById('user-id').value = '';
+        userModal.classList.remove('hidden');
+
+        // Animate modal in
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        document.getElementById('user-name').focus();
+    }
+
+    // Open edit user modal
+    function openEditUserModal(userId) {
+        const user = users.find(u => u.id === userId);
+        if (!user) return;
+
+        currentUserId = userId;
+        modalTitle.textContent = '编辑用户';
+        document.getElementById('user-id').value = user.id;
+        document.getElementById('user-name').value = user.name;
+        document.getElementById('user-email').value = user.email;
+        document.getElementById('user-identity').value = user.identity;
+        userModal.classList.remove('hidden');
+
+        // Animate modal in
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    // Close user modal
+    function closeUserModal() {
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+
+        // Hide modal after animation
+        setTimeout(() => {
+            userModal.classList.add('hidden');
+            currentUserId = null;
+        }, 300);
+    }
+
+    // Open delete modal
+    function openDeleteModal(userId, userName) {
+        currentUserId = userId;
+        deleteUsername.textContent = userName;
+        deleteModal.classList.remove('hidden');
+
+        // Animate modal in
+        setTimeout(() => {
+            deleteModalContent.classList.remove('scale-95', 'opacity-0');
+            deleteModalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    // Close delete modal
+    function closeDeleteModal() {
+        deleteModalContent.classList.remove('scale-100', 'opacity-100');
+        deleteModalContent.classList.add('scale-95', 'opacity-0');
+
+        // Hide modal after animation
+        setTimeout(() => {
+            deleteModal.classList.add('hidden');
+            currentUserId = null;
+        }, 300);
+    }
+
+    // Save user (add or edit)
+    function saveUser() {
+        const name = document.getElementById('user-name').value.trim();
+        const email = document.getElementById('user-email').value.trim();
+        const identity = document.getElementById('user-identity').value;
+
+        if (!name || !email) {
+            showToast('用户名和邮箱不能为空', 'error');
+            return;
+        }
+
+        const url = currentUserId ? `/admin/user/update` : '/admin/user/add';
+        const method=currentUserId ? "PUT":"POST";
+        const id=currentUserId;
+        fetch(url, {
+            method: method,
+            body: JSON.stringify({id,name,email,identity}),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast(currentUserId ? '用户更新成功' : '用户创建成功', 'success');
+                    closeUserModal();
+
+                    // Refresh data after successful operation
+                    currentPage = 1;
+                    fetchUsers();
+                    fetchUserCount();
+                } else {
+                    showToast(data.msg || '操作失败', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving user:', error);
+                showToast('网络错误，请重试', 'error');
+            });
+    }
+
+    // Delete user
+    function deleteUser() {
+        if (!currentUserId) return;
+
+        fetch(`/admin/user/delete/${currentUserId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('用户删除成功', 'success');
+                    closeDeleteModal();
+
+                    // Check if we need to go back a page if this was the last item on the page
+                    if (users.length === 1 && currentPage > 1) {
+                        currentPage--;
+                    }
+
+                    fetchUsers();
+                    fetchUserCount();
+                } else {
+                    showToast(data.msg || '删除失败', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting user:', error);
+                showToast('网络错误，请重试', 'error');
+            });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于 Vnollx 在线评测系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#60A5FA',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif']
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.6s ease-out forwards',
+                        'slide-up': 'slideUp 0.6s ease-out forwards',
+                        'pulse-soft': 'pulseSoft 3s infinite'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(30px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' }
+                        },
+                        pulseSoft: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0.8' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-gradient {
+                background-clip: text;
+                -webkit-background-clip: text;
+                color: transparent;
+                background-image: linear-gradient(90deg, #3B82F6, #60A5FA);
+            }
+            .card-hover {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .card-hover:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .bg-grid {
+                background-size: 40px 40px;
+                background-image:
+                        linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+            }
+        }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen">
+<!-- 页面加载动画 -->
+<div id="loader" class="fixed inset-0 bg-white z-50 flex items-center justify-center">
+    <div class="flex flex-col items-center">
+        <div class="w-16 h-16 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+        <p class="mt-4 text-gray-600 font-medium">加载中...</p>
+    </div>
+</div>
+
+<!-- 返回首页按钮 -->
+<a href="index.html" class="back-home fixed top-6 left-6 z-40 bg-white/90 backdrop-blur-sm text-gray-700 px-4 py-2 rounded-lg shadow-md flex items-center gap-2 transition-all duration-300 hover:bg-white hover:shadow-lg">
+    <i class="fa fa-arrow-left"></i>
+    <span>返回首页</span>
+</a>
+
+<!-- Hero区域 -->
+<header class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 pt-20 pb-28 md:pt-32 md:pb-36">
+    <div class="absolute inset-0 bg-grid opacity-50"></div>
+    <!-- 装饰元素 -->
+    <div class="absolute top-1/4 left-10 w-64 h-64 bg-primary/5 rounded-full filter blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-10 w-80 h-80 bg-indigo-500/5 rounded-full filter blur-3xl"></div>
+
+    <div class="container mx-auto px-4 relative z-10">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-[clamp(2.5rem,6vw,4rem)] font-bold leading-tight mb-6 animate-fade-in">
+                关于 <span class="text-gradient">Vnollx 在线评测系统</span>
+            </h1>
+            <p class="text-gray-600 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto animate-slide-up" style="animation-delay: 0.1s">
+                Vnollx 在线评测系统是一个强大且高效的在线评测平台，旨在帮助你提升编程技能。这里拥有海量的编程题目和实时评测功能，支持多种编程语言。
+            </p>
+        </div>
+    </div>
+</header>
+
+<!-- 主要内容 -->
+<main class="container mx-auto px-4 py-16">
+    <!-- 关于系统 -->
+    <section class="max-w-4xl mx-auto mb-20 animate-on-scroll">
+        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10 card-hover">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-info"></i>
+                    </span>
+                Vnollx 在线评测系统是什么？
+            </h2>
+            <div class="space-y-4 text-gray-600 leading-relaxed">
+                <p>
+                    Vnollx 在线评测系统是一个创新的在线平台，为程序员提供了一个全面的环境来练习和提高他们的编码能力。它提供了广泛的算法问题，从入门级到高级难度，适合不同技能水平的程序员。
+                </p>
+                <p>
+                    我们的平台配备了高性能的评测引擎，可以快速准确地评估你的代码提交。无论你是正在学习编程的学生、想要提升技能的专业开发者，还是正在为竞赛做准备的竞赛选手，Vnollx 在线评测系统都能满足你的需求。
+                </p>
+                <p>
+                    系统设计注重用户体验，界面简洁直观，操作流程简单，让你可以专注于解决问题本身，而不是纠结于平台的使用。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 支持的编程语言 -->
+    <section class="max-w-4xl mx-auto mb-20 animate-on-scroll">
+        <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10 card-hover">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                    <span class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-code"></i>
+                    </span>
+                支持的编程语言
+            </h2>
+            <p class="text-gray-600 leading-relaxed mb-8">
+                Vnollx 在线评测系统支持多种流行的编程语言，让你可以使用自己喜欢的语言来解决问题。我们持续扩展支持的语言列表，以满足不同开发者的需求：
+            </p>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-8 justify-items-center items-center">
+                <!-- C/C++ -->
+                <div class="flex flex-col items-center p-6 rounded-xl bg-gray-50 w-full text-center transition-all duration-300 hover:bg-blue-50">
+                    <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                        <i class="fab fa-cuttlefish text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800">C/C++</h3>
+                    <p class="text-gray-500 text-sm mt-2">支持最新标准</p>
+                </div>
+
+                <!-- Python -->
+                <div class="flex flex-col items-center p-6 rounded-xl bg-gray-50 w-full text-center transition-all duration-300 hover:bg-blue-50">
+                    <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                        <i class="fab fa-python text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800">Python</h3>
+                    <p class="text-gray-500 text-sm mt-2">3.x 版本支持</p>
+                </div>
+
+                <!-- Java -->
+                <div class="flex flex-col items-center p-6 rounded-xl bg-gray-50 w-full text-center transition-all duration-300 hover:bg-blue-50">
+                    <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                        <i class="fab fa-java text-2xl text-primary"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800">Java</h3>
+                    <p class="text-gray-500 text-sm mt-2">8+ 版本支持</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 系统特性 -->
+    <section class="max-w-5xl mx-auto animate-on-scroll">
+        <h2 class="text-3xl font-bold text-gray-800 mb-10 text-center">
+            系统特性
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- 特性卡片 1 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                <div class="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-tasks text-white text-5xl"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">丰富的题目集</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        我们拥有大量涵盖各种主题的问题，如数据结构、算法和编程范式。每个问题都配有详细的描述和测试用例。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 特性卡片 2 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                <div class="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-stopwatch text-white text-5xl"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">实时评测</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        一旦你提交代码，我们的评测引擎将迅速评估，并为你提供关于解决方案正确性和性能的即时反馈。
+                    </p>
+                </div>
+            </div>
+
+            <!-- 特性卡片 3 -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden card-hover">
+                <div class="h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-users text-white text-5xl"></i>
+                </div>
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-3">社区支持</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        加入我们的程序员社区，一起讨论问题、分享解决方案并相互学习。你还可以参加竞赛，与其他程序员一较高下。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- 统计数据 -->
+<section class="bg-gray-50 py-16 mt-16">
+    <div class="container mx-auto px-4">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                <!-- 统计项 1 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <div class="text-4xl font-bold text-primary mb-2" id="problem-count">0</div>
+                    <div class="text-gray-600">题目数量</div>
+                </div>
+
+                <!-- 统计项 2 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <div class="text-4xl font-bold text-primary mb-2" id="user-count">0</div>
+                    <div class="text-gray-600">注册用户</div>
+                </div>
+
+                <!-- 统计项 3 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <div class="text-4xl font-bold text-primary mb-2" id="submission-count">0</div>
+                    <div class="text-gray-600">代码提交</div>
+                </div>
+
+                <!-- 统计项 4 -->
+                <div class="bg-white rounded-xl p-6 shadow-md">
+                    <div class="text-4xl font-bold text-primary mb-2" id="language-count">3+</div>
+                    <div class="text-gray-600">支持语言</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 返回顶部按钮 -->
+<button id="back-to-top" class="fixed bottom-8 right-8 bg-primary text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center opacity-0 invisible transition-all duration-300 hover:bg-blue-600 focus:outline-none z-50">
+    <i class="fa fa-arrow-up"></i>
+</button>
+
+
+<script>
+    // 页面加载完成后执行
+    document.addEventListener('DOMContentLoaded', function() {
+        // 隐藏加载动画
+        setTimeout(function() {
+            const loader = document.getElementById('loader');
+            loader.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => loader.style.display = 'none', 500);
+        }, 600);
+
+        // 从API获取数据
+        const token = localStorage.getItem('token'); // 请替换为实际的token
+
+        // 数字增长动画
+        function animateCounter(elementId, target, duration = 2000) {
+            const element = document.getElementById(elementId);
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    clearInterval(timer);
+                    element.textContent = target.toLocaleString();
+                } else {
+                    element.textContent = Math.floor(current).toLocaleString();
+                }
+            }, 16);
+        }
+
+        // 发送API请求
+        async function fetchData(endpoint, elementId) {
+            try {
+                const response = await fetch(endpoint, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                animateCounter(elementId, data.data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                // 出错时显示默认值或错误信息
+                document.getElementById(elementId).textContent = '加载失败';
+            }
+        }
+
+        // 滚动动画观察器
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-fade-in');
+                    observer.unobserve(entry.target);
+
+                    // 触发统计数字API请求
+                    if (entry.target.id === 'problem-count') {
+                        fetchData('/problem/count', 'problem-count');
+                        fetchData('/user/count', 'user-count');
+                        fetchData('/submission/count', 'submission-count');
+                    }
+                }
+            });
+        }, observerOptions);
+
+        // 标记需要动画的元素
+        document.querySelectorAll('section').forEach(section => {
+            section.classList.add('animate-on-scroll', 'opacity-0');
+            observer.observe(section);
+        });
+
+        // 统计数字元素特殊处理
+        document.getElementById('problem-count').classList.add('animate-on-scroll');
+        observer.observe(document.getElementById('problem-count'));
+
+        // 返回顶部按钮
+        const backToTopButton = document.getElementById('back-to-top');
+
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 500) {
+                backToTopButton.classList.remove('opacity-0', 'invisible');
+                backToTopButton.classList.add('opacity-100', 'visible');
+            } else {
+                backToTopButton.classList.remove('opacity-100', 'visible');
+                backToTopButton.classList.add('opacity-0', 'invisible');
+            }
+        });
+
+        backToTopButton.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    });
+</script>
+</body>
+
+</html>

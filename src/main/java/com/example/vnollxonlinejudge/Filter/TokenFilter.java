@@ -7,7 +7,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebFilter(filterName = "TokenFilter", urlPatterns = {"/user/*", "/problem/*","/submission/*","/solve/*","/competition/*","/judge/*","/admin/*","/tag/*","/notification/*"})
+@WebFilter(filterName = "TokenFilter", urlPatterns = {
+        "/user/*", "/problem/*","/submission/*","/solve/*",
+        "/competition/*","/judge/*","/admin/*","/tag/*",
+        "/notification/*","/comment/*"
+})
 public class TokenFilter implements Filter {
     private static final String AUTH_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
@@ -33,7 +37,7 @@ public class TokenFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         String requestURI = request.getRequestURI();
-
+        // System.out.println("TokenFilter 处理请求: " + requestURI);
         // Check for excluded paths
         for (String path : EXCLUDED_PATHS) {
             if (path.contains("\\d+")) {
