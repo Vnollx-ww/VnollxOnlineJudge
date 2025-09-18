@@ -1,3 +1,27 @@
+create table comment
+(
+    id          bigint auto_increment
+        primary key,
+    content     text         not null,
+    username    varchar(255) not null,
+    create_time varchar(255) not null,
+    problem_id  bigint       not null,
+    parent_id   bigint       null,
+    user_id     bigint       null comment '评论用户的id'
+);
+
+create index idx_create_time
+    on comment (create_time);
+
+create index idx_parent_id
+    on comment (parent_id);
+
+create index idx_problem_id
+    on comment (problem_id);
+
+create index idx_user_id
+    on comment (user_id);
+
 create table competition
 (
     id            int auto_increment
@@ -9,8 +33,7 @@ create table competition
     password      varchar(255)  null,
     need_password tinyint(1)    null,
     number        int default 0 null
-)
-    charset = utf8mb4;
+);
 
 create table notification
 (
@@ -20,8 +43,7 @@ create table notification
     description text                               null,
     create_time datetime default CURRENT_TIMESTAMP null,
     author      varchar(20)                        null
-)
-    charset = utf8mb4;
+);
 
 create index notification_id_index
     on notification (id);
@@ -45,8 +67,7 @@ create table problem
     pass_count     int        default 0 null,
     open           tinyint(1) default 0 null,
     version        int        default 1 null
-)
-    charset = utf8mb4;
+);
 
 create table competition_problem
 (
@@ -62,8 +83,7 @@ create table competition_problem
         foreign key (problem_id) references problem (id),
     constraint competition_problem_ibfk_2
         foreign key (competition_id) references competition (id)
-)
-    charset = utf8mb4;
+);
 
 create index competition_id
     on competition_problem (competition_id);
@@ -82,8 +102,7 @@ create table solve
     name         varchar(50) null,
     problem_name varchar(50) null,
     title        text        not null
-)
-    charset = utf8mb4;
+);
 
 create table submission
 (
@@ -100,8 +119,7 @@ create table submission
     code         text             null,
     cid          bigint default 0 null,
     memory       int              not null comment '内存占用'
-)
-    charset = utf8mb4;
+);
 
 create table tag
 (
@@ -110,8 +128,7 @@ create table tag
     name varchar(50) not null,
     constraint name
         unique (name)
-)
-    charset = utf8mb4;
+);
 
 create table problem_tag
 (
@@ -125,8 +142,7 @@ create table problem_tag
     constraint problem_tag_ibfk_1
         foreign key (problem_id) references problem (id)
             on delete cascade
-)
-    charset = utf8mb4;
+);
 
 create index idx_problem_id
     on problem_tag (problem_id);
@@ -146,8 +162,7 @@ create table user
     salt         varchar(255)                  not null comment '盐值',
     constraint email
         unique (email)
-)
-    charset = utf8mb4;
+);
 
 create table competition_user
 (
@@ -164,8 +179,7 @@ create table competition_user
     constraint competition_user_ibfk_2
         foreign key (user_id) references user (id)
             on update cascade on delete cascade
-)
-    charset = utf8mb4;
+);
 
 create index user_id
     on competition_user (user_id);
@@ -176,8 +190,7 @@ create table user_solved_problem
     problem_id     bigint not null,
     competition_id int    not null,
     primary key (user_id, problem_id, competition_id)
-)
-    charset = utf8mb4;
+);
 
 create index problem_id
     on user_solved_problem (problem_id);

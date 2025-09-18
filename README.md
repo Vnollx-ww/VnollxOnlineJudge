@@ -1,114 +1,309 @@
-# VnollxOnlineJudge - 在线编程评测系统 🌟
+# Vnollx 在线评测系统
 
-## 🚀 项目简介
-VnollxOnlineJudge 是一款功能全面的在线编程评测系统（OJ），面向编程学习者、竞赛选手及技术社区，提供题目提交、代码评测、题解分享、比赛参与等核心功能。系统采用高并发架构设计，结合分布式缓存、消息队列及对象存储技术，保障在高流量场景下的稳定性与性能。
+<div align="center">
 
----
+![Vnollx Online Judge](https://img.shields.io/badge/Vnollx-Online%20Judge-blue?style=for-the-badge&logo=java)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen?style=flat-square&logo=spring-boot)
+![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql)
+![Redis](https://img.shields.io/badge/Redis-Latest-red?style=flat-square&logo=redis)
 
-## 🔧 技术栈与架构
+**一个功能完整的在线算法评测平台，支持多语言编程，实时评测，竞赛管理**
 
-### 核心技术选型
-| 技术栈                 | 说明                                  |
-|---------------------|-------------------------------------|
-| **Spring Boot**     | 快速构建后端服务，集成自动化配置与依赖管理               |
-| **MyBatis-Plus**    | ORM框架，简化数据库操作，支持高效CRUD与条件查询         |
-| **MySQL**           | 主数据库，存储用户信息、题目数据、提交记录等核心业务数据        |
-| **Redis**           | 缓存热点数据（如排行榜、用户会话），支持原子操作（AC数/通过数统计） |
-| **RabbitMQ**        | 消息队列，缓冲代码评测请求，实现异步处理与流量削峰           |
-| **RustFs**          | 对象存储，安全高效存储题测试用例代码文件                |
-| **go-Judge,Docker** | 容器化部署评测沙箱，隔离代码执行环境，保障系统安全           |
-### 高级特性
-全局异常处理：基于Spring AOP的统一异常拦截器，规范化错误响应格式
+[在线体验](http://your-domain.com) • [功能特性](#功能特性) • [快速开始](#快速开始) • [技术架构](#技术架构)
 
-虚拟线程支持：JDK21+虚拟线程启用，提升并发处理能力
+</div>
 
-异步刷写线程池：独立线程池处理日志/提交记录等异步持久化操作（参见AsyncTaskConfig）
+## 📖 项目简介
 
-智能限流：基于Redis的API级限流保护
+Vnollx 在线评测系统是一个创新的在线平台，为程序员提供了一个全面的环境来练习和提高他们的编码能力。系统配备了高性能的评测引擎，可以快速准确地评估代码提交，支持多种编程语言，提供丰富的算法题目和竞赛功能。
 
-### 系统架构图
-![img_1.png](img_1.png)
----
+### 🎯 核心特性
 
-## 🌟 核心功能
+- **🚀 实时评测系统** - 高效的在线评测引擎，支持 C++、Python、Java 等多种编程语言
+- **📚 丰富的题目资源** - 1000+道精选算法题，覆盖基础到进阶难度
+- **🏆 竞赛与排名** - 定期举办算法竞赛，实时排行榜，激发学习动力
+- **👥 社区交流** - 活跃的用户社区，支持题解分享和讨论
+- **⚡ 高性能架构** - 支持高并发访问
+- **🔒 安全可靠** - 完善的用户认证和权限管理系统
 
-### ✨ 用户模块
-- **账号体系**：支持邮箱/手机号注册登录，集成验证码校验
-- **个人中心**：修改昵称、题目测试用例压缩包（MinIO存储）、密码，查看个人提交统计（AC数、通过题目）
-- **社交功能**：查看他人主页（AC数、通过题目列表）
+## 🛠️ 技术栈
 
-### 📚 题目模块
-- **题目广场**：支持关键词搜索、难度筛选（简单/中等/困难）、标签过滤（动态规划/图论等）
-- **题目详情**：包含题目描述、输入输出样例、测试用例说明、提交记录统计（AC率/通过数）
-- **代码提交**：在线代码编辑器（支持Java/C++/Python语法高亮），实时显示评测结果（AC/WA/TLE等）
+### 后端技术
+- **框架**: Spring Boot 3.2.5
+- **语言**: Java 21
+- **数据库**: MySQL 8.0 (主从复制)
+- **缓存**: Redis
+- **消息队列**: RabbitMQ
+- **对象存储**: MinIO
+- **ORM**: MyBatis-Plus
+- **连接池**: Druid
+- **安全**: JWT + Sa-Token
 
-### ⚖️ 评测模块
-- **多语言支持**：Java、C++、Python（可扩展Go/JavaScript等）
-- **异步评测**：提交请求入RabbitMQ队列，后台worker消费并执行，异步存储评测记录，对消息进行持久化和手动消息确认保证数据不丢失
-- **结果反馈**：返回运行时间、内存占用、错误详情（如编译错误日志、运行时异常）
+### 前端技术
+- **模板引擎**: Thymeleaf
+- **UI框架**: Bootstrap 5
+- **代码编辑器**: CodeMirror
+- **图标库**: Font Awesome
+- **Markdown**: Marked.js + MathJax
+- **代码高亮**: Highlight.js
 
-### 🏆 比赛模块
-- **比赛管理**：管理员创建比赛（设置时间、题目集、参赛权限），支持公开赛/私有赛
-- **实时排行**：基于Redis ZSet实现，按AC数+罚时排序，支持刷新实时更新
-- **比赛记录**：赛后生成成绩报告（个人排名、题目AC情况）
+### 评测引擎
+- **GoJudge** - 高性能代码评测引擎
+- **Docker** - 容器化评测环境
+- **多语言支持** - C++、Python、Java
 
-### 📝 题解模块
-- **题解发布**：支持Markdown编辑，插入代码块、图片（MinIO存储）、公式
-- **题解互动**：点赞、收藏、评论，作者可置顶/删除评论
+### 部署运维
+- **容器化**: Docker + Docker Compose
+- **监控**: Spring Boot Actuator + Prometheus
+- **日志**: SLF4J + Logback
 
----
+## 🏗️ 系统架构
 
-## 🚀 高并发优化
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   前端界面      │    │   Spring Boot   │    │   评测引擎      │
+│   Thymeleaf     │◄──►│   应用服务      │◄──►│   GoJudge       │
+│   Bootstrap     │    │   REST API      │    │   Docker        │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   MySQL 主库    │    │   Redis 缓存    │    │   RabbitMQ      │
+│   MySQL 从库    │◄──►│   分布式锁      │◄──►│   消息队列      │
+│   数据持久化    │    │   会话存储      │    │   异步评测      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   MinIO         │
+                       │   对象存储      │
+                       │   代码文件      │
+                       └─────────────────┘
+```
 
-| 场景      | 解决方案                                              |
-|---------|---------------------------------------------------|
-| 题目AC数统计 | Redis原子操作（INCR），键过期事件同步至MySQL，采用缓存过期缓冲策略保证数据最终一致性 |
-| 比赛排行榜   | Redis ZSet存储（用户ID+分数(通过AC数和罚时计算)），O(logN)复杂度查询    |
-| 评测请求峰值  | RabbitMQ队列缓冲，异步存储评测记录，动态扩容评测worker实例              |
-| 热点题目访问  | Redis缓存题目详情，减少MySQL查询                             |
-| 提交记录存储  | Redis List暂存，定时任务批量写入MySQL（降低IO压力）                |
-| 数据库主从复制 | 将读写请求分开，降低主库压力，后续为了实现高可用，可采用故障自动转移，当主库故障时，从库自动升级  |
-| 虚拟线程    | 替换传统线程池，配置spring.threads.virtual.enabled=true，单机支持万级并发请求  |
----
-
-## 📦 快速部署
+## 🚀 快速开始
 
 ### 环境要求
-| 软件       | 版本要求          | 说明                      |
-|----------|---------------|-------------------------|
-| JDK      | 21+           | Spring Boot 3.0+依赖      |
-| MySQL    | 8.0+          | 需开启UTF-8mb4字符集          |
-| Redis    | 6.0+          | 需启用持久化（RDB/AOF）         |
-| RabbitMQ | 3.10+         | 安装rabbitmq-management插件 |
-| RustFs   | 1.0.0-alpha.28 | 对象存储服务                  |
-| Docker   | 20.10+        | 用于容器化部署                 |
-| Go-Judge | 最新版           | 用于代码沙箱隔离                |
 
-### 部署步骤
+- **Java**: 21+
+- **Maven**: 3.6+
+- **Docker**: 20.10+
+- **Docker Compose**: 2.0+
 
-#### 1. 克隆项目
-git clone https://github.com/Vnollx-ww/VnollxOnlineJudge.git
-#### 2. 初始化数据库
-运行位于/src/main/resources下的vnollxonlinejudge.sql文件
-#### 3. 配置修改# 修改 application.properties
-修改MYSQL,Redis,RabbitMq,RustFs配置
-#### 4. 构建与启动# 打包（跳过测试）
-mvn clean package -DskipTests
-#### 5. 采用docker本地部署
-下载docker，在VnollxOnlineJudge下运行命令docker-compose up -d
+### 一键启动
 
-# 启动服务
-java -jar target/vnollx-oj-1.0.0.jar --spring.profiles.active=prod
-#### 5. 验证部署
-- 访问项目主页：`http://localhost:8080
-- 访问RustFs控制台：`http://localhost:9001`（默认账号/密码：minioadmin/minioadmin）
+1. **克隆项目**
+```bash
+git clone https://github.com/your-username/VnollxOnlineJudge.git
+cd VnollxOnlineJudge
+```
+
+2. **启动服务**
+```bash
+# 使用 Docker Compose 一键启动所有服务
+docker-compose up -d
+```
+
+3. **访问系统**
+- 前端地址: http://localhost:8080
+- 管理后台: http://localhost:8080/admin-user.html
+- API文档: http://localhost:8080/actuator
+
+### 手动部署
+
+1. **配置数据库**
+```sql
+-- 创建数据库
+CREATE DATABASE vnollxonlinejudge CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 导入数据库结构
+mysql -u root -p vnollxonlinejudge < src/main/resources/vnollxonlinejudge.sql
+```
+
+2. **配置环境变量**
+```yaml
+# application.yml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/vnollxonlinejudge
+    username: your_username
+    password: your_password
+  redis:
+    host: localhost
+    port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: admin
+    password: admin
+```
+
+3. **启动应用**
+```bash
+mvn clean package
+java -jar target/VnollxOnlineJudge-0.0.1-SNAPSHOT.jar
+```
+
+## 📋 功能模块
+
+### 👤 用户管理
+- **用户注册/登录** - 邮箱验证，密码加密
+- **个人信息管理** - 头像、昵称、邮箱修改
+- **密码管理** - 修改密码，忘记密码重置
+- **权限控制** - 普通用户、管理员权限分离
+
+### 📝 题目管理
+- **题目发布** - 支持 Markdown 格式题目描述
+- **测试用例** - 批量上传测试数据
+- **标签分类** - 算法标签，难度分级
+- **题目统计** - 提交次数，通过率统计
+
+### ⚡ 评测系统
+- **多语言支持** - C++、Python、Java
+- **实时评测** - 异步评测，实时反馈
+- **性能监控** - 时间限制，内存限制
+- **结果展示** - 详细评测结果，错误信息
+
+### 🏆 竞赛功能
+- **竞赛创建** - 公开/私有竞赛
+- **实时排名** - 实时排行榜更新
+- **题目管理** - 竞赛题目配置
+- **成绩统计** - 竞赛成绩分析
+
+### 💬 社区功能
+- **评论系统** - 题目讨论，题解分享
+- **通知公告** - 系统通知，竞赛公告
+- **排行榜** - 用户排名，解题统计
+
+## 🔧 配置说明
+
+### 数据库配置
+```yaml
+spring:
+  datasource:
+    dynamic:
+      primary: master
+      datasource:
+        master:
+          url: jdbc:mysql://mysql-master:3308/vnollxonlinejudge
+          username: root
+          password: rootpassword
+        slave:
+          url: jdbc:mysql://mysql-slave:3309/vnollxonlinejudge
+          username: root
+          password: rootpassword
+```
+
+### Redis 配置
+```yaml
+spring:
+  data:
+    redis:
+      host: redis
+      port: 6379
+      timeout: 2000
+      jedis:
+        pool:
+          max-active: 100
+          max-idle: 10
+          min-idle: 5
+```
+
+### RabbitMQ 配置
+```yaml
+spring:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: admin
+    password: admin
+    listener:
+      simple:
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 1
+```
+
+## 📊 性能优化
+
+### 数据库优化
+- **主从复制** - 读写分离，提高查询性能
+- **连接池** - Druid 连接池，优化数据库连接
+- **索引优化** - 关键字段建立索引
+
+### 缓存策略
+- **Redis 缓存** - 热点数据缓存
+- **分布式锁** - 防止重复提交
+- **会话存储** - 用户会话管理
+
+### 异步处理
+- **消息队列** - RabbitMQ 异步评测
+- **线程池** - 虚拟线程优化
+- **批量处理** - 批量数据库操作
+
+## 🔒 安全特性
+
+- **JWT 认证** - 无状态用户认证
+- **密码加密** - BCrypt 密码哈希
+- **权限控制** - 基于角色的访问控制
+- **输入验证** - 防止 SQL 注入，XSS 攻击
+- **限流控制** - 防止恶意提交
+
+## 📈 监控运维
+
+### 应用监控
+- **健康检查** - Spring Boot Actuator
+- **指标监控** - Prometheus + Micrometer
+- **日志管理** - 结构化日志输出
+
+### 性能监控
+- **数据库监控** - 连接池状态，慢查询
+- **缓存监控** - Redis 性能指标
+- **消息队列监控** - RabbitMQ 队列状态
+
+## 🤝 贡献指南
+
+我们欢迎所有形式的贡献！
+
+### 贡献方式
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 开发规范
+- 遵循 Java 编码规范
+- 添加必要的注释和文档
+- 编写单元测试
+- 确保代码质量
+
+## 📄 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+## 🙏 致谢
+
+感谢以下开源项目的支持：
+- [Spring Boot](https://spring.io/projects/spring-boot)
+- [MyBatis-Plus](https://baomidou.com/)
+- [GoJudge](https://github.com/criyle/go-judge)
+- [Bootstrap](https://getbootstrap.com/)
+- [CodeMirror](https://codemirror.net/)
+
+## 📞 联系我们
+
+- **项目主页**: https://github.com/your-username/VnollxOnlineJudge
+- **问题反馈**: https://github.com/your-username/VnollxOnlineJudge/issues
+- **邮箱**: your-email@example.com
 
 ---
 
-## 📁 项目结构vnollxonlinejudge/
+<div align="center">
 
-![img.png](img.png)
----
+**⭐ 如果这个项目对你有帮助，请给我们一个 Star！**
 
-如果这个项目对你有帮助，欢迎点个Star支持～ ⭐  
-[GitHub仓库地址](https://github.com/your-username/VnollxOnlineJudge)
+Made with ❤️ by Vnollx Team
+
+</div>
