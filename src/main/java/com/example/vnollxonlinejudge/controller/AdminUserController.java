@@ -36,6 +36,13 @@ public class AdminUserController {
             throw new BusinessException("管理员ID格式错误");
         }
     }
+    private String getCurrentIdentity(HttpServletRequest request) {
+        String identity = (String) request.getAttribute("identity");
+        if (identity == null || identity.trim().isEmpty()) {
+            throw new BusinessException("未获取到管理员身份");
+        }
+        return identity;
+    }
     @GetMapping("/list")
     public Result<List<UserVo>> getUserList(@RequestParam int pageNum, @RequestParam int pageSize,
                                             @RequestParam(required = false) String keyword,
@@ -72,14 +79,15 @@ public class AdminUserController {
      * 更新用户信息
      */
     @PutMapping("/update")
-    public Result<Void> updateUser(@Valid @RequestBody AdminSaveUserDTO request) {
+    public Result<Void> updateUser(@Valid @RequestBody AdminSaveUserDTO request,HttpServletRequest req) {
         // 确保路径参数和请求体中的ID一致
 
         userService.updateUserInfoByAdmin(
                 request.getEmail(),
                 request.getName(),
                 request.getIdentity(),
-                request.getId()
+                request.getId(),
+                getCurrentIdentity(req)
         );
         return Result.Success("修改用户信息成功");
     }
@@ -88,8 +96,8 @@ public class AdminUserController {
      * 删除用户
      */
     @DeleteMapping("/delete/{id}")
-    public Result<Void> deleteUser(@PathVariable @NotNull @Min(1) Long id) {
-        userService.deleteUserByAdmin(id);
+    public Result<Void> deleteUser(@PathVariable @NotNull @Min(1) Long id,HttpServletRequest req) {
+        userService.deleteUserByAdmin(id,getCurrentIdentity(req));
         return Result.Success("删除用户成功");
     }
 

@@ -18,9 +18,9 @@ public interface UserService {
     void updateUserInfo(String email,String name,Long uid,String option,String verifyCode);
     void updateSubmitCount(Long uid,int ok);
     //!!! ADMIN
-    void deleteUserByAdmin(Long id);
+    void deleteUserByAdmin(Long id,String currentIdentity);
     void addUserByAdmin(String name,String email,String identity);
-    void updateUserInfoByAdmin(String email,String name,String identity,Long uid);
+    void updateUserInfoByAdmin(String email,String name,String identity,Long uid,String currentIdentity);
     Long getCountByAdmin(String keyword,String identity);
     Long getCount();
     List<UserVo> getAllUser();

@@ -8,9 +8,9 @@ public class RunResult {
     // getter 和 setter 方法
     private String status;
     private int exitStatus;
-    private Long time;
-    private Long memory;
-    private Long runTime;
+    private Long time=0L;
+    private Long memory=0L;
+    private Long runTime=0L;
 
     @JsonProperty("files")
     private Files files;

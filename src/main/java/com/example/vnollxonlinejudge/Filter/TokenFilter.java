@@ -1,17 +1,20 @@
 package com.example.vnollxonlinejudge.Filter;
 
+import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 
-@WebFilter(filterName = "TokenFilter", urlPatterns = {
-        "/user/*", "/problem/*","/submission/*","/solve/*",
-        "/competition/*","/judge/*","/admin/*","/tag/*",
-        "/notification/*","/comment/*"
-})
+@Component
+@Order(1)
 public class TokenFilter implements Filter {
     private static final String AUTH_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
@@ -20,6 +23,10 @@ public class TokenFilter implements Filter {
             "/user/register",
             "/user/forget",
             "/problem/\\d+",
+            "/problem/count",
+            "/user/count",
+            "/competition/count",
+            "/submission/count",
             "/user/\\d+",
             "/submission/\\d+",
             "/solve/\\d+",
@@ -30,6 +37,8 @@ public class TokenFilter implements Filter {
             "/competition/submission/\\d+",
             "/solve/publish/\\d+"
     };
+    @Autowired
+    private RedisService redisService;
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
@@ -81,6 +90,15 @@ public class TokenFilter implements Filter {
         // Parse user ID
         String userId = JwtToken.getUserIdFromToken(token);
         String identity= JwtToken.getUserIdentityFromToken(token);
+
+        String key="logout:"+userId;
+        if (redisService.IsExists(key)){
+            redisService.deleteKey(key);
+            redisService.setKey(token,"",86400L);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().println("无效的Token");
+            return;
+        }
         request.setAttribute("uid", userId);
         request.setAttribute("identity",identity);
         // Allow the request to proceed

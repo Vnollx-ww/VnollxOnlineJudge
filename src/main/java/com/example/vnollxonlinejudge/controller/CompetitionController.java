@@ -100,4 +100,8 @@ public class CompetitionController {
         competitionService.judgeIsEndById(req.getNow(),Long.parseLong(req.getId()));
         return Result.Success("比赛开放中");
     }
+    @GetMapping("/count")
+    public Result<Long> getCompetitionCount(){
+        return Result.Success(competitionService.getCompetitionCount(),"获取比赛数量成功");
+    }
  }

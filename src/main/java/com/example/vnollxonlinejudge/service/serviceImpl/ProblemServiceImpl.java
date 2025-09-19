@@ -75,7 +75,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             throw new BusinessException("题目不存在或已被删除");
         }
         try {
-            ossService.deleteFile(problem.getDatazip());
+            ossService.deleteFile(problem.getId()+".zip");
         }catch (IOException e){
             throw new BusinessException("文件上传失败，服务器异常");
         }

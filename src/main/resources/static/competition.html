@@ -4,12 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>比赛中心 - VnollxOJ</title>
+    <title>比赛练习中心 - VnollxOJ</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --primary-color: #2563eb;
+            --primary: #1a73e8;
+            --primary-color: #1a73e8;
+            --secondary: #4a90e2;
+            --accent: #66bb6a;
+            --text: #2d3748;
+            --bg: #f8fafc;
+            --light-blue: rgba(26, 115, 232, 0.05);
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --success-color: #16a34a;
             --warning-color: #ea580c;
             --danger-color: #dc2626;
@@ -19,9 +26,27 @@
         }
 
         body {
-            background-color: var(--neutral-light);
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8f2ff 50%, #f8fafc 100%);
             line-height: 1.6;
             font-family: 'Inter', 'PingFang SC', sans-serif;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(26, 115, 232, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(102, 187, 106, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .container {
@@ -40,12 +65,16 @@
         }
 
         .page-title {
-            font-size: 2.5rem;
+            font-size: 3rem;
             font-weight: 700;
-            color: #1e293b;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, #ff6b6b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             letter-spacing: -0.025em;
             position: relative;
             padding-left: 1.5rem;
+            animation: fadeIn 0.8s ease-out;
         }
 
         .page-title::before {
@@ -54,10 +83,28 @@
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            width: 4px;
+            width: 6px;
             height: 80%;
-            background: var(--primary-color);
-            border-radius: 4px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(26, 115, 232, 0.3);
+        }
+
+        .page-title::after {
+            content: "|";
+            animation: blink 1s infinite;
+            color: var(--primary);
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .card-grid {
@@ -67,25 +114,57 @@
         }
 
         .competition-card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid var(--neutral-medium);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .competition-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .competition-card:hover::before {
+            left: 100%;
         }
 
         .competition-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
 
         .card-header {
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-bottom: 1px solid var(--neutral-medium);
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(26, 115, 232, 0.05) 0%, rgba(102, 187, 106, 0.05) 100%);
+            border-bottom: 1px solid rgba(26, 115, 232, 0.1);
             position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.8s ease;
+        }
+
+        .competition-card:hover .card-header::before {
+            left: 100%;
         }
 
         .competition-title {
@@ -102,13 +181,14 @@
         .competition-icon {
             width: 40px;
             height: 40px;
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
         }
 
         .status-tag {
@@ -125,18 +205,22 @@
         }
 
         .status-running {
-            background: #e0f2fe;
+            background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 100%);
             color: #0369a1;
+            box-shadow: 0 2px 8px rgba(3, 105, 161, 0.2);
+            animation: pulse 2s infinite;
         }
 
         .status-not-started {
-            background: #ede9fe;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
             color: #6d28d9;
+            box-shadow: 0 2px 8px rgba(109, 40, 217, 0.2);
         }
 
         .status-finished {
-            background: #fee2e2;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             color: #b91c1c;
+            box-shadow: 0 2px 8px rgba(185, 28, 28, 0.2);
         }
 
         .card-body {
@@ -204,21 +288,39 @@
 
         .join-btn {
             padding: 0.75rem 1.5rem;
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            font-weight: 500;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .join-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .join-btn:hover::before {
+            left: 100%;
         }
 
         .join-btn:hover {
-            background: #1d4ed8;
-            transform: translateY(-1px);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4);
         }
 
         .join-btn:disabled {
@@ -288,6 +390,8 @@
             align-items: center;
             justify-content: center;
             transition: background-color 0.2s, border-color 0.2s;
+            background-color: white;
+            cursor: pointer;
         }
 
         .filter-checkbox input[type="checkbox"]:checked {
@@ -302,16 +406,22 @@
             color: white;
             font-size: 0.875rem;
         }
+
+        .filter-checkbox label {
+            color: var(--text);
+            font-weight: 500;
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body>
 <div class="container">
     <div class="header">
-        <h1 class="page-title">竞赛中心</h1>
+        <h1 class="page-title">竞赛练习中心</h1>
         <div class="filter-checkbox">
             <input type="checkbox" id="filterRunning">
-            <label for="filterRunning">只显示进行中比赛</label>
+            <label for="filterRunning">只显示进行中的</label>
         </div>
     </div>
 

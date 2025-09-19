@@ -645,7 +645,6 @@
   // Change page function
   async function changePage(newPage) {
     try {
-      await fetchCompetitionCount();
       const totalPages = Math.ceil(totalCompetitions / pageSize);
 
       if (newPage < 1 || newPage > totalPages) return;

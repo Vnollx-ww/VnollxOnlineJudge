@@ -189,10 +189,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public void deleteUserByAdmin(Long id) {
-        QueryWrapper<User> wrapper=new QueryWrapper<>();
-        wrapper.eq("id",id);
-        this.baseMapper.delete(wrapper);
+    public void deleteUserByAdmin(Long id,String currentIdentity) {
+        User user=this.getById(id);
+        if (currentIdentity.equals("SUPER_ADMIN")){
+            if (user.getIdentity().equals("SUPER_ADMIN"))throw new BusinessException("无权限");
+        }else if (currentIdentity.equals("ADMIN")){
+            if (!user.getIdentity().equals("USER"))throw new BusinessException("无权限");
+        }
+        this.baseMapper.deleteById(user);
     }
 
     @Override
@@ -216,19 +220,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public void updateUserInfoByAdmin(String email, String name, String identity, Long uid) {
+    public void updateUserInfoByAdmin(
+            String email, String name,
+            String identity, Long uid,String currentIdentity
+    ) {
+        User user=this.getById(uid);
+        if (currentIdentity.equals("SUPER_ADMIN")){
+            if (user.getIdentity().equals("SUPER_ADMIN"))throw new BusinessException("无权限");
+        }else if (currentIdentity.equals("ADMIN")){
+            if (!user.getIdentity().equals("USER"))throw new BusinessException("无权限");
+        }
         if (lambdaQuery().eq(User::getEmail, email).ne(User::getId, uid).exists()) {
             throw new BusinessException("邮箱地址已存在");
         }
         if (lambdaQuery().eq(User::getName, name).ne(User::getId, uid).exists()) {
             throw new BusinessException("用户名已存在");
         }
-        User user = new User();
         user.setId(uid);
         user.setEmail(email);
         user.setName(name);
         user.setIdentity(identity);
         updateById(user);
+        String key="logout:"+uid;
+        redisService.setKey(key,"",86400L);
     }
 
     @Override

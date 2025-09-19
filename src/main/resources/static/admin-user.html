@@ -556,7 +556,6 @@
     // Change page function (exposed to global scope for button clicks)
     async function changePage(newPage) {
         try {
-            await fetchUserCount();
             const totalPages = Math.ceil(totalUsers / pageSize);
 
             if (newPage < 1 || newPage > totalPages) return;

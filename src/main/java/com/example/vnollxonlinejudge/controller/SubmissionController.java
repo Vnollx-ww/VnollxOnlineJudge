@@ -42,7 +42,7 @@ public class SubmissionController {
             @RequestParam String pageNum,
             @RequestParam String pageSize
     ){
-        Long uidLong = 0L;
+        long uidLong = 0L;
         Long cidLong = parseLongOrDefault(cid); // 默认值0
         if (StringUtils.isNotBlank(uid)){
             uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));

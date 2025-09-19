@@ -14,10 +14,11 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3B82F6',
-                        secondary: '#60A5FA',
-                        dark: '#1E293B',
-                        light: '#F8FAFC'
+                        primary: '#1a73e8',
+                        secondary: '#4a90e2',
+                        accent: '#66bb6a',
+                        dark: '#2d3748',
+                        light: '#f8fafc'
                     },
                     fontFamily: {
                         inter: ['Inter', 'sans-serif']
@@ -25,7 +26,9 @@
                     animation: {
                         'fade-in': 'fadeIn 0.6s ease-out forwards',
                         'slide-up': 'slideUp 0.6s ease-out forwards',
-                        'pulse-soft': 'pulseSoft 3s infinite'
+                        'pulse-soft': 'pulseSoft 3s infinite',
+                        'shimmer': 'shimmer 3s infinite',
+                        'float': 'float 6s ease-in-out infinite'
                     },
                     keyframes: {
                         fadeIn: {
@@ -39,6 +42,14 @@
                         pulseSoft: {
                             '0%, 100%': { opacity: '1' },
                             '50%': { opacity: '0.8' }
+                        },
+                        shimmer: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(100%)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' }
                         }
                     }
                 }

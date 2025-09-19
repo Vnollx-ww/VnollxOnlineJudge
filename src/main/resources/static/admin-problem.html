@@ -628,7 +628,7 @@
         `;
 
         const params = new URLSearchParams({
-            offset: currentPage-1,   // 当前页码
+            offset: (currentPage-1) * pageSize,   // 正确的偏移量计算
             size: pageSize,        // 每页数据量
             keyword: currentKeyword // 搜索关键词（可选）
         });
@@ -777,7 +777,6 @@
     // Change page function
     async function changePage(newPage) {
         try {
-            await fetchProblemCount();
             const totalPages = Math.ceil(totalProblems / pageSize);
 
             if (newPage < 1 || newPage > totalPages) return;

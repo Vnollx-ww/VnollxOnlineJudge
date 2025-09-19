@@ -274,4 +274,9 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 .eq(Competition::getId, id);
         this.update(updateWrapper);
     }
+
+    @Override
+    public Long getCompetitionCount() {
+        return this.count();
+    }
 }

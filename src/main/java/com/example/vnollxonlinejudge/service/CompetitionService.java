@@ -20,4 +20,5 @@ public interface CompetitionService {
     void judgeIsEndById(String now,Long id);
     void deleteCompetition(Long id);
     void addNumber(Long id);
+    Long getCompetitionCount();
 }

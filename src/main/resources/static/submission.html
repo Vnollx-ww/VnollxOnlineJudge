@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -7,8 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
+            --primary: #1a73e8;
+            --secondary: #2f855a;
             --primary-color: #1a73e8;
             --secondary-color: #2f855a;
+            --text: #2d3748;
             --neutral-dark: #2d3748;
             --neutral-medium: #4a5568;
             --neutral-light: #e2e8f0;
@@ -64,12 +68,16 @@
         .filter-bar {
             display: flex;
             gap: 1.5rem;
-            padding: 1.5rem 2rem;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-            margin-bottom: 1.5rem;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
             flex-wrap: wrap;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(26, 115, 232, 0.2);
+            position: relative;
+            z-index: 100;
         }
 
         .filter-group {
@@ -94,26 +102,135 @@
             color: var(--secondary-color);
         }
 
-        select {
-            padding: 0.8rem 1.2rem;
-            border: 2px solid var(--neutral-light);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E") right 1.2rem center no-repeat;
-            background-size: 14px;
-            transition: all 0.2s ease;
+        /* 美化后的下拉框样式 */
+        .custom-select {
+            position: relative;
             min-width: 180px;
+            z-index: 1000;
         }
 
-        select:hover {
-            border-color: #9ca3af;
+        .select-selected {
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            color: var(--primary);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 2px solid transparent;
         }
 
-        select:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
+        .select-selected:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+            border-color: rgba(26, 115, 232, 0.3);
         }
+
+        .select-selected:after {
+            content: "\f078";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .select-selected.select-arrow-active:after {
+            transform: rotate(180deg);
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: white;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            border-radius: 12px;
+            margin-top: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            transform: translateY(10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(26, 115, 232, 0.2);
+            display: none;
+        }
+
+        .select-items.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+            display: block;
+        }
+
+        .select-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background-color: white;
+            color: var(--text);
+        }
+
+        .select-item:last-child {
+            border-bottom: none;
+        }
+
+        .select-item:hover {
+            background-color: rgba(26, 115, 232, 0.1);
+            color: var(--primary);
+        }
+
+        .select-item.selected {
+            background-color: rgba(26, 115, 232, 0.15);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* 语言特定样式 */
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .language-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: var(--primary);
+        }
+
+        /* 状态特定样式 */
+        .status-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.correct { background-color: #38a169; }
+        .status-indicator.incorrect { background-color: #c53030; }
+        .status-indicator.runtime-error { background-color: #c53030; }
+        .status-indicator.compile-error { background-color: #c53030; }
+        .status-indicator.time-limit { background-color: #c53030; }
+        .status-indicator.memory-limit { background-color: #c53030; }
 
         .filter-btn, .reset-btn {
             padding: 0.8rem 2rem;
@@ -147,11 +264,15 @@
 
         .submissions-table {
             width: 100%;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             border-collapse: collapse;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(26, 115, 232, 0.1);
+            position: relative;
+            z-index: 1;
         }
 
         .submissions-table th,
@@ -168,7 +289,23 @@
         }
 
         .submissions-table tr:hover {
-            background-color: #f8fafc;
+            background-color: rgba(26, 115, 232, 0.05);
+        }
+
+        .submission-id {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            background: rgba(26, 115, 232, 0.1);
+        }
+
+        .submission-id:hover {
+            background: rgba(26, 115, 232, 0.2);
+            color: #0d47a1;
+            transform: translateX(2px);
         }
 
         .status {
@@ -212,28 +349,60 @@
             margin-top: 2rem;
             display: flex;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(26, 115, 232, 0.1);
         }
 
         .page-btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--neutral-light);
-            border-radius: 6px;
-            background: white;
-            color: var(--neutral-medium);
+            padding: 0.75rem 1.25rem;
+            border: 2px solid rgba(26, 115, 232, 0.2);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+            color: var(--text);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .page-btn:hover::before {
+            left: 100%;
         }
 
         .page-btn:hover {
-            background: #f8fafc;
-            border-color: #cbd5e0;
+            background: rgba(26, 115, 232, 0.05);
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.2);
         }
 
         .page-btn.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white !important;
+            border-color: #1a73e8;
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.4);
+            transform: translateY(-2px) scale(1.05);
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .page-btn.disabled {
@@ -321,28 +490,6 @@
             color: var(--primary-color);
             text-decoration: underline;
             cursor: pointer;
-        }
-
-        @media (max-width: 768px) {
-            .filter-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 1rem;
-            }
-
-            select {
-                min-width: 100%;
-            }
-
-            .header {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-
-            }
         }
 
         /* 新增Toast样式 */
@@ -437,6 +584,28 @@
             border-width: 0 2px 2px 0;
             transform: rotate(45deg);
         }
+
+        @media (max-width: 768px) {
+            .filter-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem;
+            }
+
+            .custom-select {
+                min-width: 100%;
+                width: 100%;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -451,31 +620,86 @@
     </div>
 
     <div class="filter-bar">
+        <!-- 语言筛选框 -->
         <div class="filter-group">
-        <span class="filter-label language">
-            <i class="fas fa-globe"></i> 语言：
-        </span>
-            <select id="language-filter">
-                <option value="">全部</option>
-                <option value="C++">C++</option>
-                <option value="Java">Java</option>
-                <option value="Python">Python</option>
-            </select>
+            <span class="filter-label language">
+                <i class="fas fa-globe"></i> 语言：
+            </span>
+            <div class="custom-select" id="language-select">
+                <div class="select-selected">全部</div>
+                <div class="select-items">
+                    <div class="select-item selected" data-value="">全部</div>
+                    <div class="select-item" data-value="C++">
+                        <span class="language-option">
+                            <span class="language-icon"><i class="fab fa-cuttlefish"></i></span>
+                            <span>C++</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="Java">
+                        <span class="language-option">
+                            <span class="language-icon"><i class="fab fa-java"></i></span>
+                            <span>Java</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="Python">
+                        <span class="language-option">
+                            <span class="language-icon"><i class="fab fa-python"></i></span>
+                            <span>Python</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
+
+        <!-- 状态筛选框 -->
         <div class="filter-group">
-        <span class="filter-label status">
-            <i class="fas fa-tags"></i> 状态：
-        </span>
-            <select id="status-filter">
-                <option value="">全部</option>
-                <option value="答案正确">答案正确</option>
-                <option value="答案错误">答案错误</option>
-                <option value="运行时错误">运行时错误</option>
-                <option value="编译错误">编译错误</option>
-                <option value="时间超出限制">时间超出限制</option>
-                <option value="内存超出限制">内存超出限制</option>
-            </select>
+            <span class="filter-label status">
+                <i class="fas fa-tags"></i> 状态：
+            </span>
+            <div class="custom-select" id="status-select">
+                <div class="select-selected">全部</div>
+                <div class="select-items">
+                    <div class="select-item selected" data-value="">全部</div>
+                    <div class="select-item" data-value="答案正确">
+                        <span class="status-option">
+                            <span class="status-indicator correct"></span>
+                            <span>答案正确</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="答案错误">
+                        <span class="status-option">
+                            <span class="status-indicator incorrect"></span>
+                            <span>答案错误</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="运行时错误">
+                        <span class="status-option">
+                            <span class="status-indicator runtime-error"></span>
+                            <span>运行时错误</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="编译错误">
+                        <span class="status-option">
+                            <span class="status-indicator compile-error"></span>
+                            <span>编译错误</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="时间超出限制">
+                        <span class="status-option">
+                            <span class="status-indicator time-limit"></span>
+                            <span>时间超出限制</span>
+                        </span>
+                    </div>
+                    <div class="select-item" data-value="内存超出限制">
+                        <span class="status-option">
+                            <span class="status-indicator memory-limit"></span>
+                            <span>内存超出限制</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <div class="filter-group">
             <label class="checkbox-container">
                 <input type="checkbox" id="my-submissions-only">
@@ -502,7 +726,7 @@
         </thead>
         <tbody id="submissions-list">
         <tr class="loading">
-            <td colspan="7">加载提交记录中...</td>
+            <td colspan="8">加载提交记录中...</td>
         </tr>
         </tbody>
     </table>
@@ -524,7 +748,88 @@
     const PAGE_SIZE = 10;
     let currentLanguage = '';
     let currentStatus = '';
-    let onlyMySubmissions = false; // 新增：控制是否只查看自己的提交
+    let onlyMySubmissions = false;
+
+    // 自定义下拉框功能
+    function initCustomSelects() {
+        const customSelects = document.querySelectorAll('.custom-select');
+
+        customSelects.forEach(select => {
+            const selected = select.querySelector('.select-selected');
+            const itemsContainer = select.querySelector('.select-items');
+
+            // 点击选中区域切换显示/隐藏
+            selected.addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeAllSelect(this);
+                itemsContainer.classList.toggle('active');
+                this.classList.toggle('select-arrow-active');
+                
+                // 确保下拉框显示
+                if (itemsContainer.classList.contains('active')) {
+                    itemsContainer.style.display = 'block';
+                } else {
+                    itemsContainer.style.display = 'none';
+                }
+            });
+
+            // 处理选项点击
+            const items = itemsContainer.querySelectorAll('.select-item');
+            items.forEach(item => {
+                item.addEventListener('click', function() {
+                    // 更新选中项
+                    items.forEach(i => i.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    // 更新显示文本
+                    const value = this.getAttribute('data-value');
+                    let displayText = this.textContent;
+
+                    // 对于有特殊结构的选项，获取纯文本
+                    if (this.querySelector('.language-option') || this.querySelector('.status-option')) {
+                        displayText = this.querySelector('span:last-child').textContent;
+                    }
+
+                    selected.textContent = displayText;
+                    selected.setAttribute('data-value', value);
+
+                    // 关闭下拉框
+                    itemsContainer.classList.remove('active');
+                    itemsContainer.style.display = 'none';
+                    selected.classList.remove('select-arrow-active');
+
+                    // 更新筛选变量
+                    if (select.id === 'language-select') {
+                        currentLanguage = value;
+                    } else if (select.id === 'status-select') {
+                        currentStatus = value;
+                    }
+                });
+            });
+        });
+
+        // 点击页面其他区域关闭所有下拉框
+        document.addEventListener('click', closeAllSelect);
+    }
+
+    function closeAllSelect(elmnt) {
+        const selectItems = document.querySelectorAll('.select-items');
+        const selectSelected = document.querySelectorAll('.select-selected');
+
+        selectItems.forEach(item => {
+            if (elmnt && item !== elmnt.nextElementSibling && elmnt !== item) {
+                item.classList.remove('active');
+                item.style.display = 'none';
+            }
+        });
+
+        selectSelected.forEach(selected => {
+            if (elmnt && selected !== elmnt) {
+                selected.classList.remove('select-arrow-active');
+            }
+        });
+    }
+
     // 新增Toast显示函数
     function showToast(message, type = 'error') {
         const toast = document.createElement('div');
@@ -570,7 +875,7 @@
         const tbody = document.getElementById('submissions-list');
         const paginationDiv = document.getElementById('pagination');
 
-        tbody.innerHTML = '<tr class="loading"><td colspan="7">加载提交记录中...</td></tr>';
+        tbody.innerHTML = '<tr class="loading"><td colspan="8">加载提交记录中...</td></tr>';
         paginationDiv.style.display = 'none';
 
         currentPage = page;
@@ -610,7 +915,7 @@
         if (submissions.length === 0) {
             tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; color: #718096;">
+                        <td colspan="8" style="text-align: center; color: #718096;">
                             暂无提交记录
                         </td>
                     </tr>
@@ -726,33 +1031,53 @@
         const tbody = document.getElementById('submissions-list');
         tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="error">
+                    <td colspan="8" class="error">
                         ${message}
                     </td>
                 </tr>
             `;
     }
 
+    // 弹框关闭事件
     document.getElementById('codeModal').addEventListener('click', (e) => {
         if (e.target === document.getElementById('codeModal')) {
             document.getElementById('codeModal').style.display = 'none';
         }
     });
 
+    // 关闭按钮事件
+    document.querySelector('.close').addEventListener('click', () => {
+        document.getElementById('codeModal').style.display = 'none';
+    });
+
+    // ESC键关闭弹框
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('codeModal').style.display === 'block') {
+            document.getElementById('codeModal').style.display = 'none';
+        }
+    });
+
     document.getElementById('apply-filter').addEventListener('click', () => {
-        currentLanguage = document.getElementById('language-filter').value;
-        currentStatus = document.getElementById('status-filter').value;
         onlyMySubmissions = document.getElementById('my-submissions-only').checked;
         fetchSubmissions(1);
     });
 
     document.getElementById('reset-filter').addEventListener('click', () => {
-        document.getElementById('language-filter').value = '';
-        document.getElementById('status-filter').value = '';
         document.getElementById('my-submissions-only').checked = false;
         currentLanguage = '';
         currentStatus = '';
         onlyMySubmissions = false;
+
+        // 重置下拉框显示
+        document.querySelectorAll('.custom-select').forEach(select => {
+            const selected = select.querySelector('.select-selected');
+            const items = select.querySelectorAll('.select-item');
+
+            items.forEach(item => item.classList.remove('selected'));
+            items[0].classList.add('selected');
+            selected.textContent = items[0].textContent;
+        });
+
         fetchSubmissions(1);
     });
 
@@ -764,6 +1089,7 @@
             }, 1500);
         }
 
+        initCustomSelects();
         fetchSubmissions(1);
     };
 </script>
