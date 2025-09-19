@@ -44,6 +44,10 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 dto.getContent()
         );
         Notification notification=new Notification("回复通知",description,formatted,dto.getReceiveUserId());
+        QueryWrapper<Comment> wrapper=new QueryWrapper<>();
+        wrapper.eq("create_time",dto.getCreateTime());
+        Comment newComment=this.getOne(wrapper);
+        notification.setCommentId(newComment.getId());
         notificationProducer.sendNotification(notification);
     }
 

@@ -17,7 +17,7 @@ import java.util.UUID;
 public class NotificationProducer {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
-    public String sendNotification(Notification notification){
+    public void sendNotification(Notification notification){
         try {
             String correlationId = UUID.randomUUID().toString();
             Message message = MessageBuilder
@@ -25,15 +25,11 @@ public class NotificationProducer {
                     .setReplyTo("replyQueue")
                     .setCorrelationId(correlationId)
                     .build();
-            Message responseMessage = rabbitTemplate.sendAndReceive(
+            rabbitTemplate.send(
                     "notification",
                     "notification.send",
                     message
             );
-            if (responseMessage == null) {
-                throw new RuntimeException("等待响应超时");
-            }
-            return new String(responseMessage.getBody());
         }catch (JsonProcessingException e) {
             throw new RuntimeException("消息序列化失败", e);
         }

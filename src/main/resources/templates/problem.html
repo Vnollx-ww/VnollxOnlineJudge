@@ -1481,7 +1481,7 @@ int main() {
                 </div>
                 <div class="comment-content">${escapeHtml(comment.content)}</div>
                 <div class="comment-actions">
-                    <button class="comment-action reply" data-comment-id="${comment.id}">
+                    <button class="comment-action reply" data-comment-id="${comment.id}" data-reply-user-id="${comment.userId}">
                         <i class="fas fa-reply me-1"></i>回复
                     </button>
                     ${isOwner ? `
@@ -1494,7 +1494,7 @@ int main() {
                     <textarea placeholder="回复 ${comment.username || '匿名用户'}..." rows="3"></textarea>
                     <div class="reply-actions">
                         <button class="reply-btn secondary cancel-reply" data-comment-id="${comment.id}">取消</button>
-                        <button class="reply-btn primary submit-reply" data-comment-id="${comment.id}">回复</button>
+                        <button class="reply-btn primary submit-reply" data-comment-id="${comment.id}" data-reply-user-id="${comment.userId}">回复</button>
                     </div>
                 </div>
                 ${subcommentsHtml}
@@ -1525,7 +1525,7 @@ int main() {
                 </div>
                 <div class="comment-content">${escapeHtml(subcomment.content)}</div>
                 <div class="comment-actions">
-                    <button class="comment-action reply" data-comment-id="${subcomment.id}">
+                    <button class="comment-action reply" data-comment-id="${subcomment.id}" data-reply-user-id="${subcomment.userId}">
                         <i class="fas fa-reply me-1"></i>回复
                     </button>
                     ${isOwner ? `
@@ -1538,7 +1538,7 @@ int main() {
                     <textarea placeholder="回复 ${subcomment.username || '匿名用户'}..." rows="3"></textarea>
                     <div class="reply-actions">
                         <button class="reply-btn secondary cancel-reply" data-comment-id="${subcomment.id}">取消</button>
-                        <button class="reply-btn primary submit-reply" data-comment-id="${subcomment.id}">回复</button>
+                        <button class="reply-btn primary submit-reply" data-comment-id="${subcomment.id}" data-reply-user-id="${subcomment.userId}">回复</button>
                     </div>
                 </div>
             </div>
@@ -1623,6 +1623,10 @@ int main() {
             return;
         }
 
+        // 获取被回复用户的ID
+        const replyButton = replyForm.querySelector('.submit-reply');
+        const receiveUserId = replyButton ? parseInt(replyButton.dataset.replyUserId) : null;
+
         try {
             const response = await fetch('/comment/publish', {
                 method: 'POST',
@@ -1633,6 +1637,7 @@ int main() {
                 body: JSON.stringify({
                     problemId: parseInt(currentProblemId),
                     parentId: parseInt(commentId),
+                    receiveUserId: receiveUserId,
                     username: currentUsername,
                     content: content,
                     createTime: new Date().toISOString()
@@ -1807,10 +1812,50 @@ int main() {
         renderEmojiGrid(emojiData.smileys);
     }
 
+    // 滚动到指定评论
+    function scrollToComment(commentId) {
+        const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+        if (commentElement) {
+            // 添加高亮效果
+            commentElement.style.border = '2px solid #667eea';
+            commentElement.style.borderRadius = '8px';
+            commentElement.style.backgroundColor = 'rgba(102, 126, 234, 0.05)';
+            commentElement.style.transition = 'all 0.3s ease';
+            
+            // 滚动到评论位置
+            commentElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // 3秒后移除高亮效果
+            setTimeout(() => {
+                commentElement.style.border = '';
+                commentElement.style.borderRadius = '';
+                commentElement.style.backgroundColor = '';
+            }, 3000);
+        }
+    }
+
+    // 检查URL参数并滚动到指定评论
+    function checkAndScrollToComment() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const commentId = urlParams.get('commentId');
+        if (commentId) {
+            // 等待评论加载完成后再滚动
+            setTimeout(() => {
+                scrollToComment(commentId);
+            }, 2000); // 给评论系统足够时间加载
+        }
+    }
+
     // 页面加载完成后初始化评论系统
     document.addEventListener('DOMContentLoaded', function() {
         // 延迟初始化，确保其他功能先加载完成
         setTimeout(initCommentSystem, 1000);
+        
+        // 检查是否需要滚动到指定评论
+        checkAndScrollToComment();
     });
 </script>
 </body>

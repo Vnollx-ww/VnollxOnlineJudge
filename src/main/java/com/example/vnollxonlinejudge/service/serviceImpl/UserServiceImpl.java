@@ -287,9 +287,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public List<Integer> getUserIdList() {
+    public List<Integer> getUserIdList(Long uid) {
         QueryWrapper<User> queryWrapper=new QueryWrapper<>();
-        queryWrapper.select("id");
+        queryWrapper.select("id").ne("id",uid);
         return this.listObjs(queryWrapper);
     }
 }

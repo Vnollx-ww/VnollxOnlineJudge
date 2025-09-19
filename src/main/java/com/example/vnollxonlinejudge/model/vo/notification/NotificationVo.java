@@ -10,6 +10,7 @@ public class NotificationVo {
     private String description;
     private String createTime;
     private Boolean is_read;
+    private Long commentId;
     public NotificationVo(){}
     public NotificationVo(Notification notification){
         this.id=notification.getId();
@@ -17,5 +18,6 @@ public class NotificationVo {
         this.title=notification.getTitle();
         this.description=notification.getDescription();
         this.createTime=notification.getCreateTime();
+        this.commentId=notification.getCommentId();
     }
 }

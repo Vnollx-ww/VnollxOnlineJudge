@@ -1024,7 +1024,7 @@
                             </button>
                         </div>
                     </div>
-                    <div class="notification-content">${notification.description}</div>
+                    <div class="notification-content" ${notification.commentId ? `onclick="handleNotificationClick('${notification.description}', ${notification.commentId})" style="cursor: pointer;"` : ''}>${notification.description}</div>
                     <div class="notification-meta">
                         <div class="notification-time">
                             <span>🕒</span>
@@ -1180,6 +1180,20 @@
             currentKeyword = document.getElementById('keywordInput').value.trim();
             currentPage = 1;
             loadNotifications(currentPage);
+        }
+
+        // 处理通知点击
+        function handleNotificationClick(description, commentId) {
+            // 从描述中提取问题ID
+            // 描述格式：用户名 在问题 #问题ID 中回复了你：内容
+            const match = description.match(/在问题 #(\d+)/);
+            if (match && match[1]) {
+                const problemId = match[1];
+                // 跳转到题目详情页面，并传递评论ID参数
+                window.location.href = `/problem/${problemId}?commentId=${commentId}`;
+            } else {
+                showToast('无法解析问题ID', 'error');
+            }
         }
 
         // 清空筛选

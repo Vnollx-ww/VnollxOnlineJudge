@@ -14,6 +14,7 @@ public class Notification {
     private String createTime;
     private Long uid;
     private Boolean isRead;
+    private Long commentId;
     public Notification(){}
     public Notification(String title,String description,String createTime,Long uid){
         this.title=title;

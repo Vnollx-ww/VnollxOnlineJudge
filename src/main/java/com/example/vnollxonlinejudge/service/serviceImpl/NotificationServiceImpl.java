@@ -26,7 +26,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     @Transactional
     public void sendNotification(Notification notification, Long uid) {
         if (!uid.equals(0L)) {
-            List<Notification> notificationList = userService.getUserIdList().stream()
+            List<Notification> notificationList = userService.getUserIdList(uid).stream()
                     .map(id -> new Notification(
                             notification.getTitle(),
                             notification.getDescription(),

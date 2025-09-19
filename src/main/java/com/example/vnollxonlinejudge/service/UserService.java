@@ -24,5 +24,5 @@ public interface UserService {
     Long getCountByAdmin(String keyword,String identity);
     Long getCount();
     List<UserVo> getAllUser();
-    List<Integer> getUserIdList();
+    List<Integer> getUserIdList(Long uid);
 }
