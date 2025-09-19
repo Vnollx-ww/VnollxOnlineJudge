@@ -79,9 +79,8 @@
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
                 <div class="user-avatar-large">
-                    <img th:if="${user.avatar}" th:src="${user.avatar}" alt="用户头像" class="avatar-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div th:unless="${user.avatar}" class="avatar-placeholder" th:style="${user.avatar} ? 'display: none;' : 'display: flex;'">
-                        <i class="fas fa-user"></i>
+                    <div class="avatar-placeholder">
+                        <span th:text="${user.name != null ? T(java.lang.String).valueOf(user.name.charAt(0)).toUpperCase() : 'U'}"></span>
                     </div>
                 </div>
                 <div>

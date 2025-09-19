@@ -576,6 +576,29 @@
             transform: translateY(-1px);
         }
 
+        /* 评论高亮效果 */
+        .comment-highlight {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%) !important;
+            border: 2px solid #f39c12 !important;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.3) !important;
+            animation: highlightPulse 2s ease-in-out;
+        }
+
+        @keyframes highlightPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 0 30px rgba(243, 156, 18, 0.5);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+            }
+        }
+
         .comment-header {
             display: flex;
             justify-content: space-between;
@@ -1363,6 +1386,7 @@ int main() {
     let currentProblemId = null;
     let currentUserId = null;
     let currentUsername = null;
+    let currentReceiveUserId = null; // 当前回复的目标用户ID
 
     // 初始化评论功能
     function initCommentSystem() {
@@ -1383,6 +1407,16 @@ int main() {
         
         // 初始化emoji选择器
         initEmojiPicker();
+        
+        // 检查URL参数中是否有commentId，如果有则自动定位和高亮
+        const urlParams = new URLSearchParams(window.location.search);
+        const commentId = urlParams.get('commentId');
+        if (commentId) {
+            // 延迟执行，确保评论已经加载完成
+            setTimeout(() => {
+                highlightComment(commentId);
+            }, 1000);
+        }
     }
 
     // 绑定评论相关事件
@@ -1396,6 +1430,7 @@ int main() {
                 e.preventDefault();
                 const replyBtn = e.target.classList.contains('reply') ? e.target : e.target.closest('.reply');
                 const commentId = replyBtn.dataset.commentId;
+                currentReceiveUserId = replyBtn.dataset.receiveUserId; // 保存被回复用户的ID
                 showReplyForm(commentId);
             } else if (e.target.classList.contains('delete') || e.target.closest('.delete')) {
                 e.preventDefault();
@@ -1481,7 +1516,7 @@ int main() {
                 </div>
                 <div class="comment-content">${escapeHtml(comment.content)}</div>
                 <div class="comment-actions">
-                    <button class="comment-action reply" data-comment-id="${comment.id}">
+                    <button class="comment-action reply" data-comment-id="${comment.id}" data-receive-user-id="${comment.userId}">
                         <i class="fas fa-reply me-1"></i>回复
                     </button>
                     ${isOwner ? `
@@ -1525,7 +1560,7 @@ int main() {
                 </div>
                 <div class="comment-content">${escapeHtml(subcomment.content)}</div>
                 <div class="comment-actions">
-                    <button class="comment-action reply" data-comment-id="${subcomment.id}">
+                    <button class="comment-action reply" data-comment-id="${subcomment.id}" data-receive-user-id="${subcomment.userId}">
                         <i class="fas fa-reply me-1"></i>回复
                     </button>
                     ${isOwner ? `
@@ -1570,6 +1605,7 @@ int main() {
                 body: JSON.stringify({
                     problemId: parseInt(currentProblemId),
                     parentId: null,
+                    receiveUserId: null, // 顶级评论没有回复特定用户
                     username: currentUsername,
                     content: content,
                     createTime: new Date().toISOString()
@@ -1606,6 +1642,7 @@ int main() {
             replyForm.classList.remove('show');
             replyForm.querySelector('textarea').value = '';
         }
+        currentReceiveUserId = null; // 清空被回复用户ID
     }
 
     // 提交回复
@@ -1633,6 +1670,7 @@ int main() {
                 body: JSON.stringify({
                     problemId: parseInt(currentProblemId),
                     parentId: parseInt(commentId),
+                    receiveUserId: currentReceiveUserId ? parseInt(currentReceiveUserId) : null,
                     username: currentUsername,
                     content: content,
                     createTime: new Date().toISOString()
@@ -1805,6 +1843,42 @@ int main() {
 
         // 初始化显示第一个分类的emoji
         renderEmojiGrid(emojiData.smileys);
+    }
+
+    // 高亮指定评论并滚动到该位置
+    function highlightComment(commentId) {
+        // 尝试查找评论元素（可能是顶级评论或子评论）
+        let commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
+        if (!commentElement) {
+            commentElement = document.querySelector(`.subcomment-item[data-comment-id="${commentId}"]`);
+        }
+        
+        if (commentElement) {
+            // 添加高亮样式
+            commentElement.classList.add('comment-highlight');
+            
+            // 滚动到该评论位置
+            commentElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // 3秒后移除高亮效果
+            setTimeout(() => {
+                commentElement.classList.remove('comment-highlight');
+            }, 3000);
+            
+            console.log('成功高亮评论，commentId:', commentId);
+        } else {
+            console.log('未找到指定的评论，commentId:', commentId);
+            // 如果评论还没加载，可以尝试重新加载评论列表
+            setTimeout(() => {
+                loadComments();
+                setTimeout(() => {
+                    highlightComment(commentId);
+                }, 500);
+            }, 1000);
+        }
     }
 
     // 页面加载完成后初始化评论系统

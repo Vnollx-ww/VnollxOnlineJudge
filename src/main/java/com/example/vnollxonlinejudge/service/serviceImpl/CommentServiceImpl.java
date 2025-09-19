@@ -43,6 +43,13 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 dto.getProblemId(),
                 dto.getContent()
         );
+        System.out.println(dto.getReceiveUserId());
+        System.out.println(dto.getReceiveUserId());
+        System.out.println(dto.getReceiveUserId());
+        System.out.println(dto.getReceiveUserId());
+        System.out.println(dto.getReceiveUserId());
+        System.out.println(dto.getReceiveUserId());
+        System.out.println(dto.getReceiveUserId());
         Notification notification=new Notification("回复通知",description,formatted,dto.getReceiveUserId());
         QueryWrapper<Comment> wrapper=new QueryWrapper<>();
         wrapper.eq("create_time",dto.getCreateTime());

@@ -2031,21 +2031,10 @@
         const isAdmin = identity === 'ADMIN' || identity === 'SUPER_ADMIN';
         const adminMenuItem = isAdmin ? '<a href="admin-user.html" class="user-menu-item">管理员界面</a>' : '';
 
-        // 获取用户头像
-        const userAvatar = currentUser?.avatar || '';
-        let avatarHtml = '';
-        if (userAvatar && userAvatar.trim() !== '') {
-            // 检查是否是base64编码
-            if (userAvatar.startsWith('data:image/')) {
-                avatarHtml = `<img src="${userAvatar}" alt="用户头像" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
-            } else {
-                // 普通URL
-                avatarHtml = `<img src="${userAvatar}" alt="用户头像" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
-            }
-        }
-        // 备用头像
-        const fallbackAvatar = `<div class="user-avatar-placeholder" style="display: ${userAvatar && userAvatar.trim() !== '' ? 'none' : 'flex'};"><i class="fas fa-user"></i></div>`;
-        avatarHtml += fallbackAvatar;
+        // 使用用户名首字母作为头像
+        const userName = localStorage.getItem('name') || 'U';
+        const avatarText = userName.charAt(0).toUpperCase();
+        const avatarHtml = `<div class="user-avatar-placeholder">${avatarText}</div>`;
 
         authButtons.innerHTML = `
     <div class="user-greeting-container">

@@ -79,7 +79,7 @@ public class MinioServiceImpl implements OssService {
             throw new IOException("文件上传失败: " + e.getMessage(), e);
         }
     }
-    
+
 
     private static String generatePublicUrl(String encryptedFileName) {
         return  endpoint+ "/" + "user" + "/" + encryptedFileName;

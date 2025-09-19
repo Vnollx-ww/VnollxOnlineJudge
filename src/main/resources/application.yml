@@ -11,7 +11,7 @@ spring:
       datasource:
         master:
           driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://localhost:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+          url: jdbc:mysql://mysql-master:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
           username: root
           password: rootpassword
           type: com.alibaba.druid.pool.DruidDataSource
@@ -23,7 +23,7 @@ spring:
           type: com.alibaba.druid.pool.DruidDataSource
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
       timeout: 2000
       jedis:
@@ -32,7 +32,7 @@ spring:
           max-idle: 10
           min-idle: 5
   rabbitmq:
-    host: localhost
+    host: rabbitmq
     port: 5672
     username: admin
     password: admin
@@ -54,7 +54,6 @@ server:
       charset: UTF-8
       enabled: true
       force: true
-
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
@@ -84,4 +83,3 @@ sa-token:
   token-style: uuid
   # 是否输出操作日志
   is-log: true
-# application.yml
