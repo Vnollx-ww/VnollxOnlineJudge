@@ -441,6 +441,122 @@
             outline: none;
         }
 
+        /* Emoji选择器样式 */
+        .comment-input-container {
+            position: relative;
+        }
+
+        .emoji-picker-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .emoji-trigger {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            background: none;
+            border: none;
+            color: #718096;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            z-index: 10;
+            font-size: 18px;
+        }
+
+        .emoji-trigger:hover {
+            background: #f7fafc;
+            color: #667eea;
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            width: 320px;
+            max-height: 300px;
+            display: none;
+            z-index: 1000;
+            margin-bottom: 8px;
+        }
+
+        .emoji-picker.show {
+            display: block;
+        }
+
+        .emoji-categories {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .emoji-category {
+            background: none;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .emoji-category:hover {
+            background: #f7fafc;
+        }
+
+        .emoji-category.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .emoji-item {
+            background: none;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .emoji-item:hover {
+            background: #f7fafc;
+            transform: scale(1.1);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .emoji-picker {
+                width: 280px;
+                right: -10px;
+            }
+
+            .emoji-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+
         .comment-list {
             max-height: 600px;
             overflow-y: auto;
@@ -489,6 +605,17 @@
         .comment-author .name {
             font-weight: 600;
             color: #2d3748;
+        }
+
+        .reply-to {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+        }
+
+        .reply-username {
+            color: #667eea;
+            font-weight: 500;
         }
 
         .comment-time {
@@ -776,7 +903,28 @@
             <div class="comment-form mb-4">
                 <div class="mb-3">
                     <label for="commentContent" class="form-label">发表评论</label>
-                    <textarea id="commentContent" class="form-control" rows="4" placeholder="分享你的想法、解题思路或遇到的问题..."></textarea>
+                    <div class="comment-input-container">
+                        <textarea id="commentContent" class="form-control" rows="4" placeholder="分享你的想法、解题思路或遇到的问题..."></textarea>
+                        <button type="button" class="emoji-trigger" id="emojiTrigger">
+                            <i class="fas fa-smile"></i>
+                        </button>
+                    </div>
+                    <div class="emoji-picker-container">
+                        <div class="emoji-picker" id="emojiPicker">
+                            <div class="emoji-categories">
+                                <button class="emoji-category active" data-category="smileys">😀</button>
+                                <button class="emoji-category" data-category="people">👋</button>
+                                <button class="emoji-category" data-category="animals">🐶</button>
+                                <button class="emoji-category" data-category="food">🍎</button>
+                                <button class="emoji-category" data-category="travel">🚗</button>
+                                <button class="emoji-category" data-category="objects">📱</button>
+                                <button class="emoji-category" data-category="symbols">❤️</button>
+                            </div>
+                            <div class="emoji-grid" id="emojiGrid">
+                                <!-- Emoji列表将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="d-flex justify-content-end">
                     <button type="button" class="btn btn-primary" id="submitComment">
@@ -1232,6 +1380,9 @@ int main() {
         
         // 绑定事件
         bindCommentEvents();
+        
+        // 初始化emoji选择器
+        initEmojiPicker();
     }
 
     // 绑定评论相关事件
@@ -1304,11 +1455,12 @@ int main() {
         commentList.innerHTML = comments.map(comment => renderCommentItem(comment)).join('');
     }
 
-    // 渲染单个评论项
+    // 渲染单个评论项（顶级评论）
     function renderCommentItem(comment) {
         const isOwner = comment.userId == currentUserId;
         const avatarText = comment.username ? comment.username.charAt(0).toUpperCase() : 'U';
         
+        // 渲染子评论
         let subcommentsHtml = '';
         if (comment.subcommentList && comment.subcommentList.length > 0) {
             subcommentsHtml = `
@@ -1355,12 +1507,19 @@ int main() {
         const isOwner = subcomment.userId == currentUserId;
         const avatarText = subcomment.username ? subcomment.username.charAt(0).toUpperCase() : 'U';
         
+        // 构建回复显示文本
+        let replyText = '';
+        if (subcomment.parentId && subcomment.parentUsername) {
+            replyText = `<span class="reply-to">回复 <span class="reply-username">@${subcomment.parentUsername}</span></span>`;
+        }
+        
         return `
             <div class="subcomment-item" data-comment-id="${subcomment.id}">
                 <div class="comment-header">
                     <div class="comment-author">
                         <div class="avatar">${avatarText}</div>
                         <span class="name">${subcomment.username || '匿名用户'}</span>
+                        ${replyText}
                     </div>
                     <div class="comment-time">${formatCommentTime(subcomment.createTime)}</div>
                 </div>
@@ -1385,6 +1544,7 @@ int main() {
             </div>
         `;
     }
+
 
     // 发表评论
     async function submitComment() {
@@ -1555,6 +1715,96 @@ int main() {
         } else {
             return date.toLocaleDateString();
         }
+    }
+
+    // Emoji选择器功能
+    function initEmojiPicker() {
+        const emojiTrigger = document.getElementById('emojiTrigger');
+        const emojiPicker = document.getElementById('emojiPicker');
+        const emojiGrid = document.getElementById('emojiGrid');
+        const commentTextarea = document.getElementById('commentContent');
+
+        // Emoji数据
+        const emojiData = {
+            smileys: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐'],
+            people: ['👶', '🧒', '👦', '👧', '🧑', '👨', '👩', '🧓', '👴', '👵', '👤', '👥', '🫂', '👋', '🤚', '🖐', '✋', '🖖', '👌', '🤏', '✌', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🦷', '🦴', '👀', '👁', '👅', '👄', '💋', '🩸'],
+            animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🦍', '🦧', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🦄', '🐎', '🦓', '🦌', '🐂', '🐃', '🐄', '🐪', '🐫', '🦙', '🦒', '🐘', '🦏', '🦛', '🐐', '🐑', '🐏', '🐚', '🐌', '🦋', '🐛', '🐜', '🐝', '🐞', '🦗', '🕷', '🕸', '🦂', '🦟', '🦠', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆'],
+            food: ['🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶', '🫒', '🌽', '🥕', '🫑', '🥔', '🍠', '🥐', '🥖', '🍞', '🥨', '🥯', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🫓', '🥙', '🌮', '🌯', '🫔', '🥗', '🥘', '🫕', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯'],
+            travel: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎', '🚓', '🚑', '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍', '🛵', '🚲', '🛴', '🛹', '🛼', '🚁', '✈', '🛩', '🛫', '🛬', '🪂', '💺', '🚀', '🛸', '🚉', '🚊', '🚝', '🚞', '🚋', '🚃', '🚋', '🚞', '🚝', '🚄', '🚅', '🚈', '🚂', '🚆', '🚇', '🚊', '🚉', '✈', '🛫', '🛬', '🛩', '💺', '🛰', '🚀', '🛸', '🚁', '🛶', '⛵', '🚤', '🛥', '🛳', '⛴', '🚢', '⚓', '🚧', '⛽', '🚨', '🚥', '🚦', '🛑', '🚏', '🗺', '🗿', '🗽', '🗼', '🏰', '🏯', '🏟', '🎡', '🎢', '🎠', '⛲', '⛱', '🏖', '🏝', '🏔', '⛰', '🌋', '🗻', '🏕', '⛺', '🛖', '🏠', '🏡', '🏘', '🏚', '🏗', '🏭', '🏢', '🏬', '🏣', '🏤', '🏥', '🏦', '🏨', '🏪', '🏫', '🏩', '💒', '🏛', '⛪', '🕌', '🛕', '🕍', '🕋', '⛩', '🛤', '🛣', '🗾', '🎑', '🏞', '🌅', '🌄', '🌠', '🎇', '🎆', '🌇', '🌆', '🏙', '🌃', '🌌', '🌉', '🌁'],
+            objects: ['⌚', '📱', '📲', '💻', '⌨', '🖥', '🖨', '🖱', '🖲', '🕹', '🗜', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽', '🎞', '📞', '☎', '📟', '📠', '📺', '📻', '🎙', '🎚', '🎛', '🧭', '⏱', '⏲', '⏰', '🕰', '⌛', '⏳', '📡', '🔋', '🔌', '💡', '🔦', '🕯', '🪔', '🧯', '🛢', '💸', '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎', '⚖', '🪜', '🧰', '🔧', '🔨', '⚒', '🛠', '⛏', '🪚', '🔩', '⚙', '🪤', '🧱', '⛓', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡', '⚔', '🛡', '🚬', '⚰', '🪦', '⚱', '🏺', '🔮', '📿', '🧿', '💈', '⚗', '🔭', '🔬', '🕳', '🩹', '🩺', '💊', '💉', '🧬', '🦠', '🧫', '🧪', '🌡', '🧹', '🧺', '🧻', '🚽', '🚰', '🚿', '🛁', '🛀', '🧼', '🪥', '🪒', '🧽', '🧴', '🛎', '🔑', '🗝', '🚪', '🪑', '🛏', '🛋', '🪞', '🪟', '🛍', '🛒', '🎁', '🎈', '🎏', '🎀', '🪄', '🪅', '🎊', '🎉', '🎎', '🏮', '🪔', '🧧', '✉', '📧', '📨', '📩', '📤', '📥', '📦', '📫', '📪', '📬', '📭', '📮', '🗳', '✏', '✒', '🖋', '🖊', '🖌', '🖍', '📝', '💼', '📁', '📂', '🗂', '📅', '📆', '🗒', '🗓', '📇', '📈', '📉', '📊', '📋', '📌', '📍', '📎', '🖇', '📏', '📐', '✂', '🗃', '🗄', '🗑', '🔒', '🔓', '🔏', '🔐', '🔑', '🗝', '🔨', '🪓', '⛏', '⚒', '🛠', '🗡', '⚔', '🔫', '🏹', '🛡', '🔧', '🪚', '🔩', '⚙', '🪤', '🧰', '⚖', '🦽', '🦼', '🛢', '🛞', '⚗', '🧪', '🧫', '🧬', '🦠', '🧭', '🪜', '🧲', '🧰', '🪚', '🔧', '🔨', '⚒', '🛠', '⛏', '🪚', '🔩', '⚙', '🪤', '🧱', '⛓', '🧲', '🔫', '💣', '🧨', '🪓', '🔪', '🗡', '⚔', '🛡', '🚬', '⚰', '🪦', '⚱', '🏺', '🔮', '📿', '🧿', '💈', '⚗', '🔭', '🔬', '🕳', '🩹', '🩺', '💊', '💉', '🧬', '🦠', '🧫', '🧪', '🌡', '🧹', '🧺', '🧻', '🚽', '🚰', '🚿', '🛁', '🛀', '🧼', '🪥', '🪒', '🧽', '🧴', '🛎', '🔑', '🗝', '🚪', '🪑', '🛏', '🛋', '🪞', '🪟', '🛍', '🛒', '🎁', '🎈', '🎏', '🎀', '🪄', '🪅', '🎊', '🎉', '🎎', '🏮', '🪔', '🧧'],
+            symbols: ['❤', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮', '✝', '☪', '🕉', '☸', '✡', '🔯', '🕎', '☯', '☦', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛', '🉑', '☢', '☣', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷', '✴', '🆚', '💮', '🉐', '㊙', '㊗', '🈴', '🈵', '🈹', '🈲', '🅰', '🅱', '🆎', '🅾', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼', '⁉', '🔅', '🔆', '〽', '⚠', '🚸', '🔱', '⚜', '🔰', '♻', '✅', '🈯', '💹', '❇', '✳', '❎', '🌐', '💠', 'Ⓜ', '🌀', '💤', '🏧', '🚾', '♿', '🅿', '🈳', '🈂', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '🚻', '🚮', '🎦', '📶', '🈁', '🔣', 'ℹ', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
+        };
+
+        // 切换emoji选择器显示/隐藏
+        emojiTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiPicker.classList.toggle('show');
+        });
+
+        // 点击其他地方关闭emoji选择器
+        document.addEventListener('click', (e) => {
+            if (!emojiPicker.contains(e.target) && !emojiTrigger.contains(e.target)) {
+                emojiPicker.classList.remove('show');
+            }
+        });
+
+        // 切换emoji分类
+        document.querySelectorAll('.emoji-category').forEach(category => {
+            category.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // 更新激活状态
+                document.querySelectorAll('.emoji-category').forEach(cat => cat.classList.remove('active'));
+                category.classList.add('active');
+                
+                // 显示对应分类的emoji
+                const categoryName = category.dataset.category;
+                renderEmojiGrid(emojiData[categoryName]);
+            });
+        });
+
+        // 渲染emoji网格
+        function renderEmojiGrid(emojis) {
+            emojiGrid.innerHTML = '';
+            emojis.forEach(emoji => {
+                const emojiButton = document.createElement('button');
+                emojiButton.className = 'emoji-item';
+                emojiButton.textContent = emoji;
+                emojiButton.addEventListener('click', () => {
+                    insertEmoji(emoji);
+                });
+                emojiGrid.appendChild(emojiButton);
+            });
+        }
+
+        // 插入emoji到文本区域
+        function insertEmoji(emoji) {
+            const textarea = commentTextarea;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const before = text.substring(0, start);
+            const after = text.substring(end, text.length);
+            
+            // 插入emoji到光标位置
+            textarea.value = before + emoji + after;
+            
+            // 设置光标位置到emoji后面
+            const newPosition = start + emoji.length;
+            textarea.selectionStart = textarea.selectionEnd = newPosition;
+            
+            // 聚焦到文本框
+            textarea.focus();
+            
+            // 关闭emoji选择器
+            emojiPicker.classList.remove('show');
+            
+            // 触发input事件，确保其他监听器能检测到变化
+            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // 初始化显示第一个分类的emoji
+        renderEmojiGrid(emojiData.smileys);
     }
 
     // 页面加载完成后初始化评论系统

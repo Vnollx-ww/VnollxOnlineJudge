@@ -17,4 +17,5 @@ public class UpdateUserInfoDTO {
 
     private String option;
     private String verifyCode;
+    private String signature;
 }

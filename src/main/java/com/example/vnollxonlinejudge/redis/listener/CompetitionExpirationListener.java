@@ -22,7 +22,7 @@ import java.util.Map;
 
 
 public class CompetitionExpirationListener extends KeyExpirationEventMessageListener {
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final Logger logger = LoggerFactory.getLogger(CompetitionExpirationListener.class);
     @Autowired
     private JedisPool jedisPool;
     @Autowired

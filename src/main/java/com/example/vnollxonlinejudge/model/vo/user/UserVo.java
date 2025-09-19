@@ -12,6 +12,8 @@ public class UserVo {
     private Integer submitCount;
     private Integer passCount;
     private Integer penaltyTime;
+    private String avatar;
+    private String signature;
     // constructors
     public UserVo() {}
 
@@ -23,6 +25,8 @@ public class UserVo {
         this.submitCount=user.getSubmitCount();
         this.passCount=user.getPassCount();
         this.penaltyTime=user.getPenaltyTime();
+        this.avatar=user.getAvatar();
+        this.signature=user.getSignature();
     }
 
 }

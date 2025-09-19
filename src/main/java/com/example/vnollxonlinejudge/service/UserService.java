@@ -15,7 +15,7 @@ public interface UserService {
     List<UserSolvedProblem> getSolveProblem(Long uid);
     List<UserVo> getAllUserByAdmin(int pageNum, int pageSize, String keyword, Long uid);
     void updatePassword(String old_password,String password,Long uid);
-    void updateUserInfo(String email,String name,Long uid,String option,String verifyCode);
+    void updateUserInfo(String email,String name, String signature,Long uid,String option,String verifyCode);
     void updateSubmitCount(Long uid,int ok);
     //!!! ADMIN
     void deleteUserByAdmin(Long id,String currentIdentity);
@@ -24,4 +24,5 @@ public interface UserService {
     Long getCountByAdmin(String keyword,String identity);
     Long getCount();
     List<UserVo> getAllUser();
+    List<Integer> getUserIdList();
 }

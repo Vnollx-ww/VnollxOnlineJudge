@@ -159,7 +159,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     //@DS("master")
     @Override
     public void updateUserInfo(
-            String email, String name, Long uid,
+            String email, String name, String signature,Long uid,
             String option,String verifyCode
     ) {
         String key=email+":update";
@@ -175,6 +175,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setId(uid);
         user.setEmail(email);
         user.setName(name);
+        user.setSignature(signature);
         updateById(user);
         redisService.deleteKey(key);
     }
@@ -283,5 +284,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .stream()
                 .map(UserVo::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Integer> getUserIdList() {
+        QueryWrapper<User> queryWrapper=new QueryWrapper<>();
+        queryWrapper.select("id");
+        return this.listObjs(queryWrapper);
     }
 }

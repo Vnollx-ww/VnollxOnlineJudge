@@ -9,12 +9,12 @@ public class NotificationVo {
     private String title;
     private String description;
     private String createTime;
-    private String author;
+    private Boolean is_read;
     public NotificationVo(){}
     public NotificationVo(Notification notification){
         this.id=notification.getId();
+        this.is_read=notification.getIsRead();
         this.title=notification.getTitle();
-        this.author=notification.getAuthor();
         this.description=notification.getDescription();
         this.createTime=notification.getCreateTime();
     }

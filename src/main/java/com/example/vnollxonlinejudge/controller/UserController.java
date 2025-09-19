@@ -47,7 +47,10 @@ public class UserController {
 
     @PostMapping("/register")
     public Result<Void> register(@Valid @RequestBody RegisterDTO request) {
-        userService.register(request.getName(), request.getPassword(), request.getEmail(), request.getVerifyCode());
+        userService.register(
+                request.getName(), request.getPassword(),
+                request.getEmail(), request.getVerifyCode()
+        );
         return Result.Success("注册成功");
     }
     @GetMapping("/profile")
@@ -73,7 +76,11 @@ public class UserController {
     public Result<Void> updateUserInfo(@Valid @RequestBody UpdateUserInfoDTO request,
                                        HttpServletRequest httpRequest) {
         Long userId = getCurrentUserId(httpRequest);
-        userService.updateUserInfo(request.getEmail(), request.getName(), userId, request.getOption(),request.getVerifyCode());
+        userService.updateUserInfo(
+                request.getEmail(), request.getName(),
+                request.getSignature(),userId, request.getOption(),
+                request.getVerifyCode()
+        );
         return Result.Success("修改个人信息成功");
     }
     @GetMapping("/list")

@@ -1196,6 +1196,78 @@
         .forgot-password-link a:hover::after {
             width: 100%;
         }
+
+        /* 通知图标样式 */
+        .notification-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-right: 1rem;
+            padding-right: 12px;
+            overflow: visible;
+        }
+
+        .notification-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: visible;
+        }
+
+        .notification-link:hover {
+            color: var(--primary);
+            background: rgba(26, 115, 232, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .notification-bell {
+            font-size: 1.2rem;
+            margin-right: 0.3rem;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 2px;
+            right: -2px;
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            animation: pulse-badge 2s infinite;
+            padding: 0 4px;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: visible;
+        }
+
+        @keyframes pulse-badge {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .notification-badge.hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -1210,6 +1282,13 @@
             <a href="competition.html">比赛</a>
             <a href="notification.html">使用指南</a>
             <a href="about.html">关于</a>
+            <!-- 通知图标 -->
+            <div class="notification-icon" id="notificationIcon" style="display: none;">
+                <a href="notification-list.html" class="notification-link">
+                    <span class="notification-bell">📧</span>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </a>
+            </div>
         </div>
         <div class="auth-buttons" id="authButtons">
             <a href="#" id="loginBtn">登录</a>
@@ -1929,6 +2008,10 @@
     </div>
 `;
 
+        // 显示通知图标并获取未读数量
+        showNotificationIcon();
+        getUnreadNotificationCount();
+
         // 使用事件委托来处理动态添加的退出按钮
         document.addEventListener('click', function(e) {
             if (e.target && e.target.id === 'logoutBtn') {
@@ -1944,6 +2027,73 @@
                 <a href="#" id="loginBtn">登录</a>
                 <a href="#" id="registerBtn">注册</a>
             `;
+        // 隐藏通知图标
+        hideNotificationIcon();
+    }
+
+    // 显示通知图标
+    function showNotificationIcon() {
+        const notificationIcon = document.getElementById('notificationIcon');
+        if (notificationIcon) {
+            notificationIcon.style.display = 'flex';
+        }
+    }
+
+    // 隐藏通知图标
+    function hideNotificationIcon() {
+        const notificationIcon = document.getElementById('notificationIcon');
+        if (notificationIcon) {
+            notificationIcon.style.display = 'none';
+        }
+    }
+
+    // 获取未读通知数量
+    async function getUnreadNotificationCount() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch('/notification/count?status=false', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            if (data.code === 200) {
+                const count = data.data;
+                updateNotificationBadge(count);
+            }
+        } catch (error) {
+            console.log('获取未读通知数量失败', error);
+        }
+    }
+
+    // 更新通知徽章
+    function updateNotificationBadge(count) {
+        const badge = document.getElementById('notificationBadge');
+        if (badge) {
+            if (count > 0) {
+                if (count > 99) {
+                    badge.textContent = '99+';
+                    badge.style.minWidth = '26px';
+                    badge.style.width = '26px';
+                } else if (count > 9) {
+                    badge.textContent = count;
+                    badge.style.minWidth = '24px';
+                    badge.style.width = '24px';
+                } else {
+                    badge.textContent = count;
+                    badge.style.minWidth = '20px';
+                    badge.style.width = '20px';
+                }
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
     }
 
     function handleLogout() {

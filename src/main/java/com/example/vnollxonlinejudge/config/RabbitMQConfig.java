@@ -37,6 +37,11 @@ public class RabbitMQConfig {
         return new Queue("submissionQueue", true, false, false, queueArgs);
     }
     @Bean
+    public Queue notificationQueue() {
+        Map<String, Object> queueArgs = new HashMap<>();
+        return new Queue("notificationQueue", true, false, false, queueArgs);
+    }
+    @Bean
     public Queue replyQueue() {
         return new Queue("replyQueue", true);
     }
@@ -46,10 +51,20 @@ public class RabbitMQConfig {
         return new DirectExchange("judge");
     }
     @Bean
+    public DirectExchange notificationExchange() {
+        return new DirectExchange("notification");
+    }
+    @Bean
     public Binding binding(Queue submissionQueue, DirectExchange submissionExchange) {
         return BindingBuilder.bind(submissionQueue)
                 .to(submissionExchange)
                 .with("judge.submit");
+    }
+    @Bean
+    public Binding notificationbinding(Queue notificationQueue, DirectExchange notificationExchange) {
+        return BindingBuilder.bind(notificationQueue)
+                .to(notificationExchange)
+                .with("notification.send");
     }
     @Bean
     public ConnectionFactory connectionFactory() {

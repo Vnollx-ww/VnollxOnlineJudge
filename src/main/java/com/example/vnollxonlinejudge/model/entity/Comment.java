@@ -16,5 +16,4 @@ public class Comment {
     private Long problemId;
     private Long parentId;
     private Long userId;
-
 }

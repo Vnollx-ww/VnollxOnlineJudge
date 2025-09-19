@@ -16,6 +16,8 @@ public class CommentInfoVO {
     private String username;
     private String createTime;
     private Long userId;
+    private Long parentId;
+    private String parentUsername; // 父评论的用户名
     List<CommentInfoVO> SubcommentList;
     public CommentInfoVO(){}
     public CommentInfoVO(Comment comment){
@@ -24,6 +26,7 @@ public class CommentInfoVO {
         this.setUsername(comment.getUsername());
         this.setCreateTime(comment.getCreateTime());
         this.setUserId(comment.getUserId());
+        this.setParentId(comment.getParentId());
         this.setSubcommentList(new ArrayList<>()); // 初始化空列表
     }
 }

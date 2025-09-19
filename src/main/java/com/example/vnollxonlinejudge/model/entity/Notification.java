@@ -12,5 +12,13 @@ public class Notification {
     private String title;
     private String description;
     private String createTime;
-    private String author;
+    private Long uid;
+    private Boolean isRead;
+    public Notification(){}
+    public Notification(String title,String description,String createTime,Long uid){
+        this.title=title;
+        this.description=description;
+        this.createTime=createTime;
+        this.uid=uid;
+    }
 }

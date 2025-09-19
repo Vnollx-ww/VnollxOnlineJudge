@@ -138,6 +138,7 @@
             transform: translateX(5px);
         }
 
+
         .nav-link i {
             width: 25px;
             margin-right: 1rem;
@@ -289,6 +290,8 @@
                     <div class="form-group">
                         <label>用户名</label>
                         <input type="text" id="username" value="当前用户名" required>
+                        <label>个性签名</label>
+                        <input type="text" id="signature" value="个性签名" required>
                     </div>
                     <button type="submit" class="btn">保存更改</button>
                 </form>
@@ -412,9 +415,7 @@
         if (!token) return showToast('请先登录', 'error');
 
         const name = document.getElementById('username').value;
-        if (name === userData.name) {
-            return showToast('新用户名不能与旧用户名相同', 'error');
-        }
+        const signature = document.getElementById('signature').value;
         try {
             const option="name";
             const email=userData.email;
@@ -424,15 +425,16 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({email,name,option})
+                body: JSON.stringify({email,name,option,signature})
 
             });
 
             const result = await response.json();
             if (result.code === 200) {
-                showToast('用户名更新成功', 'success');
+                showToast('用户信息更新成功', 'success');
                 userData.name = name;
                 localStorage.setItem('name',name)
+                localStorage.setItem('signature',signature)
             } else {
                 showToast(result.msg || '更新失败', 'error');
             }

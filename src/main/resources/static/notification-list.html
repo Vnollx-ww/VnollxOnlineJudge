@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的通知 - VnollxOnlineJudge</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --secondary: #4a90e2;
+            --accent: #66bb6a;
+            --text: #2d3748;
+            --bg: #f8fafc;
+            --light-blue: rgba(26, 115, 232, 0.05);
+            --danger: #ff4444;
+            --success: #66bb6a;
+            --warning: #ffb703;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+        }
+
+        body {
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+        }
+
+        /* 导航栏 */
+        header {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            border-bottom: 1px solid rgba(26, 115, 232, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo::before {
+            content: "⚡";
+            font-size: 1.4em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+            background: rgba(26, 115, 232, 0.05);
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            background: rgba(26, 115, 232, 0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-greeting {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* 主要内容区域 */
+        .main-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .back-button {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+        }
+
+        .back-button:hover {
+            transform: translateY(-50%) translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.4);
+        }
+
+        .publish-button {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 8px rgba(102, 187, 106, 0.3);
+        }
+
+        .publish-button:hover {
+            transform: translateY(-50%) translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 187, 106, 0.4);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        /* 筛选和搜索区域 */
+        .filter-section {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(26, 115, 232, 0.1);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .filter-input {
+            padding: 0.8rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        /* 美化后的下拉框样式 */
+        .custom-select {
+            position: relative;
+            min-width: 180px;
+            z-index: 1000;
+        }
+
+        .select-selected {
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            color: var(--primary);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 2px solid rgba(26, 115, 232, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.1);
+        }
+
+        .select-selected:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+            border-color: rgba(26, 115, 232, 0.3);
+        }
+
+        .select-selected:after {
+            content: "\f078";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .select-selected.select-arrow-active:after {
+            transform: rotate(180deg);
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: white;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1001;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(26, 115, 232, 0.2);
+            transform: translateY(-10px);
+            opacity: 0;
+            visibility: hidden;
+            display: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .select-items.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+            display: block;
+        }
+
+        .select-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(26, 115, 232, 0.1);
+        }
+
+        .select-item:last-child {
+            border-bottom: none;
+        }
+
+        .select-item:hover {
+            background-color: rgba(26, 115, 232, 0.1);
+            color: var(--primary);
+        }
+
+        .select-item.selected {
+            background-color: rgba(26, 115, 232, 0.15);
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .status-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-indicator.unread {
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.read {
+            background: #66bb6a;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(26, 115, 232, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: var(--text);
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+        }
+
+        /* 通知列表 */
+        .notifications-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(26, 115, 232, 0.1);
+            overflow: hidden;
+        }
+
+        .notification-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+
+        .notification-item:hover {
+            background: #f8fafc;
+        }
+
+        .notification-item.unread {
+            background: linear-gradient(135deg, rgba(26, 115, 232, 0.02) 0%, rgba(26, 115, 232, 0.05) 100%);
+            border-left: 4px solid var(--primary);
+        }
+
+        .notification-item.unread::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(-50%) scale(1.2);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(-50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.8rem;
+        }
+
+        .notification-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            flex: 1;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .notification-item:hover .notification-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mark-read-btn {
+            background: var(--success);
+            color: white;
+        }
+
+        .mark-read-btn:hover {
+            background: #4caf50;
+        }
+
+        .delete-btn {
+            background: var(--danger);
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .notification-content {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .notification-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        .notification-time {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .notification-status {
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-read {
+            background: #e8f5e9;
+            color: var(--success);
+        }
+
+        .status-unread {
+            background: #e3f2fd;
+            color: var(--primary);
+        }
+
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            padding: 1rem;
+        }
+
+        .pagination-btn {
+            padding: 0.6rem 1rem;
+            border: 2px solid #e2e8f0;
+            background: white;
+            color: var(--text);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .pagination-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin: 0 1rem;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #6b7280;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .empty-description {
+            font-size: 1rem;
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast样式 */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            opacity: 0;
+            transform: translateY(20px) translateX(-50%);
+            transition: all 0.3s ease;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0) translateX(-50%);
+        }
+
+        .toast-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid var(--success);
+        }
+
+        .toast-error {
+            background-color: #ffebee;
+            color: #b71c1c;
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast-info {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+            border-left: 4px solid var(--primary);
+        }
+
+        .toast::before {
+            font-size: 1.2em;
+        }
+
+        .toast-success::before {
+            content: "✅";
+        }
+
+        .toast-error::before {
+            content: "❌";
+        }
+
+        .toast-info::before {
+            content: "ℹ️";
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .notification-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .notification-actions {
+                opacity: 1;
+                align-self: flex-end;
+            }
+
+            .pagination {
+                flex-wrap: wrap;
+            }
+
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="page-header">
+            <a href="index.html" class="back-button">
+                <span>←</span>
+                <span>返回主页</span>
+            </a>
+            <h1 class="page-title">我的通知</h1>
+            <p class="page-subtitle">查看和管理您的通知消息</p>
+            <a href="admin-notification.html" class="publish-button" id="publishButton" style="display: none;">
+                <span>📝</span>
+                <span>发布通知</span>
+            </a>
+        </div>
+
+        <!-- 筛选和搜索区域 -->
+        <div class="filter-section">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-eye"></i> 阅读状态：
+                    </label>
+                    <div class="custom-select" id="status-select">
+                        <div class="select-selected">全部</div>
+                        <div class="select-items">
+                            <div class="select-item selected" data-value="">全部</div>
+                            <div class="select-item" data-value="false">
+                                <span class="status-option">
+                                    <span class="status-indicator unread"></span>
+                                    <span>未读</span>
+                                </span>
+                            </div>
+                            <div class="select-item" data-value="true">
+                                <span class="status-option">
+                                    <span class="status-indicator read"></span>
+                                    <span>已读</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">搜索关键词</label>
+                    <input type="text" class="filter-input" id="keywordInput" placeholder="搜索通知标题或内容">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">&nbsp;</label>
+                    <button class="btn btn-primary" id="searchBtn">搜索</button>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">&nbsp;</label>
+                    <button class="btn btn-secondary" id="clearBtn">清空</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通知列表 -->
+        <div class="notifications-container" id="notificationsContainer">
+            <div class="loading" id="loadingState">
+                <div class="loading-spinner"></div>
+                <div>加载中...</div>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <button class="pagination-btn" id="prevBtn">上一页</button>
+            <div class="pagination-info" id="paginationInfo">第 1 页，共 1 页</div>
+            <button class="pagination-btn" id="nextBtn">下一页</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let pageSize = 10;
+        let totalPages = 1;
+        let currentStatus = '';
+        let currentKeyword = '';
+
+        // 检查用户权限并显示发布通知按钮
+        function checkUserPermission() {
+            const identity = localStorage.getItem('identity');
+            
+            // 如果是管理员，显示发布通知按钮
+            if (identity === 'ADMIN' || identity === 'SUPER_ADMIN') {
+                const publishButton = document.getElementById('publishButton');
+                if (publishButton) {
+                    publishButton.style.display = 'inline-flex';
+                }
+            }
+        }
+
+        // 自定义下拉框功能
+        function initCustomSelects() {
+            const customSelects = document.querySelectorAll('.custom-select');
+
+            customSelects.forEach(select => {
+                const selected = select.querySelector('.select-selected');
+                const itemsContainer = select.querySelector('.select-items');
+
+                // 点击选中区域切换显示/隐藏
+                selected.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    closeAllSelect(this);
+                    itemsContainer.classList.toggle('active');
+                    this.classList.toggle('select-arrow-active');
+                    
+                    // 确保下拉框显示
+                    if (itemsContainer.classList.contains('active')) {
+                        itemsContainer.style.display = 'block';
+                    } else {
+                        itemsContainer.style.display = 'none';
+                    }
+                });
+
+                // 处理选项点击
+                const items = itemsContainer.querySelectorAll('.select-item');
+                items.forEach(item => {
+                    item.addEventListener('click', function() {
+                        // 更新选中项
+                        items.forEach(i => i.classList.remove('selected'));
+                        this.classList.add('selected');
+
+                        // 更新显示文本
+                        const value = this.getAttribute('data-value');
+                        let displayText = this.textContent;
+                        
+                        // 如果包含图标，只显示文字部分
+                        const textSpan = this.querySelector('span:last-child');
+                        if (textSpan) {
+                            displayText = textSpan.textContent;
+                        }
+
+                        selected.textContent = displayText;
+                        selected.setAttribute('data-value', value);
+
+                        // 关闭下拉框
+                        itemsContainer.classList.remove('active');
+                        itemsContainer.style.display = 'none';
+                        selected.classList.remove('select-arrow-active');
+
+                        // 更新筛选变量
+                        if (select.id === 'status-select') {
+                            currentStatus = value;
+                        }
+                    });
+                });
+            });
+        }
+
+        function closeAllSelect(elmnt) {
+            const selectItems = document.querySelectorAll('.select-items');
+            const selectSelected = document.querySelectorAll('.select-selected');
+
+            selectItems.forEach(item => {
+                if (elmnt && item !== elmnt.nextElementSibling && elmnt !== item) {
+                    item.classList.remove('active');
+                    item.style.display = 'none';
+                }
+            });
+
+            selectSelected.forEach(selected => {
+                if (elmnt && selected !== elmnt) {
+                    selected.classList.remove('select-arrow-active');
+                }
+            });
+        }
+
+        // 显示Toast
+        function showToast(message, type = 'info', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
+        // 格式化时间
+        function formatTime(timeString) {
+            const date = new Date(timeString);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) { // 1分钟内
+                return '刚刚';
+            } else if (diff < 3600000) { // 1小时内
+                return Math.floor(diff / 60000) + '分钟前';
+            } else if (diff < 86400000) { // 1天内
+                return Math.floor(diff / 3600000) + '小时前';
+            } else if (diff < 604800000) { // 1周内
+                return Math.floor(diff / 86400000) + '天前';
+            } else {
+                return date.toLocaleDateString('zh-CN');
+            }
+        }
+
+        // 加载通知列表
+        async function loadNotifications(page = 1) {
+            const container = document.getElementById('notificationsContainer');
+            const pagination = document.getElementById('pagination');
+
+            // 显示加载状态
+            container.innerHTML = `
+                <div class="loading" id="loadingState">
+                    <div class="loading-spinner"></div>
+                    <div>加载中...</div>
+                </div>
+            `;
+            pagination.style.display = 'none';
+
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showToast('请先登录', 'error');
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const params = new URLSearchParams({
+                    pageNum: page.toString(),
+                    pageSize: pageSize.toString()
+                });
+
+                if (currentKeyword) {
+                    params.append('keyword', currentKeyword);
+                }
+
+                if (currentStatus !== '') {
+                    params.append('status', currentStatus);
+                }
+
+
+                const response = await fetch(`/notification/list?${params}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    const notifications = data.data;
+                    renderNotifications(notifications);
+                    updatePagination(page, data.total || notifications.length);
+                } else {
+                    showToast(data.msg || '加载失败', 'error');
+                    renderEmptyState();
+                }
+            } catch (error) {
+                console.error('加载通知失败:', error);
+                showToast('网络请求失败，请重试', 'error');
+                renderEmptyState();
+            }
+        }
+
+        // 渲染通知列表
+        function renderNotifications(notifications) {
+            const container = document.getElementById('notificationsContainer');
+            
+            if (!notifications || notifications.length === 0) {
+                renderEmptyState('没有找到符合条件的通知');
+                return;
+            }
+
+            const html = notifications.map(notification => `
+                <div class="notification-item ${!notification.is_read ? 'unread' : ''}" data-id="${notification.id}">
+                    <div class="notification-header">
+                        <div>
+                            <div class="notification-title">${notification.title}</div>
+                        </div>
+                        <div class="notification-actions">
+                            ${!notification.is_read ? `
+                                <button class="action-btn mark-read-btn" onclick="markAsRead(${notification.id})">
+                                    标记已读
+                                </button>
+                            ` : ''}
+                            <button class="action-btn delete-btn" onclick="deleteNotification(${notification.id})">
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                    <div class="notification-content">${notification.description}</div>
+                    <div class="notification-meta">
+                        <div class="notification-time">
+                            <span>🕒</span>
+                            <span>${formatTime(notification.createTime)}</span>
+                        </div>
+                        <div class="notification-status ${notification.is_read ? 'status-read' : 'status-unread'}">
+                            ${notification.is_read ? '已读' : '未读'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // 渲染空状态
+        function renderEmptyState(message = '暂无通知') {
+            const container = document.getElementById('notificationsContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <div class="empty-title">${message}</div>
+                    <div class="empty-description">您还没有收到任何通知</div>
+                </div>
+            `;
+        }
+
+        // 更新分页
+        function updatePagination(page, total) {
+            const pagination = document.getElementById('pagination');
+            const paginationInfo = document.getElementById('paginationInfo');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            totalPages = Math.ceil(total / pageSize);
+            currentPage = page;
+
+            if (totalPages <= 1) {
+                pagination.style.display = 'none';
+                return;
+            }
+
+            pagination.style.display = 'flex';
+            paginationInfo.textContent = `第 ${page} 页，共 ${totalPages} 页`;
+            
+            prevBtn.disabled = page <= 1;
+            nextBtn.disabled = page >= totalPages;
+        }
+
+        // 标记为已读
+        async function markAsRead(notificationId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/notification/read/${notificationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                if (data.code === 200) {
+                    showToast('已标记为已读', 'success');
+                    // 重新加载当前页面
+                    loadNotifications(currentPage);
+                } else {
+                    showToast(data.msg || '操作失败', 'error');
+                }
+            } catch (error) {
+                showToast('网络请求失败，请重试', 'error');
+            }
+        }
+
+        // 删除通知
+        async function deleteNotification(notificationId) {
+            // 显示确认对话框
+            showToast('确定要删除这条通知吗？', 'warning', 5000);
+            
+            // 创建确认按钮
+            const confirmBtn = document.createElement('button');
+            confirmBtn.textContent = '确认删除';
+            confirmBtn.style.cssText = `
+                background: #ff4444;
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                margin-left: 1rem;
+                cursor: pointer;
+                font-weight: 600;
+            `;
+            
+            // 创建取消按钮
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = '取消';
+            cancelBtn.style.cssText = `
+                background: #6b7280;
+                color: white;
+                border: none;
+                padding: 0.5rem 1rem;
+                border-radius: 6px;
+                margin-left: 0.5rem;
+                cursor: pointer;
+                font-weight: 600;
+            `;
+            
+            // 获取toast容器并添加按钮
+            const toast = document.querySelector('.toast');
+            if (toast) {
+                toast.appendChild(confirmBtn);
+                toast.appendChild(cancelBtn);
+                
+                // 确认删除
+                confirmBtn.onclick = async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch(`/notification/delete/${notificationId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        const data = await response.json();
+                        if (data.code === 200) {
+                            showToast('删除成功', 'success');
+                            loadNotifications(currentPage);
+                        } else {
+                            showToast(data.msg || '删除失败', 'error');
+                        }
+                    } catch (error) {
+                        showToast('网络请求失败，请重试', 'error');
+                    }
+                };
+                
+                // 取消删除
+                cancelBtn.onclick = () => {
+                    toast.remove();
+                };
+            }
+        }
+
+        // 搜索
+        function handleSearch() {
+            // 从自定义下拉框获取状态值
+            const statusSelect = document.getElementById('status-select');
+            if (statusSelect) {
+                const selectedItem = statusSelect.querySelector('.select-selected');
+                currentStatus = selectedItem ? selectedItem.getAttribute('data-value') || '' : '';
+            }
+            currentKeyword = document.getElementById('keywordInput').value.trim();
+            currentPage = 1;
+            loadNotifications(currentPage);
+        }
+
+        // 清空筛选
+        function clearFilters() {
+            // 重置自定义下拉框
+            const statusSelect = document.getElementById('status-select');
+            if (statusSelect) {
+                const selected = statusSelect.querySelector('.select-selected');
+                const items = statusSelect.querySelectorAll('.select-item');
+                
+                // 重置为第一个选项（全部）
+                items.forEach(item => item.classList.remove('selected'));
+                items[0].classList.add('selected');
+                selected.textContent = items[0].textContent;
+                selected.setAttribute('data-value', '');
+            }
+            
+            document.getElementById('keywordInput').value = '';
+            currentStatus = '';
+            currentKeyword = '';
+            currentPage = 1;
+            loadNotifications(currentPage);
+        }
+
+        // 事件监听
+        document.getElementById('searchBtn').addEventListener('click', handleSearch);
+        document.getElementById('clearBtn').addEventListener('click', clearFilters);
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentPage > 1) {
+                loadNotifications(currentPage - 1);
+            }
+        });
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                loadNotifications(currentPage + 1);
+            }
+        });
+
+        // 回车搜索
+        document.getElementById('keywordInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleSearch();
+            }
+        });
+
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            closeAllSelect(e.target);
+        });
+
+        // 检查登录状态并初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showToast('请先登录', 'error');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // 检查用户权限
+            checkUserPermission();
+            // 初始化自定义下拉框
+            initCustomSelects();
+            // 加载通知列表
+            loadNotifications();
+        });
+    </script>
+</body>
+</html>

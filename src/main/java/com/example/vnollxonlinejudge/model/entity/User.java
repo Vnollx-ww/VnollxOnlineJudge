@@ -34,6 +34,12 @@ public class User {
 
     @Column(name="identity")
     private String identity;
+
+    @Column(name="avatar")
+    private String avatar;
+
+    @Column(name="signature")
+    private String signature;
     public User(String name,String password,String email){
         this.name=name;
         this.password=password;
