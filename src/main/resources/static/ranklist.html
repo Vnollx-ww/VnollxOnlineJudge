@@ -282,6 +282,7 @@
                         <i class="fas fa-medal"></i>
                     </div>
                     <div class="text-xl font-bold text-gray-700 rank-name" id="rank-3-name">--</div>
+                    <div class="text-sm text-gray-500 mt-1" id="rank-3-id">ID: --</div>
                     <div class="mt-3 bg-white rounded-full px-3 py-1 text-sm font-medium text-gray-700">
                         已通过 <span id="rank-3-pass" class="text-green-600">0</span> 题
                     </div>
@@ -394,6 +395,7 @@
             updateTopRankings(sortedData.slice(0, 3));
 
             // 渲染排行榜列表（从第四名开始）
+            console.log('About to render ranking list with data:', sortedData.slice(3));
             renderRankingList(sortedData.slice(3));
 
         } catch (error) {
@@ -416,6 +418,16 @@
     // 渲染排行榜列表（第四名及以后）
     function renderRankingList(users) {
         const rankingList = document.getElementById('ranking-list');
+        
+        // 添加调试信息
+        console.log('renderRankingList called with users:', users);
+        console.log('rankingList element:', rankingList);
+        
+        if (!rankingList) {
+            console.error('ranking-list element not found!');
+            return;
+        }
+        
         rankingList.innerHTML = '';
 
         if (users.length === 0) {
@@ -430,59 +442,71 @@
 
         // 遍历用户数据，从第四名开始（排名是4）
         users.forEach((user, index) => {
-            const rank = index + 4; // 因为从第四名开始
-            const isCurrentUser = currentUserId && user.id === currentUserId;
+            try {
+                const rank = index + 4; // 因为从第四名开始
+                const isCurrentUser = currentUserId && user.id === currentUserId;
 
-            const userItem = document.createElement('div');
-            userItem.className = `rank-item ${isCurrentUser? 'current-user' : ''} bg-white p-4 md:p-5 flex items-center rounded-lg`;
-            userItem.innerHTML = `
-                    <div class="flex-shrink-0 w-10 text-center">
-                        <span class="inline-block w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold leading-8">
-                            ${rank}
-                        </span>
-                    </div>
+                // 确保用户数据完整
+                const safeUser = {
+                    name: user.name || '未知用户',
+                    id: user.id || '--',
+                    passCount: user.passCount || 0,
+                    submitCount: user.submitCount || 0
+                };
 
-                    <div class="ml-5 flex-grow">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                                <i class="fas fa-user"></i>
-                            </div>
-                            <div>
-                                <div class="font-medium text-gray-800">${user.name}</div>
-                                <div class="text-sm text-gray-500">ID: ${user.id}</div>
-                            </div>
+                const userItem = document.createElement('div');
+                userItem.className = `rank-item ${isCurrentUser? 'current-user' : ''} bg-white p-4 md:p-5 flex items-center rounded-lg`;
+                userItem.innerHTML = `
+                        <div class="flex-shrink-0 w-10 text-center">
+                            <span class="inline-block w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold leading-8">
+                                ${rank}
+                            </span>
                         </div>
-                    </div>
 
-                    <div class="grid grid-cols-3 gap-6 md:gap-10 stats-grid min-w-[200px] md:min-w-[300px]">
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500 stat-label">已通过</div>
-                            <div class="font-bold text-green-600 stat-value">${user.passCount}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500 stat-label">总提交</div>
-                            <div class="font-bold text-blue-600 stat-value">${user.submitCount}</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500 stat-label">通过率</div>
-                            <div class="font-bold stat-value ${getRateColor(user.passCount, user.submitCount)}">
-                                ${calculatePassRate(user.passCount, user.submitCount)}
+                        <div class="ml-5 flex-grow">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-800">${safeUser.name}</div>
+                                    <div class="text-sm text-gray-500">ID: ${safeUser.id}</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
 
-            // 添加渐入动画
-            userItem.style.opacity = '0';
-            userItem.style.transform = 'translateY(10px)';
-            rankingList.appendChild(userItem);
+                        <div class="grid grid-cols-3 gap-6 md:gap-10 stats-grid min-w-[200px] md:min-w-[300px]">
+                            <div class="text-center">
+                                <div class="text-sm text-gray-500 stat-label">已通过</div>
+                                <div class="font-bold text-green-600 stat-value">${safeUser.passCount}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm text-gray-500 stat-label">总提交</div>
+                                <div class="font-bold text-blue-600 stat-value">${safeUser.submitCount}</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-sm text-gray-500 stat-label">通过率</div>
+                                <div class="font-bold stat-value ${getRateColor(safeUser.passCount, safeUser.submitCount)}">
+                                    ${calculatePassRate(safeUser.passCount, safeUser.submitCount)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
 
-            // 触发动画
-            setTimeout(() => {
-                userItem.style.opacity = '1';
-                userItem.style.transform = 'translateY(0)';
-                userItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-            }, 50 * index);
+                // 添加渐入动画
+                userItem.style.opacity = '0';
+                userItem.style.transform = 'translateY(10px)';
+                rankingList.appendChild(userItem);
+
+                // 触发动画
+                setTimeout(() => {
+                    userItem.style.opacity = '1';
+                    userItem.style.transform = 'translateY(0)';
+                    userItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                }, 50 * index);
+            } catch (error) {
+                console.error(`Error rendering user at index ${index}:`, error, user);
+            }
         });
     }
 

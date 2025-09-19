@@ -13,4 +13,9 @@ public class RustFsServiceImpl implements OssService {
     public void deleteFile(String fileUrl) {
 
     }
+
+    @Override
+    public String uploadAvatar(MultipartFile avatar,Long uid) {
+        return null;
+    }
 }

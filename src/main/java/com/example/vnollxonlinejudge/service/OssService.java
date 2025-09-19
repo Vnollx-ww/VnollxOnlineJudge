@@ -7,4 +7,6 @@ import java.io.IOException;
 public interface OssService {
     void uploadFile(String fileUrl, MultipartFile testCaseFile)throws IOException ;
     void deleteFile(String fileUrl) throws IOException;
+    String uploadAvatar(MultipartFile avatar,Long uid) throws IOException;
+
 }

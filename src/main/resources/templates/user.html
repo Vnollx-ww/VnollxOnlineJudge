@@ -36,6 +36,40 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(5px);
         }
+        
+        /* 用户头像样式 */
+        .user-avatar-large {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid rgba(26, 115, 232, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .user-avatar-large:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2);
+        }
+
+        .avatar-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 2rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -43,8 +77,17 @@
     <!-- 用户信息卡片 -->
     <div class="profile-card p-6 mb-8">
         <div class="flex items-center justify-between mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-800" id="user-name"><span th:text="${user.name}"></span></h1>
+            <div class="flex items-center gap-4">
+                <div class="user-avatar-large">
+                    <img th:if="${user.avatar}" th:src="${user.avatar}" alt="用户头像" class="avatar-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div th:unless="${user.avatar}" class="avatar-placeholder" th:style="${user.avatar} ? 'display: none;' : 'display: flex;'">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800" id="user-name"><span th:text="${user.name}"></span></h1>
+                    <p class="text-gray-600 mt-2 text-lg" id="user-signature" th:text="${user.signature}">个性签名</p>
+                </div>
             </div>
             <div class="flex space-x-4">
                 <!-- 提交统计 -->

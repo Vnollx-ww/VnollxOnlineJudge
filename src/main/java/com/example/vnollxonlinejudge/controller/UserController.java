@@ -73,11 +73,11 @@ public class UserController {
         return Result.Success("修改密码成功");
     }
     @PutMapping("/update/profile")
-    public Result<Void> updateUserInfo(@Valid @RequestBody UpdateUserInfoDTO request,
+    public Result<Void> updateUserInfo(@Valid @ModelAttribute UpdateUserInfoDTO request,
                                        HttpServletRequest httpRequest) {
         Long userId = getCurrentUserId(httpRequest);
         userService.updateUserInfo(
-                request.getEmail(), request.getName(),
+                request.getAvatar(),request.getEmail(), request.getName(),
                 request.getSignature(),userId, request.getOption(),
                 request.getVerifyCode()
         );

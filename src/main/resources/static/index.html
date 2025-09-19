@@ -899,6 +899,43 @@
         }
 
         /* 用户问候样式 */
+        .user-greeting-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar-container {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(26, 115, 232, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .user-avatar-container:hover {
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+
+        .user-avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
         .user-greeting {
             display: flex;
             align-items: center;
@@ -1994,8 +2031,27 @@
         const isAdmin = identity === 'ADMIN' || identity === 'SUPER_ADMIN';
         const adminMenuItem = isAdmin ? '<a href="admin-user.html" class="user-menu-item">管理员界面</a>' : '';
 
+        // 获取用户头像
+        const userAvatar = currentUser?.avatar || '';
+        let avatarHtml = '';
+        if (userAvatar && userAvatar.trim() !== '') {
+            // 检查是否是base64编码
+            if (userAvatar.startsWith('data:image/')) {
+                avatarHtml = `<img src="${userAvatar}" alt="用户头像" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
+            } else {
+                // 普通URL
+                avatarHtml = `<img src="${userAvatar}" alt="用户头像" class="user-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
+            }
+        }
+        // 备用头像
+        const fallbackAvatar = `<div class="user-avatar-placeholder" style="display: ${userAvatar && userAvatar.trim() !== '' ? 'none' : 'flex'};"><i class="fas fa-user"></i></div>`;
+        avatarHtml += fallbackAvatar;
+
         authButtons.innerHTML = `
     <div class="user-greeting-container">
+        <div class="user-avatar-container">
+            ${avatarHtml}
+        </div>
         <span class="user-greeting" id="userGreeting">
             ${greetingIcon} ${currentHour < 12 ? '早上好' : currentHour < 18 ? '下午好' : '晚上好'}，${localStorage.getItem('name')}
             <div class="user-menu" id="userMenu">

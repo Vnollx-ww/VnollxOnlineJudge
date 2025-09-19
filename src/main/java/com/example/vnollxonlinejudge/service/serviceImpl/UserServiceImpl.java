@@ -11,8 +11,10 @@ import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.UserMapper;
+import com.example.vnollxonlinejudge.service.OssService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
+import com.example.vnollxonlinejudge.utils.FileOperation;
 import com.example.vnollxonlinejudge.utils.JwtToken;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -20,7 +22,9 @@ import org.slf4j.LoggerFactory;
 import com.example.vnollxonlinejudge.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -35,6 +39,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired private UserSolvedProblemService userSolvedProblemService;
     @Autowired private RedisService redisService;
+    @Autowired private OssService ossService;
     //@DS("master")
     @Override
     public String login(String email, String password) {
@@ -159,8 +164,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     //@DS("master")
     @Override
     public void updateUserInfo(
-            String email, String name, String signature,Long uid,
-            String option,String verifyCode
+            MultipartFile avatar, String email, String name, String signature, Long uid,
+            String option, String verifyCode
     ) {
         String key=email+":update";
         if(option.equals("email")) {
@@ -176,6 +181,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setEmail(email);
         user.setName(name);
         user.setSignature(signature);
+        if (avatar!=null){
+            try {
+                String fileUrl=ossService.uploadAvatar(avatar,uid);
+                user.setAvatar(fileUrl);
+            }catch (IOException e){
+                throw new BusinessException("上传头像失败，请联系管理员");
+            }
+        }
         updateById(user);
         redisService.deleteKey(key);
     }

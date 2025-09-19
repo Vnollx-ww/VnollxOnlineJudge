@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class UpdateUserInfoDTO {
@@ -18,4 +19,5 @@ public class UpdateUserInfoDTO {
     private String option;
     private String verifyCode;
     private String signature;
+    private MultipartFile avatar;
 }
