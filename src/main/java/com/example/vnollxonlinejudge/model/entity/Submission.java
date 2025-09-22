@@ -3,10 +3,12 @@ package com.example.vnollxonlinejudge.model.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
 
 @Table(name = "submission")
 @Data
+@Builder
 public class Submission {
     @TableId(type = IdType.AUTO)
     private Long id;
