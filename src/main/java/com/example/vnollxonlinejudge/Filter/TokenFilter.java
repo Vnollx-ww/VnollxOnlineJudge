@@ -2,6 +2,7 @@ package com.example.vnollxonlinejudge.Filter;
 
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.*;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,21 +47,23 @@ public class TokenFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         String requestURI = request.getRequestURI();
-        // System.out.println("TokenFilter 处理请求: " + requestURI);
-        // Check for excluded paths
-        for (String path : EXCLUDED_PATHS) {
-            if (path.contains("\\d+")) {
-                // Handle dynamic route matching
-                if (requestURI.matches("^" + path.replace("\\d+", "\\d+") + "$")) {
+        
+        try {
+            // System.out.println("TokenFilter 处理请求: " + requestURI);
+            // Check for excluded paths
+            for (String path : EXCLUDED_PATHS) {
+                if (path.contains("\\d+")) {
+                    // Handle dynamic route matching
+                    if (requestURI.matches("^" + path.replace("\\d+", "\\d+") + "$")) {
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+                } else if (requestURI.startsWith(path)) {
+                    // If it's an excluded path, let it pass
                     filterChain.doFilter(request, response);
                     return;
                 }
-            } else if (requestURI.startsWith(path)) {
-                // If it's an excluded path, let it pass
-                filterChain.doFilter(request, response);
-                return;
             }
-        }
 
         // Get token from Authorization header
         String authHeader = request.getHeader(AUTH_HEADER);
@@ -99,9 +102,22 @@ public class TokenFilter implements Filter {
             response.getWriter().println("无效的Token");
             return;
         }
-        request.setAttribute("uid", userId);
-        request.setAttribute("identity",identity);
-        // Allow the request to proceed
-        filterChain.doFilter(request, response);
+            request.setAttribute("uid", userId);
+            request.setAttribute("identity", identity);
+            
+            // 设置ThreadLocal，方便Service层使用
+            if (userId != null) {
+                UserContextHolder.setCurrentUserId(Long.parseLong(userId));
+            }
+            if (identity != null) {
+                UserContextHolder.setCurrentUserIdentity(identity);
+            }
+            
+            // Allow the request to proceed
+            filterChain.doFilter(request, response);
+        } finally {
+            // 清理ThreadLocal，避免内存泄漏
+            UserContextHolder.clear();
+        }
     }
 }

@@ -14,6 +14,7 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
 @RequestMapping("/solve")
@@ -21,17 +22,7 @@ import java.util.List;
 public class SolveController {
     private final SolveService solveService;
     private final ProblemService problemService;
-    private Long getCurrentUserId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到用户ID");
-        }
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("用户ID格式错误");
-        }
-    }
+
     @GetMapping("/{id}")
     public ModelAndView solveDetail(@PathVariable Long id) {
         SolveVo solve= solveService.getSolve(id);
@@ -69,8 +60,8 @@ public class SolveController {
         return modelAndView;
     }
     @PostMapping("/create")
-    public Result<Void> createSolve(@RequestBody CreateSolveDTO req, HttpServletRequest request){
-        Long userId=getCurrentUserId(request);
+    public Result<Void> createSolve(@RequestBody CreateSolveDTO req){
+        Long userId=UserContextHolder.getCurrentUserId();
         solveService.createSolve(
                 req.getContent(),
                 req.getName(),

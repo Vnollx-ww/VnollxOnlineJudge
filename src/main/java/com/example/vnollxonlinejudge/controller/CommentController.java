@@ -6,6 +6,7 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.comment.CommentInfoVO;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.service.CommentService;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,20 +19,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CommentController {
     private final CommentService commentService;
-    private Long getCurrentUserId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到用户ID");
-        }
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("用户ID格式错误");
-        }
-    }
     @PostMapping("/publish")
-    public Result<Void> publishComment(@RequestBody PublishCommentDTO dto,HttpServletRequest request) {
-        Long uid=getCurrentUserId(request);
+    public Result<Void> publishComment(@RequestBody PublishCommentDTO dto) {
+        Long uid=UserContextHolder.getCurrentUserId();
         commentService.publishComment(dto,uid);
         return Result.Success("发布评论成功");
     }

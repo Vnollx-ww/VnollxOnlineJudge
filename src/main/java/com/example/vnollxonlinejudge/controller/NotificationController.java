@@ -4,6 +4,7 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
 import com.example.vnollxonlinejudge.service.NotificationService;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -17,26 +18,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;
-    private Long getCurrentUserId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到用户ID");
-        }
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("用户ID格式错误");
-        }
-    }
 
     @GetMapping("/list")
     public Result<List<NotificationVo>> getNotificationList(
             @RequestParam String pageNum, @RequestParam String pageSize,
             @RequestParam(required = false)String keyword, 
-            @RequestParam(required = false)String status,
-            HttpServletRequest httpRequest
+            @RequestParam(required = false)String status
     ){
-        Long userId = getCurrentUserId(httpRequest);
+        Long userId = UserContextHolder.getCurrentUserId();
         return Result.Success(
                 notificationService.getNotificationList(
                         userId, Integer.parseInt(pageNum),Integer.parseInt(pageSize), keyword, status
@@ -47,10 +36,9 @@ public class NotificationController {
     @GetMapping("/count")
     public Result<Long> getNotificationCount(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String keyword,
-            HttpServletRequest httpRequest
+            @RequestParam(required = false) String keyword
     ){
-        Long userId = getCurrentUserId(httpRequest);
+        Long userId = UserContextHolder.getCurrentUserId();
         return Result.Success(notificationService.getNotificationCount(userId,status,keyword),"获取未读通知数量成功");
     }
     @DeleteMapping("/delete/{id}")

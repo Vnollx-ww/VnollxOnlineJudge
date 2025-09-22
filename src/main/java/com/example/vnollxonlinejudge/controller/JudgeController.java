@@ -7,28 +7,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import com.example.vnollxonlinejudge.model.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
 @RequestMapping("/judge")
 @RequiredArgsConstructor
 public class JudgeController {
     private final JudgeService judgeService;
-    private Long getCurrentUserId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到用户ID");
-        }
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("用户ID格式错误");
-        }
-    }
     @PostMapping("/submit")
     public Result<String> judgeSubmit(
-            @RequestBody SubmitCodeDTO req, HttpServletRequest request
+            @RequestBody SubmitCodeDTO req
     ){
-        Long userId = getCurrentUserId(request);
+        Long userId = UserContextHolder.getCurrentUserId();
         String result=judgeService.judgeSubmit(
                 req.getCode(),
                 req.getOption(),

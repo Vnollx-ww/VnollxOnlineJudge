@@ -21,7 +21,7 @@ public class ProblemController {
     @GetMapping("/{id}")
     public ModelAndView problemDetail(@PathVariable Long id) {
         if (!bloomFilter.contains(String.valueOf(id))){
-            throw new BusinessException("商品不存在");
+            throw new BusinessException("题目不存在");
         }
         ModelAndView modelAndView = new ModelAndView();
         ProblemVo problem = problemService.getProblemInfo(id, 0L);

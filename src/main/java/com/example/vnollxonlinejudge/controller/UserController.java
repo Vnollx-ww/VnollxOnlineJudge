@@ -5,6 +5,7 @@ import com.example.vnollxonlinejudge.model.dto.user.*;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.service.UserService;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,23 +15,11 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-    private Long getCurrentUserId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到用户ID");
-        }
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("用户ID格式错误");
-        }
-    }
     @GetMapping("/{id}")
     public ModelAndView userDetail(@PathVariable Long id) {
         UserVo data=userService.getUserById(id);
@@ -54,8 +43,8 @@ public class UserController {
         return Result.Success("注册成功");
     }
     @GetMapping("/profile")
-    public Result<UserVo> getCurrentUser(HttpServletRequest request) {
-        Long userId = getCurrentUserId(request);
+    public Result<UserVo> getCurrentUser() {
+        Long userId = UserContextHolder.getCurrentUserId();
         UserVo user = userService.getUserById(userId);
         return Result.Success(user, "获取用户信息成功");
     }
@@ -66,16 +55,14 @@ public class UserController {
     }
 
     @PutMapping("/update/password")
-    public Result<Void> updatePassword(@Valid @RequestBody UpdatePasswordDTO request,
-                                       HttpServletRequest httpRequest) {
-        Long userId = getCurrentUserId(httpRequest);
+    public Result<Void> updatePassword(@Valid @RequestBody UpdatePasswordDTO request) {
+        Long userId = UserContextHolder.getCurrentUserId();
         userService.updatePassword(request.getOldPassword(), request.getNewPassword(), userId);
         return Result.Success("修改密码成功");
     }
     @PutMapping("/update/profile")
-    public Result<Void> updateUserInfo(@Valid @ModelAttribute UpdateUserInfoDTO request,
-                                       HttpServletRequest httpRequest) {
-        Long userId = getCurrentUserId(httpRequest);
+    public Result<Void> updateUserInfo(@Valid @ModelAttribute UpdateUserInfoDTO request) {
+        Long userId = UserContextHolder.getCurrentUserId();
         userService.updateUserInfo(
                 request.getAvatar(),request.getEmail(), request.getName(),
                 request.getSignature(),userId, request.getOption(),
