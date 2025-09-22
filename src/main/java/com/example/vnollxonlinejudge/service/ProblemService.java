@@ -19,4 +19,6 @@ public interface ProblemService {
     boolean judgeIsSolve(Long pid,Long uid,Long cid);
     void updatePassCount(Long pid, int ok);
     void addUserSolveRecord(Long pid,Long uid,Long cid);
+
+    List<Long> getAllProblemId();
 }

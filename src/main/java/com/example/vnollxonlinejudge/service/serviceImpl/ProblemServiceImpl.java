@@ -2,6 +2,7 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -151,6 +152,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     public List<String> getTagNames(Long pid){
         return problemTagService.getTagNames(pid);
     }
+
+
     @Override
     public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
@@ -216,5 +219,15 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     @Override
     public void addUserSolveRecord(Long pid, Long uid, Long cid) {
         userSolvedProblemService.createUserSolveProblem(uid,pid,cid);
+    }
+
+    @Override
+    public List<Long> getAllProblemId() {
+        LambdaQueryWrapper<Problem> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Problem::getId);
+
+        return this.list(queryWrapper).stream()
+                .map(Problem::getId)
+                .collect(Collectors.toList());
     }
 }

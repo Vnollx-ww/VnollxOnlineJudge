@@ -1,8 +1,11 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.Filter.BloomFilter;
+import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import com.example.vnollxonlinejudge.model.result.Result;
@@ -14,8 +17,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProblemController {
     private final ProblemService problemService;
+    @Autowired private BloomFilter bloomFilter;
     @GetMapping("/{id}")
     public ModelAndView problemDetail(@PathVariable Long id) {
+        if (!bloomFilter.contains(String.valueOf(id))){
+            throw new BusinessException("商品不存在");
+        }
         ModelAndView modelAndView = new ModelAndView();
         ProblemVo problem = problemService.getProblemInfo(id, 0L);
         if (problem == null) {
