@@ -9,10 +9,8 @@ import com.example.vnollxonlinejudge.model.entity.Comment;
 import com.example.vnollxonlinejudge.model.entity.Notification;
 import com.example.vnollxonlinejudge.model.vo.comment.CommentInfoVO;
 import com.example.vnollxonlinejudge.producer.NotificationProducer;
-import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.CommentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +33,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         comment.setProblemId(dto.getProblemId());
         comment.setUserId(uid);
         this.save(comment);
+        if (dto.getReceiveUserId()==null||dto.getReceiveUserId()==0||Objects.equals(uid, dto.getReceiveUserId()))return ;
         Instant now = Instant.now();
         DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
         String formatted = formatter.format(now);
@@ -43,7 +42,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 dto.getProblemId(),
                 dto.getContent()
         );
-        if (Objects.equals(uid, dto.getReceiveUserId()))return ;
         Notification notification=new Notification("回复通知",description,formatted,dto.getReceiveUserId());
         QueryWrapper<Comment> wrapper=new QueryWrapper<>();
         wrapper.eq("create_time",dto.getCreateTime());
