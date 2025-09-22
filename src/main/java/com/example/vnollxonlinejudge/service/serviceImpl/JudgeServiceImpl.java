@@ -27,7 +27,7 @@ public class JudgeServiceImpl implements JudgeService {
     @Autowired private RedisService redisService;
     @Autowired private JudgeStrategyFactory judgeStrategyFactory;
     @Override
-    public String judgeSubmit(String code, String option, Long pid, Long uid, Long cid, String create_time, String uname,Long time,Long memory) {
+    public String judgeSubmission(String code, String option, Long pid, Long uid, Long cid, String create_time, String uname,Long time,Long memory) {
         String lockKey = "submission:" + "user:"+uid + "_" + pid;
         // 尝试获取锁（3秒内同一用户对同一题目提交无效）
         boolean locked = redisService.tryLock(lockKey,3000);

@@ -90,7 +90,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             problem = problemMap.get(pid);
         }
         //获取题目信息！！！！
-        boolean ok=problemService.judgeIsSolve(pid,uid,cid);
+        boolean ok=problemService.isSolved(pid,uid,cid);
         //提交后对题目提交数，用户提交数进行处理！！！！
         if (submission.getStatus().equals("答案正确")) { //如果问题通过
             if (!ok) { //是否首次通过

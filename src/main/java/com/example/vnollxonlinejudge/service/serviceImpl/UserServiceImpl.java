@@ -16,6 +16,7 @@ import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import com.example.vnollxonlinejudge.utils.FileOperation;
 import com.example.vnollxonlinejudge.utils.JwtToken;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,20 +115,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public List<UserVo> getAllUserByAdmin(int pageNum, int pageSize, String keyword, Long uid) {
         // 一次性获取用户信息，避免多次查询
-        QueryWrapper<User> identityWrapper = new QueryWrapper<User>()
-                .select("identity")
-                .eq("id", uid);
-        User currentUser = this.getOne(identityWrapper);
-
-        if (currentUser == null) {
-            throw new BusinessException("您无权限");
-        }
-
+        String identity= UserContextHolder.getCurrentUserIdentity();
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
 
         // 如果是管理员，只查询普通用户
-        if ("ADMIN".equals(currentUser.getIdentity())) {
+        if ("ADMIN".equals(identity)) {
             queryWrapper.eq("identity", "USER");
         }
 

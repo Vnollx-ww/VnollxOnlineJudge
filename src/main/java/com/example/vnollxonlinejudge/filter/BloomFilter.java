@@ -1,13 +1,11 @@
-package com.example.vnollxonlinejudge.Filter;
+package com.example.vnollxonlinejudge.filter;
 
 
-import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import java.util.BitSet;
 import java.util.List;

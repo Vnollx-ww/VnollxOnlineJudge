@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminAddProblemDTO;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
@@ -39,28 +41,31 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     @Transactional
-    public void createProblem(String title, String description, int timeLimit, int memoryLimit,
-                                String difficulty,String inputFormat,String outputFormat,
-                              String inputExample, String outputExample, String hint,String open,
-                              MultipartFile testCaseFile,List<String> tags
-    ) {
-        Problem problem = new Problem(
-                title,description,timeLimit
-                ,memoryLimit,difficulty,
-                inputFormat,outputFormat,
-                inputExample,outputExample,
-                hint,Objects.equals(open, "true")
-        );
+    public void createProblem(AdminSaveProblemDTO dto) {
+        Problem problem=Problem.builder()
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .timeLimit(Integer.valueOf(dto.getTimeLimit()))
+                .memoryLimit(Integer.valueOf(dto.getMemoryLimit()))
+                .difficulty(dto.getDifficulty())
+                .inputFormat(dto.getInputFormat())
+                .outputFormat(dto.getOutputFormat())
+                .inputExample(dto.getInputExample())
+                .outputExample(dto.getOutputExample())
+                .hint(dto.getHint())
+                .open(Objects.equals(dto.getOpen(), "true"))
+                .build();
+
         save(problem); // 插入数据库，获取自增ID
         problemTagService.deleteTagByProblem(problem.getId());
-        for (String s:tags){
+        for (String s:dto.getTags()){
             tagService.createTag(s);
             problemTagService.addRelated(s,problem.getId());
         }
         // 2. 使用获取到的ID处理文件上传
         try {
-            if (testCaseFile != null && !testCaseFile.isEmpty()) {
-                ossService.uploadFile(problem.getId() + ".zip", testCaseFile);
+            if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
+                ossService.uploadFile(problem.getId() + ".zip", dto.getTestCaseFile());
             }
         } catch (IOException e) {
             throw new BusinessException("测试用例文件上传失败");
@@ -78,7 +83,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         try {
             ossService.deleteFile(problem.getId()+".zip");
         }catch (IOException e){
-            throw new BusinessException("文件上传失败，服务器异常");
+            throw new BusinessException("文件删除失败，服务器异常");
         }
         submissionService.deleteSubmissionsByPid(id);
         removeById(id);
@@ -86,38 +91,33 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     @Transactional
-    public void updateProblem(Long id, String title, String description, int timeLimit,
-                              int memoryLimit, String difficulty, String inputFormat,
-                              String outputFormat, String inputExample,
-                              String outputExample, String hint,String open, MultipartFile testCaseFile,
-                              List<String> tags
-    )  {
+    public void updateProblem(AdminSaveProblemDTO dto)  {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
-        wrapper.eq("id", id);
+        wrapper.eq("id", dto.getId());
 
         if (count(wrapper) == 0) {
             throw new BusinessException("题目不存在或已被删除");
         }
-        Problem problem = this.getById(id);
-        problem.setTitle(title);
-        problem.setDescription(description);
-        problem.setTimeLimit(timeLimit);
-        problem.setMemoryLimit(memoryLimit);
-        problem.setDifficulty(difficulty);
-        problem.setInputFormat(inputFormat);
-        problem.setOutputFormat(outputFormat);
-        problem.setInputExample(inputExample);
-        problem.setOutputExample(outputExample);
-        problem.setHint(hint);
-        problem.setOpen(Objects.equals(open, "true"));
+        Problem problem = this.getById(dto.getId());
+        problem.setTitle(dto.getTitle());
+        problem.setDescription(dto.getDescription());
+        problem.setTimeLimit(Integer.valueOf(dto.getTimeLimit()));
+        problem.setMemoryLimit(Integer.valueOf(dto.getMemoryLimit()));
+        problem.setDifficulty(dto.getDifficulty());
+        problem.setInputFormat(dto.getInputFormat());
+        problem.setOutputFormat(dto.getOutputFormat());
+        problem.setInputExample(dto.getInputExample());
+        problem.setOutputExample(dto.getOutputExample());
+        problem.setHint(dto.getHint());
+        problem.setOpen(Objects.equals(dto.getOpen(), "true"));
         problemTagService.deleteTagByProblem(problem.getId());
-        for (String s:tags){
+        for (String s: dto.getTags()){
             tagService.createTag(s);
             problemTagService.addRelated(s,problem.getId());
         }
         try {
-            if (testCaseFile != null && !testCaseFile.isEmpty()) {
-                ossService.uploadFile(id + ".zip", testCaseFile);
+            if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
+                ossService.uploadFile(dto.getId() + ".zip", dto.getTestCaseFile());
             }
         } catch (IOException e) {
             throw new BusinessException("文件上传失败，服务器异常");
@@ -201,7 +201,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public boolean judgeIsSolve(Long pid, Long uid, Long cid) {
+    public boolean isSolved(Long pid, Long uid, Long cid) {
         UserSolvedProblem userSolvedProblems=userSolvedProblemService.judgeUserIsPass(pid,uid,cid);
         return userSolvedProblems != null;
     }

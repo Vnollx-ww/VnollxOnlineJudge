@@ -1,18 +1,15 @@
-package com.example.vnollxonlinejudge.Filter;
+package com.example.vnollxonlinejudge.filter;
 
-import com.example.vnollxonlinejudge.exception.GlobalExceptionHandler;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.*;
-import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

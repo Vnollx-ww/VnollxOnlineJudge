@@ -22,23 +22,9 @@ public class AdminProblemController {
     private final ProblemService problemService;
     @PostMapping(value ="/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<Void> createProblem(
-            @Valid @ModelAttribute AdminSaveProblemDTO request
+            @Valid @ModelAttribute AdminSaveProblemDTO dto
     ) {
-        problemService.createProblem(
-                request.getTitle(),
-                request.getDescription(),
-                Integer.parseInt(request.getTimeLimit()),
-                Integer.parseInt(request.getMemoryLimit()),
-                request.getDifficulty(),
-                request.getInputFormat(),
-                request.getOutputFormat(),
-                request.getInputExample(),
-                request.getOutputExample(),
-                request.getHint(),
-                request.getOpen(),
-                request.getTestCaseFile(),
-                request.getTags()
-        );
+        problemService.createProblem(dto);
         return Result.Success("创建题目成功");
     }
     @DeleteMapping("/delete/{id}")
@@ -48,24 +34,9 @@ public class AdminProblemController {
     }
     @PutMapping("/update")
     public Result<Void> updateProblem(
-            @Valid @ModelAttribute AdminSaveProblemDTO request
+            @Valid @ModelAttribute AdminSaveProblemDTO dto
     ){
-        problemService.updateProblem(
-                request.getId(),
-                request.getTitle(),
-                request.getDescription(),
-                Integer.parseInt(request.getTimeLimit()),
-                Integer.parseInt(request.getMemoryLimit()),
-                request.getDifficulty(),
-                request.getInputFormat(),
-                request.getOutputFormat(),
-                request.getInputExample(),
-                request.getOutputExample(),
-                request.getHint(),
-                request.getOpen(),
-                request.getTestCaseFile(),
-                request.getTags()
-        );
+        problemService.updateProblem(dto);
         return Result.Success("更新题目信息成功");
     }
     @GetMapping("/count")

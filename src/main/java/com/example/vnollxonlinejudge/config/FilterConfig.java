@@ -1,6 +1,6 @@
 package com.example.vnollxonlinejudge.config;
 
-import com.example.vnollxonlinejudge.Filter.TokenFilter;
+import com.example.vnollxonlinejudge.filter.TokenFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,9 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
-import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.service.JudgeService;
-import jakarta.servlet.http.HttpServletRequest;
 import com.example.vnollxonlinejudge.model.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +17,7 @@ public class JudgeController {
             @RequestBody SubmitCodeDTO req
     ){
         Long userId = UserContextHolder.getCurrentUserId();
-        String result=judgeService.judgeSubmit(
+        String result=judgeService.judgeSubmission(
                 req.getCode(),
                 req.getOption(),
                 Long.parseLong(req.getPid()),
