@@ -4,12 +4,16 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @TableName("problem")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Problem {
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -57,25 +61,5 @@ public class Problem {
     private Boolean open;
     @Column(name = "version")
     private Integer version;
-    public Problem(){}
-    public Problem(
-            String title,
-            String description,int timeLimit,
-            int memoryLimit,String difficulty,
-            String inputFormat,String outputFormat,
-            String inputExample,String outputExample,
-            String hint,Boolean open
-    ){
-        this.title=title;
-        this.description=description;
-        this.timeLimit=timeLimit;
-        this.memoryLimit=memoryLimit;
-        this.difficulty=difficulty;
-        this.inputFormat=inputFormat;
-        this.outputFormat=outputFormat;
-        this.inputExample=inputExample;
-        this.outputExample=outputExample;
-        this.hint=hint;
-        this.open=open;
-    }
+
 }
