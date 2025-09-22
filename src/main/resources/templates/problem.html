@@ -17,9 +17,163 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.1/purify.min.js"></script>
 
-    <!-- 代码编辑器样式 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/github.min.css">
+    <!-- Monaco Editor 样式 -->
+    <style>
+        .monaco-editor-container {
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .monaco-editor {
+            height: 100%;
+        }
+
+        /* 编辑器工具栏 */
+        .editor-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid #dee2e6;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .theme-toggle:hover {
+            background: #e9ecef;
+        }
+
+        /* 美化后的下拉框样式 */
+        .custom-select {
+            position: relative;
+            min-width: 180px;
+            z-index: 1000;
+        }
+
+        .select-selected {
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            color: var(--primary);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(26, 115, 232, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 2px solid transparent;
+        }
+
+        .select-selected:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+            border-color: rgba(26, 115, 232, 0.3);
+        }
+
+        .select-selected:after {
+            content: "\f078";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .select-selected.select-arrow-active:after {
+            transform: rotate(180deg);
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: white;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 9999;
+            border-radius: 12px;
+            margin-top: 0.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            transform: translateY(-10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(26, 115, 232, 0.1);
+        }
+
+        .select-items.active {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+            display: block;
+        }
+
+        .select-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .select-item:last-child {
+            border-bottom: none;
+        }
+
+        .select-item:hover {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .select-item.selected {
+            background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .language-icon {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .language-info {
+            font-size: 12px;
+            color: #6c757d;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+    </style>
 
     <style>
         :root {
@@ -55,10 +209,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(26, 115, 232, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(102, 187, 106, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.02) 0%, transparent 50%);
+            background:
+                    radial-gradient(circle at 20% 80%, rgba(26, 115, 232, 0.03) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(102, 187, 106, 0.03) 0%, transparent 50%),
+                    radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.02) 0%, transparent 50%);
             pointer-events: none;
             z-index: -1;
         }
@@ -399,13 +553,44 @@
                 gap: 15px;
             }
 
-            .CodeMirror {
+            .monaco-editor-container {
                 height: 350px;
+            }
+
+            .editor-toolbar {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .editor-actions {
+                width: 100%;
+                justify-content: space-between;
             }
 
             .status-toast {
                 min-width: auto;
                 max-width: calc(100% - 40px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .monaco-editor-container {
+                height: 300px;
+            }
+
+            .editor-toolbar {
+                padding: 8px 12px;
+            }
+
+            .theme-toggle {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            .language-info {
+                font-size: 11px;
+                padding: 1px 6px;
             }
         }
 
@@ -890,19 +1075,52 @@
         <form id="submitForm">
             <input type="hidden" name="problemId" th:value="${problem.id}">
             <div class="mb-3">
-                <label for="languageSelect" class="form-label">选择编程语言</label>
-                <select id="languageSelect" name="language" class="form-select">
-                    <option value="cpp">C++17</option>
-                    <option value="python">Python</option>
-                    <option value="java">Java</option>
-                </select>
+                <label class="form-label">选择编程语言</label>
+                <div class="custom-select" id="languageSelect">
+                    <div class="select-selected">C++17</div>
+                    <div class="select-items">
+                        <div class="select-item selected" data-value="cpp">
+                            <span class="language-option">
+                                <span class="language-icon"><i class="fab fa-cuttlefish"></i></span>
+                                <span>C++17</span>
+                            </span>
+                        </div>
+                        <div class="select-item" data-value="python">
+                            <span class="language-option">
+                                <span class="language-icon"><i class="fab fa-python"></i></span>
+                                <span>Python</span>
+                            </span>
+                        </div>
+                        <div class="select-item" data-value="java">
+                            <span class="language-option">
+                                <span class="language-icon"><i class="fab fa-java"></i></span>
+                                <span>Java</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="languageSelectHidden" name="language" value="cpp">
             </div>
             <div id="judgeStatus" class="mb-3">
                 <div id="statusAlert" class="alert" style="display: none;"></div>
             </div>
 
             <div class="mb-4">
-                <textarea id="codeEditor" name="code"></textarea>
+                <div class="monaco-editor-container">
+                    <div class="editor-toolbar">
+                        <div class="language-info" id="languageInfo">C++17</div>
+                        <div class="editor-actions">
+                            <button type="button" class="theme-toggle" id="themeToggle">
+                                <i class="fas fa-moon"></i> 暗色主题
+                            </button>
+                            <button type="button" class="theme-toggle" id="formatCode">
+                                <i class="fas fa-magic"></i> 格式化
+                            </button>
+                        </div>
+                    </div>
+                    <div id="codeEditor" class="monaco-editor"></div>
+                </div>
+                <textarea id="codeEditorHidden" name="code" style="display: none;"></textarea>
             </div>
 
             <div class="d-flex justify-content-end">
@@ -970,11 +1188,8 @@
 <!-- 核心脚本 -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- 代码编辑器脚本 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+<!-- Monaco Editor 脚本 -->
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
 
 <script>
     // 配置marked.js以符合GitHub风格
@@ -1032,50 +1247,671 @@
         });
     }
 
-    // 代码编辑器初始化
-    const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
-        lineNumbers: true,
-        mode: 'text/x-c++src',
-        theme: 'github',
-        indentUnit: 4,
-        lineWrapping: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        extraKeys: {
-            "Ctrl-S": saveDraft,
-            "Tab": cm => cm.replaceSelection("    ")
-        }
-    });
+    // Monaco Editor 全局变量
+    let editor = null;
+    let currentTheme = 'vs';
+    let currentLanguage = 'cpp';
 
-    const languageSelect = document.getElementById('languageSelect');
-    languageSelect.addEventListener('change', () => {
-        const selectedLanguage = languageSelect.value;
-        if (selectedLanguage === 'cpp') {
-            editor.setOption('mode', 'text/x-c++src');
-            editor.setValue(`#include <iostream>
+    // 语言配置
+    const languageConfig = {
+        'cpp': {
+            id: 'cpp',
+            name: 'C++17',
+            template: `#include <iostream>
 using namespace std;
 
 int main() {
     // 请在此处编写你的代码
 
     return 0;
-}
-`);
-        } else if (selectedLanguage === 'python') {
-            editor.setOption('mode', 'python');
-            editor.setValue(`# 请在此处编写你的代码
+}`
+        },
+        'python': {
+            id: 'python',
+            name: 'Python 3',
+            template: `# 请在此处编写你的代码
 
-`);
-        } else if (selectedLanguage === 'java') {
-            editor.setOption('mode', 'text/x-java');
-            editor.setValue(`public class Main {
+`
+        },
+        'java': {
+            id: 'java',
+            name: 'Java',
+            template: `public class Main {
     public static void main(String[] args) {
         // 请在此处编写你的代码
     }
-}
-`);
+}`
         }
+    };
+
+    // 初始化 Monaco Editor
+    function initMonacoEditor() {
+        // 检查 DOM 元素是否存在
+        const editorElement = document.getElementById('codeEditor');
+        if (!editorElement) {
+            console.error('编辑器容器元素未找到');
+            return;
+        }
+
+        // 使用 require 加载 Monaco Editor
+        require.config({
+            paths: {
+                'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs'
+            }
+        });
+
+        require(['vs/editor/editor.main'], function () {
+            try {
+                // 注册语言
+                monaco.languages.register({ id: 'cpp' });
+                monaco.languages.setMonarchTokensProvider('cpp', {
+                    tokenizer: {
+                        root: [
+                            [/[a-zA-Z_$][a-zA-Z0-9_$]*/, 'identifier'],
+                            [/\d+/, 'number'],
+                            [/"[^"]*"/, 'string'],
+                            [/\/\/.*$/, 'comment'],
+                            [/\/\*[\s\S]*?\*\//, 'comment'],
+                            [/[{}()\[\]]/, 'delimiter.bracket'],
+                            [/[<>]=?|==|!=/, 'operator'],
+                            [/[+\-*/%=!&|^~]/, 'operator'],
+                            [/[;,.]/, 'delimiter']
+                        ]
+                    }
+                });
+
+                // 创建编辑器
+                editor = monaco.editor.create(editorElement, {
+                    value: languageConfig.cpp.template,
+                    language: 'cpp',
+                    theme: currentTheme,
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    readOnly: false,
+                    cursorStyle: 'line',
+                    wordWrap: 'on',
+                    // 格式化相关配置
+                    formatOnPaste: true,
+                    formatOnType: false,
+                    insertSpaces: true,
+                    tabSize: 4,
+                    detectIndentation: false,
+                    // 启用自动补全
+                    suggest: {
+                        showKeywords: true,
+                        showSnippets: true,
+                        showFunctions: true,
+                        showConstructors: true,
+                        showFields: true,
+                        showVariables: true,
+                        showClasses: true,
+                        showStructs: true,
+                        showInterfaces: true,
+                        showModules: true,
+                        showProperties: true,
+                        showEvents: true,
+                        showOperators: true,
+                        showUnits: true,
+                        showValues: true,
+                        showConstants: true,
+                        showEnums: true,
+                        showEnumMembers: true,
+                        showColors: true,
+                        showFiles: true,
+                        showReferences: true,
+                        showFolders: true,
+                        showTypeParameters: true,
+                        showIssues: true,
+                        showUsers: true,
+                        showWords: true
+                    },
+                    // 启用代码折叠
+                    folding: true,
+                    foldingStrategy: 'indentation',
+                    showFoldingControls: 'always',
+                    // 启用括号匹配
+                    matchBrackets: 'always',
+                    // 启用自动缩进
+                    autoIndent: 'full',
+                    // 启用自动闭合括号
+                    autoClosingBrackets: 'always',
+                    autoClosingQuotes: 'always',
+                    // 启用代码提示
+                    quickSuggestions: true,
+                    quickSuggestionsDelay: 100,
+                    // 启用参数提示
+                    parameterHints: {
+                        enabled: true
+                    },
+                    // 启用悬停提示
+                    hover: {
+                        enabled: true
+                    },
+                    // 启用错误提示
+                    glyphMargin: true,
+                    // 启用选择高亮
+                    occurrencesHighlight: true,
+                    // 启用选择相同词
+                    selectionHighlight: true,
+                    // 启用当前行高亮
+                    renderLineHighlight: 'line',
+                    // 启用行号
+                    lineNumbersMinChars: 3,
+                    // 启用滚动条
+                    scrollbar: {
+                        vertical: 'auto',
+                        horizontal: 'auto',
+                        useShadows: false,
+                        verticalHasArrows: false,
+                        horizontalHasArrows: false,
+                        verticalScrollbarSize: 10,
+                        horizontalScrollbarSize: 10
+                    }
+                });
+
+                // 监听内容变化，同步到隐藏的 textarea
+                editor.onDidChangeModelContent(() => {
+                    document.getElementById('codeEditorHidden').value = editor.getValue();
+                });
+
+                // 绑定快捷键
+                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+                    saveDraft();
+                });
+
+                // 添加代码片段
+                addCodeSnippets();
+
+                // 添加错误提示
+                addErrorMarkers();
+
+                // 添加键盘快捷键提示
+                addKeyboardShortcuts();
+
+                console.log('Monaco Editor 初始化成功');
+
+            } catch (error) {
+                console.error('Monaco Editor 初始化失败:', error);
+                // 如果 Monaco Editor 初始化失败，显示一个简单的 textarea
+                editorElement.innerHTML = '<textarea id="fallbackEditor" style="width: 100%; height: 100%; border: none; outline: none; font-family: monospace; font-size: 14px; padding: 10px; resize: none;">#include <iostream>\nusing namespace std;\n\nint main() {\n    // 请在此处编写你的代码\n    \n    return 0;\n}</textarea>';
+
+                // 绑定 fallback editor 的事件
+                const fallbackEditor = document.getElementById('fallbackEditor');
+                if (fallbackEditor) {
+                    fallbackEditor.addEventListener('input', function() {
+                        document.getElementById('codeEditorHidden').value = this.value;
+                    });
+                }
+            }
+        }, function (error) {
+            console.error('Monaco Editor 加载失败:', error);
+            // 如果 Monaco Editor 加载失败，显示一个简单的 textarea
+            const editorElement = document.getElementById('codeEditor');
+            if (editorElement) {
+                editorElement.innerHTML = '<textarea id="fallbackEditor" style="width: 100%; height: 100%; border: none; outline: none; font-family: monospace; font-size: 14px; padding: 10px; resize: none;">#include <iostream>\nusing namespace std;\n\nint main() {\n    // 请在此处编写你的代码\n    \n    return 0;\n}</textarea>';
+
+                // 绑定 fallback editor 的事件
+                const fallbackEditor = document.getElementById('fallbackEditor');
+                if (fallbackEditor) {
+                    fallbackEditor.addEventListener('input', function() {
+                        document.getElementById('codeEditorHidden').value = this.value;
+                    });
+                }
+            }
+        });
+    }
+
+    // 添加错误标记功能
+    function addErrorMarkers() {
+        if (!editor) return;
+
+        // 监听内容变化，添加简单的语法检查
+        editor.onDidChangeModelContent(() => {
+            const model = editor.getModel();
+            if (!model) return;
+
+            const value = model.getValue();
+            const errors = [];
+
+            // 简单的 C++ 语法检查
+            if (currentLanguage === 'cpp') {
+                const lines = value.split('\n');
+                let totalOpenBraces = 0;
+                let totalCloseBraces = 0;
+                let totalOpenParens = 0;
+                let totalCloseParens = 0;
+
+                // 统计整个文件的括号数量
+                for (let line of lines) {
+                    totalOpenBraces += (line.match(/\{/g) || []).length;
+                    totalCloseBraces += (line.match(/\}/g) || []).length;
+                    totalOpenParens += (line.match(/\(/g) || []).length;
+                    totalCloseParens += (line.match(/\)/g) || []).length;
+                }
+
+                // 只有在整个文件级别不匹配时才显示错误
+                if (totalOpenBraces !== totalCloseBraces) {
+                    const lastLine = lines.length;
+                    errors.push({
+                        startLineNumber: lastLine,
+                        startColumn: 1,
+                        endLineNumber: lastLine,
+                        endColumn: 1,
+                        message: `大括号不匹配：{ 有 ${totalOpenBraces} 个，} 有 ${totalCloseBraces} 个`,
+                        severity: monaco.MarkerSeverity.Warning
+                    });
+                }
+
+                if (totalOpenParens !== totalCloseParens) {
+                    const lastLine = lines.length;
+                    errors.push({
+                        startLineNumber: lastLine,
+                        startColumn: 1,
+                        endLineNumber: lastLine,
+                        endColumn: 1,
+                        message: `小括号不匹配：( 有 ${totalOpenParens} 个，) 有 ${totalCloseParens} 个`,
+                        severity: monaco.MarkerSeverity.Warning
+                    });
+                }
+            }
+
+            // 设置错误标记
+            monaco.editor.setModelMarkers(model, 'syntax', errors);
+        });
+    }
+
+    // 添加键盘快捷键提示
+    function addKeyboardShortcuts() {
+        if (!editor) return;
+
+        // 添加自定义快捷键
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyF, () => {
+            editor.getAction('editor.action.startFindReplaceAction').run();
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyG, () => {
+            editor.getAction('editor.action.gotoLineAction').run();
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash, () => {
+            editor.getAction('editor.action.commentLine').run();
+        });
+
+        editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyA, () => {
+            editor.getAction('editor.action.selectAll').run();
+        });
+    }
+
+    // 添加代码片段
+    function addCodeSnippets() {
+        // C++ 代码片段
+        monaco.languages.registerCompletionItemProvider('cpp', {
+            provideCompletionItems: (model, position) => {
+                const suggestions = [
+                    {
+                        label: 'for',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'for (int i = 0; i < ${1:count}; i++) {\n\t${2:// code}\n}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'for 循环'
+                    },
+                    {
+                        label: 'while',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'while (${1:condition}) {\n\t${2:// code}\n}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'while 循环'
+                    },
+                    {
+                        label: 'if',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'if (${1:condition}) {\n\t${2:// code}\n}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'if 语句'
+                    },
+                    {
+                        label: 'ifelse',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'if (${1:condition}) {\n\t${2:// code}\n} else {\n\t${3:// code}\n}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'if-else 语句'
+                    },
+                    {
+                        label: 'cout',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'cout << ${1:value} << endl;',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: '输出语句'
+                    },
+                    {
+                        label: 'cin',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'cin >> ${1:variable};',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: '输入语句'
+                    }
+                ];
+
+                return { suggestions };
+            }
+        });
+
+        // Python 代码片段
+        monaco.languages.registerCompletionItemProvider('python', {
+            provideCompletionItems: (model, position) => {
+                const suggestions = [
+                    {
+                        label: 'for',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'for ${1:item} in ${2:iterable}:\n\t${3:# code}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'for 循环'
+                    },
+                    {
+                        label: 'while',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'while ${1:condition}:\n\t${2:# code}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'while 循环'
+                    },
+                    {
+                        label: 'if',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'if ${1:condition}:\n\t${2:# code}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: 'if 语句'
+                    },
+                    {
+                        label: 'def',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'def ${1:function_name}(${2:parameters}):\n\t${3:# code}\n\treturn ${4:value}',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: '函数定义'
+                    },
+                    {
+                        label: 'print',
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: 'print(${1:value})',
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: '输出语句'
+                    }
+                ];
+
+                return { suggestions };
+            }
+        });
+    }
+
+    // 语言切换功能
+    function switchLanguage(language) {
+        const config = languageConfig[language];
+        if (!config) return;
+
+        currentLanguage = language;
+
+        // 更新语言显示
+        document.getElementById('languageInfo').textContent = config.name;
+
+        if (editor) {
+            // Monaco Editor 模式
+            // 更新语言
+            monaco.editor.setModelLanguage(editor.getModel(), config.id);
+
+            // 如果编辑器为空或只有默认内容，则加载模板
+            const currentValue = editor.getValue().trim();
+            const isEmpty = !currentValue || currentValue === languageConfig.cpp.template.trim() ||
+                currentValue === languageConfig.python.template.trim() ||
+                currentValue === languageConfig.java.template.trim();
+
+            if (isEmpty) {
+                editor.setValue(config.template);
+            }
+        } else {
+            // Fallback textarea 模式
+            const fallbackEditor = document.getElementById('fallbackEditor');
+            if (fallbackEditor) {
+                const currentValue = fallbackEditor.value.trim();
+                const isEmpty = !currentValue || currentValue === languageConfig.cpp.template.trim() ||
+                    currentValue === languageConfig.python.template.trim() ||
+                    currentValue === languageConfig.java.template.trim();
+
+                if (isEmpty) {
+                    fallbackEditor.value = config.template;
+                    // 同步到隐藏的 textarea
+                    document.getElementById('codeEditorHidden').value = config.template;
+                }
+            }
+        }
+    }
+
+    // 主题切换功能
+    function toggleTheme() {
+        if (!editor) return;
+
+        currentTheme = currentTheme === 'vs' ? 'vs-dark' : 'vs';
+        monaco.editor.setTheme(currentTheme);
+
+        const themeButton = document.getElementById('themeToggle');
+        const icon = themeButton.querySelector('i');
+        const text = themeButton.querySelector('span') || themeButton.childNodes[1];
+
+        if (currentTheme === 'vs-dark') {
+            icon.className = 'fas fa-sun';
+            text.textContent = ' 亮色主题';
+        } else {
+            icon.className = 'fas fa-moon';
+            text.textContent = ' 暗色主题';
+        }
+    }
+
+    // 代码格式化功能
+    function formatCode() {
+        if (!editor) {
+            // Fallback 模式下的简单格式化
+            const fallbackEditor = document.getElementById('fallbackEditor');
+            if (fallbackEditor) {
+                let code = fallbackEditor.value;
+                // 简单的 C++ 格式化
+                code = code
+                    .replace(/\s*{\s*/g, ' {\n    ')  // 格式化左大括号
+                    .replace(/\s*}\s*/g, '\n}\n')     // 格式化右大括号
+                    .replace(/;\s*/g, ';\n')          // 格式化分号
+                    .replace(/\n\s*\n\s*\n/g, '\n\n') // 移除多余空行
+                    .trim();
+
+                fallbackEditor.value = code;
+                document.getElementById('codeEditorHidden').value = code;
+                showToast('代码已格式化', 'success', 2000);
+            }
+            return;
+        }
+
+        try {
+            // 使用 Monaco Editor 的内置格式化
+            const model = editor.getModel();
+            if (model) {
+                // 获取格式化提供者
+                const formattingProvider = monaco.languages.getDocumentFormattingEditProvider('cpp');
+                if (formattingProvider) {
+                    // 使用格式化提供者
+                    formattingProvider.provideDocumentFormattingEdits(model, {
+                        insertSpaces: true,
+                        tabSize: 4
+                    }).then(edits => {
+                        if (edits && edits.length > 0) {
+                            editor.executeEdits('format', edits);
+                            showToast('代码已格式化', 'success', 2000);
+                        } else {
+                            // 如果格式化提供者不可用，使用手动格式化
+                            const value = model.getValue();
+                            const formatted = formatCppCode(value);
+                            editor.setValue(formatted);
+                            showToast('代码已格式化', 'success', 2000);
+                        }
+                    }).catch(() => {
+                        // 如果格式化提供者失败，使用手动格式化
+                        const value = model.getValue();
+                        const formatted = formatCppCode(value);
+                        editor.setValue(formatted);
+                        showToast('代码已格式化', 'success', 2000);
+                    });
+                } else {
+                    // 如果格式化提供者不可用，使用手动格式化
+                    const value = model.getValue();
+                    const formatted = formatCppCode(value);
+                    editor.setValue(formatted);
+                    showToast('代码已格式化', 'success', 2000);
+                }
+            }
+        } catch (error) {
+            console.error('格式化失败:', error);
+            // 使用手动格式化作为备用
+            try {
+                const model = editor.getModel();
+                if (model) {
+                    const value = model.getValue();
+                    const formatted = formatCppCode(value);
+                    editor.setValue(formatted);
+                    showToast('代码已格式化', 'success', 2000);
+                }
+            } catch (fallbackError) {
+                console.error('备用格式化也失败:', fallbackError);
+                showToast('格式化失败，请手动调整代码', 'error', 3000);
+            }
+        }
+    }
+
+    // 简单的 C++ 代码格式化函数
+    function formatCppCode(code) {
+        let lines = code.split('\n');
+        let formatted = [];
+        let indentLevel = 0;
+        const indent = '    '; // 4个空格
+
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+
+            // 跳过空行
+            if (!line) {
+                formatted.push('');
+                continue;
+            }
+
+            // 处理特殊行
+            if (line.startsWith('#include') || line.startsWith('using namespace')) {
+                formatted.push(line);
+                continue;
+            }
+
+            // 减少缩进（在右大括号前）
+            if (line.startsWith('}')) {
+                indentLevel = Math.max(0, indentLevel - 1);
+            }
+
+            // 添加缩进
+            formatted.push(indent.repeat(indentLevel) + line);
+
+            // 增加缩进（在左大括号后）
+            if (line.endsWith('{')) {
+                indentLevel++;
+            }
+
+            // 特殊处理：如果下一行是右大括号，减少缩进
+            if (i < lines.length - 1) {
+                let nextLine = lines[i + 1].trim();
+                if (nextLine.startsWith('}')) {
+                    // 当前行后面应该有空行
+                    if (!lines[i + 1].trim()) {
+                        formatted.push('');
+                    }
+                }
+            }
+        }
+
+        return formatted.join('\n');
+    }
+
+    // 初始化自定义选择框
+    function initCustomSelect() {
+        const customSelect = document.getElementById('languageSelect');
+        const selected = customSelect.querySelector('.select-selected');
+        const itemsContainer = customSelect.querySelector('.select-items');
+        const items = customSelect.querySelectorAll('.select-item');
+
+        // 点击选中区域切换显示/隐藏
+        selected.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeAllSelect(this);
+            itemsContainer.classList.toggle('active');
+            this.classList.toggle('select-arrow-active');
+
+            // 确保下拉框显示
+            if (itemsContainer.classList.contains('active')) {
+                itemsContainer.style.display = 'block';
+            }
+        });
+
+        // 点击选项
+        items.forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+
+                // 更新选中状态
+                items.forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+
+                // 更新显示文本
+                const text = this.querySelector('span:last-child').textContent;
+                selected.textContent = text;
+
+                // 更新隐藏输入框的值
+                const value = this.getAttribute('data-value');
+                document.getElementById('languageSelectHidden').value = value;
+
+                // 切换语言
+                switchLanguage(value);
+
+                // 关闭下拉框
+                itemsContainer.classList.remove('active');
+                itemsContainer.style.display = 'none';
+                selected.classList.remove('select-arrow-active');
+            });
+        });
+    }
+
+    // 关闭所有选择框
+    function closeAllSelect(elmnt) {
+        const selectItems = document.querySelectorAll('.select-items');
+        const selectSelected = document.querySelectorAll('.select-selected');
+
+        selectItems.forEach(item => {
+            if (elmnt && item !== elmnt.nextElementSibling && elmnt !== item) {
+                item.classList.remove('active');
+                item.style.display = 'none';
+            }
+        });
+
+        selectSelected.forEach(selected => {
+            if (elmnt && selected !== elmnt) {
+                selected.classList.remove('select-arrow-active');
+            }
+        });
+    }
+
+    // 点击页面其他地方关闭选择框
+    document.addEventListener('click', function(e) {
+        closeAllSelect(e.target);
     });
+
+    // 绑定主题切换事件
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    // 绑定代码格式化事件
+    document.getElementById('formatCode').addEventListener('click', formatCode);
 
     // 获取题目标签
     async function fetchProblemTags(problemId, token) {
@@ -1282,9 +2118,34 @@ int main() {
             return;
         }
 
-        // 初始设置为C++17并加载模板
-        languageSelect.value = 'cpp';
-        languageSelect.dispatchEvent(new Event('change'));
+        // 初始化 Monaco Editor
+        initMonacoEditor();
+
+        // 初始化自定义选择框
+        initCustomSelect();
+
+        // 等待 Monaco Editor 加载完成，如果失败则使用 fallback
+        setTimeout(() => {
+            // 检查是否初始化成功
+            if (!editor) {
+                console.log('Monaco Editor 初始化失败，使用 fallback textarea');
+                const editorElement = document.getElementById('codeEditor');
+                if (editorElement && !document.getElementById('fallbackEditor')) {
+                    editorElement.innerHTML = '<textarea id="fallbackEditor" style="width: 100%; height: 100%; border: none; outline: none; font-family: monospace; font-size: 14px; padding: 10px; resize: none;">#include <iostream>\nusing namespace std;\n\nint main() {\n    // 请在此处编写你的代码\n    \n    return 0;\n}</textarea>';
+
+                    // 绑定 fallback editor 的事件
+                    const fallbackEditor = document.getElementById('fallbackEditor');
+                    if (fallbackEditor) {
+                        fallbackEditor.addEventListener('input', function() {
+                            document.getElementById('codeEditorHidden').value = this.value;
+                        });
+                    }
+                }
+            }
+
+            // 初始设置为C++17
+            switchLanguage('cpp');
+        }, 2000);
 
         // 渲染Markdown内容
         if (typeof DOMPurify !== 'undefined') {
@@ -1321,7 +2182,7 @@ int main() {
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalButtonText = submitBtn.innerHTML;
-        const option = languageSelect.value;
+        const option = document.getElementById('languageSelectHidden').value;
 
         if (option === "java") {
             showToast("暂不支持用Java提交，请等待", 'error');
@@ -1343,7 +2204,21 @@ int main() {
 
         try {
             const currentDate = new Date();
-            const code = editor.getValue();
+            let code = '';
+
+            if (editor) {
+                // Monaco Editor 模式
+                code = editor.getValue();
+            } else {
+                // Fallback textarea 模式
+                const fallbackEditor = document.getElementById('fallbackEditor');
+                if (fallbackEditor) {
+                    code = fallbackEditor.value;
+                } else {
+                    code = document.getElementById('codeEditorHidden').value;
+                }
+            }
+
             const pid = document.querySelector('input[name="problemId"]').value;
             const uname = localStorage.getItem('name');
             const cid = "0";
@@ -1393,7 +2268,7 @@ int main() {
         currentProblemId = document.querySelector('input[name="problemId"]').value;
         currentUserId = localStorage.getItem('id');
         currentUsername = localStorage.getItem('name');
-        
+
         if (!currentUserId || !currentUsername) {
             showToast('请先登录后再发表评论', 'error');
             return;
@@ -1401,13 +2276,13 @@ int main() {
 
         // 加载评论列表
         loadComments();
-        
+
         // 绑定事件
         bindCommentEvents();
-        
+
         // 初始化emoji选择器
         initEmojiPicker();
-        
+
         // 检查URL参数中是否有commentId，如果有则自动定位和高亮
         const urlParams = new URLSearchParams(window.location.search);
         const commentId = urlParams.get('commentId');
@@ -1423,7 +2298,7 @@ int main() {
     function bindCommentEvents() {
         // 发表评论
         document.getElementById('submitComment').addEventListener('click', submitComment);
-        
+
         // 使用事件委托处理回复和删除按钮
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('reply') || e.target.closest('.reply')) {
@@ -1476,7 +2351,7 @@ int main() {
     // 渲染评论列表
     function renderComments(comments) {
         const commentList = document.getElementById('commentList');
-        
+
         if (!comments || comments.length === 0) {
             commentList.innerHTML = `
                 <div class="text-center text-muted py-4">
@@ -1494,7 +2369,7 @@ int main() {
     function renderCommentItem(comment) {
         const isOwner = comment.userId == currentUserId;
         const avatarText = comment.username ? comment.username.charAt(0).toUpperCase() : 'U';
-        
+
         // 渲染子评论
         let subcommentsHtml = '';
         if (comment.subcommentList && comment.subcommentList.length > 0) {
@@ -1541,13 +2416,13 @@ int main() {
     function renderSubcommentItem(subcomment) {
         const isOwner = subcomment.userId == currentUserId;
         const avatarText = subcomment.username ? subcomment.username.charAt(0).toUpperCase() : 'U';
-        
+
         // 构建回复显示文本
         let replyText = '';
         if (subcomment.parentId && subcomment.parentUsername) {
             replyText = `<span class="reply-to">回复 <span class="reply-username">@${subcomment.parentUsername}</span></span>`;
         }
-        
+
         return `
             <div class="subcomment-item" data-comment-id="${subcomment.id}">
                 <div class="comment-header">
@@ -1584,7 +2459,7 @@ int main() {
     // 发表评论
     async function submitComment() {
         const content = document.getElementById('commentContent').value.trim();
-        
+
         if (!content) {
             showToast('请输入评论内容', 'error');
             return;
@@ -1649,7 +2524,7 @@ int main() {
     async function submitReply(commentId) {
         const replyForm = document.getElementById(`reply-form-${commentId}`);
         const content = replyForm.querySelector('textarea').value.trim();
-        
+
         if (!content) {
             showToast('请输入回复内容', 'error');
             return;
@@ -1741,7 +2616,7 @@ int main() {
         const date = new Date(timeString);
         const now = new Date();
         const diff = now - date;
-        
+
         if (diff < 60000) { // 1分钟内
             return '刚刚';
         } else if (diff < 3600000) { // 1小时内
@@ -1790,11 +2665,11 @@ int main() {
         document.querySelectorAll('.emoji-category').forEach(category => {
             category.addEventListener('click', (e) => {
                 e.preventDefault();
-                
+
                 // 更新激活状态
                 document.querySelectorAll('.emoji-category').forEach(cat => cat.classList.remove('active'));
                 category.classList.add('active');
-                
+
                 // 显示对应分类的emoji
                 const categoryName = category.dataset.category;
                 renderEmojiGrid(emojiData[categoryName]);
@@ -1823,20 +2698,20 @@ int main() {
             const text = textarea.value;
             const before = text.substring(0, start);
             const after = text.substring(end, text.length);
-            
+
             // 插入emoji到光标位置
             textarea.value = before + emoji + after;
-            
+
             // 设置光标位置到emoji后面
             const newPosition = start + emoji.length;
             textarea.selectionStart = textarea.selectionEnd = newPosition;
-            
+
             // 聚焦到文本框
             textarea.focus();
-            
+
             // 关闭emoji选择器
             emojiPicker.classList.remove('show');
-            
+
             // 触发input事件，确保其他监听器能检测到变化
             textarea.dispatchEvent(new Event('input', { bubbles: true }));
         }
@@ -1852,22 +2727,22 @@ int main() {
         if (!commentElement) {
             commentElement = document.querySelector(`.subcomment-item[data-comment-id="${commentId}"]`);
         }
-        
+
         if (commentElement) {
             // 添加高亮样式
             commentElement.classList.add('comment-highlight');
-            
+
             // 滚动到该评论位置
-            commentElement.scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
+            commentElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
             });
-            
+
             // 3秒后移除高亮效果
             setTimeout(() => {
                 commentElement.classList.remove('comment-highlight');
             }, 3000);
-            
+
             console.log('成功高亮评论，commentId:', commentId);
         } else {
             console.log('未找到指定的评论，commentId:', commentId);
