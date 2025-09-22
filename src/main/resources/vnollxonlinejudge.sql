@@ -39,14 +39,20 @@ create table notification
 (
     id          bigint auto_increment
         primary key,
-    title       varchar(255)                       not null,
-    description text                               null,
-    create_time datetime default CURRENT_TIMESTAMP null,
-    author      varchar(20)                        null
-);
+    title       varchar(255)         not null,
+    description text                 null,
+    create_time varchar(100)         null,
+    uid         bigint               not null,
+    is_read     tinyint(1) default 0 null comment '是否已读',
+    comment_id  bigint               null
+)
+    collate = utf8mb4_unicode_ci;
 
-create index notification_id_index
-    on notification (id);
+create index idx_create_time
+    on notification (create_time);
+
+create index notification_uid_is_read_index
+    on notification (uid, is_read);
 
 create table problem
 (
@@ -160,6 +166,8 @@ create table user
     version      int          default 1        null,
     identity     varchar(50)  default 'USER'   not null,
     salt         varchar(255)                  not null comment '盐值',
+    avatar       varchar(255)                  null comment '头像地址',
+    signature    varchar(128)                  null comment '个性签名',
     constraint email
         unique (email)
 );
