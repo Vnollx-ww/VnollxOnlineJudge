@@ -34,7 +34,7 @@ public class BloomFilter {
 
     @PostConstruct
     public void init() {
-        logger.info("开始加载商品数据到布隆过滤器...");
+        logger.info("开始加载题目数据到布隆过滤器...");
         try {
             loadAllProducts();
         } catch (Exception e) {
@@ -44,32 +44,32 @@ public class BloomFilter {
     }
 
     /**
-     * 加载所有商品到布隆过滤器
+     * 加载所有题目到布隆过滤器
      */
     private void loadAllProducts() {
         try {
             List<Long> idList = problemService.getAllProblemId();
             if (idList.isEmpty()) {
-                logger.warn("未找到商品数据");
+                logger.warn("未找到题目数据");
                 return;
             }
 
-            logger.info("找到 {} 个商品，正在添加到布隆过滤器...", idList.size());
+            logger.info("找到 {} 个题目，正在添加到布隆过滤器...", idList.size());
             int count = 0;
             for (Long id : idList) {
                 add(String.valueOf(id));
                 count++;
 
-                // 每1000个商品打印一次日志
+                // 每1000个题目打印一次日志
                 if (count % 1000 == 0) {
-                    logger.info("已处理 {} 个商品", count);
+                    logger.info("已处理 {} 个题目", count);
                 }
             }
-            logger.info("共处理 {} 个商品到布隆过滤器", count);
+            logger.info("共处理 {} 个题目到布隆过滤器", count);
 
         } catch (Exception e) {
-            logger.error("加载商品数据到布隆过滤器失败", e);
-            throw new RuntimeException("加载商品数据失败", e);
+            logger.error("加载题目数据到布隆过滤器失败", e);
+            throw new RuntimeException("加载题目数据失败", e);
         }
     }
 
