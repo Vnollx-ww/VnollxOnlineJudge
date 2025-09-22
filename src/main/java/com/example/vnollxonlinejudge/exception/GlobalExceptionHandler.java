@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -52,18 +51,7 @@ public class GlobalExceptionHandler {
                    userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
         return Result.LogicError(e.getMessage());
     }
-    
-    /**
-     * 处理评测系统异常
-     */
-    @ExceptionHandler(JudgeException.class)
-    public Result<Void> handleJudgeException(JudgeException e, HttpServletRequest request) {
-        String userInfo = UserContextHolder.getUserSummary();
-        logger.warn("评测系统异常 - 用户: {}, 请求: {} {}, 错误: {}", 
-                   userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
-        return Result.LogicError(e.getMessage());
-    }
-    
+
     /**
      * 处理用户相关异常
      */
@@ -74,17 +62,7 @@ public class GlobalExceptionHandler {
                    userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
         return Result.LogicError(e.getMessage());
     }
-    
-    /**
-     * 处理题目相关异常
-     */
-    @ExceptionHandler(ProblemException.class)
-    public Result<Void> handleProblemException(ProblemException e, HttpServletRequest request) {
-        String userInfo = UserContextHolder.getUserSummary();
-        logger.warn("题目相关异常 - 用户: {}, 请求: {} {}, 错误: {}", 
-                   userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
-        return Result.LogicError(e.getMessage());
-    }
+
     
     /**
      * 处理参数验证异常
@@ -204,18 +182,7 @@ public class GlobalExceptionHandler {
                     userInfo, request.getMethod(), request.getRequestURI(), e.getMessage(), e);
         return Result.SystemError("数据库操作失败，请稍后重试");
     }
-    
-    /**
-     * 处理访问拒绝异常
-     */
-    @ExceptionHandler(AccessDeniedException.class)
-    public Result<Void> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        String userInfo = UserContextHolder.getUserSummary();
-        logger.warn("访问被拒绝 - 用户: {}, 请求: {} {}, 错误: {}", 
-                   userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
-        return Result.AuthenticationError("访问被拒绝，权限不足");
-    }
-    
+
     /**
      * 处理其他运行时异常
      */
