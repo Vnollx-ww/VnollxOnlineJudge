@@ -52,17 +52,6 @@ public class GlobalExceptionHandler {
         return Result.LogicError(e.getMessage());
     }
 
-    /**
-     * 处理用户相关异常
-     */
-    @ExceptionHandler(UserException.class)
-    public Result<Void> handleUserException(UserException e, HttpServletRequest request) {
-        String userInfo = UserContextHolder.getUserSummary();
-        logger.warn("用户相关异常 - 用户: {}, 请求: {} {}, 错误: {}", 
-                   userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
-        return Result.LogicError(e.getMessage());
-    }
-
     
     /**
      * 处理参数验证异常
