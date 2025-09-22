@@ -65,43 +65,44 @@ public class TokenFilter implements Filter {
                 }
             }
 
-        // Get token from Authorization header
-        String authHeader = request.getHeader(AUTH_HEADER);
-        if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().println("不是哥们都不传token，你还想访问？");
-            return;
-        }
+            // Get token from Authorization header
+            String authHeader = request.getHeader(AUTH_HEADER);
+            if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().println("不是哥们都不传token，你还想访问？");
+                return;
+            }
 
-        // Extract the token
-        String token = authHeader.substring(TOKEN_PREFIX.length());
+            // Extract the token
+            String token = authHeader.substring(TOKEN_PREFIX.length());
 
-        // Check if token is empty
-        if (token.trim().isEmpty()) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().println("Token是空的，哥们");
-            return;
-        }
+            // Check if token is empty
+            if (token.trim().isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().println("Token是空的，哥们");
+                return;
+            }
 
-        // Validate Token
-        if (!JwtToken.validateToken(token)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().println("无效的Token");
-            return;
-        }
+            // Validate Token
+            if (!JwtToken.validateToken(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().println("无效的Token");
+                return;
+            }
 
-        // Parse user ID
-        String userId = JwtToken.getUserIdFromToken(token);
-        String identity= JwtToken.getUserIdentityFromToken(token);
+            // Parse user ID
+            String userId = JwtToken.getUserIdFromToken(token);
+            String identity= JwtToken.getUserIdentityFromToken(token);
 
-        String key="logout:"+userId;
-        if (redisService.IsExists(key)){
-            redisService.deleteKey(key);
-            redisService.setKey(token,"",86400L);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().println("无效的Token");
-            return;
-        }
+            String key="logout:"+userId;
+            if (redisService.IsExists(key)){
+                redisService.deleteKey(key);
+                redisService.setKey(token,"",86400L);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().println("无效的Token");
+                return;
+            }
+            
             request.setAttribute("uid", userId);
             request.setAttribute("identity", identity);
             
@@ -115,9 +116,18 @@ public class TokenFilter implements Filter {
             
             // Allow the request to proceed
             filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            // 记录异常日志
+            logger.error("TokenFilter处理请求时发生异常: {}", requestURI, e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().println("服务器内部错误");
         } finally {
-            // 清理ThreadLocal，避免内存泄漏
-            UserContextHolder.clear();
+            // 确保ThreadLocal被清理，避免内存泄漏
+            try {
+                UserContextHolder.clear();
+            } catch (Exception e) {
+                logger.error("清理UserContextHolder时发生异常", e);
+            }
         }
     }
 }
