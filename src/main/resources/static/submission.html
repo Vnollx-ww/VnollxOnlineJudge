@@ -435,7 +435,7 @@
         .modal {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 10000;
             left: 0;
             top: 0;
             width: 100%;
@@ -452,12 +452,15 @@
 
         .modal-content {
             background-color: #fefefe;
-            margin: 10% auto;
+            margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 60%;
+            width: 80%;
+            max-width: 1000px;
+            max-height: 80vh;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
         }
 
         .close {
@@ -473,6 +476,22 @@
             color: black;
             text-decoration: none;
             cursor: pointer;
+        }
+
+        /* 代码显示样式 */
+        #codeContent {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 60vh;
+            overflow-y: auto;
+            margin: 0;
         }
 
         pre {
