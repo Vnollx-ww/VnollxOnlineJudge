@@ -15,82 +15,76 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
+
 @Configuration
 public class RabbitMQConfig {
 
-    @Value("${spring.rabbitmq.host}")
-    private String host;
+    @Value("${spring.rabbitmq.template.reply-timeout:10000}")
+    private int replyTimeout;
 
-    @Value("${spring.rabbitmq.port}")
-    private int port;
-
-    @Value("${spring.rabbitmq.username}")
-    private String username;
-
-    @Value("${spring.rabbitmq.password}")
-    private String password;
-
+    // 队列定义
     @Bean
     public Queue submissionQueue() {
         Map<String, Object> queueArgs = new HashMap<>();
         queueArgs.put("x-max-priority", 10);
         return new Queue("submissionQueue", true, false, false, queueArgs);
     }
+
     @Bean
     public Queue notificationQueue() {
-        Map<String, Object> queueArgs = new HashMap<>();
-        return new Queue("notificationQueue", true, false, false, queueArgs);
+        return new Queue("notificationQueue", true);
     }
+
     @Bean
     public Queue replyQueue() {
         return new Queue("replyQueue", true);
     }
 
+    // 交换器定义
     @Bean
     public DirectExchange submissionExchange() {
         return new DirectExchange("judge");
     }
+
     @Bean
     public DirectExchange notificationExchange() {
         return new DirectExchange("notification");
     }
+
+    // 绑定
     @Bean
-    public Binding binding(Queue submissionQueue, DirectExchange submissionExchange) {
-        return BindingBuilder.bind(submissionQueue)
-                .to(submissionExchange)
+    public Binding submissionBinding() {
+        return BindingBuilder.bind(submissionQueue())
+                .to(submissionExchange())
                 .with("judge.submit");
     }
+
     @Bean
-    public Binding notificationbinding(Queue notificationQueue, DirectExchange notificationExchange) {
-        return BindingBuilder.bind(notificationQueue)
-                .to(notificationExchange)
+    public Binding notificationBinding() {
+        return BindingBuilder.bind(notificationQueue())
+                .to(notificationExchange())
                 .with("notification.send");
     }
-    @Bean
-    public ConnectionFactory connectionFactory() {
-        CachingConnectionFactory factory = new CachingConnectionFactory();
-        factory.setHost(host);
-        factory.setPort(port);
-        factory.setUsername(username);
-        factory.setPassword(password);
 
-        return factory;
-    }
+    // 只需要配置自定义的部分
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(jsonMessageConverter());
-        template.setReplyTimeout(10000);
+        template.setReplyTimeout(replyTimeout);
         return template;
     }
+
     @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
+    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+            ConnectionFactory connectionFactory) {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
-        factory.setPrefetchCount(1); // 设置basicQos为1
+        factory.setPrefetchCount(1);
         return factory;
     }
+
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
