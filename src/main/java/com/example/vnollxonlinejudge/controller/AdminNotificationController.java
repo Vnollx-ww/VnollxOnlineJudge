@@ -28,13 +28,17 @@ public class AdminNotificationController {
         return Result.Success("修改通知成功");
     }
     @PostMapping("/send")
-    public Result<Void> sendNotification(@RequestBody AdminSaveNotificationDTO req){
+    public Result<Void> sendNotification(@RequestBody AdminSaveNotificationDTO req) {
         Long userId = UserContextHolder.getCurrentUserId();
-        notificationService.sendNotification(
-                new Notification(
-                        req.getTitle(),req.getDescription(),req.getCreateTime(),0L
-                ),userId
-        );
+
+        Notification notification = Notification.builder()
+                .title(req.getTitle())
+                .description(req.getDescription())
+                .createTime(req.getCreateTime())
+                .uid(0L)
+                .build();
+
+        notificationService.sendNotification(notification, userId);
         return Result.Success("创建通知成功");
     }
 }

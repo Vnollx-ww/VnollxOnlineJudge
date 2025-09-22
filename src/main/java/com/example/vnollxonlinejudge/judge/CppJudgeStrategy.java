@@ -78,6 +78,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
             return result;
         }
 
+
         try {
             // 2. Download test cases zip from MinIO
             InputStream zipStream = minioClient.getObject(

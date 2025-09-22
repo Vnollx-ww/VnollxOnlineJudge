@@ -27,12 +27,12 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     public void sendNotification(Notification notification, Long uid) {
         if (!uid.equals(0L)) {
             List<Notification> notificationList = userService.getUserIdList(uid).stream()
-                    .map(id -> new Notification(
-                            notification.getTitle(),
-                            notification.getDescription(),
-                            notification.getCreateTime(),
-                            (long)id
-                    ))
+                    .map(id -> Notification.builder()
+                            .title(notification.getTitle())
+                            .description(notification.getDescription())
+                            .createTime(notification.getCreateTime())
+                            .uid((long) id)
+                            .build())
                     .collect(Collectors.toList());
             this.saveBatch(notificationList);
         } else {

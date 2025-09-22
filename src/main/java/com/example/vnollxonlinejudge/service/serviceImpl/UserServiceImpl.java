@@ -68,7 +68,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException("用户名已存在");
         }
         String salt=generateSalt();
-        User user = new User(name,hashPasswordWithSalt(password,salt),email);
+        User user = User.builder()
+                .name(name)
+                .password(hashPasswordWithSalt(password, salt))
+                .email(email)
+                .build();
         user.setSalt(salt);
         save(user);
     }

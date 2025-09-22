@@ -1,10 +1,10 @@
 package com.example.vnollxonlinejudge.service;
+
+import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
+import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
+
 public interface JudgeService {
 
-    String judgeSubmission(
-            String code, String option,
-            Long pid, Long uid, Long cid,
-            String create_time, String uname,
-            Long time, Long memory
-    );
+    String judgeSubmission(SubmitCodeDTO req,Long uid);
+    String testSubmission(TestCodeDTO req);
 }

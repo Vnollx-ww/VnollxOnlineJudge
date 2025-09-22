@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
+import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.model.result.Result;
 import lombok.RequiredArgsConstructor;
@@ -17,17 +18,14 @@ public class JudgeController {
             @RequestBody SubmitCodeDTO req
     ){
         Long userId = UserContextHolder.getCurrentUserId();
-        String result=judgeService.judgeSubmission(
-                req.getCode(),
-                req.getOption(),
-                Long.parseLong(req.getPid()),
-                userId,
-                Long.parseLong(req.getCid()),
-                req.getCreate_time(),
-                req.getUname(),
-                Long.parseLong(req.getTime()),
-                Long.parseLong(req.getMemory())
-        );
+        String result=judgeService.judgeSubmission(req,userId);
+        return Result.Success(result,result);
+    }
+    @PostMapping("/test")
+    public Result<String> test(
+            @RequestBody TestCodeDTO req
+    ){
+        String result=judgeService.testSubmission(req);
         return Result.Success(result,result);
     }
 }

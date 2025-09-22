@@ -3,6 +3,8 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.example.vnollxonlinejudge.consumer.SubmissionConsumer;
 import com.example.vnollxonlinejudge.judge.JudgeStrategy;
 import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
+import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
+import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
 import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.entity.Submission;
@@ -27,16 +29,28 @@ public class JudgeServiceImpl implements JudgeService {
     @Autowired private RedisService redisService;
     @Autowired private JudgeStrategyFactory judgeStrategyFactory;
     @Override
-    public String judgeSubmission(String code, String option, Long pid, Long uid, Long cid, String create_time, String uname,Long time,Long memory) {
-        String lockKey = "submission:" + "user:"+uid + "_" + pid;
+    public String judgeSubmission(SubmitCodeDTO req,Long uid) {
+        String lockKey = "submission:" + "user:"+uid + "_" + req.getPid();
         // 尝试获取锁（3秒内同一用户对同一题目提交无效）
         boolean locked = redisService.tryLock(lockKey,3000);
 
         if (!locked) {
            throw  new BusinessException("请勿重复提交（3秒内同一题目仅允许一次提交）");
         }
-        JudgeInfo judgeInfo=new JudgeInfo(code,option,time,memory,cid,uid,pid,create_time,uname);
+        JudgeInfo judgeInfo=JudgeInfo.builder()
+                .code(req.getCode())
+                .language(req.getOption())
+                .time(Long.parseLong(req.getTime()))
+                .memory(Long.parseLong(req.getMemory()))
+                .cid(Long.parseLong(req.getCid()))
+                .uid(uid)
+                .pid(Long.parseLong(req.getPid()))
+                .createTime(req.getCreate_time())
+                .uname(req.getUname())
+                .build();
+
         JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
+
         RunResult result=strategy.judge(
                 judgeInfo.getCode(),
                 judgeInfo.getPid() + ".zip",
@@ -65,5 +79,10 @@ public class JudgeServiceImpl implements JudgeService {
             // 可以在这里接入监控告警，让开发者知道MQ出了问题
         }
         return result.getStatus();
+    }
+
+    @Override
+    public String testSubmission(TestCodeDTO req) {
+        return null;
     }
 }

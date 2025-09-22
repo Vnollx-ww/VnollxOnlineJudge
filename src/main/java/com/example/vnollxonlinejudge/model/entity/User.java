@@ -3,10 +3,16 @@ package com.example.vnollxonlinejudge.model.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Table(name = "user")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     // 注意属性名要与数据表中的字段名一致
     // 主键自增int(10)对应Long
@@ -40,10 +46,4 @@ public class User {
 
     @Column(name="signature")
     private String signature;
-    public User(String name,String password,String email){
-        this.name=name;
-        this.password=password;
-        this.email=email;
-    }
-    public User(){}
 }

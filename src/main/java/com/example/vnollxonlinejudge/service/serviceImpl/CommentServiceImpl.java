@@ -25,15 +25,18 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Override
     @Transactional
     public void publishComment(PublishCommentDTO dto,Long uid) {
-        Comment comment=new Comment();
-        comment.setContent(dto.getContent());
-        comment.setCreateTime(dto.getCreateTime());
-        comment.setUsername(dto.getUsername());
-        comment.setParentId(dto.getParentId());
-        comment.setProblemId(dto.getProblemId());
-        comment.setUserId(uid);
+        Comment comment = Comment.builder()
+                .content(dto.getContent())
+                .createTime(dto.getCreateTime())
+                .username(dto.getUsername())
+                .parentId(dto.getParentId())
+                .problemId(dto.getProblemId())
+                .userId(uid)
+                .build();
         this.save(comment);
+
         if (dto.getReceiveUserId()==null||dto.getReceiveUserId()==0||Objects.equals(uid, dto.getReceiveUserId()))return ;
+
         Instant now = Instant.now();
         DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
         String formatted = formatter.format(now);
@@ -42,7 +45,12 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 dto.getProblemId(),
                 dto.getContent()
         );
-        Notification notification=new Notification("回复通知",description,formatted,dto.getReceiveUserId());
+        Notification notification = Notification.builder()
+                .title("回复通知")
+                .description(description)
+                .createTime(formatted)
+                .uid(dto.getReceiveUserId())
+                .build();
         QueryWrapper<Comment> wrapper=new QueryWrapper<>();
         wrapper.eq("create_time",dto.getCreateTime());
         Comment newComment=this.getOne(wrapper);
