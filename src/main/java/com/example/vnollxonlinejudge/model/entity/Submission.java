@@ -40,20 +40,5 @@ public class Submission {
     @Column(name = "pid")
     private Long pid;
 
-    // 构造方法
-    public Submission() {}
-
-    public Submission(String code, String language, Long pid, Long cid, Long uid, String createTime,String userName,String status,Long time,Long memory) {
-        this.code = code;
-        this.language = language;
-        this.pid = pid;
-        this.cid = cid;
-        this.uid = uid;
-        this.createTime = createTime;
-        this.userName=userName;
-        this.status=status;
-        this.time=time;
-        this.memory=memory;
-    }
 
 }

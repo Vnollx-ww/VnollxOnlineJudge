@@ -55,18 +55,19 @@ public class RedisServiceImpl implements RedisService {
             for (String id : submissionIds) {
                 Map<String, String> submissionMap = jedis.hgetAll(id);
                 if (submissionMap.isEmpty()) continue;
-                Submission sub = new Submission();
-                sub.setUserName(submissionMap.get("userName"));
-                sub.setUid(Long.valueOf(submissionMap.get("uid")));
-                sub.setCid(Long.valueOf(submissionMap.get("cid")));
-                sub.setPid(Long.valueOf(submissionMap.get("pid")));
-                sub.setCreateTime(submissionMap.get("createTime"));
-                sub.setLanguage(submissionMap.get("language"));
-                sub.setTime(Long.parseLong(submissionMap.get("time")));
-                sub.setMemory(Long.parseLong(submissionMap.get("memory")));
-                sub.setProblemName(submissionMap.get("title"));
-                sub.setStatus(submissionMap.get("status"));
-                sub.setCode(submissionMap.get("code"));
+                Submission sub = Submission.builder()
+                        .code(submissionMap.get("code"))
+                        .language(submissionMap.get("language"))
+                        .pid(Long.valueOf(submissionMap.get("pid")))
+                        .cid(Long.valueOf(submissionMap.get("cid")))
+                        .uid(Long.valueOf(submissionMap.get("uid")))
+                        .createTime(submissionMap.get("createTime"))
+                        .userName(submissionMap.get("userName"))
+                        .status(submissionMap.get("status"))
+                        .time(Long.parseLong(submissionMap.get("time")))
+                        .memory(Long.parseLong(submissionMap.get("memory")))
+                        .problemName(submissionMap.get("title"))
+                        .build();
                 batchList.add(sub);
             }
             if (!batchList.isEmpty()) {
