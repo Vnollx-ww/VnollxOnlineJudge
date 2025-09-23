@@ -189,8 +189,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Result<Void> handleOtherException(Exception e, HttpServletRequest request) {
         String userInfo = UserContextHolder.getUserSummary();
+        String requestURI = request.getRequestURI();
+        
+        // 忽略 Chrome DevTools 的请求，不记录错误日志
+        if (requestURI.startsWith("/.well-known/") || 
+            requestURI.contains("devtools") || 
+            requestURI.contains("chrome-extension") ||
+            requestURI.contains("favicon.ico")) {
+            // 静默处理，不记录日志
+            return Result.LogicError("请求的资源不存在");
+        }
+        
         logger.error("未知异常 - 用户: {}, 请求: {} {}, 错误: {}", 
-                    userInfo, request.getMethod(), request.getRequestURI(), e.getMessage(), e);
+                    userInfo, request.getMethod(), requestURI, e.getMessage(), e);
         return Result.SystemError("系统繁忙，请稍后重试");
     }
 }
