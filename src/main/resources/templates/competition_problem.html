@@ -1051,6 +1051,22 @@
 
 <!-- Monaco Editor 脚本 -->
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+<!-- 备用 CDN -->
+<script>
+  // 如果主 CDN 失败，尝试备用 CDN
+  if (typeof require === 'undefined') {
+    console.log('Primary CDN failed, trying backup CDN...');
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js';
+    script.onload = function() {
+      console.log('Backup CDN loaded successfully');
+    };
+    script.onerror = function() {
+      console.error('Both CDNs failed to load Monaco Editor');
+    };
+    document.head.appendChild(script);
+  }
+</script>
 
 <script>
   // 配置marked.js以符合GitHub风格
@@ -1160,9 +1176,44 @@ public class Main {
       return;
     }
 
-    // 配置 Monaco Editor
-    require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
-    require(['vs/editor/editor.main'], function () {
+    // 等待 Monaco Editor 加载完成
+    function waitForMonaco() {
+      if (typeof require !== 'undefined') {
+        initializeEditor();
+      } else {
+        console.log('Waiting for Monaco Editor to load...');
+        // 最多等待 10 秒
+        if (typeof waitForMonaco.counter === 'undefined') {
+          waitForMonaco.counter = 0;
+        }
+        waitForMonaco.counter++;
+        
+        if (waitForMonaco.counter > 100) { // 10秒后超时
+          console.error('Monaco Editor failed to load after 10 seconds');
+          showFallbackEditor();
+          return;
+        }
+        
+        setTimeout(waitForMonaco, 100);
+      }
+    }
+
+    function showFallbackEditor() {
+      const editorElement = document.getElementById('codeEditor');
+      editorElement.innerHTML = '<textarea id="fallbackEditor" style="width: 100%; height: 100%; border: none; outline: none; font-family: monospace; font-size: 14px; padding: 10px; resize: none;">#include <iostream>\nusing namespace std;\n\nint main() {\n    // 请在此处编写你的代码\n    \n    return 0;\n}</textarea>';
+      
+      const fallbackEditor = document.getElementById('fallbackEditor');
+      if (fallbackEditor) {
+        fallbackEditor.addEventListener('input', function() {
+          document.getElementById('codeEditorHidden').value = this.value;
+        });
+      }
+    }
+
+    function initializeEditor() {
+      // 配置 Monaco Editor
+      require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' } });
+      require(['vs/editor/editor.main'], function () {
       // 注册语言
       monaco.languages.register({ id: 'cpp' });
       monaco.languages.setMonarchTokensProvider('cpp', {
@@ -1247,6 +1298,10 @@ public class Main {
 
       console.log('Monaco Editor 初始化成功');
     });
+    }
+
+    // 开始等待 Monaco Editor 加载
+    waitForMonaco();
   }
 
   // 切换语言
