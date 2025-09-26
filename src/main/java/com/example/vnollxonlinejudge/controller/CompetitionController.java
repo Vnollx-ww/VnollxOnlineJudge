@@ -8,7 +8,8 @@ import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.ProblemService;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -16,10 +17,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/competition")
-@RequiredArgsConstructor
 public class CompetitionController {
     private final CompetitionService competitionService;
     private final ProblemService problemService;
+    
+    @Autowired
+    public CompetitionController(
+            CompetitionService competitionService,
+            ProblemService problemService
+    ) {
+        this.competitionService = competitionService;
+        this.problemService = problemService;
+    }
+
     @GetMapping("/{id}")
     public ModelAndView competitionDetail(@PathVariable Long id) {
         CompetitionVo competition = competitionService.getCompetitionById(id);

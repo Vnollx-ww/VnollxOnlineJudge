@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.model.result.RunResult;
+import com.example.vnollxonlinejudge.service.TestCaseCacheService;
 import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import org.slf4j.Logger;
@@ -25,14 +26,18 @@ import java.util.zip.ZipFile;
 
 @Component
 public class PythonJudgeStrategy implements JudgeStrategy {
+    private final TestCaseCacheService testCaseCacheService;
+    private final RestTemplate restTemplate;
     private final String RUN_URL;
-    private final MinioClient minioClient;
     private static final Logger logger = LoggerFactory.getLogger(PythonJudgeStrategy.class);
-    private static final String MINIO_BUCKET_NAME = "problem";
     @Autowired
-    public PythonJudgeStrategy(String goJudgeEndpoint,MinioClient minioClient) {
+    public PythonJudgeStrategy(
+            TestCaseCacheService testCaseCacheService,
+            String goJudgeEndpoint,
+            RestTemplate restTemplate) {
+        this.restTemplate=restTemplate;
+        this.testCaseCacheService = testCaseCacheService;
         this.RUN_URL = goJudgeEndpoint + "/run";
-        this.minioClient=minioClient;
     }
 
 
@@ -40,7 +45,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
     public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
         RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
         result.setRunTime(result.getTime() / 1000000);
-        result.setMemory(result.getMemory()/1048576);
+        result.setMemory(result.getMemory()/ 1048576);
         // 状态码转换
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus("答案正确");
@@ -54,19 +59,8 @@ public class PythonJudgeStrategy implements JudgeStrategy {
 
     private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
         try {
-            // 1. 从MinIO下载测试用例ZIP
-            InputStream zipStream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(MINIO_BUCKET_NAME)
-                            .object(zipFilePath)
-                            .build());
-
-            // 保存为临时文件
-            Path tempZipPath = Files.createTempFile("testcases", ".zip");
-            Files.copy(zipStream, tempZipPath, StandardCopyOption.REPLACE_EXISTING);
-
             // 2. 读取测试用例
-            List<String[]> testCases = readTestCasesFromZip(tempZipPath.toString());
+            List<String[]> testCases = testCaseCacheService.getTestCases(zipFilePath);
 
             // 3. 执行测试用例
             RunResult finalResult = new RunResult();
@@ -75,7 +69,6 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             finalResult.getFiles().setStdout("");
             finalResult.getFiles().setStderr("");
 
-            RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -106,12 +99,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                         finalResult.setExitStatus(result.getExitStatus());
                         finalResult.getFiles().setStderr(result.getFiles().getStderr());
                         return finalResult;
-                    }
-                    String stderr=result.getFiles().getStderr();
-                    if (stderr.contains("ValueError") && stderr.contains("int()")&&result.getStatus().equals("Nonzero Exit Status")) {
-                        finalResult.setStatus("输入格式错误（请用input().split()处理多数字输入）");
-                        return finalResult;
-                    }
+                    };
                     // 验证输出结果
                     try {
                         String expectedOutput = testCase[1].trim();
@@ -146,42 +134,6 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             return result;
         }
     }
-
-    private List<String[]> readTestCasesFromZip(String zipPath) throws IOException {
-        List<String[]> testCases = new ArrayList<>();
-        try (ZipFile zipFile = new ZipFile(zipPath)) {
-            int i = 1;
-            while (true) {
-                String inputFile = i + ".in";
-                String outputFile = i + ".out";
-
-                ZipEntry inputEntry = zipFile.getEntry(inputFile);
-                ZipEntry outputEntry = zipFile.getEntry(outputFile);
-
-                if (inputEntry == null || outputEntry == null) break;
-
-                String input = readFileFromZip(zipFile, inputFile);
-                String output = readFileFromZip(zipFile, outputFile);
-
-                testCases.add(new String[]{input, output});
-                i++;
-            }
-        }
-        return testCases;
-    }
-
-    private String readFileFromZip(ZipFile zipFile, String entryName) throws IOException {
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(zipFile.getInputStream(zipFile.getEntry(entryName))))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-        }
-        return content.toString().trim();
-    }
-
     private String buildRunPayload(String code, String input, Long cpuLimit, Long memoryLimit) {
         // 转义特殊字符
         String escapedCode = code.replace("\\", "\\\\")

@@ -8,6 +8,7 @@ import com.example.vnollxonlinejudge.model.vo.tag.TagVo;
 import com.example.vnollxonlinejudge.model.entity.Tag;
 import com.example.vnollxonlinejudge.service.ProblemTagService;
 import com.example.vnollxonlinejudge.service.TagService;
+import io.minio.MinioClient;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +19,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Setter
 public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagService {
-    @Autowired private ProblemTagService problemTagService;
+    private final ProblemTagService problemTagService;
+    @Autowired
+    public TagServiceImpl(ProblemTagService problemTagService) {
+        this.problemTagService = problemTagService;
+    }
     @Override
     public void createTag(String name) {
         QueryWrapper<Tag> wrapper=new QueryWrapper<>();

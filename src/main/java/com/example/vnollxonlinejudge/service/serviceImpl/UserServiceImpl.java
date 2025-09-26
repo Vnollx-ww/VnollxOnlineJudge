@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.model.base.RedisKeyType;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
@@ -14,15 +15,14 @@ import com.example.vnollxonlinejudge.mapper.UserMapper;
 import com.example.vnollxonlinejudge.service.OssService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
-import com.example.vnollxonlinejudge.utils.FileOperation;
 import com.example.vnollxonlinejudge.utils.JwtToken;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.vnollxonlinejudge.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -34,55 +34,90 @@ import static com.example.vnollxonlinejudge.utils.BCryptSalt.generateSalt;
 import static com.example.vnollxonlinejudge.utils.BCryptSalt.hashPasswordWithSalt;
 
 @Service
-@Setter
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    // 常量定义
+    private static final String IDENTITY_SUPER_ADMIN = "SUPER_ADMIN";
+    private static final String IDENTITY_ADMIN = "ADMIN";
+    private static final String IDENTITY_USER = "USER";
 
-    @Autowired private UserSolvedProblemService userSolvedProblemService;
-    @Autowired private RedisService redisService;
-    @Autowired private OssService ossService;
+    // 错误消息常量
+    private static final String ERROR_USER_NOT_EXIST = "用户不存在";
+    private static final String ERROR_PASSWORD_WRONG = "密码错误，请重试";
+    private static final String ERROR_VERIFY_CODE = "验证码错误";
+    private static final String ERROR_EMAIL_EXISTS = "邮箱已存在";
+    private static final String ERROR_NAME_EXISTS = "用户名已存在";
+
+    private final UserSolvedProblemService userSolvedProblemService;
+    private final RedisService redisService;
+    private final OssService ossService;
+    @Autowired
+    public UserServiceImpl(UserSolvedProblemService userSolvedProblemService,
+                           RedisService redisService,
+                           OssService ossService) {
+        this.userSolvedProblemService = userSolvedProblemService;
+        this.redisService = redisService;
+        this.ossService = ossService;
+    }
+
+    public void validateUserExists(User user) {
+        if (user == null) {
+            throw new BusinessException(ERROR_USER_NOT_EXIST);
+        }
+    }
+
+
     //@DS("master")
     @Override
     public String login(String email, String password) {
+        /*List<User> userList=this.list();
+        for (User user:userList){
+            System.out.println(JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity()));
+        }*/
         User user = lambdaQuery().eq(User::getEmail, email).one();
-        if(user == null) {
-            throw new BusinessException("用户不存在");
-        }
+
+        validateUserExists(user);
+
         if (!Objects.equals(hashPasswordWithSalt(password, user.getSalt()), user.getPassword())) {
-            throw new BusinessException("密码错误，请重试");
+            throw new BusinessException(ERROR_PASSWORD_WRONG);
         }
         return JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity());
     }
 
     //@DS("master")
     @Override
+    @Transactional
     public void register(String name, String password, String email,String verifyCode) {
-        String key=email+":register";
+        String key = RedisKeyType.REGISTER.generateKey(email);
+
         if (!redisService.IsExists(key)|| !Objects.equals(redisService.getValueByKey(key), verifyCode)){
-            throw new BusinessException("验证码错误");
+            throw new BusinessException(ERROR_VERIFY_CODE);
         }
         if (lambdaQuery().eq(User::getEmail, email).exists()) {
-            throw new BusinessException("邮箱已存在");
+            throw new BusinessException(ERROR_EMAIL_EXISTS);
         }
         if (lambdaQuery().eq(User::getName, name).exists()) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ERROR_NAME_EXISTS);
         }
         String salt=generateSalt();
+
         User user = User.builder()
                 .name(name)
                 .password(hashPasswordWithSalt(password, salt))
                 .email(email)
+                .salt(salt)
                 .build();
-        user.setSalt(salt);
-        save(user);
+
+        this.save(user);
     }
 
     @Override
     public void forgetPassword(String newPassword, String email, String verifyCode) {
-        String key=email+":forget";
-        if (!redisService.IsExists(key)|| !Objects.equals(redisService.getValueByKey(key), verifyCode)){
-            throw new BusinessException("验证码错误");
+        String key = RedisKeyType.FORGET.generateKey(email);
+        if (!redisService.checkKeyValue(key,verifyCode)){
+            throw new BusinessException(ERROR_VERIFY_CODE);
         }
+
         QueryWrapper<User> wrapper=new QueryWrapper<>();
         wrapper.eq("email",email);
         User user=this.baseMapper.selectOne(wrapper);
@@ -95,10 +130,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public UserVo getUserById(Long id) {
         User user = getById(id);
-        if(user == null) {
-            throw new BusinessException("用户不存在");
-        }
-        user.setPassword("无权限查看");
+
+        validateUserExists(user);
+
         return new UserVo(user);
     }
 
@@ -124,8 +158,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
 
         // 如果是管理员，只查询普通用户
-        if ("ADMIN".equals(identity)) {
-            queryWrapper.eq("identity", "USER");
+        if (IDENTITY_ADMIN.equals(identity)) {
+            queryWrapper.eq("identity", IDENTITY_USER);
         }
 
         // 关键字查询
@@ -148,9 +182,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void updatePassword(String old_password, String password, Long uid) {
         User user = getById(uid);
-        if(user == null) {
-            throw new BusinessException("用户不存在");
-        }
+        validateUserExists(user);
+
         if(!Objects.equals(user.getPassword(), hashPasswordWithSalt(old_password, user.getSalt()))) {
             throw new BusinessException("原密码不正确");
         }
@@ -167,17 +200,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String key=email+":update";
         if(option.equals("email")) {
             if (!redisService.IsExists(key) || !Objects.equals(redisService.getValueByKey(key), verifyCode)) {
-                throw new BusinessException("验证码错误");
+                throw new BusinessException(ERROR_VERIFY_CODE);
             }
         }
         if (lambdaQuery().eq(User::getName, name).ne(User::getId, uid).exists()) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ERROR_NAME_EXISTS);
         }
-        User user=new User();
-        user.setId(uid);
-        user.setEmail(email);
-        user.setName(name);
-        user.setSignature(signature);
+        User user=User.builder()
+                .id(uid)
+                .email(email)
+                .name(name)
+                .signature(signature)
+                .build();
         if (avatar!=null){
             try {
                 String fileUrl=ossService.uploadAvatar(avatar,uid);
@@ -202,10 +236,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void deleteUserByAdmin(Long id,String currentIdentity) {
         User user=this.getById(id);
-        if (currentIdentity.equals("SUPER_ADMIN")){
-            if (user.getIdentity().equals("SUPER_ADMIN"))throw new BusinessException("无权限");
-        }else if (currentIdentity.equals("ADMIN")){
-            if (!user.getIdentity().equals("USER"))throw new BusinessException("无权限");
+        if (currentIdentity.equals(IDENTITY_SUPER_ADMIN)){
+            if (user.getIdentity().equals(IDENTITY_SUPER_ADMIN))throw new BusinessException("无权限");
+        }else if (currentIdentity.equals(IDENTITY_ADMIN)){
+            if (!user.getIdentity().equals(IDENTITY_USER))throw new BusinessException("无权限");
         }
         this.baseMapper.deleteById(user);
     }
@@ -213,19 +247,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void addUserByAdmin(String name, String email, String identity) {
         if (lambdaQuery().eq(User::getEmail, email).exists()) {
-            throw new BusinessException("邮箱地址已存在");
+            throw new BusinessException(ERROR_EMAIL_EXISTS);
         }
 
         if (lambdaQuery().eq(User::getName, name).exists()) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ERROR_NAME_EXISTS);
         }
 
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setIdentity(identity);
-        user.setSubmitCount(0);
-        user.setPassCount(0);
+        User user = User.builder()
+                .name(name)
+                .email(email)
+                .identity(identity)
+                .submitCount(0)
+                .passCount(0)
+                .build();
 
         save(user);
     }
@@ -236,17 +271,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             String identity, Long uid,String currentIdentity
     ) {
         User user=this.getById(uid);
-        if (currentIdentity.equals("SUPER_ADMIN")){
-            if (user.getIdentity().equals("SUPER_ADMIN"))throw new BusinessException("无权限");
-        }else if (currentIdentity.equals("ADMIN")){
-            if (!user.getIdentity().equals("USER"))throw new BusinessException("无权限");
+        if (currentIdentity.equals(IDENTITY_SUPER_ADMIN)){
+            if (user.getIdentity().equals(IDENTITY_SUPER_ADMIN))throw new BusinessException("无权限");
+        }else if (currentIdentity.equals(IDENTITY_ADMIN)){
+            if (!user.getIdentity().equals(IDENTITY_USER))throw new BusinessException("无权限");
         }
         if (lambdaQuery().eq(User::getEmail, email).ne(User::getId, uid).exists()) {
-            throw new BusinessException("邮箱地址已存在");
+            throw new BusinessException(ERROR_EMAIL_EXISTS);
         }
         if (lambdaQuery().eq(User::getName, name).ne(User::getId, uid).exists()) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ERROR_NAME_EXISTS);
         }
+
         user.setId(uid);
         user.setEmail(email);
         user.setName(name);
@@ -268,8 +304,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         QueryWrapper<User> wrapper=new QueryWrapper<>();
         // 如果是管理员，只查询普通用户
-        if ("ADMIN".equals(identity)) {
-            wrapper.eq("identity", "USER");
+        if (IDENTITY_ADMIN.equals(identity)) {
+            wrapper.eq("identity", IDENTITY_USER);
         }
 
         if (StringUtils.isNotBlank(keyword)) {

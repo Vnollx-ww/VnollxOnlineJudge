@@ -20,9 +20,10 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import redis.clients.jedis.resps.Tuple;
+import org.springframework.data.redis.core.ZSetOperations;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,15 +31,31 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Setter
 public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Competition> implements CompetitionService {
     private static final Logger logger = LoggerFactory.getLogger(CompetitionService.class);
-    @Autowired private CompetitionUserService competitionUserService;
-    @Autowired private CompetitionProblemService competitionProblemService;
-    @Autowired private ProblemService problemService;
-    @Autowired private RedisService redisService;
-    @Autowired private UserSolvedProblemService userSolvedProblemService;
-    @Autowired private SubmissionService submissionService;
+    private final CompetitionUserService competitionUserService;
+    private final CompetitionProblemService competitionProblemService;
+    private final ProblemService problemService;
+    private final RedisService redisService;
+    private final UserSolvedProblemService userSolvedProblemService;
+    private final SubmissionService submissionService;
+
+    @Autowired
+    public CompetitionServiceImpl(
+            @Lazy CompetitionUserService competitionUserService,
+            CompetitionProblemService competitionProblemService,
+            ProblemService problemService,
+            RedisService redisService,
+            UserSolvedProblemService userSolvedProblemService,
+            SubmissionService submissionService
+    ) {
+        this.competitionUserService=competitionUserService;
+        this.competitionProblemService=competitionProblemService;
+        this.problemService=problemService;
+        this.redisService=redisService;
+        this.userSolvedProblemService=userSolvedProblemService;
+        this.submissionService=submissionService;
+    }
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d"; // cid:pid
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
@@ -196,15 +213,18 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             List<User> users = new ArrayList<>();
         // 从Redis获取排名
             if (redisService.getTtl(rankingKey) >600) {
-                List<Tuple> userTuples = redisService.getZset(rankingKey);
+                Set<ZSetOperations.TypedTuple<String>> userTuples = redisService.getZset(rankingKey);
                 userTuples.forEach(tuple -> {
                     User user = new User();
-                    user.setName(tuple.getElement());
+                    user.setName(tuple.getValue());
                     String userPassKey = String.format(USER_PASS_COUNT_KEY, cid, user.getName());
                     String userPenaltyKey = String.format(USER_PENALTY_KEY, cid, user.getName());
 
-                    user.setPassCount(Integer.parseInt(redisService.getValueByKey(userPassKey)));
-                    user.setPenaltyTime(Integer.parseInt(redisService.getValueByKey(userPenaltyKey)));
+                    String passCountStr = redisService.getValueByKey(userPassKey);
+                    String penaltyTimeStr = redisService.getValueByKey(userPenaltyKey);
+                    
+                    user.setPassCount(passCountStr != null ? Integer.parseInt(passCountStr) : 0);
+                    user.setPenaltyTime(penaltyTimeStr != null ? Integer.parseInt(penaltyTimeStr) : 0);
                     users.add(user);
                 });
             } else {

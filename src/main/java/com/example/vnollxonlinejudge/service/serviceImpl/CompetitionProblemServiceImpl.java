@@ -7,8 +7,7 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.CompetitionProblemMapper;
 import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
-import com.example.vnollxonlinejudge.service.CompetitionProblemService;
-import com.example.vnollxonlinejudge.service.ProblemService;
+import com.example.vnollxonlinejudge.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +15,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
-@Setter
 public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProblemMapper,CompetitionProblem>  implements CompetitionProblemService {
-    @Autowired private ProblemService problemService;
+    private final ProblemService problemService;
+
+    @Autowired
+    public CompetitionProblemServiceImpl(ProblemService problemService) {
+        this.problemService=problemService;
+    }
     @Override
     public List<CompetitionProblem> getProblemList(Long cid) {
         return lambdaQuery()

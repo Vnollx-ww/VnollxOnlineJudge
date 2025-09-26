@@ -7,7 +7,8 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,10 +17,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/competition")
 @Validated
-@RequiredArgsConstructor
 public class AdminCompetitionController {
     private final CompetitionService competitionService;
     private final CompetitionProblemService competitionProblemService;
+    
+    @Autowired
+    public AdminCompetitionController(
+            CompetitionService competitionService,
+            CompetitionProblemService competitionProblemService
+    ) {
+        this.competitionService = competitionService;
+        this.competitionProblemService = competitionProblemService;
+    }
+
     @PostMapping("/create")
     public Result<Void> createCompetition(@RequestBody AdminSaveCompetitionDTO req){
         competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword());

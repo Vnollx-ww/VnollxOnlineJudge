@@ -6,11 +6,13 @@ import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
@@ -39,8 +41,11 @@ public class TokenFilter implements Filter {
             "/competition/submission/\\d+",
             "/solve/publish/\\d+"
     };
+    private final RedisService redisService;
     @Autowired
-    private RedisService redisService;
+    public TokenFilter(RedisService redisService){
+        this.redisService=redisService;
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)

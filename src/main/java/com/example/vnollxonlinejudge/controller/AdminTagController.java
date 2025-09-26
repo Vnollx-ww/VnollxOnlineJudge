@@ -4,14 +4,19 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.dto.tag.CreateTagDTO;
 import com.example.vnollxonlinejudge.service.TagService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/admin/tag")
-@RequiredArgsConstructor
 public class AdminTagController {
     private final TagService tagService;
+    
+    @Autowired
+    public AdminTagController(TagService tagService) {
+        this.tagService = tagService;
+    }
     @PostMapping("/create")
     public Result<Void> createTag(@RequestBody CreateTagDTO req){
         tagService.createTag(req.getName());

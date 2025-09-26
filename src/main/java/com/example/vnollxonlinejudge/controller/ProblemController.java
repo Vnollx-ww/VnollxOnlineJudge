@@ -4,7 +4,6 @@ import com.example.vnollxonlinejudge.filter.BloomFilter;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -14,10 +13,19 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/problem")
-@RequiredArgsConstructor
 public class ProblemController {
     private final ProblemService problemService;
-    @Autowired private BloomFilter bloomFilter;
+    private final BloomFilter bloomFilter;
+    
+    @Autowired
+    public ProblemController(
+            ProblemService problemService,
+            BloomFilter bloomFilter
+    ) {
+        this.bloomFilter = bloomFilter;
+        this.problemService = problemService;
+    }
+
     @GetMapping("/{id}")
     public ModelAndView problemDetail(@PathVariable Long id) {
         if (!bloomFilter.contains(String.valueOf(id))){

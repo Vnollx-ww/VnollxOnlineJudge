@@ -9,7 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +18,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/user")
 @Validated
-@RequiredArgsConstructor
 public class AdminUserController {
     private final UserService userService;
+    
+    @Autowired
+    public AdminUserController(UserService userService) {
+        this.userService = userService;
+    }
 
     /**
      * 提取当前管理员ID的公共方法

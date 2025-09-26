@@ -926,65 +926,6 @@
     <div class="markdown-content" th:text="${competition_problem.hint}"></div>
   </div>
 
-  <!-- 比赛期间不支持评论的提示 -->
-  <div class="competition-notice" id="competitionNotice">
-    <i class="fas fa-exclamation-triangle"></i>
-    <p class="notice-text">比赛期间不支持评论功能，请专注于解题。比赛结束后可正常使用评论功能。</p>
-  </div>
-
-  <!-- 评论区域 -->
-  <div class="card comment-section mt-5" id="commentSection" style="display: none;">
-    <div class="card-header">
-      <h4 class="mb-0">
-        <i class="fas fa-comments me-2"></i>评论讨论
-        <span class="badge bg-primary ms-2" id="commentCount">0</span>
-      </h4>
-    </div>
-    <div class="card-body">
-      <!-- 发表评论区域 -->
-      <div class="comment-form mb-4">
-        <div class="mb-3">
-          <label for="commentContent" class="form-label">发表评论</label>
-          <div class="comment-input-container">
-            <textarea id="commentContent" class="form-control" rows="4" placeholder="分享你的想法、解题思路或遇到的问题..."></textarea>
-            <button type="button" class="emoji-trigger" id="emojiTrigger">
-              <i class="fas fa-smile"></i>
-            </button>
-          </div>
-          <div class="emoji-picker-container">
-            <div class="emoji-picker" id="emojiPicker">
-              <div class="emoji-categories">
-                <button class="emoji-category active" data-category="smileys">😀</button>
-                <button class="emoji-category" data-category="people">👋</button>
-                <button class="emoji-category" data-category="animals">🐶</button>
-                <button class="emoji-category" data-category="food">🍎</button>
-                <button class="emoji-category" data-category="travel">🚗</button>
-                <button class="emoji-category" data-category="objects">📱</button>
-                <button class="emoji-category" data-category="symbols">❤️</button>
-              </div>
-              <div class="emoji-grid" id="emojiGrid">
-                <!-- Emoji列表将通过JavaScript动态生成 -->
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="d-flex justify-content-end">
-          <button type="button" class="btn btn-primary" id="submitComment">
-            <i class="fas fa-paper-plane me-2"></i>发表评论
-          </button>
-        </div>
-      </div>
-
-      <!-- 评论列表 -->
-      <div id="commentList" class="comment-list">
-        <div class="text-center text-muted py-4">
-          <i class="fas fa-comment-slash fa-2x mb-2"></i>
-          <p>暂无评论，快来发表第一条评论吧！</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- 代码提交区域 -->
   <div class="card code-editor-container mt-5">
     <form id="submitForm">
@@ -1044,6 +985,65 @@
         </button>
       </div>
     </form>
+  </div>
+
+  <!-- 比赛期间不支持评论的提示 -->
+  <div class="competition-notice" id="competitionNotice" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i>
+    <p class="notice-text">比赛期间不支持评论功能，请专注于解题。比赛结束后可正常使用评论功能。</p>
+  </div>
+
+  <!-- 评论区域 -->
+  <div class="card comment-section mt-5" id="commentSection" style="display: none;">
+    <div class="card-header">
+      <h4 class="mb-0">
+        <i class="fas fa-comments me-2"></i>评论讨论
+        <span class="badge bg-primary ms-2" id="commentCount">0</span>
+      </h4>
+    </div>
+    <div class="card-body">
+      <!-- 发表评论区域 -->
+      <div class="comment-form mb-4">
+        <div class="mb-3">
+          <label for="commentContent" class="form-label">发表评论</label>
+          <div class="comment-input-container">
+            <textarea id="commentContent" class="form-control" rows="4" placeholder="分享你的想法、解题思路或遇到的问题..."></textarea>
+            <button type="button" class="emoji-trigger" id="emojiTrigger">
+              <i class="fas fa-smile"></i>
+            </button>
+          </div>
+          <div class="emoji-picker-container">
+            <div class="emoji-picker" id="emojiPicker">
+              <div class="emoji-categories">
+                <button class="emoji-category active" data-category="smileys">😀</button>
+                <button class="emoji-category" data-category="people">👋</button>
+                <button class="emoji-category" data-category="animals">🐶</button>
+                <button class="emoji-category" data-category="food">🍎</button>
+                <button class="emoji-category" data-category="travel">🚗</button>
+                <button class="emoji-category" data-category="objects">📱</button>
+                <button class="emoji-category" data-category="symbols">❤️</button>
+              </div>
+              <div class="emoji-grid" id="emojiGrid">
+                <!-- Emoji列表将通过JavaScript动态生成 -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end">
+          <button type="button" class="btn btn-primary" id="submitComment">
+            <i class="fas fa-paper-plane me-2"></i>发表评论
+          </button>
+        </div>
+      </div>
+
+      <!-- 评论列表 -->
+      <div id="commentList" class="comment-list">
+        <div class="text-center text-muted py-4">
+          <i class="fas fa-comment-slash fa-2x mb-2"></i>
+          <p>暂无评论，快来发表第一条评论吧！</p>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1893,7 +1893,7 @@ public class Main {
       const competitionNotice = document.getElementById('competitionNotice');
       const commentSection = document.getElementById('commentSection');
       
-      if (data.code === 200) {
+      if (data.code === 200 && data.data === true) {
         // 比赛已结束，显示评论区域，隐藏比赛提示
         if (competitionNotice) {
           competitionNotice.style.display = 'none';

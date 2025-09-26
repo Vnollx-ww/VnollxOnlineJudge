@@ -16,18 +16,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements SolveService {
     @Override
     public void createSolve(String content, String name,Long pid, Long uid,String title,String problemName) {
-        Solve solve = new Solve();
-        solve.setContent(content);
-        solve.setName(name);
-        solve.setPid(pid);
-        solve.setUid(uid);
-        solve.setTitle(title);
-        solve.setProblemName(problemName);
-        solve.setCreateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        Solve solve=Solve.builder()
+                .content(content)
+                .name(name)
+                .pid(pid)
+                .uid(uid)
+                .title(title)
+                .problemName(problemName)
+                .createTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .build();
+
         this.save(solve);
     }
 

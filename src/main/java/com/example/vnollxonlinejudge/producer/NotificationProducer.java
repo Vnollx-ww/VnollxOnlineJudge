@@ -1,22 +1,29 @@
 package com.example.vnollxonlinejudge.producer;
 
-import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.model.entity.Notification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class NotificationProducer {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    @Autowired
+    public NotificationProducer(
+            RabbitTemplate rabbitTemplate,
+            ObjectMapper objectMapper
+    ){
+        this.rabbitTemplate=rabbitTemplate;
+        this.objectMapper=objectMapper;
+    }
     public void sendNotification(Notification notification){
         try {
             String correlationId = UUID.randomUUID().toString();

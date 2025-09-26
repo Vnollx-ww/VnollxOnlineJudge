@@ -6,7 +6,6 @@ import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.solve.SolveVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.service.SolveService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -18,11 +17,18 @@ import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
 @RequestMapping("/solve")
-@RequiredArgsConstructor
 public class SolveController {
     private final SolveService solveService;
     private final ProblemService problemService;
-
+    
+    @Autowired
+    public SolveController(
+            SolveService solveService,
+            ProblemService problemService
+    ) {
+        this.problemService = problemService;
+        this.solveService = solveService;
+    }
     @GetMapping("/{id}")
     public ModelAndView solveDetail(@PathVariable Long id) {
         SolveVo solve= solveService.getSolve(id);

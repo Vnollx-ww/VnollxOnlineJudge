@@ -8,7 +8,8 @@ import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
 import com.example.vnollxonlinejudge.service.NotificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,9 +19,13 @@ import com.example.vnollxonlinejudge.utils.UserContextHolder;
 @RestController
 @RequestMapping("/admin/notification")
 @Validated
-@RequiredArgsConstructor
 public class AdminNotificationController {
     private final NotificationService notificationService;
+    
+    @Autowired
+    public AdminNotificationController(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
 
     @PutMapping("/update/{id}")
     public Result<Void> updateNotification(@RequestBody AdminSaveNotificationDTO req, @Valid @PathVariable Long id){

@@ -2,7 +2,9 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.example.vnollxonlinejudge.config.EmailConfig;
 import com.example.vnollxonlinejudge.exception.BusinessException;
+import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.entity.User;
+import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.EmailService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserService;
@@ -17,11 +19,21 @@ import org.springframework.stereotype.Service;
 import java.util.Objects;
 
 @Service
-@Setter
 public class EmailServiceImpl implements EmailService {
-    @Autowired private RedisService redisService;
-    @Autowired private UserService userService;
-    @Autowired private EmailConfig emailConfig;
+    private final RedisService redisService;
+    private final UserService userService;
+    private final EmailConfig emailConfig;
+
+    @Autowired
+    public EmailServiceImpl(
+            RedisService redisService,
+            UserService userService,
+            EmailConfig emailConfig
+    ) {
+        this.redisService=redisService;
+        this.userService=userService;
+        this.emailConfig=emailConfig;
+    }
     @Override
     public void sendEmail(String email, String option) {
         try {

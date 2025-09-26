@@ -7,11 +7,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.NotificationMapper;
+import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
 import com.example.vnollxonlinejudge.model.entity.Notification;
-import com.example.vnollxonlinejudge.service.NotificationService;
-import com.example.vnollxonlinejudge.service.UserService;
+import com.example.vnollxonlinejudge.service.*;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +21,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Notification> implements NotificationService {
     private final UserService userService;
+    @Autowired
+    public NotificationServiceImpl(UserService userService) {
+        this.userService=userService;
+    }
+
     @Override
     @Transactional
     public void sendNotification(Notification notification, Long uid) {

@@ -3,6 +3,7 @@ package com.example.vnollxonlinejudge.filter;
 
 import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.annotation.PostConstruct;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +21,10 @@ public class BloomFilter {
 
     private final BitSet bits = new BitSet(DEFAULT_SIZE);
     private final SimpleHash[] func = new SimpleHash[SEEDS.length];
-
+    private final ProblemService problemService;
     @Autowired
-    @Lazy
-    private ProblemService problemService;
-
-    public BloomFilter() {
+    public BloomFilter(ProblemService problemService){
+        this.problemService=problemService;
         logger.info("布隆过滤器初始化中...");
         for (int i = 0; i < SEEDS.length; i++) {
             func[i] = new SimpleHash(DEFAULT_SIZE, SEEDS[i]);

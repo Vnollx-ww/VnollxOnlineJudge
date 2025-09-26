@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import com.example.vnollxonlinejudge.model.result.Result;
@@ -14,9 +14,13 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/submission")
-@RequiredArgsConstructor
 public class SubmissionController {
     private final SubmissionService submissionService;
+    
+    @Autowired
+    public SubmissionController(SubmissionService submissionService) {
+        this.submissionService = submissionService;
+    }
     @GetMapping("/{id}")
     public ModelAndView submissionDetail(@PathVariable Long id) {
         SubmissionVo submission = submissionService.getSubmissionById(id);

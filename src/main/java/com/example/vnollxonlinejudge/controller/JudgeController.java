@@ -4,15 +4,20 @@ import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.model.result.Result;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
 @RequestMapping("/judge")
-@RequiredArgsConstructor
 public class JudgeController {
     private final JudgeService judgeService;
+    
+    @Autowired
+    public JudgeController(JudgeService judgeService) {
+        this.judgeService = judgeService;
+    }
     @PostMapping("/submit")
     public Result<String> judgeSubmit(
             @RequestBody SubmitCodeDTO req

@@ -7,7 +7,8 @@ import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +18,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/problem")
 @Validated
-@RequiredArgsConstructor
 public class AdminProblemController {
     private final ProblemService problemService;
+    
+    @Autowired
+    public AdminProblemController(ProblemService problemService) {
+        this.problemService = problemService;
+    }
     @PostMapping(value ="/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Result<Void> createProblem(
             @Valid @ModelAttribute AdminSaveProblemDTO dto

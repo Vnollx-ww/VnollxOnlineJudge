@@ -19,6 +19,9 @@ import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,12 +35,29 @@ import java.util.stream.Collectors;
 @Service
 public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> implements ProblemService {
     private static final Logger logger = LoggerFactory.getLogger(ProblemServiceImpl.class);
-    @Autowired private ProblemTagService problemTagService;
-    @Autowired private UserSolvedProblemService userSolvedProblemService;
-    @Autowired private RedisService redisService;
-    @Autowired private OssService ossService;
-    @Autowired private SubmissionService submissionService;
-    @Autowired private TagService tagService;
+    private final ProblemTagService problemTagService;
+    private final UserSolvedProblemService userSolvedProblemService;
+    private final RedisService redisService;
+    private final OssService ossService;
+    private final SubmissionService submissionService;
+    private final TagService tagService;
+
+    @Autowired
+    public ProblemServiceImpl(
+            ProblemTagService problemTagService,
+            UserSolvedProblemService userSolvedProblemService,
+            @Lazy RedisService redisService,
+            OssService ossService,
+            @Lazy SubmissionService submissionService,
+            TagService tagService
+    ) {
+        this.problemTagService=problemTagService;
+        this.userSolvedProblemService=userSolvedProblemService;
+        this.redisService=redisService;
+        this.ossService=ossService;
+        this.submissionService=submissionService;
+        this.tagService=tagService;
+    }
 
     @Override
     @Transactional

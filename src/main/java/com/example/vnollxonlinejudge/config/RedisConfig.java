@@ -1,52 +1,55 @@
 package com.example.vnollxonlinejudge.config;
 
-import com.example.vnollxonlinejudge.redis.listener.CompetitionExpirationListener;
-import org.springframework.beans.factory.annotation.Value;
+import com.example.vnollxonlinejudge.listener.CompetitionExpirationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfig {
 
-    // Redis 服务器配置
-    @Value("${spring.data.redis.host}")
-    private String host;
-    @Value("${spring.data.redis.port}")
-    private int port;
-    @Value("${spring.data.redis.timeout}")
-    private int timeout;
-
-    @Value("${spring.data.redis.jedis.pool.max-active}")
-    private int maxTotal;
-
-    @Value("${spring.data.redis.jedis.pool.max-idle}")
-    private int maxIdle;
-
-    @Value("${spring.data.redis.jedis.pool.min-idle}")
-    private int minIdle;
-
-
     @Bean
-    public JedisPoolConfig jedisPoolConfig() {
-
-        JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxTotal(maxTotal);
-        config.setMaxIdle(maxIdle);
-        config.setMinIdle(minIdle);
-        config.setTestOnBorrow(true);
-        config.setTestOnReturn(true);
-        config.setJmxEnabled(false); // 禁用 JMX
-        return config;
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        
+        // 设置key序列化方式
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        
+        // 设置value序列化方式
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashValueSerializer(new StringRedisSerializer()); // Hash值使用字符串序列化器
+        
+        template.afterPropertiesSet();
+        return template;
     }
 
     @Bean
-    public JedisPool jedisPool(JedisPoolConfig jedisPoolConfig) {
-        return new JedisPool(jedisPoolConfig, host, port, timeout);
+    public RedisTemplate<String, String> stringRedisTemplateForList(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        
+        // 设置key和value都使用字符串序列化器
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new StringRedisSerializer());
+        
+        template.afterPropertiesSet();
+        return template;
     }
+
+    @Bean
+    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
+        return new StringRedisTemplate(connectionFactory);
+    }
+
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory connectionFactory) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();

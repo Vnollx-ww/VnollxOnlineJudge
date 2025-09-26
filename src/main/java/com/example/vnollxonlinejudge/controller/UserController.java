@@ -7,7 +7,7 @@ import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import com.example.vnollxonlinejudge.model.result.Result;
@@ -17,9 +17,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/user")
-@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
     @GetMapping("/{id}")
     public ModelAndView userDetail(@PathVariable Long id) {
         UserVo data=userService.getUserById(id);

@@ -5,6 +5,7 @@ import com.example.vnollxonlinejudge.utils.FileOperation;
 import io.minio.*;
 import io.minio.errors.*;
 import jakarta.annotation.PostConstruct;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,10 @@ public class MinioServiceImpl implements OssService {
     private static final String endpoint="http://106.54.223.38:9000";
     private static final Logger logger = LoggerFactory.getLogger(MinioServiceImpl.class);
     @Autowired
-    private MinioClient minioClient;
+    public MinioServiceImpl(MinioClient minioClient){
+        this.minioClient=minioClient;
+    }
+    private final MinioClient minioClient;
     private final String bucket="problem";
     @Override
     public void uploadFile(String fileUrl,MultipartFile testCaseFile) throws IOException {

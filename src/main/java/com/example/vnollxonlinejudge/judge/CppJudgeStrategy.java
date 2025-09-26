@@ -1,8 +1,9 @@
 package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.model.result.RunResult;
-import io.minio.GetObjectArgs;
+import com.example.vnollxonlinejudge.service.TestCaseCacheService;
 import io.minio.MinioClient;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,38 +12,31 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 @Component
 public class CppJudgeStrategy implements JudgeStrategy {
+    private final TestCaseCacheService testCaseCacheService;
+    private final RestTemplate restTemplate; // 注入配置了连接池的 RestTemplate
     private final String COMPILE_URL ;
     private final String RUN_URL  ;
     private final String DELETE_URL ;
-    private final MinioClient minioClient;
     private static final Logger logger = LoggerFactory.getLogger(CppJudgeStrategy.class);
-    private static final String MINIO_BUCKET_NAME = "problem";
+
+
     @Autowired
-    public CppJudgeStrategy(String goJudgeEndpoint,MinioClient minioClient) {
+    public CppJudgeStrategy(
+            TestCaseCacheService testCaseCacheService,
+            String goJudgeEndpoint,
+            RestTemplate restTemplate) {
+        this.testCaseCacheService = testCaseCacheService;
+        this.restTemplate=restTemplate;
         this.COMPILE_URL = goJudgeEndpoint + "/run";
         this.RUN_URL = goJudgeEndpoint + "/run";
         this.DELETE_URL = goJudgeEndpoint + "/file/{fileId}";
-        this.minioClient = minioClient;
     }
-
-
-
 
     @Override
     public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
@@ -57,53 +51,41 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
         return result;
     }
-
+    private RunResult standardError(String status,String error){
+        RunResult result = new RunResult();
+        result.setStatus(status);
+        result.setExitStatus(1);
+        result.setFiles(new RunResult.Files());
+        result.getFiles().setStderr(error);
+        return result;
+    }
     private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
         // 1. Compile code
         String binaryFileId = compileCode(submittedCode);
         if (binaryFileId == null) {
-            RunResult result = new RunResult();
-            result.setStatus("编译错误");
-            result.setExitStatus(1);
-            result.setFiles(new RunResult.Files());
-            result.getFiles().setStderr("编译错误");
-            return result;
+            return standardError("编译错误","编译错误");
         }
         else if (binaryFileId.equals("超出内存限制")){
-            RunResult result = new RunResult();
-            result.setStatus("超出内存限制");
-            result.setExitStatus(1);
-            result.setFiles(new RunResult.Files());
-            result.getFiles().setStderr("超出内存限制");
-            return result;
+            return standardError("超出内存限制","超出内存限制");
         }
 
-
         try {
-            // 2. Download test cases zip from MinIO
-            InputStream zipStream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(MINIO_BUCKET_NAME)
-                            .object(zipFilePath)
-                            .build());
+            // 2. 从缓存或MinIO获取测试用例
+            List<String[]> testCases =testCaseCacheService.getTestCases(zipFilePath);
 
-            // Save to temp file
-            Path tempZipPath = Files.createTempFile("testcases", ".zip");
-            Files.copy(zipStream, tempZipPath, StandardCopyOption.REPLACE_EXISTING);
+            if (testCases.isEmpty()) {
+                return standardError("判题错误，测试用例为空","无法获取测试用例");
+            }
 
-            // 3. Read test cases
-            List<String[]> testCases = readTestCasesFromZip(tempZipPath.toString());
-
-            // 4. Execute test cases
+            // 3. Execute test cases
             RunResult finalResult = new RunResult();
-            finalResult.setStatus("Accepted"); // Default to Accepted, will be overridden if errors occur
+            finalResult.setStatus("Accepted");
             finalResult.setFiles(new RunResult.Files());
             finalResult.getFiles().setStdout("");
             finalResult.getFiles().setStderr("");
             finalResult.setRunTime(0L);
             finalResult.setTime(0L);
             finalResult.setMemory(0L);
-            RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -112,13 +94,14 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 String jsonPayload = buildRunPayload(input, binaryFileId, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
                 HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
 
-                // Send run request
+                // 使用连接池发送请求
                 ResponseEntity<List<RunResult>> response = restTemplate.exchange(
                         RUN_URL,
                         HttpMethod.POST,
                         entity,
                         new ParameterizedTypeReference<List<RunResult>>() {}
                 );
+
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     RunResult result = response.getBody().get(0);
                     // Accumulate time and memory
@@ -136,8 +119,8 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
                     // Verify result
                     try {
-                        String expectedOutput = testCase[1]; // Expected output from test case
-                        String actualOutput = result.getFiles().getStdout().trim(); // Actual program output
+                        String expectedOutput = testCase[1];
+                        String actualOutput = result.getFiles().getStdout().trim();
 
                         if (!expectedOutput.equals(actualOutput)) {
                             finalResult.setStatus("答案错误");
@@ -159,58 +142,15 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 }
             }
 
-            // 5. Delete compiled binary
-            deleteBinaryFile(restTemplate, binaryFileId);
+            // 4. Delete compiled binary
+            deleteBinaryFile(binaryFileId);
 
             return finalResult;
 
         } catch (Exception e) {
-            RunResult result = new RunResult();
-            result.setStatus("判题错误");
             logger.error("判题过程中出错: ", e);
-            result.setExitStatus(1);
-            result.setFiles(new RunResult.Files());
-            result.getFiles().setStderr("判题过程中出错: " + e.getMessage());
-            return result;
+            return standardError("判题错误","判题过程中出错: " + e.getMessage());
         }
-    }
-
-    private List<String[]> readTestCasesFromZip(String zipPath) throws IOException {
-        List<String[]> testCases = new ArrayList<>();
-        try (ZipFile zipFile = new ZipFile(zipPath)) {
-            int i = 1;
-            while (true) {
-                String inputFile = i + ".in";
-                String outputFile = i + ".out";
-
-                ZipEntry inputEntry = zipFile.getEntry(inputFile);
-                ZipEntry outputEntry = zipFile.getEntry(outputFile);
-
-                if (inputEntry == null || outputEntry == null) {
-                    break;
-                }
-
-                String input = readFileFromZip(zipFile, inputFile);
-                String output = readFileFromZip(zipFile, outputFile);
-
-                testCases.add(new String[]{input, output});
-                i++;
-            }
-        }
-        return testCases;
-    }
-
-    private String readFileFromZip(ZipFile zipFile, String entryName) throws IOException {
-        StringBuilder content = new StringBuilder();
-        ZipEntry entry = zipFile.getEntry(entryName);
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(zipFile.getInputStream(entry)))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-        }
-        return content.toString().trim();
     }
 
     private String compileCode(String code) {
@@ -318,7 +258,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
         """, input, cpuLimit, memoryLimit, fileId);
     }
 
-    private void deleteBinaryFile(RestTemplate restTemplate, String fileId) {
+    private void deleteBinaryFile(String fileId) {
         if (fileId == null || fileId.isEmpty()) {
             return;
         }

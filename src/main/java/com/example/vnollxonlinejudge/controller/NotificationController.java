@@ -6,7 +6,8 @@ import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
 import com.example.vnollxonlinejudge.service.NotificationService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +16,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/notification")
 @Validated
-@RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;
+    
+    @Autowired
+    public NotificationController(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
 
     @GetMapping("/list")
     public Result<List<NotificationVo>> getNotificationList(

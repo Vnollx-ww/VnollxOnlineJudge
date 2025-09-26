@@ -13,12 +13,12 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
 import com.example.vnollxonlinejudge.service.*;
 import com.example.vnollxonlinejudge.utils.*;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,13 +26,26 @@ import java.util.stream.Collectors;
 import static com.example.vnollxonlinejudge.utils.GetScore.calculateScore;
 
 @Service
-@Setter
 public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submission> implements SubmissionService {
     private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
-    @Autowired private ProblemService problemService;
-    @Autowired private RedisService redisService;
-    @Autowired private UserService userService;
-    @Autowired private CompetitionUserService competitionUserService;
+    private final ProblemService problemService;
+    private final RedisService redisService;
+    private final UserService userService;
+    private final CompetitionUserService competitionUserService;
+
+    @Autowired
+    public SubmissionServiceImpl(
+            @Lazy ProblemService problemService,
+            @Lazy RedisService redisService,
+            UserService userService,
+            CompetitionUserService competitionUserService
+    ) {
+        this.problemService = problemService;
+        this.redisService=redisService;
+        this.userService=userService;
+        this.competitionUserService=competitionUserService;
+    }
+
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
     private static final String USER_PENALTY_KEY = "competition_user_penalty:%d:%s"; // cid:uid
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
@@ -73,7 +86,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             Long ttlSeconds= TimeUtils.calculateTTL(endTimeStr);
             redisService.setKey(userPassKey,"0",ttlSeconds+600);
             redisService.setKey(userPenaltyKey,"0",ttlSeconds+600);
-            if (redisService.addToSetByKey(rankingKey,calculateScore(0,0),userName,ttlSeconds+600)){
+            if (redisService.addToSetByKey(rankingKey,calculateScore(0L,0L),userName,ttlSeconds+600)){
                 competitionUserService.createRecord(cid,uid,userName);
             }
 
@@ -127,6 +140,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
+    @Transactional
     public void batchInsert(List<Submission> submissions) {
         saveBatch(submissions);
     }

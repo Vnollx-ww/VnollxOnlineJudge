@@ -3,20 +3,28 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.entity.CompetitionUser;
 import com.example.vnollxonlinejudge.mapper.CompetitionUserMapper;
+import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.CompetitionUserService;
+import com.example.vnollxonlinejudge.service.RedisService;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 @Service
-@Setter
 public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMapper, CompetitionUser> implements CompetitionUserService {
-    @Autowired private CompetitionService competitionService;
+    private final CompetitionService competitionService;
+
+    @Autowired
+    public CompetitionUserServiceImpl(@Lazy CompetitionService competitionService) {
+        this.competitionService=competitionService;
+    }
     @Override
     public List<CompetitionUser> getUserList(Long cid) {
         return lambdaQuery()

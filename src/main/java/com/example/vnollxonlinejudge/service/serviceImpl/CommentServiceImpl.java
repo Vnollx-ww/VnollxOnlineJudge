@@ -10,7 +10,10 @@ import com.example.vnollxonlinejudge.model.entity.Notification;
 import com.example.vnollxonlinejudge.model.vo.comment.CommentInfoVO;
 import com.example.vnollxonlinejudge.producer.NotificationProducer;
 import com.example.vnollxonlinejudge.service.CommentService;
+import com.example.vnollxonlinejudge.service.ProblemService;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,9 +22,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
-@RequiredArgsConstructor
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
     private final NotificationProducer notificationProducer;
+
+    @Autowired
+    public CommentServiceImpl(NotificationProducer notificationProducer) {
+        this.notificationProducer=notificationProducer;
+    }
+
     @Override
     @Transactional
     public void publishComment(PublishCommentDTO dto,Long uid) {

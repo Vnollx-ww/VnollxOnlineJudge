@@ -13,6 +13,7 @@ import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.service.RedisService;
 
+import com.example.vnollxonlinejudge.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -22,12 +23,22 @@ import org.springframework.stereotype.Service;
 
 
 @Service
-@Setter
 public class JudgeServiceImpl implements JudgeService {
     private static final Logger logger = LoggerFactory.getLogger(JudgeServiceImpl.class);
-    @Autowired private SubmissionProducer submissionProducer;
-    @Autowired private RedisService redisService;
-    @Autowired private JudgeStrategyFactory judgeStrategyFactory;
+    private final SubmissionProducer submissionProducer;
+    private final RedisService redisService;
+    private final JudgeStrategyFactory judgeStrategyFactory;
+
+    @Autowired
+    public JudgeServiceImpl(
+            SubmissionProducer submissionProducer,
+            RedisService redisService,
+            JudgeStrategyFactory judgeStrategyFactory
+    ) {
+        this.submissionProducer=submissionProducer;
+        this.redisService=redisService;
+        this.judgeStrategyFactory=judgeStrategyFactory;
+    }
     @Override
     public String judgeSubmission(SubmitCodeDTO req,Long uid) {
         String lockKey = "submission:" + "user:"+uid + "_" + req.getPid();
