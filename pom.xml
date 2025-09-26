@@ -15,148 +15,200 @@
     <description>VnollxOnlineJudge</description>
 
     <properties>
+        <!-- Java版本 -->
         <java.version>21</java.version>
+        <!-- Spring Boot版本 -->
+        <spring.boot.version>3.2.5</spring.boot.version>
+        <!-- Redis客户端相关版本 -->
+        <!-- 数据库相关版本 -->
+        <mysql-connector.version>8.3.0</mysql-connector.version>
+        <druid.version>1.2.18</druid.version>
+        <dynamic-datasource.version>3.6.1</dynamic-datasource.version>
+        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <!-- 工具库版本 -->
+        <minio.version>8.5.6</minio.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <caffeine.version>3.1.8</caffeine.version>
+        <httpclient5.version>5.3.1</httpclient5.version>
+        <httpcore5.version>5.2.4</httpcore5.version>
+        <fastjson.version>2.0.31</fastjson.version>
+        <json.version>20250107</json.version>
+        <guava.version>32.1.3-jre</guava.version>
+        <lombok.version>1.18.32</lombok.version>
+        <validation-api.version>3.0.2</validation-api.version>
+        <javax.mail.version>1.4.7</javax.mail.version>
+        <commons-email.version>1.5</commons-email.version>
+        <jbcrypt.version>0.4</jbcrypt.version>
     </properties>
 
     <dependencies>
         <!-- Spring Boot 基础依赖 -->
+        <!-- 数据访问层：Spring Data JPA -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+        <!-- Web开发：包含Spring MVC和嵌入式服务器 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- 模板引擎：Thymeleaf -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+        <!-- 测试支持：包含JUnit, Hamcrest等测试库 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- 消息队列：Spring AMQP，用于与RabbitMQ交互 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
         <!-- Redis 相关依赖 -->
-        <!-- 移除默认的 Lettuce 依赖 -->
-        <!-- Redis 相关依赖 -->
+        <!-- Spring Data Redis 自动配置 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
-        <!-- 明确使用 Jedis 作为 Redis 客户端 -->
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>4.4.6</version> <!-- 与 Spring Data Redis 3.2.5 兼容 -->
-        </dependency>
-        <!-- Jedis 连接池依赖 -->
+        <!-- Lettuce连接池依赖 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
         </dependency>
 
         <!-- 数据库相关依赖 -->
+        <!-- MySQL驱动 -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <scope>runtime</scope>
+            <version>${mysql-connector.version}</version>
+            <scope>runtime</scope> <!-- 运行时依赖，编译不依赖 -->
         </dependency>
+        <!-- 阿里巴巴Druid数据库连接池 -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.2.18</version> <!-- 升级到最新稳定版 -->
+            <version>${druid.version}</version>
         </dependency>
-        <!-- 动态数据源 -->
+        <!-- 动态数据源：支持多数据源切换 -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>dynamic-datasource-spring-boot-starter</artifactId>
-            <version>3.6.1</version>
+            <version>${dynamic-datasource.version}</version>
         </dependency>
-        <!-- MyBatis-Plus -->
+        <!-- MyBatis-Plus：增强MyBatis，提供CRUD操作简化 -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-            <version>3.5.5</version>
+            <version>${mybatis-plus.version}</version>
         </dependency>
 
-
         <!-- 工具库 -->
+        <!-- MinIO客户端：用于对象存储操作 -->
         <dependency>
             <groupId>io.minio</groupId>
             <artifactId>minio</artifactId>
-            <version>8.5.6</version>
+            <version>${minio.version}</version>
         </dependency>
+        <!-- JWT：用于生成和解析JSON Web Token -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt</artifactId>
-
-            <version>0.12.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
+        <!-- Caffeine：高性能Java缓存库 -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
+        </dependency>
+        <!-- Apache HttpClient 5.x：HTTP客户端 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>${httpclient5.version}</version>
+        </dependency>
+        <!-- HTTP Core 5.x：HTTP核心组件 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5</artifactId>
+            <version>${httpcore5.version}</version>
+        </dependency>
+        <!-- HTTP Core 5.x Reactive：响应式HTTP核心 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.core5</groupId>
+            <artifactId>httpcore5-reactive</artifactId>
+            <version>${httpcore5.version}</version>
+        </dependency>
+        <!-- FastJSON：JSON处理库 -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>2.0.31</version>
+            <version>${fastjson.version}</version>
         </dependency>
+        <!-- JSON库：另一个JSON处理工具 -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20250107</version>
+            <version>${json.version}</version>
         </dependency>
+        <!-- Guava：Google核心库，提供集合、缓存等工具 -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.1.3-jre</version> <!-- 升级到最新稳定版 -->
+            <version>${guava.version}</version>
         </dependency>
+        <!-- Spring Boot Actuator：应用监控 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
+        <!-- Prometheus监控指标导出 -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+        <!-- AOP支持：面向切面编程 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
+        <!-- Lombok：简化Java代码，减少模板代码 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.32</version> <!-- 检查最新版本 -->
-            <scope>provided</scope> <!-- 仅编译时使用 -->
+            <version>${lombok.version}</version>
+            <scope>provided</scope> <!-- 仅编译时使用，运行时不需要 -->
         </dependency>
+        <!-- 数据校验API：用于Bean验证 -->
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
-            <version>3.0.2</version>
+            <version>${validation-api.version}</version>
         </dependency>
+        <!-- Java Mail：邮件发送 -->
         <dependency>
             <groupId>javax.mail</groupId>
             <artifactId>mail</artifactId>
-            <version>1.4.7</version>
+            <version>${javax.mail.version}</version>
         </dependency>
-
+        <!-- Apache Commons Email：简化邮件发送 -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-email</artifactId>
-            <version>1.5</version>
+            <version>${commons-email.version}</version>
         </dependency>
+        <!-- jBcrypt：密码加密工具 -->
         <dependency>
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
-            <version>0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>cn.dev33</groupId>
-            <artifactId>sa-token-spring-boot-starter</artifactId>
-            <version>1.33.0</version>
+            <version>${jbcrypt.version}</version>
         </dependency>
     </dependencies>
 
