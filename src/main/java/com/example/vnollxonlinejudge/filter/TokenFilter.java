@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.filter;
 
+import com.example.vnollxonlinejudge.model.base.RedisKeyType;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
@@ -100,7 +101,10 @@ public class TokenFilter implements Filter {
             String userId = JwtToken.getUserIdFromToken(token);
             String identity= JwtToken.getUserIdentityFromToken(token);
 
-            String key="logout:"+userId;
+            String key= null;
+            if (userId != null) {
+                key = RedisKeyType.LOGOUT.generateKey(Long.parseLong(userId));
+            }
             if (redisService.IsExists(key)){
                 redisService.deleteKey(key);
                 redisService.setKey(token,"",86400L);

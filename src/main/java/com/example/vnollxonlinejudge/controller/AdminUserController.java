@@ -5,6 +5,7 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveUserDTO;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.service.UserService;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -26,21 +27,6 @@ public class AdminUserController {
         this.userService = userService;
     }
 
-    /**
-     * 提取当前管理员ID的公共方法
-     */
-    private Long getCurrentAdminId(HttpServletRequest request) {
-        String userId = (String) request.getAttribute("uid");
-        if (userId == null || userId.trim().isEmpty()) {
-            throw new BusinessException("未获取到管理员ID");
-        }
-
-        try {
-            return Long.parseLong(userId);
-        } catch (NumberFormatException e) {
-            throw new BusinessException("管理员ID格式错误");
-        }
-    }
     private String getCurrentIdentity(HttpServletRequest request) {
         String identity = (String) request.getAttribute("identity");
         if (identity == null || identity.trim().isEmpty()) {
@@ -50,12 +36,11 @@ public class AdminUserController {
     }
     @GetMapping("/list")
     public Result<List<UserVo>> getUserList(@RequestParam int pageNum, @RequestParam int pageSize,
-                                            @RequestParam(required = false) String keyword,
-                                            HttpServletRequest httpRequest) {
-        Long uid=getCurrentAdminId(httpRequest);
+                                            @RequestParam(required = false) String keyword) {
+        Long userId = UserContextHolder.getCurrentUserId();
         List<UserVo> users=userService.getAllUserByAdmin(
                 pageNum,pageSize,
-                keyword,uid
+                keyword,userId
         );
         return Result.Success(users, "获取用户列表成功");
     }

@@ -26,7 +26,7 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
             record.setUserId(uid);
             record.setProblemId(pid);
             record.setCompetitionId(cid);
-            this.baseMapper.insert(record);
+            this.save(record);
         }
     }
 
@@ -35,7 +35,7 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
         LambdaQueryWrapper<UserSolvedProblem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSolvedProblem::getUserId, uid)
                 .eq(UserSolvedProblem::getCompetitionId, 0);
-        return this.baseMapper.selectList(wrapper);
+        return this.list(wrapper);
     }
 
     @Override
@@ -44,13 +44,13 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
         wrapper.eq(UserSolvedProblem::getUserId, uid)
                 .eq(UserSolvedProblem::getProblemId, pid)
                 .eq(UserSolvedProblem::getCompetitionId, cid);
-        return this.baseMapper.selectOne(wrapper);
+        return this.getOne(wrapper);
     }
 
     @Override
     public void deleteCompetition(Long cid) {
         QueryWrapper<UserSolvedProblem> wrapper=new QueryWrapper<>();
         wrapper.eq("competition_id",cid);
-        this.baseMapper.delete(wrapper);
+        this.remove(wrapper);
     }
 }

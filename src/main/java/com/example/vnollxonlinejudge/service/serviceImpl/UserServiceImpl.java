@@ -47,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private static final String ERROR_VERIFY_CODE = "验证码错误";
     private static final String ERROR_EMAIL_EXISTS = "邮箱已存在";
     private static final String ERROR_NAME_EXISTS = "用户名已存在";
-
+    private static final String ERROR_ORIGIN_PASSWORD_WRONG = "原密码不正确";
     private final UserSolvedProblemService userSolvedProblemService;
     private final RedisService redisService;
     private final OssService ossService;
@@ -185,7 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         validateUserExists(user);
 
         if(!Objects.equals(user.getPassword(), hashPasswordWithSalt(old_password, user.getSalt()))) {
-            throw new BusinessException("原密码不正确");
+            throw new BusinessException(ERROR_ORIGIN_PASSWORD_WRONG);
         }
         user.setPassword(hashPasswordWithSalt(password,user.getSalt()));
         updateById(user);
@@ -197,9 +197,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             MultipartFile avatar, String email, String name, String signature, Long uid,
             String option, String verifyCode
     ) {
-        String key=email+":update";
+        String key= RedisKeyType.UPDATE.generateKey(email);
         if(option.equals("email")) {
-            if (!redisService.IsExists(key) || !Objects.equals(redisService.getValueByKey(key), verifyCode)) {
+            if (!redisService.checkKeyValue(key,verifyCode)){
                 throw new BusinessException(ERROR_VERIFY_CODE);
             }
         }
@@ -288,7 +288,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setName(name);
         user.setIdentity(identity);
         updateById(user);
-        String key="logout:"+uid;
+        String key=RedisKeyType.LOGOUT.generateKey(uid);
         redisService.setKey(key,"",86400L);
     }
 
