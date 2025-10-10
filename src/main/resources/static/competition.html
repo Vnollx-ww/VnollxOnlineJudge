@@ -108,9 +108,9 @@
         }
 
         .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
         .competition-card {
@@ -122,6 +122,9 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
             backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: row;
+            min-height: 200px;
         }
 
         .competition-card::before {
@@ -147,9 +150,13 @@
         .card-header {
             padding: 2rem;
             background: linear-gradient(135deg, rgba(26, 115, 232, 0.05) 0%, rgba(102, 187, 106, 0.05) 100%);
-            border-bottom: 1px solid rgba(26, 115, 232, 0.1);
+            border-right: 1px solid rgba(26, 115, 232, 0.1);
             position: relative;
             overflow: hidden;
+            flex: 0 0 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .card-header::before {
@@ -199,9 +206,8 @@
             font-size: 0.875rem;
             font-weight: 500;
             gap: 0.5rem;
-            position: absolute;
-            right: 1.5rem;
-            top: 1.5rem;
+            align-self: flex-start;
+            margin-top: 1rem;
         }
 
         .status-running {
@@ -226,13 +232,17 @@
         .card-body {
             padding: 1.5rem;
             position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .info-item {
@@ -272,10 +282,13 @@
         .card-footer {
             padding: 1rem 1.5rem;
             background: #f8fafc;
-            border-top: 1px solid var(--neutral-medium);
+            border-left: 1px solid var(--neutral-medium);
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
             align-items: center;
+            flex: 0 0 200px;
+            gap: 1rem;
         }
 
         .participants {
@@ -412,6 +425,55 @@
             font-weight: 500;
             cursor: pointer;
         }
+
+        /* 返回主页按钮（复用 join-btn 的风格，做轻微调整） */
+        #backHomeBtn {
+            background: linear-gradient(135deg, #64748b 0%, #334155 100%);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .competition-card {
+                flex-direction: column;
+                min-height: auto;
+            }
+            
+            .card-header {
+                flex: none;
+                border-right: none;
+                border-bottom: 1px solid rgba(26, 115, 232, 0.1);
+            }
+            
+            .card-footer {
+                flex: none;
+                border-left: none;
+                border-top: 1px solid var(--neutral-medium);
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card-header {
+                padding: 1.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .card-footer {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 
@@ -423,6 +485,10 @@
             <input type="checkbox" id="filterRunning">
             <label for="filterRunning">只显示进行中的</label>
         </div>
+        <button id="backHomeBtn" class="join-btn" style="margin-left: 1rem;">
+            <i class="fas fa-home"></i>
+            返回主页
+        </button>
     </div>
 
     <div class="card-grid" id="competitionList">
@@ -439,6 +505,13 @@
             setTimeout(() => {
                 window.location.href = '/index.html';
             }, 1500);
+        }
+
+        const backBtn = document.getElementById('backHomeBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                window.location.href = '/index.html';
+            });
         }
     };
 
@@ -520,16 +593,15 @@
                                 </span>
                                 <span class="info-value">${formatTime(comp.endTime)}</span>
                             </div>
+                            ${comp.description ? `
+                            <div class="info-item">
+                                <span class="info-label">
+                                    <i class="fas fa-file-alt"></i>
+                                    比赛描述
+                                </span>
+                                <span class="info-value">${comp.description}</span>
+                            </div>` : ''}
                         </div>
-
-                        ${comp.description ? `
-                        <div class="info-item">
-                            <span class="info-label">
-                                <i class="fas fa-file-alt"></i>
-                                比赛描述
-                            </span>
-                            <span class="info-value">${comp.description}</span>
-                        </div>` : ''}
 
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: ${progress}%"></div>
@@ -543,9 +615,9 @@
                         </div>
                         <button class="join-btn"
                                 onclick="handleJoin(${comp.id}, '${status}')"
-                                ${status === '暂未开始' ? 'disabled' : ''}>  <!-- 修改此处 -->
-                            <i class="fas ${getStatusButtonIcon(status)}"></i>  <!-- 新增图标处理 -->
-                            ${getStatusButtonText(status)}  <!-- 新增按钮文本处理 -->
+                                ${status === '暂未开始' ? 'disabled' : ''}>
+                            <i class="fas ${getStatusButtonIcon(status)}"></i>
+                            ${getStatusButtonText(status)}
                         </button>
                     </div>
                 `;

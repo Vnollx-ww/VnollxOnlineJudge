@@ -1893,24 +1893,18 @@ public class Main {
       const competitionNotice = document.getElementById('competitionNotice');
       const commentSection = document.getElementById('commentSection');
       
-      if (data.code === 200 && data.data === true) {
-        // 比赛已结束，显示评论区域，隐藏比赛提示
-        if (competitionNotice) {
-          competitionNotice.style.display = 'none';
-        }
+      // 后端 /competition/judgeIsEnd 成功(200)表示比赛未结束；抛错(非200)表示已结束
+      if (data.code !== 200) {
+        // 比赛已结束，显示评论区域，隐藏提示
+        if (competitionNotice) competitionNotice.style.display = 'none';
         if (commentSection) {
           commentSection.style.display = 'block';
-          // 初始化评论系统
           initCommentSystem();
         }
       } else {
-        // 比赛未结束，显示比赛提示，隐藏评论区域
-        if (competitionNotice) {
-          competitionNotice.style.display = 'block';
-        }
-        if (commentSection) {
-          commentSection.style.display = 'none';
-        }
+        // 比赛未结束，显示提示，隐藏评论
+        if (competitionNotice) competitionNotice.style.display = 'block';
+        if (commentSection) commentSection.style.display = 'none';
       }
     } catch (error) {
       console.error('检查比赛状态失败:', error);
@@ -2107,7 +2101,8 @@ public class Main {
       });
 
       const data = await response.json();
-      if (data.code !== 200 && data.msg !== "") {
+      // 200 表示未结束；非200表示已结束
+      if (data.code !== 200) {
         showToast(data.msg || '竞赛已结束', 'error');
         return false; // 竞赛已结束
       }
