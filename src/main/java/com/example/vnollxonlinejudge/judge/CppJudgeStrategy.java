@@ -25,6 +25,12 @@ public class CppJudgeStrategy implements JudgeStrategy {
     private final String DELETE_URL ;
     private static final Logger logger = LoggerFactory.getLogger(CppJudgeStrategy.class);
 
+    private static final String COMPILE_ERROR="编译错误";
+    private static final String TIME_LIMIT_EXCEED="时间超出限制";
+    private static final String MEMORY_LIMIT_EXCEED="内存超出限制";
+
+    private static final String WRONG_ANSWER="答案错误";
+    private static final String ACCEPTED="答案正确";
 
     @Autowired
     public CppJudgeStrategy(
@@ -44,9 +50,9 @@ public class CppJudgeStrategy implements JudgeStrategy {
         result.setRunTime(result.getTime() / 1000000);
         result.setMemory(result.getMemory()/1048576);
         switch (result.getStatus()) {
-            case "Accepted" -> result.setStatus("答案正确");
-            case "Time Limit Exceeded" -> result.setStatus("时间超出限制");
-            case "Signalled" -> result.setStatus("内存超出限制");
+            case "Accepted" -> result.setStatus(ACCEPTED);
+            case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
+            case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
         }
 
         return result;
@@ -63,7 +69,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
         // 1. Compile code
         String binaryFileId = compileCode(submittedCode);
         if (binaryFileId == null) {
-            return standardError("编译错误","编译错误");
+            return standardError(COMPILE_ERROR,COMPILE_ERROR);
         }
         else if (binaryFileId.equals("超出内存限制")){
             return standardError("超出内存限制","超出内存限制");
@@ -123,14 +129,14 @@ public class CppJudgeStrategy implements JudgeStrategy {
                         String actualOutput = result.getFiles().getStdout().trim();
 
                         if (!expectedOutput.equals(actualOutput)) {
-                            finalResult.setStatus("答案错误");
+                            finalResult.setStatus(WRONG_ANSWER);
                             finalResult.getFiles().setStderr(finalResult.getFiles().getStderr() +
                                     "测试用例错误. 期待: " + expectedOutput +
                                     ", 实际: " + actualOutput + "\n");
                             return finalResult;
                         }
                     } catch (Exception e) {
-                        finalResult.setStatus("答案错误");
+                        finalResult.setStatus(WRONG_ANSWER);
                         finalResult.getFiles().setStderr(finalResult.getFiles().getStderr() +
                                 "比较输出出错: " + e.getMessage() + "\n");
                         return finalResult;
@@ -174,7 +180,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 if ("Accepted".equals(result.getStatus()) && result.getFileIds() != null) {
                     return result.getFileIds().getA();
                 } else if ("Memory Limit Exceeded".equals(result.getStatus())) {
-                    return "内存超出限制";
+                    return MEMORY_LIMIT_EXCEED;
                 } else {
                     logger.error("编译失败: " + result.getFiles().getStderr());
                 }
