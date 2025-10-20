@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/ai")
@@ -38,5 +40,9 @@ public class AiController {
         aiService.clearMemory(userId);
         return Result.Success();
     }
-
+    @GetMapping("/history")
+    public Result<List<String>> getMessageHistoryList(){
+        Long userId= UserContextHolder.getCurrentUserId();
+        return Result.Success(aiService.getMessageHistoryList(userId));
+    }
 }

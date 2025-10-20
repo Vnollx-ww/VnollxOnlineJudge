@@ -5,6 +5,7 @@ import com.example.vnollxonlinejudge.service.AiService;
 import com.sun.mail.iap.ResponseHandler;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -17,9 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Service
 public class AiServiceImpl implements AiService {
@@ -51,10 +54,12 @@ public class AiServiceImpl implements AiService {
 
                 @Override
                 public void onComplete(Response<AiMessage> response) {
-                    userMemory.add(AiMessage.from(fullResponse.toString()));
+                    String aiResponse = fullResponse.toString();
+                    userMemory.add(AiMessage.from(aiResponse));
                     sink.next("[DONE]"); // 发送结束信号
                     sink.complete();
-                    logger.info("流式对话完成 - 用户: {}", userId);
+                    logger.info("流式对话完成 - 用户: {}, AI回复长度: {}, 当前内存消息数: {}", 
+                               userId, aiResponse.length(), userMemory.messages().size());
                 }
 
                 @Override
@@ -73,4 +78,31 @@ public class AiServiceImpl implements AiService {
         userChatMemories.remove(userId);
     }
 
+    @Override
+    public List<String> getMessageHistoryList(Long userId) {
+        ChatMemory userMemory = userChatMemories.get(userId);
+        if (userMemory == null || userMemory.messages().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ChatMessage> messages = userMemory.messages();
+
+        return messages.stream()
+                .map(chatMessage -> {
+                    String role = chatMessage instanceof UserMessage ? "用户" : "AI";
+                    String content = getMessageContent(chatMessage);
+                    return String.format("[%s] %s", role, content);
+                })
+                .collect(Collectors.toList());
+    }
+    private String getMessageContent(ChatMessage chatMessage) {
+        if (chatMessage instanceof UserMessage) {
+            return ((UserMessage) chatMessage).singleText();
+        } else if (chatMessage instanceof AiMessage) {
+            return ((AiMessage) chatMessage).text();
+        } else if (chatMessage instanceof SystemMessage) {
+            return "[系统]" + ((SystemMessage) chatMessage).text();
+        }
+        return chatMessage.toString();
+    }
 }
