@@ -366,6 +366,34 @@
             transform: translateY(0);
         }
 
+        /* 提交结果显示样式 */
+        .submit-result {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 6px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .submit-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .submit-result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .submit-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
         /* GitHub风格的Markdown样式 */
         .markdown-content {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -1123,7 +1151,10 @@
                 <textarea id="codeEditorHidden" name="code" style="display: none;"></textarea>
             </div>
 
-            <div class="d-flex justify-content-end">
+            <div class="d-flex justify-content-between align-items-center">
+                <div id="submitResult" class="submit-result">
+                    <!-- 提交结果将显示在这里 -->
+                </div>
                 <button type="submit" class="submit-btn">
                     <i class="fas fa-paper-plane me-2"></i> 提交代码
                 </button>
@@ -1996,6 +2027,32 @@ int main() {
         showToast('代码草稿已自动保存', 'info', 2000);
     }
 
+    // 显示提交结果到按钮左边（一直保持）
+    function showSubmitResult(data) {
+        const resultElement = document.getElementById('submitResult');
+        
+        let resultClass = 'info';
+        let resultText = '';
+        
+        if (data.code === 200) {
+            if (data.msg === "答案正确") {
+                resultClass = 'success';
+                resultText = '✓ 答案正确';
+            } else {
+                resultClass = 'error';
+                resultText = '✗ ' + data.msg;
+            }
+        } else {
+            resultClass = 'error';
+            resultText = '✗ ' + (data.msg || '提交失败');
+        }
+        
+        resultElement.className = `submit-result ${resultClass}`;
+        resultElement.textContent = resultText;
+        
+        // 结果一直保持显示，不自动清除
+    }
+
     // 显示美化的提示框
     function showToast(message, type = 'info', duration = 3000) {
         // 移除已存在的toast
@@ -2292,7 +2349,10 @@ int main() {
 
             const data = await response.json();
 
-            // 显示结果提示
+            // 显示结果到按钮左边（一直保持）
+            showSubmitResult(data);
+            
+            // 同时显示右上角通知
             if (data.code === 200) {
                 if(data.msg==="答案正确"){
                     showToast(`${data.msg}！`, 'success', 5000);
