@@ -3,11 +3,9 @@ package com.example.vnollxonlinejudge.filter;
 
 import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.annotation.PostConstruct;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import java.util.BitSet;
 import java.util.List;
@@ -89,16 +87,6 @@ public class BloomFilter {
             ret = ret && bits.get(f.hash(value));
         }
         return ret;
-    }
-
-    public double getFillRatio() {
-        int count = 0;
-        for (int i = 0; i < DEFAULT_SIZE; i++) {
-            if (bits.get(i)) {
-                count++;
-            }
-        }
-        return (double) count / DEFAULT_SIZE;
     }
 
     public static class SimpleHash {
