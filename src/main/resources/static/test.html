@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI流式响应测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .input-section, .output-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .input-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        
+        .btn-secondary:hover {
+            background: #bdc3c7;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+        
+        .output-area {
+            flex: 1;
+            background: #f8f9fa;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .user-message {
+            background: #3498db;
+            color: white;
+            margin-left: 20%;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .ai-message {
+            background: #ecf0f1;
+            color: #2c3e50;
+            margin-right: 20%;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .streaming {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.streaming {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+        
+        .token-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            word-break: break-all;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+            color: #7f8c8d;
+        }
+        
+        .typing-dots {
+            display: inline-flex;
+            margin-left: 5px;
+        }
+        
+        .typing-dots span {
+            height: 8px;
+            width: 8px;
+            margin: 0 1px;
+            background-color: #7f8c8d;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI流式响应测试</h1>
+            <p>测试您的AI聊天接口，体验实时流式响应</p>
+        </div>
+        
+        <div class="content">
+            <div class="input-section">
+                <h2 class="section-title">输入</h2>
+                <div class="input-area">
+                    <div class="token-info">
+                        <strong>Token:</strong> Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0IiwidWlkIjoiNCIsImlkZW50aXR5IjoiU1VQRVJfQURNSU4iLCJpYXQiOjE3NjA5MzkwNzEsImV4cCI6MTc2MTAyNTQ3MX0.BtcM9SDnHWjM1vNfbIrucpZvPjQrLA48Pn13N26FM3M
+                    </div>
+                    
+                    <textarea id="messageInput" placeholder="请输入您的问题...例如：用Java写一个Hello World程序"></textarea>
+                    
+                    <div class="controls">
+                        <button class="btn-primary" onclick="sendMessage()">发送消息</button>
+                        <button class="btn-secondary" onclick="clearChat()">清空对话</button>
+                        <button class="btn-danger" onclick="stopStream()">停止流式</button>
+                        <button class="btn-secondary" onclick="testConnection()">测试连接</button>
+                    </div>
+                    
+                    <div class="status disconnected" id="status">
+                        未连接
+                    </div>
+                    
+                    <div class="stats">
+                        <div>消息数: <span id="messageCount">0</span></div>
+                        <div>Token数: <span id="tokenCount">0</span></div>
+                        <div>连接状态: <span id="connectionStatus">关闭</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h2 class="section-title">AI响应</h2>
+                <div class="output-area" id="outputArea">
+                    <div class="message ai-message">
+                        👋 您好！我是AI助手，请在上方输入您的问题，我会以流式方式实时回复您。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_BASE_URL = 'http://127.0.0.1:8080'; // 根据您的实际地址修改
+        const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0IiwidWlkIjoiNCIsImlkZW50aXR5IjoiU1VQRVJfQURNSU4iLCJpYXQiOjE3NjA5MzkwNzEsImV4cCI6MTc2MTAyNTQ3MX0.BtcM9SDnHWjM1vNfbIrucpZvPjQrLA48Pn13N26FM3M';
+        
+        // 状态变量
+        let eventSource = null;
+        let isStreaming = false;
+        let messageCount = 0;
+        let tokenCount = 0;
+        let currentAiMessage = null;
+        let streamTimeout = null;
+        
+        // 更新状态显示
+        function updateStatus(status, type = 'disconnected') {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = status;
+            statusElement.className = `status ${type}`;
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('messageCount').textContent = messageCount;
+            document.getElementById('tokenCount').textContent = tokenCount;
+            document.getElementById('connectionStatus').textContent = 
+                eventSource && eventSource.readyState === EventSource.OPEN ? '已连接' : '关闭';
+        }
+        
+        // 添加消息到输出区域
+        function addMessage(content, type = 'ai-message') {
+            const outputArea = document.getElementById('outputArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = content;
+            outputArea.appendChild(messageDiv);
+            outputArea.scrollTop = outputArea.scrollHeight;
+            
+            if (type === 'user-message') {
+                messageCount++;
+            }
+            
+            updateStats();
+        }
+        
+        // 显示打字指示器
+        function showTypingIndicator() {
+            const outputArea = document.getElementById('outputArea');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'message ai-message streaming';
+            typingDiv.innerHTML = `
+                <div class="typing-indicator">
+                    AI正在思考
+                    <div class="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            outputArea.appendChild(typingDiv);
+            outputArea.scrollTop = outputArea.scrollHeight;
+        }
+        
+        // 隐藏打字指示器
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // 发送消息
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message) {
+                alert('请输入消息');
+                return;
+            }
+            
+            if (isStreaming) {
+                alert('请等待当前响应完成');
+                return;
+            }
+            
+            // 添加用户消息
+            addMessage(`<strong>您:</strong><br>${message}`, 'user-message');
+            
+            // 清空输入框
+            messageInput.value = '';
+            
+            // 开始流式响应
+            startStreaming(message);
+        }
+        
+        // 开始流式响应
+        function startStreaming(message) {
+            // 关闭之前的连接
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            isStreaming = true;
+            currentAiMessage = '';
+            
+            // 显示打字指示器
+            showTypingIndicator();
+            
+            // 构建URL
+            // 手动构建URL参数，避免JWT Token被过度编码
+            const encodedMessage = encodeURIComponent(message);
+            const url = `${API_BASE_URL}/ai/chat?message=${encodedMessage}&token=${BEARER_TOKEN}`;
+            
+            // 创建EventSource
+            console.log('EventSource URL:', url);
+            eventSource = new EventSource(url);
+            
+            updateStatus('正在连接...', 'streaming');
+            
+            // 设置超时机制（30秒）
+            streamTimeout = setTimeout(() => {
+                if (isStreaming && eventSource) {
+                    console.warn('流式响应超时，强制关闭连接');
+                    eventSource.close();
+                    isStreaming = false;
+                    hideTypingIndicator();
+                    updateStatus('响应超时', 'disconnected');
+                    addMessage('<strong>AI:</strong><br>响应超时，请重试', 'ai-message');
+                }
+            }, 30000);
+            
+            eventSource.onopen = function() {
+                updateStatus('已连接，等待响应...', 'connected');
+            };
+            
+            eventSource.onmessage = function(event) {
+                const data = event.data;
+                
+                if (data === '[DONE]') {
+                    // 流式响应完成
+                    if (streamTimeout) {
+                        clearTimeout(streamTimeout);
+                        streamTimeout = null;
+                    }
+                    eventSource.close();
+                    isStreaming = false;
+                    hideTypingIndicator();
+                    updateStatus('响应完成', 'connected');
+                    return;
+                }
+                
+                if (data.startsWith('[ERROR]')) {
+                    // 错误处理
+                    if (streamTimeout) {
+                        clearTimeout(streamTimeout);
+                        streamTimeout = null;
+                    }
+                    hideTypingIndicator();
+                    addMessage(`<strong>系统错误:</strong><br>${data}`, 'ai-message');
+                    eventSource.close();
+                    isStreaming = false;
+                    updateStatus('发生错误', 'disconnected');
+                    return;
+                }
+                
+                // 处理正常响应
+                hideTypingIndicator();
+                
+                // 如果是第一个token，创建新的消息div
+                if (currentAiMessage === '') {
+                    currentAiMessage = data;
+                    addMessage(`<strong>AI:</strong><br><span id="currentStream">${data}</span>`, 'ai-message');
+                } else {
+                    // 追加到当前消息
+                    currentAiMessage += data;
+                    const streamElement = document.getElementById('currentStream');
+                    if (streamElement) {
+                        streamElement.textContent = currentAiMessage;
+                    }
+                }
+                
+                tokenCount++;
+                updateStats();
+            };
+            
+            eventSource.onerror = function(event) {
+                console.error('EventSource错误:', event);
+                console.error('EventSource状态:', eventSource.readyState);
+                console.error('EventSource URL:', eventSource.url);
+                
+                // 清理超时定时器
+                if (streamTimeout) {
+                    clearTimeout(streamTimeout);
+                    streamTimeout = null;
+                }
+                
+                hideTypingIndicator();
+                
+                let errorMessage = '连接错误';
+                if (eventSource.readyState === EventSource.CLOSED) {
+                    errorMessage = '连接已关闭';
+                } else if (eventSource.readyState === EventSource.CONNECTING) {
+                    errorMessage = '正在重连...';
+                } else {
+                    errorMessage = '连接失败';
+                }
+                
+                updateStatus(errorMessage, 'disconnected');
+                isStreaming = false;
+                
+                // 如果没有收到任何响应，显示错误消息
+                if (currentAiMessage === '') {
+                    addMessage(`<strong>AI:</strong><br>抱歉，AI服务暂时不可用。错误信息: ${errorMessage}。请检查：<br>1. 服务器是否正在运行<br>2. Token是否有效<br>3. API Key是否已配置<br>4. 网络连接是否正常`, 'ai-message');
+                }
+            };
+        }
+        
+        // 停止流式响应
+        function stopStream() {
+            if (eventSource) {
+                // 清理超时定时器
+                if (streamTimeout) {
+                    clearTimeout(streamTimeout);
+                    streamTimeout = null;
+                }
+                
+                eventSource.close();
+                isStreaming = false;
+                hideTypingIndicator();
+                updateStatus('已手动停止', 'disconnected');
+                
+                if (currentAiMessage && currentAiMessage !== '') {
+                    addMessage('<strong>AI:</strong><br><em>响应被中断</em>', 'ai-message');
+                }
+            }
+        }
+        
+        // 清空对话
+        function clearChat() {
+            const outputArea = document.getElementById('outputArea');
+            outputArea.innerHTML = `
+                <div class="message ai-message">
+                    👋 对话已清空，请输入新的问题开始对话。
+                </div>
+            `;
+            
+            messageCount = 0;
+            tokenCount = 0;
+            updateStats();
+            
+            // 重置状态
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            isStreaming = false;
+            updateStatus('未连接', 'disconnected');
+        }
+        
+        // 回车键发送消息
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                sendMessage();
+            }
+        });
+        
+        // 初始化
+        updateStats();
+        
+        // 添加一些示例按钮
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputArea = document.querySelector('.input-area');
+            const examplesDiv = document.createElement('div');
+            examplesDiv.innerHTML = `
+                <div style="margin-top: 15px;">
+                    <strong>示例问题:</strong>
+                    <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                        <button class="btn-secondary" onclick="setExample('用Java写一个Hello World程序')">Java示例</button>
+                        <button class="btn-secondary" onclick="setExample('解释一下什么是微服务架构')">微服务</button>
+                        <button class="btn-secondary" onclick="setExample('Spring Boot有哪些核心特性')">Spring Boot</button>
+                        <button class="btn-secondary" onclick="setExample('写一个快速排序算法')">排序算法</button>
+                    </div>
+                </div>
+            `;
+            inputArea.appendChild(examplesDiv);
+        });
+        
+        // 设置示例问题
+        function setExample(question) {
+            document.getElementById('messageInput').value = question;
+        }
+        
+        // 测试连接
+        function testConnection() {
+            const testUrl = `${API_BASE_URL}/ai/chat?message=test&token=${BEARER_TOKEN}`;
+            console.log('测试连接URL:', testUrl);
+            
+            updateStatus('正在测试连接...', 'streaming');
+            
+            const testEventSource = new EventSource(testUrl);
+            
+            testEventSource.onopen = function() {
+                updateStatus('连接测试成功', 'connected');
+                testEventSource.close();
+            };
+            
+            testEventSource.onerror = function(event) {
+                console.error('连接测试失败:', event);
+                updateStatus('连接测试失败', 'disconnected');
+                testEventSource.close();
+                
+                // 显示详细的错误信息
+                addMessage(`<strong>连接测试失败:</strong><br>URL: ${testUrl}<br>状态: ${testEventSource.readyState}<br>请检查服务器是否正在运行`, 'ai-message');
+            };
+            
+            // 5秒后自动关闭测试连接
+            setTimeout(() => {
+                if (testEventSource.readyState !== EventSource.CLOSED) {
+                    testEventSource.close();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

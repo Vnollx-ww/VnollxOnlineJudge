@@ -42,7 +42,11 @@ public class Result<T> {
         result.setMsg(msg);
         return result;
     }
-
+    public static <T> Result<T> Success() {
+        Result<T> result = new Result<>();
+        result.setCode(200);
+        return result;
+    }
     public static <T> Result<T> Success(T data) {
         Result<T> result = new Result<>(data);
         result.setCode(200);

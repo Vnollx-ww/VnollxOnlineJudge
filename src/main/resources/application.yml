@@ -11,7 +11,7 @@ spring:
       datasource:
         master:
           driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://mysql-master:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+          url: jdbc:mysql://106.54.223.38:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
           username: root
           password: rootpassword
           type: com.alibaba.druid.pool.DruidDataSource
@@ -23,7 +23,7 @@ spring:
           type: com.alibaba.druid.pool.DruidDataSource
   data:
     redis:
-      host: redis
+      host: 106.54.223.38
       port: 6379
       timeout: 10000
       connect-timeout: 10000
@@ -34,7 +34,7 @@ spring:
           min-idle: 5
         shutdown-timeout: 200
   rabbitmq:
-    host: rabbitmq
+    host: 106.54.223.38
     port: 5672
     username: admin
     password: admin
@@ -70,3 +70,14 @@ management:
   endpoint:
     health:
       show-details: always
+
+# OpenAI 配置
+openai:
+  model: "deepseek-r1"
+  temperature: 0.7
+  timeout: 60
+
+# 日志配置（可选）
+logging:
+  level:
+    dev.langchain4j: DEBUG

@@ -14,7 +14,7 @@ public class FilterConfig {
         registration.setFilter(filter);
         registration.addUrlPatterns("/user/*", "/problem/*", "/submission/*", "/solve/*",
                 "/competition/*", "/judge/*", "/admin/*", "/tag/*",
-                "/notification/*", "/comment/*");
+                "/notification/*", "/comment/*","/ai/*");
         registration.setOrder(1);
         return registration;
     }

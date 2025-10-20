@@ -39,6 +39,7 @@
         <javax.mail.version>1.4.7</javax.mail.version>
         <commons-email.version>1.5</commons-email.version>
         <jbcrypt.version>0.4</jbcrypt.version>
+        <langchain4j.version>0.31.0</langchain4j.version>
     </properties>
 
     <dependencies>
@@ -209,6 +210,22 @@
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>${jbcrypt.version}</version>
+        </dependency>
+        <!-- AI Agent -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+        <!-- WebFlux 用于流式响应 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
     </dependencies>
 

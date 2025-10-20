@@ -50,43 +50,49 @@ public class TokenFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
-            throws IOException, ServletException {
+            throws IOException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         String requestURI = request.getRequestURI();
         
         try {
-            // System.out.println("TokenFilter 处理请求: " + requestURI);
-            // Check for excluded paths
+
             for (String path : EXCLUDED_PATHS) {
                 if (path.contains("\\d+")) {
-                    // Handle dynamic route matching
                     if (requestURI.matches("^" + path.replace("\\d+", "\\d+") + "$")) {
                         filterChain.doFilter(request, response);
                         return;
                     }
                 } else if (requestURI.startsWith(path)) {
-                    // If it's an excluded path, let it pass
                     filterChain.doFilter(request, response);
                     return;
                 }
             }
+            String token = null;
 
-            // Get token from Authorization header
-            String authHeader = request.getHeader(AUTH_HEADER);
-            if (authHeader == null || !authHeader.startsWith(TOKEN_PREFIX)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().println("不是哥们都不传token，你还想访问？");
-                return;
+            // 从URL参数获取token
+            String queryString = request.getQueryString();
+            if (queryString != null) {
+                String[] params = queryString.split("&");
+                for (String param : params) {
+                    String[] keyValue = param.split("=");
+                    if (keyValue.length == 2 && "token".equals(keyValue[0])) {
+                        token = keyValue[1];
+                        break;
+                    }
+                }
             }
-
-            // Extract the token
-            String token = authHeader.substring(TOKEN_PREFIX.length());
-
-            // Check if token is empty
-            if (token.trim().isEmpty()) {
+            // 从请求头获取token
+            if (token == null) {
+                String authHeader = request.getHeader(AUTH_HEADER);
+                if (authHeader != null && authHeader.startsWith(TOKEN_PREFIX)) {
+                    token = authHeader.substring(TOKEN_PREFIX.length());
+                }
+            }
+            // 检查token是否为空
+            if (token == null || token.trim().isEmpty()) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().println("Token是空的，哥们");
+                response.getWriter().println("不是哥们，token呢？");
                 return;
             }
 
