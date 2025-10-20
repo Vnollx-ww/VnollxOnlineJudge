@@ -58,8 +58,6 @@ public class AiServiceImpl implements AiService {
                     userMemory.add(AiMessage.from(aiResponse));
                     sink.next("[DONE]"); // 发送结束信号
                     sink.complete();
-                    logger.info("流式对话完成 - 用户: {}, AI回复长度: {}, 当前内存消息数: {}", 
-                               userId, aiResponse.length(), userMemory.messages().size());
                 }
 
                 @Override

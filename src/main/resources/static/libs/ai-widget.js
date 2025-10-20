@@ -46,6 +46,9 @@
     .ai-markdown blockquote{border-left:3px solid #ddd;padding-left:8px;margin:4px 0;color:#666}
     .ai-markdown strong{font-weight:600}
     .ai-markdown em{font-style:italic}
+    .ai-markdown table{width:100%;border-collapse:collapse;margin:8px 0;background:#fff}
+    .ai-markdown th,.ai-markdown td{border:1px solid #e5e7eb;padding:6px 8px;font-size:13px;text-align:left}
+    .ai-markdown thead th{background:#f8fafc;font-weight:600}
   `;
 
   function injectStyle(){
@@ -135,10 +138,41 @@
     let listType = '';
     let codeLanguage = '';
     
+    function isTableSeparatorRow(row){
+      // e.g. |---|:---:|---|
+      return /^\s*\|?\s*(:?-{3,}:?\s*\|\s*)+:?-{3,}:?\s*\|?\s*$/.test(row);
+    }
+
+    function renderTable(startIndex){
+      const rows = [];
+      let i = startIndex;
+      // collect contiguous pipe-lines
+      while (i < lines.length){
+        const l = lines[i];
+        if (!/^\s*\|.*\|\s*$/.test(l)) break;
+        rows.push(l);
+        i++;
+      }
+      if (rows.length < 2) return { html: null, end: startIndex };
+      if (!isTableSeparatorRow(rows[1])) return { html: null, end: startIndex };
+
+      function splitRow(r){
+        const trimmed = r.trim().replace(/^\|/, '').replace(/\|$/, '');
+        return trimmed.split(/\|/).map(c => c.trim());
+      }
+
+      const header = splitRow(rows[0]);
+      const dataRows = rows.slice(2).map(splitRow);
+
+      const thead = '<thead><tr>' + header.map(h => `<th>${parseInlineMarkdown(escapeHtml(h))}</th>`).join('') + '</tr></thead>';
+      const tbody = '<tbody>' + dataRows.map(cells => '<tr>' + cells.map(c => `<td>${parseInlineMarkdown(escapeHtml(c))}</td>`).join('') + '</tr>').join('') + '</tbody>';
+      return { html: `<table>${thead}${tbody}</table>`, end: i - 1 };
+    }
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
-      // 处理代码块
+
+      // 处理代码块（仅识别行首```围栏）
       if (line.startsWith('```')) {
         if (!inCodeBlock) {
           inCodeBlock = true;
@@ -151,17 +185,27 @@
         }
         continue;
       }
-      
+
       if (inCodeBlock) {
         // 在代码块中，保持原始格式，包括换行和缩进
         result.push(escapeHtml(line) + '\n');
         continue;
       }
       
-      // 处理标题
-      if (line.match(/^#{1,6} /)) {
+      // 处理表格（GFM）
+      if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && isTableSeparatorRow(lines[i + 1])){
+        const { html, end } = renderTable(i);
+        if (html){
+          result.push(html);
+          i = end;
+          continue;
+        }
+      }
+
+      // 处理标题（支持#后无空格）
+      if (line.match(/^#{1,6}\s?/)) {
         const level = line.match(/^(#{1,6})/)[1].length;
-        const content = line.replace(/^#{1,6} /, '');
+        const content = line.replace(/^#{1,6}\s?/, '');
         result.push(`<h${level}>${content}</h${level}>`);
         inList = false;
         continue;
@@ -269,6 +313,77 @@
     return headers;
   }
 
+  // -------- 页面上下文采集与限制 --------
+  function truncate(text, max){
+    if (!text) return '';
+    if (text.length <= max) return text;
+    return text.slice(0, max) + `\n...（已截断 ${text.length - max} 字）`;
+  }
+
+  function getSelectionText(){
+    try { return (window.getSelection && window.getSelection().toString()) || ''; } catch(e){ return ''; }
+  }
+
+  function getMetaContent(name){
+    const el = document.querySelector(`meta[name="${name}"]`);
+    return el && el.getAttribute('content') || '';
+  }
+
+  function getHeadingsSummary(limit = 8){
+    const nodes = Array.from(document.querySelectorAll('h1, h2, h3')).slice(0, limit);
+    return nodes.map(n => `${n.tagName.toLowerCase()}: ${n.textContent.trim()}`).join('\n');
+  }
+
+  function getEditorCode(){
+    // 尝试获取 Monaco Editor 内容
+    try {
+      if (window.monaco && window.monaco.editor) {
+        const editors = window.monaco.editor.getEditors ? window.monaco.editor.getEditors() : [];
+        if (editors && editors.length > 0) {
+          const model = editors[0].getModel && editors[0].getModel();
+          if (model && model.getValue) return model.getValue();
+        }
+        const active = window.monaco.editor.getModels && window.monaco.editor.getModels()[0];
+        if (active && active.getValue) return active.getValue();
+      }
+    } catch(e) {}
+    // 尝试获取 CodeMirror 内容
+    try {
+      const cmEl = document.querySelector('.CodeMirror');
+      if (cmEl && cmEl.CodeMirror && cmEl.CodeMirror.getValue) {
+        return cmEl.CodeMirror.getValue();
+      }
+    } catch(e) {}
+    return '';
+  }
+
+  function getPageContext(){
+    const title = document.title || '';
+    const url = location.href || '';
+    const selection = getSelectionText();
+    const desc = getMetaContent('description');
+    const keywords = getMetaContent('keywords');
+    const headings = getHeadingsSummary();
+    const code = getEditorCode();
+
+    // 限制长度，避免过大
+    const maxSelection = 1500;
+    const maxDesc = 600;
+    const maxHeadings = 800;
+    const maxCode = 2000;
+
+    const parts = [];
+    parts.push(`页面标题: ${title}`);
+    parts.push(`页面URL: ${url}`);
+    if (selection && selection.trim()) parts.push(`选中内容:\n${truncate(selection.trim(), maxSelection)}`);
+    if (desc) parts.push(`Meta描述: ${truncate(desc, maxDesc)}`);
+    if (keywords) parts.push(`Meta关键词: ${keywords}`);
+    if (headings) parts.push(`页面大纲:\n${truncate(headings, maxHeadings)}`);
+    if (code) parts.push(`编辑器代码片段:\n${'```'}\n${truncate(code, maxCode)}\n${'```'}`);
+
+    return parts.join('\n\n');
+  }
+
   function clearMemory(){
     const token = localStorage.getItem('token');
     return fetch('/ai/clear', {
@@ -299,6 +414,8 @@
     const send = panel.querySelector('#aiChatSend');
 
     let sending = false;
+
+    // 默认始终附带上下文（不再提供开关）
 
     function open(){ 
       panel.classList.add('show'); 
@@ -401,7 +518,16 @@
       let botBubble = null;
       let accumulatedText = '';
 
-      streamChat(text, {
+      // 始终附加页面上下文
+      let finalMessage = text;
+      try {
+        const ctx = getPageContext();
+        if (ctx && ctx.trim()) {
+          finalMessage = `${text}\n\n[页面上下文]\n${ctx}`;
+        }
+      } catch(e) {}
+
+      streamChat(finalMessage, {
         onToken: (token) => {
           // 移除[DONE]标记
           token = token.replace(/\[DONE\]/g, '');
