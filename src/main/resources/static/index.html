@@ -209,6 +209,7 @@
             background: radial-gradient(circle, rgba(26, 115, 232, 0.08) 0%, transparent 70%);
             transform: rotate(15deg);
             animation: pulse 20s infinite;
+            pointer-events: none; /* 避免覆盖可点击元素 */
         }
 
         .hero::after {
@@ -223,6 +224,7 @@
                 radial-gradient(circle at 80% 20%, rgba(102, 187, 106, 0.05) 0%, transparent 50%),
                 radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.03) 0%, transparent 50%);
             animation: backgroundShift 30s ease-in-out infinite;
+            pointer-events: none; /* 避免覆盖可点击元素 */
         }
 
         @keyframes backgroundShift {
@@ -343,6 +345,7 @@
             max-width: 800px;
             margin: 0 auto;
             position: relative;
+            z-index: 1; /* 确保在装饰层之上，可正常点击 */
         }
 
         .hero-title {
