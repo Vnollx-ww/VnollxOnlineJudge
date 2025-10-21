@@ -29,9 +29,10 @@
     - data: long，用户总数
 
 ### 题目 Problem
-- POST `/problem/get`
+- GET `/problem/get`
   - 查询参数:
     - id: 题目ID（string）
+    - name: 题目名称(string)
   - 响应体 data: ProblemVo
     - id, title, description
     - timeLimit: ms

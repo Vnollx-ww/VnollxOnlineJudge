@@ -153,6 +153,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             else{
                 QueryWrapper<Problem> problemQueryWrapper=new QueryWrapper<>();
                 problemQueryWrapper.like("title",name);
+                problem=this.getOne(problemQueryWrapper);
             }
         } else {
             String cacheKey = "competition:" + cid + ":problems";
@@ -168,6 +169,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 else{
                     QueryWrapper<Problem> problemQueryWrapper=new QueryWrapper<>();
                     problemQueryWrapper.like("title",name);
+                    problem=this.getOne(problemQueryWrapper);
                 }
             }
         }

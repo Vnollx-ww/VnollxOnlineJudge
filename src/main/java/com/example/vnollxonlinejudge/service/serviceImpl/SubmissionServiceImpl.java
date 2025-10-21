@@ -33,17 +33,24 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private final UserService userService;
     private final CompetitionUserService competitionUserService;
 
+    private final UserTagService userTagService;
+    private final ProblemTagService problemTagService;
+
     @Autowired
     public SubmissionServiceImpl(
             @Lazy ProblemService problemService,
             @Lazy RedisService redisService,
             UserService userService,
-            CompetitionUserService competitionUserService
+            CompetitionUserService competitionUserService,
+            UserTagService userTagService,
+            ProblemTagService problemTagService
     ) {
         this.problemService = problemService;
         this.redisService=redisService;
         this.userService=userService;
         this.competitionUserService=competitionUserService;
+        this.userTagService=userTagService;
+        this.problemTagService=problemTagService;
     }
 
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
@@ -107,6 +114,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         //提交后对题目提交数，用户提交数进行处理！！！！
         if (submission.getStatus().equals("答案正确")) { //如果问题通过
             if (!ok) { //是否首次通过
+                List<String> tagList=problemTagService.getTagNames(problem.getId());
+                userTagService.updateTagPassStatus(uid,tagList,1L);
+                System.out.println(problem.getTitle());
+                for (String tag:tagList){
+                    System.out.println(tag);
+                }
                 problemService.addUserSolveRecord(pid,uid,cid,problem.getTitle()); //对问题添加通过记录
                 if (cid == 0) { //如果非比赛
                     userService.updateSubmitCount(uid,1);//用户通过数加一，用户自己不太可能同时提交多次，所以无需加锁
@@ -118,6 +131,10 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 }
             }
         } else {//未通过
+            if (!ok){
+                List<String> tagList=problemTagService.getTagNames(problem.getId());
+                userTagService.updateTagPassStatus(uid,tagList,1L);
+            }
             if (cid == 0) {
                 userService.updateSubmitCount(uid,0);//如果非比赛，提交总数加1
                 problemService.updatePassCount(pid,0);//问题提交数也加一

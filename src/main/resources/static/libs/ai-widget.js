@@ -49,6 +49,19 @@
     .ai-markdown table{width:100%;border-collapse:collapse;margin:8px 0;background:#fff}
     .ai-markdown th,.ai-markdown td{border:1px solid #e5e7eb;padding:6px 8px;font-size:13px;text-align:left}
     .ai-markdown thead th{background:#f8fafc;font-weight:600}
+    
+    /* 确认对话框样式 */
+    .ai-confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:2147483001}
+    .ai-confirm-dialog{background:#fff;border-radius:12px;padding:24px;max-width:320px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,0.15);animation:confirmSlideIn 0.2s ease-out}
+    @keyframes confirmSlideIn{from{opacity:0;transform:scale(0.9) translateY(-10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .ai-confirm-title{font-size:18px;font-weight:600;color:#1a237e;margin:0 0 12px 0;text-align:center}
+    .ai-confirm-message{color:#64748b;font-size:14px;line-height:1.5;margin:0 0 20px 0;text-align:center}
+    .ai-confirm-buttons{display:flex;gap:12px;justify-content:center}
+    .ai-confirm-btn{padding:10px 20px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s ease;min-width:80px}
+    .ai-confirm-btn-cancel{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+    .ai-confirm-btn-cancel:hover{background:#e2e8f0;color:#334155}
+    .ai-confirm-btn-confirm{background:#ef4444;color:#fff}
+    .ai-confirm-btn-confirm:hover{background:#dc2626;transform:translateY(-1px)}
   `;
 
   function injectStyle(){
@@ -395,6 +408,63 @@
     }).then(r => r.json());
   }
 
+  function showConfirmDialog(title, message, onConfirm, onCancel) {
+    // 创建遮罩层
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-confirm-overlay';
+    
+    // 创建对话框
+    const dialog = document.createElement('div');
+    dialog.className = 'ai-confirm-dialog';
+    dialog.innerHTML = `
+      <div class="ai-confirm-title">${title}</div>
+      <div class="ai-confirm-message">${message}</div>
+      <div class="ai-confirm-buttons">
+        <button class="ai-confirm-btn ai-confirm-btn-cancel">取消</button>
+        <button class="ai-confirm-btn ai-confirm-btn-confirm">确认</button>
+      </div>
+    `;
+    
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    
+    // 绑定事件
+    const cancelBtn = dialog.querySelector('.ai-confirm-btn-cancel');
+    const confirmBtn = dialog.querySelector('.ai-confirm-btn-confirm');
+    
+    function closeDialog() {
+      document.body.removeChild(overlay);
+    }
+    
+    cancelBtn.addEventListener('click', () => {
+      closeDialog();
+      onCancel && onCancel();
+    });
+    
+    confirmBtn.addEventListener('click', () => {
+      closeDialog();
+      onConfirm && onConfirm();
+    });
+    
+    // 点击遮罩层关闭
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        closeDialog();
+        onCancel && onCancel();
+      }
+    });
+    
+    // ESC键关闭
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        closeDialog();
+        onCancel && onCancel();
+        document.removeEventListener('keydown', handleEsc);
+      }
+    };
+    document.addEventListener('keydown', handleEsc);
+  }
+
   function loadMessageHistory(){
     const token = localStorage.getItem('token');
     return fetch('/ai/history', {
@@ -491,12 +561,23 @@
       const action = e.target && e.target.getAttribute && e.target.getAttribute('data-ai-action');
       if (action === 'close') close();
       if (action === 'clear') {
-        clearMemory().then(() => {
-          body.innerHTML = '';
-          appendMessage(body, 'bot', '记忆已清空');
-        }).catch(() => {
-          appendMessage(body, 'bot', '清空失败，请稍后重试');
-        });
+        showConfirmDialog(
+          '确认清空记忆',
+          '确定要删除所有历史消息记录吗？此操作不可恢复。',
+          () => {
+            // 用户确认清空
+            clearMemory().then(() => {
+              body.innerHTML = '';
+              appendMessage(body, 'bot', '记忆已清空');
+            }).catch(() => {
+              appendMessage(body, 'bot', '清空失败，请稍后重试');
+            });
+          },
+          () => {
+            // 用户取消清空
+            console.log('用户取消了清空记忆操作');
+          }
+        );
       }
     });
 

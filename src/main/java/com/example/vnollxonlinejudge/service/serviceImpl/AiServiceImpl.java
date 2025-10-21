@@ -176,11 +176,12 @@ public class AiServiceImpl implements AiService {
             ## 用户相关
             - GET /user/profile?uid={用户ID} - 查询当前用户信息（使用当前用户ID）
             - GET /user/list - 查询用户列表
+            - GET /user/my-progress?uid={用户ID} - 查询用户在各个标签的提交代码次数和通过次数(可以用于生成算法水平报告和做题倾向)
             - GET /user/count?uid={用户ID} - 查询用户总数
             - GET /user/solved-problems?uid={用户ID} - 查询用户通过哪些题目
             
             ## 题目相关
-            - POST /problem/get?name={题目名称} - 查询题目详情
+            - GET /problem/get?name={题目名称} - 查询题目详情
             - GET /problem/tags?pid={题目ID} - 查询题目标签
             - GET /problem/list?keyword={关键字}&offset=0&size=10000 - 查询题目列表
             - GET /problem/count?keyword={关键字} - 查询题目数量
@@ -200,6 +201,7 @@ public class AiServiceImpl implements AiService {
             - GET /tag/list - 查询标签列表
             - GET /solve/list?pid={题目ID} - 查询题解列表
             - GET /notification/count?uid={用户ID} - 查询通知数量
+            - GET /notification/list?uid={用户ID}&pageNum=1&pageSize=10000&keyword={关键字}&status={"true"or"false"字符串类型} - 查询通知列表
             
             调用API时，请使用以下格式：
             先输出10个空字符（连续10个双引号），然后使用
@@ -217,7 +219,7 @@ public class AiServiceImpl implements AiService {
 
             ## API调用格式示例（必须严格遵循）：
             查询用户信息：GET:http://localhost:%s/user/profile?uid=%d
-            查询题目详情：POST:http://localhost:%s/problem/get?id={题目ID}:{"请求体"}
+            查询题目详情：GET:http://localhost:%s/problem/get?name={题目名称}
             查询提交记录：GET:http://localhost:%s/submission/list?uid=%d&pageNum=1&pageSize=10
 
             ## 特别提醒：
@@ -354,7 +356,8 @@ public class AiServiceImpl implements AiService {
                             
                             result = apiCallUtil.post(requestUrl, requestBody);
                         } else {
-                            result = "{\"code\":400,\"msg\":\"POST请求格式错误\",\"data\":null}";
+                            // 如果没有请求体，只有URL，则使用GET方法
+                            result = apiCallUtil.get(url, null);
                         }
                     } else {
                         result = "{\"code\":400,\"msg\":\"不支持的HTTP方法: " + method + "\",\"data\":null}";

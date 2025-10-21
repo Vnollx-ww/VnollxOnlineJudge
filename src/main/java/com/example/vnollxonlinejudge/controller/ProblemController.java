@@ -1,19 +1,28 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.vnollxonlinejudge.filter.BloomFilter;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.ProblemService;
+import com.example.vnollxonlinejudge.service.serviceImpl.AiServiceImpl;
+import com.example.vnollxonlinejudge.utils.UrlDecodedUtil;
+import org.checkerframework.checker.units.qual.N;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import com.example.vnollxonlinejudge.model.result.Result;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
 @RequestMapping("/problem")
 public class ProblemController {
+    private static final Logger logger = LoggerFactory.getLogger(ProblemController.class);
     private final ProblemService problemService;
     private final BloomFilter bloomFilter;
     
@@ -41,9 +50,15 @@ public class ProblemController {
         }
         return modelAndView;
     }
-    @PostMapping("/get")
+    @GetMapping("/get")
     public Result<ProblemVo> getProblemById(@RequestParam(required = false) String id,@RequestParam(required = false) String name){
-        return Result.Success(problemService.getProblemInfo(Long.parseLong(id),0L,name),"获取题目信息成功");
+        Long pid=null;
+        if (StringUtils.isNotBlank(id)){
+            pid=Long.parseLong(id);
+        }
+        // 解码URL编码
+        String decodedName = UrlDecodedUtil.decodedUrl(name);
+        return Result.Success(problemService.getProblemInfo(pid,0L,decodedName),"获取题目信息成功");
     }
     @GetMapping("/tags")
     public Result<List<String>> getTags(@RequestParam Long pid){

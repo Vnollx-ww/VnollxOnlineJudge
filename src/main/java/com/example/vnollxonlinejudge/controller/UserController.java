@@ -2,9 +2,11 @@ package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.dto.user.*;
+import com.example.vnollxonlinejudge.model.entity.UserTag;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.service.UserService;
+import com.example.vnollxonlinejudge.service.UserTagService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,10 +21,13 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
+    private final UserTagService userTagService;
     
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService,UserTagService userTagService) {
+
         this.userService = userService;
+        this.userTagService=userTagService;
     }
     @GetMapping("/{id}")
     public ModelAndView userDetail(@PathVariable Long id) {
@@ -86,5 +91,10 @@ public class UserController {
     public Result<Void> forgetPassword(@RequestBody ForgetPasswordDTO req){
         userService.forgetPassword(req.getNewPassword(),req.getEmail(),req.getVerifyCode());
         return Result.Success("修改密码成功");
+    }
+    @GetMapping("/my-progress")
+    public Result<List<UserTag>> getUserTagPassStatusList() {
+        Long userId = UserContextHolder.getCurrentUserId();
+        return Result.Success(userTagService.getUserTagPassStatusList(userId));
     }
 }
