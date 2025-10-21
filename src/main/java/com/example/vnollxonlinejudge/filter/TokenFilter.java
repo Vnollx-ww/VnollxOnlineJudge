@@ -49,23 +49,19 @@ public class TokenFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
-            throws IOException {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         String requestURI = request.getRequestURI();
-        
+        boolean ok=false;
         try {
-
             for (String path : EXCLUDED_PATHS) {
                 if (path.contains("\\d+")) {
                     if (requestURI.matches("^" + path.replace("\\d+", "\\d+") + "$")) {
-                        filterChain.doFilter(request, response);
-                        return;
+                        ok=true;
                     }
                 } else if (requestURI.startsWith(path)) {
-                    filterChain.doFilter(request, response);
-                    return;
+                    ok=true;
                 }
             }
             String token = null;
@@ -81,6 +77,23 @@ public class TokenFilter implements Filter {
                         break;
                     }
                 }
+            }
+            if (token != null && token.equals("Vnollx-Ai-Agent")) {
+                // 允许 AI 代理通过，并从查询参数中注入 uid 到上下文，供后端使用
+                String uidParam = request.getParameter("uid");
+                if (uidParam != null && !uidParam.isEmpty()) {
+                    request.setAttribute("uid", uidParam);
+                    try {
+                        UserContextHolder.setCurrentUserId(Long.parseLong(uidParam));
+                    } catch (Exception ignored) {
+                    }
+                }
+                filterChain.doFilter(request, response);
+                return;
+            }
+            if (ok){
+                filterChain.doFilter(request, response);
+                return;
             }
             // 从请求头获取token
             if (token == null) {
@@ -135,8 +148,10 @@ public class TokenFilter implements Filter {
         } catch (Exception e) {
             // 记录异常日志
             logger.error("TokenFilter处理请求时发生异常: {}", requestURI, e);
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().println("服务器内部错误");
+            if (!response.isCommitted()){
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                try { response.getWriter().println("服务器内部错误"); } catch (Exception ignored) {}
+            }
         } finally {
             // 确保ThreadLocal被清理，避免内存泄漏
             try {

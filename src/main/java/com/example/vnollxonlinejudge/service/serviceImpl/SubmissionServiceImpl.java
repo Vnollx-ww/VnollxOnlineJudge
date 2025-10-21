@@ -179,7 +179,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         if (cid!=0){
             wrapper.eq("cid",cid);
         }
-        if (uid!=0){
+        if (uid!=null&&uid!=0){
             wrapper.eq("uid",uid);
         }
         if (StringUtils.isNotBlank(language)){

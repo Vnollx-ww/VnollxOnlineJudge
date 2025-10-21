@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -40,21 +41,17 @@ public class SubmissionController {
     @GetMapping("/list")
     public Result<List<SubmissionVo>> getSubmissionList(
             @RequestParam(required = false) String cid,
-            @RequestParam(required = false) String uid,
             @RequestParam(required = false) String language,
             @RequestParam(required = false) String status,
             @RequestParam String pageNum,
             @RequestParam String pageSize
     ){
-        long uidLong = 0L;
+        Long userId= UserContextHolder.getCurrentUserId();
         Long cidLong = parseLongOrDefault(cid); // 默认值0
-        if (StringUtils.isNotBlank(uid)){
-            uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));
-        }
         return Result.Success(
                 submissionService.getSubmissionList(
                         cidLong,
-                        uidLong,
+                        userId,
                         language,
                         status,
                         Integer.parseInt(pageNum),
@@ -65,19 +62,13 @@ public class SubmissionController {
     @GetMapping("/count")
     public Result<Long> getSubmissionCount(
             @RequestParam(required = false) String cid,
-            @RequestParam(required = false) String uid,
             @RequestParam(required = false) String language,
             @RequestParam(required = false) String status
     ){
-        long uidLong = 0L;
+        Long userId=UserContextHolder.getCurrentUserId();
         Long cidLong = parseLongOrDefault(cid); // 默认值0
-        if (StringUtils.isNotBlank(uid)){
-            uidLong= Long.parseLong(Objects.requireNonNull(JwtToken.getUserIdFromToken(uid)));
-        }
-
-        // 调用服务方法
         return Result.Success(
-                submissionService.getCount(cidLong, uidLong, language, status)
+                submissionService.getCount(cidLong, userId, language, status)
                 ,"获取提交记录列表成功");
     }
     private Long parseLongOrDefault(String value) {
