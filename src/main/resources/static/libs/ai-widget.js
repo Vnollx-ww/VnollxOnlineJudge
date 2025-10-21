@@ -415,8 +415,6 @@
 
     let sending = false;
 
-    // 默认始终附带上下文（不再提供开关）
-
     function open(){ 
       panel.classList.add('show'); 
       input.focus();
@@ -518,19 +516,16 @@
       let botBubble = null;
       let accumulatedText = '';
 
-      // 始终附加页面上下文
+      // 直接发送用户输入的内容，不附加任何页面上下文
       let finalMessage = text;
-      try {
-        const ctx = getPageContext();
-        if (ctx && ctx.trim()) {
-          finalMessage = `${text}\n\n[页面上下文]\n${ctx}`;
-        }
-      } catch(e) {}
 
       streamChat(finalMessage, {
         onToken: (token) => {
           // 移除[DONE]标记
           token = token.replace(/\[DONE\]/g, '');
+          
+          // 移除连续双引号（API调用中断信号，可能是1-10个）
+          token = token.replace(/"{1,10}/g, '');
           
           // 如果是第一个token，移除思考指示器并创建AI消息气泡
           if (!botBubble) {

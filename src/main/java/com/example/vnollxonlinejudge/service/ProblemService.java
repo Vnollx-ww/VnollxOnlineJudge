@@ -11,7 +11,7 @@ public interface ProblemService {
     void deleteProblemByAdmin(Long id);
     void updateProblem(AdminSaveProblemDTO dto);
 
-    ProblemVo getProblemInfo(Long pid, Long cid);
+    ProblemVo getProblemInfo(Long pid, Long cid,String name);
 
     List<String> getTagNames(Long pid);
     List<ProblemVo> getProblemList(String name, Long pid, int offset, int size, boolean ok);
@@ -19,7 +19,7 @@ public interface ProblemService {
     Long getCount(String keyword, Long pid,boolean ok);
     boolean isSolved(Long pid,Long uid,Long cid);
     void updatePassCount(Long pid, int ok);
-    void addUserSolveRecord(Long pid,Long uid,Long cid);
+    void addUserSolveRecord(Long pid,Long uid,Long cid,String problemName);
 
     List<Long> getAllProblemId();
 }

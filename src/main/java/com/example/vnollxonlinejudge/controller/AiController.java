@@ -31,6 +31,7 @@ public class AiController {
 
         return aiService.chat(userId, message)
                 .doOnNext(token -> logger.trace("发送token - 用户: {}, token: {}", userId, token))
+                .doOnError(error -> logger.error("AI服务错误 - 用户: {}, 错误: {}", userId, error.getMessage(), error))
                 .onErrorReturn("【系统】AI服务暂时不可用，请稍后重试");
     }
 

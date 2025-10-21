@@ -14,7 +14,7 @@ import java.util.List;
 @Service
 public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemMapper, UserSolvedProblem> implements UserSolvedProblemService {
     @Override
-    public void createUserSolveProblem(Long uid, Long pid, Long cid) {
+    public void createUserSolveProblem(Long uid, Long pid, Long cid,String problemName) {
         LambdaQueryWrapper<UserSolvedProblem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserSolvedProblem::getUserId, uid)
                 .eq(UserSolvedProblem::getProblemId, pid)
@@ -26,6 +26,7 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
             record.setUserId(uid);
             record.setProblemId(pid);
             record.setCompetitionId(cid);
+            record.setProblemName(problemName);
             this.save(record);
         }
     }

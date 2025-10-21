@@ -146,20 +146,29 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public ProblemVo getProblemInfo(Long pid, Long cid) {
-        Problem problem;
+    public ProblemVo getProblemInfo(Long pid, Long cid,String name) {
+        Problem problem = null;
         if (cid == 0) {
-            problem = getById(pid);
+            if (pid!=null&&pid!=0) problem = getById(pid);
+            else{
+                QueryWrapper<Problem> problemQueryWrapper=new QueryWrapper<>();
+                problemQueryWrapper.like("title",name);
+            }
         } else {
             String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey(cacheKey);
             if (problemsJson != null) {
 
                 Map<Long, Problem> problemMap = JSON.parseObject(problemsJson,
-                        new TypeReference<Map<Long, Problem>>() {});
+                        new TypeReference<>() {
+                        });
                 problem = problemMap.get(pid);
             } else {
-                problem = getById(pid);
+                if (pid!=null&&pid!=0) problem = getById(pid);
+                else{
+                    QueryWrapper<Problem> problemQueryWrapper=new QueryWrapper<>();
+                    problemQueryWrapper.like("title",name);
+                }
             }
         }
         if (problem == null) {
@@ -237,8 +246,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
-    public void addUserSolveRecord(Long pid, Long uid, Long cid) {
-        userSolvedProblemService.createUserSolveProblem(uid,pid,cid);
+    public void addUserSolveRecord(Long pid, Long uid, Long cid,String problemName) {
+        userSolvedProblemService.createUserSolveProblem(uid,pid,cid,problemName);
     }
 
     @Override

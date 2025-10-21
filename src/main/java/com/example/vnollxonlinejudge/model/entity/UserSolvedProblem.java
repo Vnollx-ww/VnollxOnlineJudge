@@ -21,4 +21,8 @@ public class UserSolvedProblem {
 
     @Column(name= "competition_id")
     private Long competitionId;
+
+    @Column(name= "problem_name")
+    private String problemName;
+
 }

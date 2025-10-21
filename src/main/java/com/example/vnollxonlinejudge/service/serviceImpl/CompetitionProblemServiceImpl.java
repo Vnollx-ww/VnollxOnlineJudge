@@ -47,7 +47,7 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
 
     @Override
     public void addRecord(Long pid, Long cid) {
-        ProblemVo problemResponse=problemService.getProblemInfo(pid,0L);
+        ProblemVo problemResponse=problemService.getProblemInfo(pid,0L,null);
         if(problemResponse==null){
             throw new BusinessException("题目不存在");
         }

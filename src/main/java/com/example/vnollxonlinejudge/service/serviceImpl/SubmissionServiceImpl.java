@@ -93,7 +93,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         //初始化所有键和信息！！！
         //获取题目信息！！！！
-        if (cid == 0) problem = problemService.getProblemInfo(pid,0L);
+        if (cid == 0) problem = problemService.getProblemInfo(pid,0L,null);
         else{
             //String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey("competition:" + cid + ":problems");
@@ -107,7 +107,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         //提交后对题目提交数，用户提交数进行处理！！！！
         if (submission.getStatus().equals("答案正确")) { //如果问题通过
             if (!ok) { //是否首次通过
-                problemService.addUserSolveRecord(pid,uid,cid); //对问题添加通过记录
+                problemService.addUserSolveRecord(pid,uid,cid,problem.getTitle()); //对问题添加通过记录
                 if (cid == 0) { //如果非比赛
                     userService.updateSubmitCount(uid,1);//用户通过数加一，用户自己不太可能同时提交多次，所以无需加锁
                     problemService.updatePassCount(pid,1);//题目通过数也加一

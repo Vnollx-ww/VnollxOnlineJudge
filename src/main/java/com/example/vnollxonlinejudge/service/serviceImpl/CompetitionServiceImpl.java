@@ -177,7 +177,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 String beginTimeStr=competition.getBeginTime();
                 Long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
                 for (CompetitionProblem competitionProblem : pids) {
-                    ProblemVo problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid);
+                    ProblemVo problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid,null);
                     String problemSubmitKey=String.format(PROBLEM_SUBMIT_KEY, cid, problem.getId());
                     String problemPassKey=String.format(PROBLEM_PASS_KEY, cid, problem.getId());
                     if (!redisService.IsExists(problemSubmitKey)&&ttlSeconds>0) {

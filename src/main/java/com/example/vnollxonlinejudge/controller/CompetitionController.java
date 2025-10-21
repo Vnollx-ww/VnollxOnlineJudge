@@ -68,7 +68,7 @@ public class CompetitionController {
     }
     @GetMapping("/problem/{cid}/{pid}")
     public ModelAndView competitionProblemDetail(@PathVariable Long cid, @PathVariable Long pid) {
-        ProblemVo problem= problemService.getProblemInfo(pid,cid);
+        ProblemVo problem= problemService.getProblemInfo(pid,cid,null);
         ModelAndView modelAndView = new ModelAndView();
         if (problem== null) {
             modelAndView.setViewName("error/404");

@@ -32,7 +32,7 @@ public class ProblemController {
             throw new BusinessException("题目不存在");
         }
         ModelAndView modelAndView = new ModelAndView();
-        ProblemVo problem = problemService.getProblemInfo(id, 0L);
+        ProblemVo problem = problemService.getProblemInfo(id, 0L,null);
         if (problem == null) {
             modelAndView.setViewName("error/404");
         } else {
@@ -42,8 +42,8 @@ public class ProblemController {
         return modelAndView;
     }
     @PostMapping("/get")
-    public Result<ProblemVo> getProblemById(@RequestParam String id){
-        return Result.Success(problemService.getProblemInfo(Long.parseLong(id),0L),"获取题目信息成功");
+    public Result<ProblemVo> getProblemById(@RequestParam(required = false) String id,@RequestParam(required = false) String name){
+        return Result.Success(problemService.getProblemInfo(Long.parseLong(id),0L,name),"获取题目信息成功");
     }
     @GetMapping("/tags")
     public Result<List<String>> getTags(@RequestParam Long pid){

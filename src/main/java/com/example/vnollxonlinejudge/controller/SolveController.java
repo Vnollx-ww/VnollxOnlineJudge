@@ -43,7 +43,7 @@ public class SolveController {
     }
     @GetMapping("/list/{id}")
     public ModelAndView solveListDetail(@PathVariable Long id) {
-        ProblemVo problem = problemService.getProblemInfo(id,0L);
+        ProblemVo problem = problemService.getProblemInfo(id,0L,null);
         ModelAndView modelAndView = new ModelAndView();
         if (problem == null) {
             modelAndView.setViewName("error/404");
@@ -55,7 +55,7 @@ public class SolveController {
     }
     @GetMapping("/publish/{id}")
     public ModelAndView solvePublishDetail(@PathVariable Long id) {
-        ProblemVo problem = problemService.getProblemInfo(id,0L);
+        ProblemVo problem = problemService.getProblemInfo(id,0L,null);
         ModelAndView modelAndView = new ModelAndView();
         if (problem  == null) {
             modelAndView.setViewName("error/404");
