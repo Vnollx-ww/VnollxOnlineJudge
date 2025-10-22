@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Table(name = "user")
 @Data
 @Builder
@@ -46,4 +48,7 @@ public class User {
 
     @Column(name="signature")
     private String signature;
+
+    @Column(name="last_login_time")
+    private LocalDateTime lastLoginTime;
 }

@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -81,6 +82,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!Objects.equals(hashPasswordWithSalt(password, user.getSalt()), user.getPassword())) {
             throw new BusinessException(ERROR_PASSWORD_WRONG);
         }
+        user.setLastLoginTime(LocalDateTime.now());
+        this.updateById(user);
         return JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity());
     }
 
@@ -324,7 +327,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public List<UserVo> getAllUser() {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.select("id", "name", "submit_count", "pass_count");
+        wrapper.select("id", "name", "submit_count", "pass_count","last_login_time");
 
         return this.baseMapper.selectList(wrapper)
                 .stream()

@@ -3,6 +3,9 @@ package com.example.vnollxonlinejudge.model.vo.user;
 import com.example.vnollxonlinejudge.model.entity.User;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 @Data
 public class UserVo {
     private Long id;
@@ -14,6 +17,7 @@ public class UserVo {
     private Integer penaltyTime;
     private String avatar;
     private String signature;
+    private LocalDateTime lastLoginTime;
     // constructors
     public UserVo() {}
 
@@ -26,6 +30,7 @@ public class UserVo {
         this.passCount=user.getPassCount();
         this.penaltyTime=user.getPenaltyTime();
         this.avatar=user.getAvatar();
+        this.lastLoginTime=user.getLastLoginTime();
         this.signature=user.getSignature();
     }
 
