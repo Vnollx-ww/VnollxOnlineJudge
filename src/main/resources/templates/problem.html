@@ -366,6 +366,38 @@
             transform: translateY(0);
         }
 
+        /* 测试按钮样式 */
+        .test-btn {
+            background: #17a2b8;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .test-btn:hover {
+            background: #138496;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+        }
+
+        .test-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
         /* 提交结果显示样式 */
         .submit-result {
             font-size: 14px;
@@ -1274,9 +1306,14 @@
                 <div id="submitResult" class="submit-result">
                     <!-- 提交结果将显示在这里 -->
                 </div>
-                <button type="submit" class="submit-btn">
-                    <i class="fas fa-paper-plane me-2"></i> 提交代码
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" id="testBtn" class="test-btn">
+                        <i class="fas fa-vial me-2"></i> 测试代码
+                    </button>
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-paper-plane me-2"></i> 提交代码
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -2146,6 +2183,55 @@ int main() {
         showToast('代码草稿已自动保存', 'info', 2000);
     }
 
+    // 显示测试结果
+    function showTestResult(data) {
+        const resultElement = document.getElementById('submitResult');
+        
+        let resultClass = 'info';
+        let resultText = '';
+        let errorInfo = null;
+        
+        if (data.code === 200) {
+            const judgeResult = data.data;
+            if (judgeResult.status === "答案正确") {
+                resultClass = 'success';
+                resultText = '✓ 测试通过';
+            } else {
+                resultClass = 'error';
+                resultText = '✗ 测试失败: ' + (judgeResult.status || '未知错误');
+                errorInfo = judgeResult.errorInfo;
+            }
+        } else {
+            resultClass = 'error';
+            resultText = '✗ 测试失败: ' + (data.msg || '网络错误');
+        }
+        
+        resultElement.className = `submit-result ${resultClass}`;
+        resultElement.textContent = resultText;
+        
+        // 如果有错误信息，添加点击事件
+        if (errorInfo) {
+            resultElement.style.cursor = 'pointer';
+            resultElement.innerHTML = resultText + ' <span style="font-size: 12px; opacity: 0.8;">(点击查看详情)</span>';
+            resultElement.onclick = () => showErrorDetail(errorInfo);
+        } else {
+            resultElement.style.cursor = 'default';
+            resultElement.onclick = null;
+        }
+        
+        // 显示通知
+        if (data.code === 200) {
+            const judgeResult = data.data;
+            if (judgeResult.status === "答案正确") {
+                showToast('测试通过！', 'success', 3000);
+            } else {
+                showToast('测试失败: ' + (judgeResult.status || '未知错误'), 'error', 5000);
+            }
+        } else {
+            showToast('测试失败: ' + (data.msg || '网络错误'), 'error', 5000);
+        }
+    }
+
     // 显示提交结果到按钮左边（一直保持）
     function showSubmitResult(data) {
         const resultElement = document.getElementById('submitResult');
@@ -2603,6 +2689,89 @@ int main() {
         } finally {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalButtonText;
+        }
+    });
+
+    // 测试代码功能
+    document.getElementById('testBtn').addEventListener('click', async () => {
+        const testBtn = document.getElementById('testBtn');
+        const originalButtonText = testBtn.innerHTML;
+        const option = document.getElementById('languageSelectHidden').value;
+
+        if (option === "java") {
+            showToast("暂不支持用Java测试，请等待", 'error');
+            return;
+        }
+
+        const code = editor.getValue();
+        if (!code.trim()) {
+            showToast('请输入代码', 'error');
+            return;
+        }
+
+        // 获取测试用例
+        const inputExampleElement = document.querySelector('.col-md-6:first-child .code-preview');
+        const outputExampleElement = document.querySelector('.col-md-6:last-child .code-preview');
+        
+        const inputExample = inputExampleElement?.textContent?.trim() || '';
+        const outputExample = outputExampleElement?.textContent?.trim() || '';
+
+        if (!inputExample || !outputExample) {
+            showToast('该题目没有提供测试用例', 'error');
+            return;
+        }
+
+        testBtn.disabled = true;
+        testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> 测试中...';
+
+        try {
+            const pid = window.location.pathname.split('/').pop();
+            const uname = localStorage.getItem('name');
+            const timeElement = document.getElementById('time');
+            const memoryElement = document.getElementById('memory');
+            const timeValue = timeElement ? timeElement.textContent.replace('时间限制：', '').replace(' ms', '') : '1000';
+            const memoryValue = memoryElement ? memoryElement.textContent.replace('内存限制：', '').replace(' MB', '') : '128';
+
+            console.log('测试参数:', {
+                code,
+                option,
+                pid,
+                inputExample,
+                outputExample,
+                time: timeValue,
+                memory: memoryValue
+            });
+
+            const response = await fetch('/judge/test', {
+                method: 'POST',
+                body: JSON.stringify({
+                    code,
+                    option,
+                    pid,
+                    inputExample,
+                    outputExample,
+                    time: timeValue,
+                    memory: memoryValue
+                }),
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('测试响应状态:', response.status);
+            const data = await response.json();
+            console.log('测试响应数据:', data);
+
+            // 显示测试结果
+            showTestResult(data);
+
+        } catch (error) {
+            console.error('测试错误:', error);
+            showToast('网络连接异常，请检查网络后重试', 'error');
+        } finally {
+            testBtn.disabled = false;
+            testBtn.innerHTML = originalButtonText;
         }
     });
 

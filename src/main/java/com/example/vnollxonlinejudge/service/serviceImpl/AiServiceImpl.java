@@ -193,7 +193,8 @@ public class AiServiceImpl implements AiService {
             
             ## 比赛相关
             - GET /competition/list - 查询比赛列表
-            - GET /competition/list-problem?id={比赛ID} - 查询比赛题目
+            - POST /competition/judgeIsOpen -(now字符串类型代表当前时间(格式 yyyy-mm-dd 00:00:00)，cid字符串类型代表比赛ID)
+            - GET /competition/list-problem?id={比赛ID} - 查询比赛题目(重点:在查询题目之前先判断比赛是否进行中，如果进行中则不返回，防止用户作弊)
             - GET /competition/list-user?id={比赛ID} - 查询比赛用户
             - GET /competition/count - 查询比赛数量
             
