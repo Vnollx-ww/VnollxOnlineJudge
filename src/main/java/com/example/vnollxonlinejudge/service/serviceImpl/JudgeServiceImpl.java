@@ -9,6 +9,7 @@ import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.result.RunResult;
+import com.example.vnollxonlinejudge.model.vo.judge.JudgeResultVO;
 import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.service.RedisService;
@@ -40,14 +41,8 @@ public class JudgeServiceImpl implements JudgeService {
         this.judgeStrategyFactory=judgeStrategyFactory;
     }
     @Override
-    public String judgeSubmission(SubmitCodeDTO req,Long uid) {
-        String lockKey = "submission:" + "user:"+uid + "_" + req.getPid();
-        // 尝试获取锁（3秒内同一用户对同一题目提交无效）
-        boolean locked = redisService.tryLock(lockKey,3000);
-
-        if (!locked) {
-           throw  new BusinessException("请勿重复提交（3秒内同一题目仅允许一次提交）");
-        }
+    public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
+        tryLock(uid, Long.valueOf(req.getPid()));
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
                 .language(req.getOption())
@@ -89,11 +84,38 @@ public class JudgeServiceImpl implements JudgeService {
             logger.error("发送提交记录消息到MQ失败： submission={}, error=", submission, e);
             // 可以在这里接入监控告警，让开发者知道MQ出了问题
         }
-        return result.getStatus();
+        JudgeResultVO vo=new JudgeResultVO();
+        vo.setStatus(result.getStatus());
+        vo.setErrorInfo(result.getFiles().getStderr());
+        return vo;
     }
 
     @Override
-    public String testSubmission(TestCodeDTO req) {
-        return null;
+    public JudgeResultVO testSubmission(TestCodeDTO req,Long uid) {
+
+        tryLock(uid, Long.valueOf(req.getPid()));
+        JudgeStrategy strategy = judgeStrategyFactory.getStrategy(req.getOption());
+
+        RunResult result=strategy.testJudge(
+                req.getCode(),
+                req.getInputExample(),
+                req.getOutputExample(),
+                Long.parseLong(req.getTime()),
+                Long.parseLong(req.getMemory())
+        );
+        JudgeResultVO vo=new JudgeResultVO();
+        vo.setStatus(result.getStatus());
+        vo.setErrorInfo(result.getFiles().getStderr());
+        return vo;
+    }
+
+    public void tryLock(Long uid,Long pid){
+        String lockKey = "submission:" + "user:"+uid + "_" + pid;
+        // 尝试获取锁（3秒内同一用户对同一题目提交无效）
+        boolean locked = redisService.tryLock(lockKey,3000);
+
+        if (!locked) {
+            throw  new BusinessException("请勿重复提交（3秒内同一题目仅允许一次提交）");
+        }
     }
 }

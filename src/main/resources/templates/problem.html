@@ -374,6 +374,14 @@
             border-radius: 6px;
             min-width: 120px;
             text-align: center;
+            width: auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .submit-result.error:hover {
+            background: #f1aeb5;
+            transform: translateY(-1px);
         }
 
         .submit-result.success {
@@ -392,6 +400,117 @@
             background: #d1ecf1;
             color: #0c5460;
             border: 1px solid #bee5eb;
+        }
+        
+        /* 错误详情弹窗样式 */
+        .error-detail-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .error-detail-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .error-detail-content {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .error-detail-modal.show .error-detail-content {
+            transform: scale(1);
+        }
+        
+        .error-detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .error-detail-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #721c24;
+        }
+        
+        .error-detail-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .error-detail-close:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+        
+        .test-case-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .test-case-item {
+            margin: 12px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .test-case-item .label {
+            font-weight: 600;
+            min-width: 100px;
+            margin-right: 16px;
+            color: #495057;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .test-case-item code {
+            background: #e9ecef;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: #495057;
+            border: 1px solid #dee2e6;
+            flex: 1;
+            word-break: break-all;
+            white-space: pre-wrap;
         }
 
         /* GitHub风格的Markdown样式 */
@@ -2033,14 +2152,17 @@ int main() {
         
         let resultClass = 'info';
         let resultText = '';
+        let errorInfo = null;
         
         if (data.code === 200) {
-            if (data.msg === "答案正确") {
+            const judgeResult = data.data;
+            if (judgeResult.status === "答案正确") {
                 resultClass = 'success';
                 resultText = '✓ 答案正确';
             } else {
                 resultClass = 'error';
-                resultText = '✗ ' + data.msg;
+                resultText = '✗ ' + (judgeResult.status || '未知错误');
+                errorInfo = judgeResult.errorInfo;
             }
         } else {
             resultClass = 'error';
@@ -2050,7 +2172,118 @@ int main() {
         resultElement.className = `submit-result ${resultClass}`;
         resultElement.textContent = resultText;
         
+        // 如果有错误信息，添加点击事件
+        if (errorInfo) {
+            resultElement.style.cursor = 'pointer';
+            resultElement.innerHTML = resultText + ' <span style="font-size: 12px; opacity: 0.8;">(点击查看详情)</span>';
+            resultElement.onclick = () => showErrorDetail(errorInfo);
+        } else {
+            resultElement.style.cursor = 'default';
+            resultElement.onclick = null;
+        }
+        
         // 结果一直保持显示，不自动清除
+    }
+    
+    function showErrorDetail(errorInfo) {
+        // 创建弹窗
+        const modal = document.createElement('div');
+        modal.className = 'error-detail-modal';
+        modal.innerHTML = `
+            <div class="error-detail-content">
+                <div class="error-detail-header">
+                    <div class="error-detail-title">错误详情</div>
+                    <button class="error-detail-close">&times;</button>
+                </div>
+                <div class="error-detail-body">
+                    ${formatErrorInfo(errorInfo)}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 显示弹窗
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+        
+        // 关闭弹窗事件
+        const closeBtn = modal.querySelector('.error-detail-close');
+        const closeModal = () => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    document.body.removeChild(modal);
+                }
+            }, 300);
+        };
+        
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // ESC键关闭
+        const handleEsc = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', handleEsc);
+            }
+        };
+        document.addEventListener('keydown', handleEsc);
+    }
+    
+    function formatErrorInfo(errorInfo) {
+        if (!errorInfo) return '';
+        
+        // 处理换行符
+        let formatted = errorInfo.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        
+        // 检查是否包含测试用例信息
+        if (formatted.includes('输入:') && formatted.includes('期待输出:') && formatted.includes('实际输出:')) {
+            // 解析测试用例信息
+            const lines = formatted.split('\n');
+            let result = '<div class="test-case-info">';
+            let lineCount = 0;
+            const maxLines = 20; // 最多显示20行
+            
+            for (let line of lines) {
+                line = line.trim();
+                if (lineCount >= maxLines) {
+                    result += '<div class="test-case-item" style="color: #6c757d; font-style: italic;">... (更多内容已省略)</div>';
+                    break;
+                }
+                
+                if (line.startsWith('输入:')) {
+                    result += `<div class="test-case-item"><span class="label">输入:</span> <code>${line.substring(3).trim()}</code></div>`;
+                    lineCount++;
+                } else if (line.startsWith('期待输出:')) {
+                    result += `<div class="test-case-item"><span class="label">期待输出:</span> <code>${line.substring(5).trim()}</code></div>`;
+                    lineCount++;
+                } else if (line.startsWith('实际输出:')) {
+                    result += `<div class="test-case-item"><span class="label">实际输出:</span> <code>${line.substring(5).trim() || '(空)'}</code></div>`;
+                    lineCount++;
+                } else if (line) {
+                    result += `<div class="test-case-item">${line}</div>`;
+                    lineCount++;
+                }
+            }
+            
+            result += '</div>';
+            return result;
+        } else {
+            // 普通错误信息，限制行数
+            const lines = formatted.split('\n');
+            const maxLines = 15; // 最多显示15行
+            if (lines.length > maxLines) {
+                const truncatedLines = lines.slice(0, maxLines);
+                return truncatedLines.join('<br>') + '<br><span style="color: #6c757d; font-style: italic;">... (更多内容已省略)</span>';
+            }
+            return formatted.replace(/\n/g, '<br>');
+        }
     }
 
     // 显示美化的提示框
@@ -2354,11 +2587,12 @@ int main() {
             
             // 同时显示右上角通知
             if (data.code === 200) {
-                if(data.msg==="答案正确"){
-                    showToast(`${data.msg}！`, 'success', 5000);
+                const judgeResult = data.data;
+                if(judgeResult.status === "答案正确"){
+                    showToast(`${judgeResult.status}！`, 'success', 5000);
                 }
                 else{
-                    showToast(`${data.msg}！`, 'error', 5000);
+                    showToast(`${judgeResult.status || judgeResult.errorInfo || '未知错误'}！`, 'error', 5000);
                 }
             } else {
                 showToast(`${data.msg}！`, 'error', 5000);

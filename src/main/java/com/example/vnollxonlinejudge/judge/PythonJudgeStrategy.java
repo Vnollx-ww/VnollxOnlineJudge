@@ -43,7 +43,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
 
     @Override
     public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
-        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
+        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit,null,null);
         result.setRunTime(result.getTime() / 1000000);
         result.setMemory(result.getMemory()/ 1048576);
         // 状态码转换
@@ -59,13 +59,33 @@ public class PythonJudgeStrategy implements JudgeStrategy {
 
     @Override
     public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
-        return null;
+        RunResult result = judgeCode(code, null, timeLimit, memoryLimit,inputExample,outputExample);
+        result.setRunTime(result.getTime() / 1000000);
+        result.setMemory(result.getMemory()/1048576);
+        switch (result.getStatus()) {
+            case "Accepted" -> result.setStatus("答案正确");
+            case "Time Limit Exceeded" -> result.setStatus("时间超出限制");
+            case "Memory Limit Exceeded" -> result.setStatus("内存超出限制");
+            case "Runtime Error" -> result.setStatus("运行时错误");
+        }
+
+        return result;
     }
 
-    private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
+    private RunResult judgeCode(
+            String submittedCode, String zipFilePath,
+            Long timeLimitMs, Long memoryLimitMB,
+            String inputExample,String outExample
+    ) {
         try {
-            // 2. 读取测试用例
-            List<String[]> testCases = testCaseCacheService.getTestCases(zipFilePath);
+            List<String[]> testCases =new ArrayList<>();
+
+            if (inputExample!=null&&outExample!=null){
+                testCases.add(new String[]{inputExample,outExample});
+            }else{
+                //从缓存或MinIO获取测试用例
+                testCases =testCaseCacheService.getTestCases(zipFilePath);
+            }
 
             // 3. 执行测试用例
             RunResult finalResult = new RunResult();
@@ -111,9 +131,14 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                         String actualOutput = result.getFiles().getStdout().trim();
 
                         if (!expectedOutput.equals(actualOutput)) {
+                            String errorMessage = String.format(
+                                    "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
+                                    truncateString(testCase[0], 100),      // 输入限制100
+                                    truncateString(expectedOutput, 200),   // 输出限制200
+                                    truncateString(actualOutput, 200)      // 输出限制200
+                            );
                             finalResult.setStatus("答案错误");
-                            finalResult.getFiles().setStderr(
-                                    "测试用例不匹配。预期: [" + expectedOutput + "]，实际: [" + actualOutput + "]");
+                            finalResult.getFiles().setStderr(errorMessage);
                             return finalResult;
                         }
                     } catch (Exception e) {
@@ -138,6 +163,11 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             result.getFiles().setStderr("判题系统错误: " + e.getMessage());
             return result;
         }
+    }
+    private String truncateString(String str, int maxLength) {
+        if (str == null) return "null";
+        if (str.length() <= maxLength) return str;
+        return str.substring(0, maxLength) + "...(截断，总长度:" + str.length() + ")";
     }
     private String buildRunPayload(String code, String input, Long cpuLimit, Long memoryLimit) {
         // 转义特殊字符

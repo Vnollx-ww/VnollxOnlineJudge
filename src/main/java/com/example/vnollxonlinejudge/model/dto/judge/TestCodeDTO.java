@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class TestCodeDTO {
     private String code;
+    private String pid;
     private String option;
     private String inputExample;
     private String outputExample;

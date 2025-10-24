@@ -12,6 +12,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
     @Override
     public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
-        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit);
+        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit,null,null);
         result.setRunTime(result.getTime() / 1000000);
         result.setMemory(result.getMemory()/1048576);
         switch (result.getStatus()) {
@@ -60,7 +61,16 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
     @Override
     public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
-        return null;
+        RunResult result = judgeCode(code, null, timeLimit, memoryLimit,inputExample,outputExample);
+        result.setRunTime(result.getTime() / 1000000);
+        result.setMemory(result.getMemory()/1048576);
+        switch (result.getStatus()) {
+            case "Accepted" -> result.setStatus(ACCEPTED);
+            case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
+            case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
+        }
+
+        return result;
     }
 
     private RunResult standardError(String status,String error){
@@ -71,7 +81,11 @@ public class CppJudgeStrategy implements JudgeStrategy {
         result.getFiles().setStderr(error);
         return result;
     }
-    private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
+    private RunResult judgeCode(
+            String submittedCode, String zipFilePath,
+            Long timeLimitMs, Long memoryLimitMB,
+            String inputExample,String outExample
+    ) {
         // 1. Compile code
         String binaryFileId = compileCode(submittedCode);
         if (binaryFileId == null) {
@@ -82,8 +96,14 @@ public class CppJudgeStrategy implements JudgeStrategy {
         }
 
         try {
-            // 2. 从缓存或MinIO获取测试用例
-            List<String[]> testCases =testCaseCacheService.getTestCases(zipFilePath);
+            List<String[]> testCases =new ArrayList<>();
+
+            if (inputExample!=null&&outExample!=null){
+                testCases.add(new String[]{inputExample,outExample});
+            }else{
+                //从缓存或MinIO获取测试用例
+                testCases =testCaseCacheService.getTestCases(zipFilePath);
+            }
 
             if (testCases.isEmpty()) {
                 return standardError("判题错误，测试用例为空","无法获取测试用例");
@@ -116,7 +136,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     RunResult result = response.getBody().get(0);
-                    // Accumulate time and memory
+                    // 计算时间和内存
                     finalResult.setTime(Math.max(finalResult.getTime(), result.getTime()));
                     finalResult.setMemory(Math.max(finalResult.getMemory(), result.getMemory()));
                     finalResult.setRunTime(Math.max(finalResult.getRunTime(), result.getRunTime()));
@@ -129,16 +149,20 @@ public class CppJudgeStrategy implements JudgeStrategy {
                         return finalResult;
                     }
 
-                    // Verify result
+                    // 检验结果
                     try {
                         String expectedOutput = testCase[1];
                         String actualOutput = result.getFiles().getStdout().trim();
 
                         if (!expectedOutput.equals(actualOutput)) {
+                            String errorMessage = String.format(
+                                    "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
+                                    truncateString(testCase[0], 100),      // 输入限制100
+                                    truncateString(expectedOutput, 200),   // 输出限制200
+                                    truncateString(actualOutput, 200)      // 输出限制200
+                            );
                             finalResult.setStatus(WRONG_ANSWER);
-                            finalResult.getFiles().setStderr(finalResult.getFiles().getStderr() +
-                                    "测试用例错误. 期待: " + expectedOutput +
-                                    ", 实际: " + actualOutput + "\n");
+                            finalResult.getFiles().setStderr(errorMessage);
                             return finalResult;
                         }
                     } catch (Exception e) {
@@ -163,6 +187,12 @@ public class CppJudgeStrategy implements JudgeStrategy {
             logger.error("判题过程中出错: ", e);
             return standardError("判题错误","判题过程中出错: " + e.getMessage());
         }
+    }
+
+    private String truncateString(String str, int maxLength) {
+        if (str == null) return "null";
+        if (str.length() <= maxLength) return str;
+        return str.substring(0, maxLength) + "...(截断，总长度:" + str.length() + ")";
     }
 
     private String compileCode(String code) {
