@@ -62,6 +62,12 @@
     .ai-confirm-btn-cancel:hover{background:#e2e8f0;color:#334155}
     .ai-confirm-btn-confirm{background:#ef4444;color:#fff}
     .ai-confirm-btn-confirm:hover{background:#dc2626;transform:translateY(-1px)}
+    
+    /* 成功提示样式 */
+    .ai-success-toast{position:fixed;top:20px;right:20px;background:#10b981;color:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 4px 12px rgba(16,185,129,0.3);z-index:2147483002;animation:successSlideIn 0.3s ease-out;font-size:14px;font-weight:500}
+    @keyframes successSlideIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+    .ai-success-toast.fade-out{animation:successSlideOut 0.3s ease-in forwards}
+    @keyframes successSlideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(100%)}}
   `;
 
   function injectStyle(){
@@ -408,6 +414,25 @@
     }).then(r => r.json());
   }
 
+  function showSuccessToast(message, duration = 3000) {
+    // 创建成功提示
+    const toast = document.createElement('div');
+    toast.className = 'ai-success-toast';
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    // 自动消失
+    setTimeout(() => {
+      toast.classList.add('fade-out');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    }, duration);
+  }
+
   function showConfirmDialog(title, message, onConfirm, onCancel) {
     // 创建遮罩层
     const overlay = document.createElement('div');
@@ -485,15 +510,70 @@
 
     let sending = false;
 
+    function checkLoginStatus() {
+      const token = localStorage.getItem('token');
+      return !!token;
+    }
+
+    function showLoginPrompt() {
+      body.innerHTML = '';
+      appendMessage(body, 'bot', '请先登录后再使用AI助手功能', false);
+      input.disabled = true;
+      input.placeholder = '请先登录';
+      send.disabled = true;
+      send.textContent = '请先登录';
+    }
+
+    function enableChat() {
+      input.disabled = false;
+      input.placeholder = '说点什么...';
+      send.disabled = false;
+      send.textContent = '发送';
+    }
+
+    function updateUIStatus() {
+      if (checkLoginStatus()) {
+        enableChat();
+        // 如果面板是打开的，重新加载历史消息
+        if (panel.classList.contains('show')) {
+          loadHistoryMessages();
+        }
+      } else {
+        showLoginPrompt();
+      }
+    }
+
+    // 监听localStorage变化（登录/登出）
+    function handleStorageChange(e) {
+      if (e.key === 'token') {
+        updateUIStatus();
+      }
+    }
+
+    // 监听自定义登录事件
+    function handleLoginEvent() {
+      updateUIStatus();
+    }
+
     function open(){ 
       panel.classList.add('show'); 
-      input.focus();
-      // 加载历史消息
-      loadHistoryMessages();
+      
+      // 更新UI状态（包括登录检查和界面更新）
+      updateUIStatus();
+      
+      // 如果已登录，聚焦到输入框
+      if (checkLoginStatus()) {
+        input.focus();
+      }
     }
     function close(){ panel.classList.remove('show'); }
 
     function loadHistoryMessages(){
+      // 检查登录状态
+      if (!checkLoginStatus()) {
+        return;
+      }
+      
       // 如果已经有消息，不重复加载
       if (body.children.length > 0) return;
       
@@ -561,6 +641,12 @@
       const action = e.target && e.target.getAttribute && e.target.getAttribute('data-ai-action');
       if (action === 'close') close();
       if (action === 'clear') {
+        // 检查登录状态
+        if (!checkLoginStatus()) {
+          showLoginPrompt();
+          return;
+        }
+        
         showConfirmDialog(
           '确认清空记忆',
           '确定要删除所有历史消息记录吗？此操作不可恢复。',
@@ -568,7 +654,9 @@
             // 用户确认清空
             clearMemory().then(() => {
               body.innerHTML = '';
-              appendMessage(body, 'bot', '记忆已清空');
+              appendMessage(body, 'bot', '你好！我是AI助手，有什么可以帮助您的吗？');
+              // 显示成功提示
+              showSuccessToast('消息记录已清空');
             }).catch(() => {
               appendMessage(body, 'bot', '清空失败，请稍后重试');
             });
@@ -584,6 +672,13 @@
     function doSend(){
       const text = (input.value || '').trim();
       if (!text || sending) return;
+      
+      // 再次检查登录状态
+      if (!checkLoginStatus()) {
+        showLoginPrompt();
+        return;
+      }
+      
       sending = true;
       send.disabled = true;
       
@@ -647,6 +742,11 @@
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
     });
+
+    // 添加事件监听器
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userLogin', handleLoginEvent);
+    window.addEventListener('userLogout', handleLoginEvent);
   }
 
   if (document.readyState === 'loading') {

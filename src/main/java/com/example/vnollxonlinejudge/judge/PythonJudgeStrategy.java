@@ -57,6 +57,11 @@ public class PythonJudgeStrategy implements JudgeStrategy {
         return result;
     }
 
+    @Override
+    public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
+        return null;
+    }
+
     private RunResult judgeCode(String submittedCode, String zipFilePath, Long timeLimitMs, Long memoryLimitMB) {
         try {
             // 2. 读取测试用例

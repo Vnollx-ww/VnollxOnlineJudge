@@ -57,6 +57,12 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
         return result;
     }
+
+    @Override
+    public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
+        return null;
+    }
+
     private RunResult standardError(String status,String error){
         RunResult result = new RunResult();
         result.setStatus(status);
