@@ -26,6 +26,7 @@ public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements 
                 .uid(uid)
                 .title(title)
                 .problemName(problemName)
+                .status(false)
                 .createTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
                 .build();
 
@@ -40,12 +41,24 @@ public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements 
         }
         return new SolveVo(solve);
     }
+
+    @Override
+    public void setSolvePass(Long id) {
+        Solve solve = getById(id);
+        if (solve == null) {
+            throw new BusinessException("题解不存在");
+        }
+        solve.setStatus(true);
+        this.updateById(solve);
+    }
+
     @Override
     public List<SolveVo> getAllSolves(Long pid){
         LambdaQueryWrapper<Solve> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Solve::getPid, pid);
+        queryWrapper.eq(Solve::getPid, pid).eq(Solve::getStatus,true);
         return list(queryWrapper).stream()
                 .map(SolveVo::new)
                 .collect(Collectors.toList());
     }
+
 }

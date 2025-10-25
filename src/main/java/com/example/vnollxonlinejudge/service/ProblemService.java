@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.service;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemBasicVo;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -22,4 +23,6 @@ public interface ProblemService {
     void addUserSolveRecord(Long pid,Long uid,Long cid,String problemName);
 
     List<Long> getAllProblemId();
+    
+    List<ProblemBasicVo> getAllProblemBasicInfo();
 }

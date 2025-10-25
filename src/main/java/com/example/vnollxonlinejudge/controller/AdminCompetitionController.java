@@ -1,11 +1,16 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAddProblemDTO;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminBatchAddProblemDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveCompetitionDTO;
+import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemBasicVo;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
 import com.example.vnollxonlinejudge.service.CompetitionService;
+import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.validation.Valid;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,14 +25,17 @@ import java.util.List;
 public class AdminCompetitionController {
     private final CompetitionService competitionService;
     private final CompetitionProblemService competitionProblemService;
+    private final ProblemService problemService;
     
     @Autowired
     public AdminCompetitionController(
             CompetitionService competitionService,
-            CompetitionProblemService competitionProblemService
+            CompetitionProblemService competitionProblemService,
+            ProblemService problemService
     ) {
         this.competitionService = competitionService;
         this.competitionProblemService = competitionProblemService;
+        this.problemService = problemService;
     }
 
     @PostMapping("/create")
@@ -61,5 +69,38 @@ public class AdminCompetitionController {
     public Result<Void> addProblem(@RequestBody AdminAddProblemDTO req){
         competitionProblemService.addRecord(Long.parseLong(req.getPid()),Long.parseLong(req.getCid()));
         return Result.Success("添加题目至比赛中成功");
+    }
+    
+    @GetMapping("/problems")
+    public Result<List<ProblemBasicVo>> getAllProblems(){
+        List<ProblemBasicVo> problems = problemService.getAllProblemBasicInfo();
+        return Result.Success(problems, "获取题目列表成功");
+    }
+    
+    @PostMapping("/add/problems/batch")
+    public Result<Void> batchAddProblems(@RequestBody AdminBatchAddProblemDTO req){
+        Long cid = Long.parseLong(req.getCid());
+        for (String pid : req.getPids()) {
+            competitionProblemService.addRecord(Long.parseLong(pid), cid);
+        }
+        return Result.Success("批量添加题目至比赛中成功");
+    }
+    
+    @DeleteMapping("/{cid}/problems/{pid}")
+    public Result<Void> deleteProblemFromCompetition(@PathVariable Long cid, @PathVariable Long pid){
+        competitionProblemService.deleteProblemFromCompetition(pid, cid);
+        return Result.Success("从比赛中删除题目成功");
+    }
+    
+    @GetMapping("/{cid}/problems")
+    public Result<List<ProblemBasicVo>> getCompetitionProblems(@PathVariable Long cid){
+        List<CompetitionProblem> competitionProblems = competitionProblemService.getProblemList(cid);
+        List<ProblemBasicVo> problems = competitionProblems.stream()
+                .map(cp -> {
+                    ProblemVo problemVo = problemService.getProblemInfo(cp.getProblemId(), cid, null);
+                    return new ProblemBasicVo(problemVo.getId(), problemVo.getTitle(), problemVo.getDifficulty());
+                })
+                .collect(java.util.stream.Collectors.toList());
+        return Result.Success(problems, "获取比赛题目列表成功");
     }
 }

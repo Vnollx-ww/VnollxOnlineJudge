@@ -32,4 +32,6 @@ public class Solve {
     private String createTime;
     @Column(name = "title")
     private String title;
+    @Column(name = "status")
+    private Boolean status;
 }

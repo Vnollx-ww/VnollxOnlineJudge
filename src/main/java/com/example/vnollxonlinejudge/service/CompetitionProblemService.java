@@ -9,4 +9,5 @@ public interface CompetitionProblemService {
     void updateCount(Long pid,int ok1,int ok2,Long cid);
     void deleteCompetition(Long id);
     void addRecord(Long pid,Long cid);
+    void deleteProblemFromCompetition(Long pid, Long cid);
 }

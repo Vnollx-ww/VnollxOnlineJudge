@@ -62,4 +62,17 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
         competitionProblem.setProblemId(pid);
         this.save(competitionProblem);
     }
+
+    @Override
+    public void deleteProblemFromCompetition(Long pid, Long cid) {
+        QueryWrapper<CompetitionProblem> wrapper = new QueryWrapper<>();
+        wrapper.eq("problem_id", pid);
+        wrapper.eq("competition_id", cid);
+        
+        if (this.count(wrapper) == 0) {
+            throw new BusinessException("题目不在该比赛中");
+        }
+        
+        this.baseMapper.delete(wrapper);
+    }
 }

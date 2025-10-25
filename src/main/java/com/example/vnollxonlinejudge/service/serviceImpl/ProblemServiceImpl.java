@@ -10,6 +10,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAddProblemDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemBasicVo;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
@@ -259,6 +260,16 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
         return this.list(queryWrapper).stream()
                 .map(Problem::getId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ProblemBasicVo> getAllProblemBasicInfo() {
+        LambdaQueryWrapper<Problem> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Problem::getId, Problem::getTitle, Problem::getDifficulty);
+
+        return this.list(queryWrapper).stream()
+                .map(problem -> new ProblemBasicVo(problem.getId(), problem.getTitle(), problem.getDifficulty()))
                 .collect(Collectors.toList());
     }
 }

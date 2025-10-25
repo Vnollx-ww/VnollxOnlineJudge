@@ -300,6 +300,30 @@
           <label for="competition-password" class="block text-sm font-medium text-gray-700">比赛密码 <span class="text-danger">*</span></label>
           <input type="text" id="competition-password" class="input-field">
         </div>
+
+        <!-- 题目管理区域 -->
+        <div class="mb-4" id="problem-management-section" style="display: none;">
+          <label class="block text-sm font-medium text-gray-700 mb-2">比赛题目管理</label>
+          <div class="border border-gray-300 rounded-lg p-4">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center space-x-3">
+                <h4 class="text-sm font-medium text-gray-900">已添加的题目</h4>
+                <span id="selected-problems-count" class="text-xs text-gray-500">已选择 0 个题目</span>
+              </div>
+              <div class="flex space-x-2">
+                <button type="button" id="batch-delete-problems-btn" class="btn-danger text-xs py-1 px-2" disabled>
+                  <i class="fa fa-trash mr-1"></i> 批量删除
+                </button>
+                <button type="button" id="add-problem-to-edit-btn" class="btn-primary text-xs py-1 px-2">
+                  <i class="fa fa-plus mr-1"></i> 添加题目
+                </button>
+              </div>
+            </div>
+            <div id="competition-problems-list" class="space-y-2 max-h-40 overflow-y-auto">
+              <!-- 比赛题目列表将通过JS动态加载 -->
+            </div>
+          </div>
+        </div>
       </form>
     </div>
     <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
@@ -326,29 +350,72 @@
     </div>
   </div>
 </div>
+
+<!-- Delete Problems Confirmation Modal -->
+<div id="delete-problems-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden transform transition-all scale-95 opacity-0" id="delete-problems-modal-content">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-medium text-gray-900">确认删除题目</h3>
+    </div>
+    <div class="px-6 py-4">
+      <div class="flex items-center mb-4">
+        <div class="flex-shrink-0">
+          <i class="fa fa-exclamation-triangle text-warning text-2xl"></i>
+        </div>
+        <div class="ml-3">
+          <h4 class="text-sm font-medium text-gray-900">确定要删除以下题目吗？</h4>
+          <p class="text-sm text-gray-500 mt-1">此操作无法撤销，题目将从比赛中永久移除。</p>
+        </div>
+      </div>
+      <div id="problems-to-delete-list" class="max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+        <!-- 要删除的题目列表 -->
+      </div>
+    </div>
+    <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+      <button id="cancel-delete-problems" class="btn-secondary">取消</button>
+      <button id="confirm-delete-problems" class="btn-danger">确认删除</button>
+    </div>
+  </div>
+</div>
 <div id="add-problem-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-  <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden transform transition-all scale-95 opacity-0" id="add-problem-modal-content">
+  <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-95 opacity-0" id="add-problem-modal-content">
     <div class="px-6 py-4 border-b border-gray-200">
       <h3 class="text-lg font-medium text-gray-900">添加题目至比赛</h3>
     </div>
     <div class="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
       <form id="add-problem-form">
         <div class="mb-4">
-          <label for="problem-id" class="block text-sm font-medium text-gray-700">题目编号 <span class="text-danger">*</span></label>
-          <input type="number" id="problem-id" class="input-field" required>
+          <label class="block text-sm font-medium text-gray-700">选择比赛 <span class="text-danger">*</span></label>
+          <div class="relative">
+            <div id="competition-dropdown" class="input-field cursor-pointer flex items-center justify-between" onclick="toggleCompetitionDropdown()">
+              <span id="competition-selected-text">-- 请选择比赛 --</span>
+              <i class="fa fa-chevron-down text-gray-400 transition-transform duration-200" id="competition-dropdown-icon"></i>
+            </div>
+            <div id="competition-dropdown-menu" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+              <!-- 比赛选项将通过JS动态加载 -->
+            </div>
+            <input type="hidden" id="competition-select" required>
+          </div>
         </div>
         <div class="mb-4">
-          <label for="competition-select" class="block text-sm font-medium text-gray-700">选择比赛 <span class="text-danger">*</span></label>
-          <select id="competition-select" class="input-field" required>
-            <option value="">-- 请选择比赛 --</option>
-            <!-- 比赛选项将通过JS动态加载 -->
-          </select>
+          <label class="block text-sm font-medium text-gray-700 mb-2">选择题目 <span class="text-danger">*</span></label>
+          <div class="border border-gray-300 rounded-lg p-4 max-h-80 overflow-y-auto">
+            <div class="mb-3">
+              <input type="text" id="problem-search" placeholder="搜索题目..." class="input-field w-full">
+            </div>
+            <div id="problem-list" class="space-y-2">
+              <!-- 题目列表将通过JS动态加载 -->
+            </div>
+          </div>
+          <div class="mt-2 text-sm text-gray-500">
+            已选择 <span id="selected-count">0</span> 个题目
+          </div>
         </div>
       </form>
     </div>
     <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
       <button id="cancel-add-problem" class="btn-secondary">取消</button>
-      <button id="confirm-add-problem" class="btn-success">添加</button>
+      <button id="confirm-add-problem" class="btn-success">批量添加</button>
     </div>
   </div>
 </div>
@@ -389,6 +456,23 @@
   const addProblemForm = document.getElementById('add-problem-form');
   const problemIdInput = document.getElementById('problem-id');
   const competitionSelect = document.getElementById('competition-select');
+  const competitionDropdown = document.getElementById('competition-dropdown');
+  const competitionSelectedText = document.getElementById('competition-selected-text');
+  const competitionDropdownMenu = document.getElementById('competition-dropdown-menu');
+  const competitionDropdownIcon = document.getElementById('competition-dropdown-icon');
+  const problemSearchInput = document.getElementById('problem-search');
+  const problemList = document.getElementById('problem-list');
+  const selectedCountSpan = document.getElementById('selected-count');
+  const problemManagementSection = document.getElementById('problem-management-section');
+  const competitionProblemsList = document.getElementById('competition-problems-list');
+  const addProblemToEditBtn = document.getElementById('add-problem-to-edit-btn');
+  const selectedProblemsCount = document.getElementById('selected-problems-count');
+  const batchDeleteProblemsBtn = document.getElementById('batch-delete-problems-btn');
+  const deleteProblemsModal = document.getElementById('delete-problems-modal');
+  const deleteProblemsModalContent = document.getElementById('delete-problems-modal-content');
+  const cancelDeleteProblems = document.getElementById('cancel-delete-problems');
+  const confirmDeleteProblems = document.getElementById('confirm-delete-problems');
+  const problemsToDeleteList = document.getElementById('problems-to-delete-list');
   // Pagination variables
   let currentPage = 1;
   const pageSize = 10; // Number of items per page
@@ -396,6 +480,10 @@
   let currentCompetitionId = null;
   let currentKeyword = '';
   let competitions = [];
+  let allProblems = [];
+  let selectedProblems = new Set();
+  let competitionProblems = [];
+  let selectedCompetitionProblems = new Set();
 
   // Initialize the page
   document.addEventListener('DOMContentLoaded', () => {
@@ -420,6 +508,20 @@
     addProblemToCompetitionBtn.addEventListener('click', openAddProblemModal);
     cancelAddProblem.addEventListener('click', closeAddProblemModal);
     confirmAddProblem.addEventListener('click', addProblemToCompetition);
+    
+    // 编辑比赛中的添加题目按钮
+    addProblemToEditBtn.addEventListener('click', openAddProblemModalForEdit);
+    
+    // 批量删除题目按钮
+    batchDeleteProblemsBtn.addEventListener('click', openBatchDeleteProblemsModal);
+    cancelDeleteProblems.addEventListener('click', closeDeleteProblemsModal);
+
+    // 点击外部关闭比赛下拉框
+    document.addEventListener('click', (e) => {
+      if (!competitionDropdown.contains(e.target)) {
+        closeCompetitionDropdown();
+      }
+    });
 
     // Need password checkbox
     needPasswordCheckbox.addEventListener('change', (e) => {
@@ -442,6 +544,15 @@
         fetchCompetitions();
         fetchCompetitionCount();
       }, 500);
+    });
+
+    // Problem search input
+    let problemSearchTimeout;
+    problemSearchInput.addEventListener('input', () => {
+      clearTimeout(problemSearchTimeout);
+      problemSearchTimeout = setTimeout(() => {
+        filterProblems();
+      }, 300);
     });
   });
 
@@ -780,6 +891,9 @@
     passwordField.classList.add('hidden');
     passwordInput.required = false;
 
+    // 隐藏题目管理区域
+    problemManagementSection.style.display = 'none';
+
     // Set default times (now and 2 hours later)
     const now = new Date();
     const later = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -839,6 +953,12 @@
       passwordField.classList.add('hidden');
       passwordInput.required = false;
     }
+
+    // 显示题目管理区域并加载比赛题目
+    problemManagementSection.style.display = 'block';
+    selectedCompetitionProblems.clear();
+    updateSelectedCompetitionProblemsCount();
+    fetchCompetitionProblems(competitionId);
 
     competitionModal.classList.remove('hidden');
 
@@ -1003,9 +1123,19 @@
   function openAddProblemModal() {
     // 清空表单
     addProblemForm.reset();
+    selectedProblems.clear();
+    selectedCountSpan.textContent = '0';
+    
+    // 重置比赛选择
+    competitionSelect.value = '';
+    competitionSelectedText.textContent = '-- 请选择比赛 --';
+    closeCompetitionDropdown();
 
-    // 加载比赛列表
-    fetchCompetitionsForSelect().then(() => {
+    // 加载比赛列表和题目列表
+    Promise.all([
+      fetchCompetitionsForSelect(),
+      fetchAllProblems()
+    ]).then(() => {
       addProblemModal.classList.remove('hidden');
 
       // 动画效果
@@ -1014,9 +1144,9 @@
         addProblemModalContent.classList.add('scale-100', 'opacity-100');
       }, 10);
 
-      problemIdInput.focus();
+      competitionDropdown.focus();
     }).catch(error => {
-      showToast('加载比赛列表失败: ' + error, 'error');
+      showToast('加载数据失败: ' + error, 'error');
     });
   }
 
@@ -1027,6 +1157,8 @@
 
     setTimeout(() => {
       addProblemModal.classList.add('hidden');
+      // 重置比赛选择框状态
+      closeCompetitionDropdown();
     }, 300);
   }
 
@@ -1043,14 +1175,18 @@
               .then(data => {
                 if (data.code === 200) {
                   // 清空现有选项
-                  competitionSelect.innerHTML = '<option value="">-- 请选择比赛 --</option>';
+                  competitionDropdownMenu.innerHTML = '';
 
                   // 添加比赛选项
                   data.data.forEach(competition => {
-                    const option = document.createElement('option');
-                    option.value = competition.id;
-                    option.textContent = `${competition.id} - ${competition.title}`;
-                    competitionSelect.appendChild(option);
+                    const option = document.createElement('div');
+                    option.className = 'px-4 py-3 hover:bg-gray-100 cursor-pointer transition-colors duration-200 border-b border-gray-100 last:border-b-0';
+                    option.innerHTML = `
+                      <div class="text-sm font-medium text-gray-900">${competition.id} - ${competition.title}</div>
+                      <div class="text-xs text-gray-500 mt-1">${competition.description ? competition.description.substring(0, 50) + '...' : '暂无描述'}</div>
+                    `;
+                    option.onclick = () => selectCompetition(competition.id, `${competition.id} - ${competition.title}`);
+                    competitionDropdownMenu.appendChild(option);
                   });
                   resolve();
                 } else {
@@ -1063,46 +1199,388 @@
     });
   }
 
+  // 获取所有题目
+  function fetchAllProblems() {
+    return new Promise((resolve, reject) => {
+      fetch('/admin/competition/problems', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+              .then(response => response.json())
+              .then(data => {
+                if (data.code === 200) {
+                  allProblems = data.data;
+                  renderProblems();
+                  resolve();
+                } else {
+                  reject(data.msg || '获取题目列表失败');
+                }
+              })
+              .catch(error => {
+                reject('网络错误: ' + error);
+              });
+    });
+  }
+
+  // 渲染题目列表
+  function renderProblems(problems = allProblems) {
+    if (problems.length === 0) {
+      problemList.innerHTML = '<div class="text-center text-gray-500 py-4">暂无题目</div>';
+      return;
+    }
+
+    problemList.innerHTML = problems.map(problem => {
+      const isSelected = selectedProblems.has(problem.id.toString());
+      return `
+        <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <input type="checkbox" 
+                 id="problem-${problem.id}" 
+                 value="${problem.id}" 
+                 ${isSelected ? 'checked' : ''}
+                 class="problem-checkbox h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+          <label for="problem-${problem.id}" class="ml-3 flex-1 cursor-pointer">
+            <div class="text-sm font-medium text-gray-900">${problem.id} - ${problem.title}</div>
+            <div class="text-xs text-gray-500">难度: ${problem.difficulty || '未知'}</div>
+          </label>
+        </div>
+      `;
+    }).join('');
+
+    // 添加复选框事件监听器
+    document.querySelectorAll('.problem-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const problemId = e.target.value;
+        if (e.target.checked) {
+          selectedProblems.add(problemId);
+        } else {
+          selectedProblems.delete(problemId);
+        }
+        updateSelectedCount();
+      });
+    });
+  }
+
+  // 过滤题目
+  function filterProblems() {
+    const searchTerm = problemSearchInput.value.toLowerCase().trim();
+    if (!searchTerm) {
+      renderProblems();
+      return;
+    }
+
+    const filteredProblems = allProblems.filter(problem => 
+      problem.title.toLowerCase().includes(searchTerm) ||
+      problem.id.toString().includes(searchTerm)
+    );
+    renderProblems(filteredProblems);
+  }
+
+  // 更新已选择题目数量
+  function updateSelectedCount() {
+    selectedCountSpan.textContent = selectedProblems.size;
+  }
+
   // 添加题目至比赛
   function addProblemToCompetition() {
-    const problemId = problemIdInput.value.trim();
     const competitionId = competitionSelect.value;
 
     // 验证输入
-    if (!problemId) {
-      showToast('请输入题目编号', 'error');
-      return;
-    }
     if (!competitionId) {
       showToast('请选择比赛', 'error');
       return;
     }
+    if (selectedProblems.size === 0) {
+      showToast('请至少选择一个题目', 'error');
+      return;
+    }
 
-    // 发送请求
-    fetch('/admin/competition/add/problem', {
+    // 发送批量添加请求
+    fetch('/admin/competition/add/problems/batch', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: JSON.stringify({
-        pid: problemId,
-        cid: competitionId
+        cid: competitionId,
+        pids: Array.from(selectedProblems)
       })
     })
             .then(response => response.json())
             .then(data => {
               if (data.code === 200) {
-                showToast('题目添加成功', 'success');
+                showToast(`成功添加 ${selectedProblems.size} 个题目`, 'success');
                 closeAddProblemModal();
               } else {
                 showToast(data.msg || '添加题目失败', 'error');
               }
             })
             .catch(error => {
-              console.error('Error adding problem to competition:', error);
+              console.error('Error adding problems to competition:', error);
               showToast('网络错误，请重试', 'error');
             });
+  }
+
+  // 获取比赛题目列表
+  function fetchCompetitionProblems(competitionId) {
+    fetch(`/admin/competition/${competitionId}/problems`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+            .then(response => response.json())
+            .then(data => {
+              if (data.code === 200) {
+                competitionProblems = data.data;
+                renderCompetitionProblems();
+              } else {
+                showToast(data.msg || '获取比赛题目失败', 'error');
+              }
+            })
+            .catch(error => {
+              console.error('Error fetching competition problems:', error);
+              showToast('网络错误，请重试', 'error');
+            });
+  }
+
+  // 渲染比赛题目列表
+  function renderCompetitionProblems() {
+    if (competitionProblems.length === 0) {
+      competitionProblemsList.innerHTML = '<div class="text-center text-gray-500 py-4">暂无题目</div>';
+      return;
+    }
+
+    competitionProblemsList.innerHTML = competitionProblems.map(problem => {
+      const isSelected = selectedCompetitionProblems.has(problem.id.toString());
+      return `
+        <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <input type="checkbox" 
+                 id="competition-problem-${problem.id}" 
+                 value="${problem.id}" 
+                 ${isSelected ? 'checked' : ''}
+                 class="competition-problem-checkbox h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+          <label for="competition-problem-${problem.id}" class="ml-3 flex-1 cursor-pointer">
+            <div class="text-sm font-medium text-gray-900">${problem.id} - ${problem.title}</div>
+            <div class="text-xs text-gray-500">难度: ${problem.difficulty || '未知'}</div>
+          </label>
+          <button class="text-danger hover:text-danger/80 text-sm transition-colors duration-200 remove-problem-btn" 
+                  data-pid="${problem.id}" data-title="${problem.title}">
+            <i class="fa fa-trash mr-1"></i> 删除
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // 添加复选框事件监听器
+    document.querySelectorAll('.competition-problem-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const problemId = e.target.value;
+        if (e.target.checked) {
+          selectedCompetitionProblems.add(problemId);
+        } else {
+          selectedCompetitionProblems.delete(problemId);
+        }
+        updateSelectedCompetitionProblemsCount();
+      });
+    });
+
+    // 添加删除按钮事件监听器
+    document.querySelectorAll('.remove-problem-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const problemId = btn.getAttribute('data-pid');
+        const problemTitle = btn.getAttribute('data-title');
+        openSingleDeleteProblemModal(problemId, problemTitle);
+      });
+    });
+  }
+
+  // 更新已选择的比赛题目数量
+  function updateSelectedCompetitionProblemsCount() {
+    const count = selectedCompetitionProblems.size;
+    selectedProblemsCount.textContent = `已选择 ${count} 个题目`;
+    batchDeleteProblemsBtn.disabled = count === 0;
+  }
+
+  // 打开单个题目删除确认模态框
+  function openSingleDeleteProblemModal(problemId, problemTitle) {
+    const problem = competitionProblems.find(p => p.id.toString() === problemId);
+    if (!problem) return;
+
+    problemsToDeleteList.innerHTML = `
+      <div class="flex items-center p-2 bg-white rounded border">
+        <div class="flex-1">
+          <div class="text-sm font-medium text-gray-900">${problem.id} - ${problem.title}</div>
+          <div class="text-xs text-gray-500">难度: ${problem.difficulty || '未知'}</div>
+        </div>
+      </div>
+    `;
+
+    // 设置确认删除的回调
+    confirmDeleteProblems.onclick = () => {
+      deleteSingleProblemFromCompetition(problemId);
+    };
+
+    deleteProblemsModal.classList.remove('hidden');
+    setTimeout(() => {
+      deleteProblemsModalContent.classList.remove('scale-95', 'opacity-0');
+      deleteProblemsModalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  // 打开批量删除题目确认模态框
+  function openBatchDeleteProblemsModal() {
+    if (selectedCompetitionProblems.size === 0) return;
+
+    const selectedProblems = Array.from(selectedCompetitionProblems).map(pid => 
+      competitionProblems.find(p => p.id.toString() === pid)
+    ).filter(p => p);
+
+    problemsToDeleteList.innerHTML = selectedProblems.map(problem => `
+      <div class="flex items-center p-2 bg-white rounded border mb-2">
+        <div class="flex-1">
+          <div class="text-sm font-medium text-gray-900">${problem.id} - ${problem.title}</div>
+          <div class="text-xs text-gray-500">难度: ${problem.difficulty || '未知'}</div>
+        </div>
+      </div>
+    `).join('');
+
+    // 设置确认删除的回调
+    confirmDeleteProblems.onclick = () => {
+      batchDeleteProblemsFromCompetition();
+    };
+
+    deleteProblemsModal.classList.remove('hidden');
+    setTimeout(() => {
+      deleteProblemsModalContent.classList.remove('scale-95', 'opacity-0');
+      deleteProblemsModalContent.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  // 关闭删除题目确认模态框
+  function closeDeleteProblemsModal() {
+    deleteProblemsModalContent.classList.remove('scale-100', 'opacity-100');
+    deleteProblemsModalContent.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      deleteProblemsModal.classList.add('hidden');
+    }, 300);
+  }
+
+  // 删除单个题目
+  function deleteSingleProblemFromCompetition(problemId) {
+    fetch(`/admin/competition/${currentCompetitionId}/problems/${problemId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    })
+            .then(response => response.json())
+            .then(data => {
+              if (data.code === 200) {
+                showToast('题目删除成功', 'success');
+                closeDeleteProblemsModal();
+                // 重新加载比赛题目列表
+                fetchCompetitionProblems(currentCompetitionId);
+              } else {
+                showToast(data.msg || '删除题目失败', 'error');
+              }
+            })
+            .catch(error => {
+              console.error('Error removing problem from competition:', error);
+              showToast('网络错误，请重试', 'error');
+            });
+  }
+
+  // 批量删除题目
+  function batchDeleteProblemsFromCompetition() {
+    const problemIds = Array.from(selectedCompetitionProblems);
+    
+    // 并行删除所有选中的题目
+    const deletePromises = problemIds.map(problemId => 
+      fetch(`/admin/competition/${currentCompetitionId}/problems/${problemId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      }).then(response => response.json())
+    );
+
+    Promise.all(deletePromises)
+            .then(results => {
+              const successCount = results.filter(result => result.code === 200).length;
+              if (successCount === problemIds.length) {
+                showToast(`成功删除 ${successCount} 个题目`, 'success');
+                closeDeleteProblemsModal();
+                selectedCompetitionProblems.clear();
+                updateSelectedCompetitionProblemsCount();
+                // 重新加载比赛题目列表
+                fetchCompetitionProblems(currentCompetitionId);
+              } else {
+                showToast(`部分题目删除失败，成功删除 ${successCount} 个`, 'warning');
+              }
+            })
+            .catch(error => {
+              console.error('Error batch deleting problems:', error);
+              showToast('网络错误，请重试', 'error');
+            });
+  }
+
+  // 切换比赛下拉框
+  function toggleCompetitionDropdown() {
+    const isHidden = competitionDropdownMenu.classList.contains('hidden');
+    if (isHidden) {
+      competitionDropdownMenu.classList.remove('hidden');
+      competitionDropdownIcon.style.transform = 'rotate(180deg)';
+    } else {
+      competitionDropdownMenu.classList.add('hidden');
+      competitionDropdownIcon.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  // 选择比赛选项
+  function selectCompetition(competitionId, competitionTitle) {
+    competitionSelect.value = competitionId;
+    competitionSelectedText.textContent = competitionTitle;
+    competitionDropdownMenu.classList.add('hidden');
+    competitionDropdownIcon.style.transform = 'rotate(0deg)';
+  }
+
+  // 关闭比赛下拉框（点击外部时）
+  function closeCompetitionDropdown() {
+    competitionDropdownMenu.classList.add('hidden');
+    competitionDropdownIcon.style.transform = 'rotate(0deg)';
+  }
+
+  // 为编辑比赛打开添加题目模态框
+  function openAddProblemModalForEdit() {
+    // 清空表单
+    addProblemForm.reset();
+    selectedProblems.clear();
+    selectedCountSpan.textContent = '0';
+
+    // 设置当前比赛ID并保持可用状态
+    competitionSelect.value = currentCompetitionId;
+    const currentCompetition = competitions.find(c => c.id === currentCompetitionId);
+    if (currentCompetition) {
+      competitionSelectedText.textContent = `${currentCompetition.id} - ${currentCompetition.title}`;
+    }
+
+    // 加载题目列表
+    fetchAllProblems().then(() => {
+      addProblemModal.classList.remove('hidden');
+
+      // 动画效果
+      setTimeout(() => {
+        addProblemModalContent.classList.remove('scale-95', 'opacity-0');
+        addProblemModalContent.classList.add('scale-100', 'opacity-100');
+      }, 10);
+
+      problemSearchInput.focus();
+    }).catch(error => {
+      showToast('加载题目列表失败: ' + error, 'error');
+    });
   }
 </script>
 </body>
