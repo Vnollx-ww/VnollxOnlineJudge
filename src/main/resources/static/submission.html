@@ -67,8 +67,8 @@
 
         .filter-bar {
             display: flex;
-            gap: 1.5rem;
-            padding: 2rem;
+            gap: 1rem;
+            padding: 1.5rem;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -78,12 +78,14 @@
             border: 1px solid rgba(26, 115, 232, 0.2);
             position: relative;
             z-index: 100;
+            align-items: center;
         }
 
         .filter-group {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.5rem;
+            flex-shrink: 0;
         }
 
         .filter-label {
@@ -100,6 +102,27 @@
 
         .filter-label.status {
             color: var(--secondary-color);
+        }
+
+        .search-input {
+            padding: 0.8rem 1rem;
+            border: 2px solid rgba(26, 115, 232, 0.1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            width: 180px;
+            box-sizing: border-box;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .search-input:hover {
+            border-color: rgba(26, 115, 232, 0.3);
         }
 
         /* 美化后的下拉框样式 */
@@ -609,6 +632,17 @@
                 flex-direction: column;
                 align-items: flex-start;
                 padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .filter-group {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .search-input {
+                width: 100%;
+                max-width: 200px;
             }
 
             .custom-select {
@@ -639,6 +673,14 @@
     </div>
 
     <div class="filter-bar">
+        <!-- 搜索框 -->
+        <div class="filter-group">
+            <span class="filter-label">
+                <i class="fas fa-search"></i> 搜索：
+            </span>
+            <input type="text" id="search-input" class="search-input" placeholder="输入用户名或题目名">
+        </div>
+        
         <!-- 语言筛选框 -->
         <div class="filter-group">
             <span class="filter-label language">
@@ -768,6 +810,7 @@
     let currentLanguage = '';
     let currentStatus = '';
     let onlyMySubmissions = false;
+    let searchKeyword = '';
 
     // 自定义下拉框功能
     function initCustomSelects() {
@@ -875,6 +918,9 @@
             if (onlyMySubmissions) {
                 params.append("uid", localStorage.getItem('token'));
             }
+            if (searchKeyword) {
+                params.append("keyword", searchKeyword);
+            }
             const response = await fetch(`/submission/count?${params.toString()}`, {
                 method: 'GET',
                 headers: {
@@ -905,6 +951,9 @@
             if (currentStatus) params.append("status",currentStatus);
             if (onlyMySubmissions) {
                 params.append("uid", localStorage.getItem('token'));
+            }
+            if (searchKeyword) {
+                params.append("keyword", searchKeyword);
             }
             params.append("cid","0");
             params.append("pageNum",page);
@@ -1076,6 +1125,25 @@
         }
     });
 
+    // 搜索输入框自动搜索
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchKeyword = e.target.value.trim();
+            fetchSubmissions(1);
+        }, 300);
+    });
+
+    // 搜索输入框回车事件
+    document.getElementById('search-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            searchKeyword = e.target.value.trim();
+            fetchSubmissions(1);
+        }
+    });
+
     document.getElementById('apply-filter').addEventListener('click', () => {
         onlyMySubmissions = document.getElementById('my-submissions-only').checked;
         fetchSubmissions(1);
@@ -1083,9 +1151,11 @@
 
     document.getElementById('reset-filter').addEventListener('click', () => {
         document.getElementById('my-submissions-only').checked = false;
+        document.getElementById('search-input').value = '';
         currentLanguage = '';
         currentStatus = '';
         onlyMySubmissions = false;
+        searchKeyword = '';
 
         // 重置下拉框显示
         document.querySelectorAll('.custom-select').forEach(select => {
