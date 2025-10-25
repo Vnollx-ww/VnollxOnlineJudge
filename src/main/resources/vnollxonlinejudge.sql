@@ -107,7 +107,8 @@ create table solve
     create_time  varchar(50) null,
     name         varchar(50) null,
     problem_name varchar(50) null,
-    title        text        not null
+    title        text        not null,
+    status       int  default 0 null comment '审核状态：0-待审核，1-审核通过，2-审核不通过'
 );
 
 create table submission

@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员-题解管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#4080FF',
+                        success: '#00B42A',
+                        warning: '#FF7D00',
+                        danger: '#F53F3F',
+                        dark: '#1D2129',
+                        light: '#F2F3F5'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 20px rgba(0, 0, 0, 0.08)',
+                        'card-hover': '0 8px 30px rgba(0, 0, 0, 0.12)',
+                        'button': '0 2px 5px rgba(22, 93, 255, 0.3)',
+                        'button-hover': '0 4px 12px rgba(22, 93, 255, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-icon {
+                @apply relative flex items-center justify-center h-12 w-12 mt-2 mb-2 mx-auto shadow-lg
+                bg-white dark:bg-dark text-primary hover:bg-primary hover:text-white
+                rounded-xl hover:rounded-2xl transition-all duration-300 ease-linear
+                cursor-pointer;
+            }
+            .sidebar-tooltip {
+                @apply absolute w-auto p-2 m-2 min-w-max left-14 rounded-md shadow-md
+                text-white bg-primary text-xs font-bold
+                transition-all duration-100 scale-0 origin-left;
+            }
+            .btn-primary {
+                @apply bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-button hover:shadow-button-hover transform hover:-translate-y-0.5;
+            }
+            .btn-secondary {
+                @apply bg-light hover:bg-light/80 text-dark font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .btn-danger {
+                @apply bg-danger hover:bg-danger/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .btn-success {
+                @apply bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .btn-warning {
+                @apply bg-warning hover:bg-warning/90 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5;
+            }
+            .input-field {
+                @apply w-full px-4 py-2.5 mt-2 text-dark bg-white border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all duration-200;
+            }
+            .search-input {
+                @apply pl-12;
+            }
+            .table-row {
+                @apply hover:bg-light/50 transition-all duration-200;
+            }
+            .pagination-btn {
+                @apply relative inline-flex items-center px-4 py-2 border text-sm font-medium;
+            }
+            .pagination-btn-active {
+                @apply bg-primary text-white border-primary;
+            }
+            .pagination-btn-inactive {
+                @apply bg-white text-gray-500 border-gray-300 hover:bg-gray-50;
+            }
+            .card {
+                @apply bg-white rounded-xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden;
+            }
+            .toast {
+                @apply fixed top-4 right-4 max-w-xs w-full rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 ease-in-out z-50 px-4 py-3 flex items-center;
+            }
+            .toast-success {
+                @apply bg-white border-l-4 border-success;
+            }
+            .toast-error {
+                @apply bg-white border-l-4 border-danger;
+            }
+            .toast-info {
+                @apply bg-white border-l-4 border-primary;
+            }
+            .search-icon {
+                @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg;
+            }
+            .status-pending {
+                @apply bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium;
+            }
+            .status-approved {
+                @apply bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium;
+            }
+            .status-rejected {
+                @apply bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium;
+            }
+            .status-filter-btn {
+                @apply text-gray-600 hover:text-gray-800 hover:bg-white;
+            }
+            .status-filter-btn.active {
+                @apply bg-white text-primary shadow-sm font-medium;
+            }
+            .prose {
+                @apply text-gray-900;
+            }
+            .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+                @apply text-gray-900 font-semibold;
+            }
+            .prose h1 {
+                @apply text-xl border-b border-gray-200 pb-2;
+            }
+            .prose h2 {
+                @apply text-lg border-b border-gray-100 pb-1;
+            }
+            .prose h3 {
+                @apply text-base;
+            }
+            .prose code {
+                @apply bg-gray-100 text-red-600 px-1 py-0.5 rounded text-sm;
+            }
+            .prose pre {
+                @apply bg-gray-100 p-4 rounded-lg overflow-x-auto;
+            }
+            .prose pre code {
+                @apply bg-transparent text-gray-800 p-0;
+            }
+            .prose blockquote {
+                @apply border-l-4 border-primary pl-4 italic text-gray-600;
+            }
+            .prose ul, .prose ol {
+                @apply pl-6;
+            }
+            .prose li {
+                @apply mb-1;
+            }
+            .prose table {
+                @apply w-full border-collapse border border-gray-300;
+            }
+            .prose th, .prose td {
+                @apply border border-gray-300 px-3 py-2 text-left;
+            }
+            .prose th {
+                @apply bg-gray-50 font-semibold;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-dark antialiased">
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="hidden md:flex flex-col w-16 bg-white shadow-lg">
+        <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+            <div class="flex items-center justify-center h-16">
+                <i class="fa fa-shield text-primary text-2xl"></i>
+            </div>
+            <nav class="mt-5 flex-1 px-2 space-y-1">
+                <a href="admin-user.html" class="sidebar-icon group cursor-pointer">
+                    <i class="fa fa-users text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">用户管理</span>
+                </a>
+                <a href="admin-problem.html" class="sidebar-icon group cursor-pointer">
+                    <i class="fa fa-question-circle text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">题目管理</span>
+                </a>
+                <a href="admin-solve.html" class="sidebar-icon group cursor-pointer bg-primary text-white">
+                    <i class="fa fa-lightbulb-o text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">题解管理</span>
+                </a>
+                <a href="admin-competition.html" class="sidebar-icon group cursor-pointer">
+                    <i class="fa fa-trophy text-xl"></i>
+                    <span class="sidebar-tooltip group-hover:scale-100">比赛管理</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Top navbar -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-primary hover:bg-gray-100 focus:outline-none transition-colors duration-200">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <h1 class="ml-3 text-xl font-semibold">Vnollx在线评测系统 - 管理后台</h1>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="ml-3 relative">
+                            <div>
+                                <button type="button" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200">
+                                    <i class="fa fa-user-circle text-primary text-xl mr-2"></i>
+                                    <span class="font-medium">管理员</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6">
+            <div class="max-w-7xl mx-auto">
+                <!-- Page header -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6 lg:px-8 mb-8">
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                            题解列表
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-500">
+                            管理系统中的所有题解
+                        </p>
+                    </div>
+                    <div class="mt-4 flex md:mt-0 md:ml-4">
+                        <button id="add-solve-btn" class="btn-primary flex items-center">
+                            <i class="fa fa-plus mr-2"></i> 新建题解
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Solve table -->
+                <div class="mt-8 card">
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between md:space-x-6">
+                            <div class="flex items-center mb-4 md:mb-0 space-x-4">
+                                <div class="relative w-full md:w-64">
+                                    <span class="search-icon">
+                                        <i class="fa fa-search"></i>
+                                    </span>
+                                    <input type="text" id="search-input" placeholder="搜索题解..." class="input-field search-input w-full">
+                                </div>
+                                <!-- 自定义状态筛选 -->
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-600">状态:</span>
+                                    <div class="flex bg-gray-100 rounded-lg p-1">
+                                        <button id="status-all" class="status-filter-btn active px-3 py-1 text-sm rounded-md transition-colors" data-status="">全部</button>
+                                        <button id="status-pending" class="status-filter-btn px-3 py-1 text-sm rounded-md transition-colors" data-status="0">待审核</button>
+                                        <button id="status-approved" class="status-filter-btn px-3 py-1 text-sm rounded-md transition-colors" data-status="1">审核通过</button>
+                                        <button id="status-rejected" class="status-filter-btn px-3 py-1 text-sm rounded-md transition-colors" data-status="2">审核不通过</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="refresh-btn" class="btn-secondary flex items-center">
+                                    <i class="fa fa-refresh mr-2"></i> 刷新
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    ID
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    题解标题
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    题目名称
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    作者
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    状态
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    创建时间
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    操作
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody id="solve-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Solve rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    显示 <span class="font-medium" id="showing-range-start">0</span> - <span class="font-medium" id="showing-range-end">0</span> 条，共 <span class="font-medium" id="total-count">0</span> 条记录
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination" id="pagination">
+                                    <!-- Pagination buttons will be dynamically inserted here -->
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add/Edit Solve Modal -->
+<div id="solve-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-95 opacity-0" id="modal-content">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 id="modal-title" class="text-lg font-medium text-gray-900">新建题解</h3>
+        </div>
+        <div class="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <form id="solve-form">
+                <input type="hidden" id="solve-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="solve-title" class="block text-sm font-medium text-gray-700">题解标题 <span class="text-danger">*</span></label>
+                        <input type="text" id="solve-title" class="input-field" required>
+                    </div>
+                    <div>
+                        <label for="problem-name" class="block text-sm font-medium text-gray-700">题目名称 <span class="text-danger">*</span></label>
+                        <input type="text" id="problem-name" class="input-field" required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="author-name" class="block text-sm font-medium text-gray-700">作者 <span class="text-danger">*</span></label>
+                        <input type="text" id="author-name" class="input-field" required>
+                    </div>
+                    <div>
+                        <label for="problem-id" class="block text-sm font-medium text-gray-700">题目ID <span class="text-danger">*</span></label>
+                        <input type="number" id="problem-id" class="input-field" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="solve-content" class="block text-sm font-medium text-gray-700">题解内容 <span class="text-danger">*</span></label>
+                        <div class="flex space-x-2">
+                            <button type="button" id="edit-mode-btn" class="btn-secondary text-xs px-3 py-1">
+                                <i class="fa fa-edit mr-1"></i> 编辑
+                            </button>
+                            <button type="button" id="preview-mode-btn" class="btn-secondary text-xs px-3 py-1">
+                                <i class="fa fa-eye mr-1"></i> 预览
+                            </button>
+                        </div>
+                    </div>
+                    <div id="content-editor" class="relative">
+                        <textarea id="solve-content" rows="15" class="input-field" required placeholder="请输入题解内容，支持Markdown格式..."></textarea>
+                    </div>
+                    <div id="content-preview" class="hidden p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[400px] max-h-[500px] overflow-y-auto">
+                        <div id="preview-content" class="prose prose-sm max-w-none"></div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <button id="cancel-modal" class="btn-secondary">取消</button>
+            <button id="save-solve" class="btn-primary">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden transform transition-all scale-95 opacity-0" id="delete-modal-content">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">确认删除</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-sm text-gray-700">
+                你确定要删除题解 <span id="delete-solve-title" class="font-medium"></span> 吗？此操作无法撤销。
+            </p>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <button id="cancel-delete" class="btn-secondary">取消</button>
+            <button id="confirm-delete" class="btn-danger">删除</button>
+        </div>
+    </div>
+</div>
+
+<!-- View Solve Modal -->
+<div id="view-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-all scale-95 opacity-0" id="view-modal-content">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">题解详情</h3>
+        </div>
+        <div class="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">题解标题</label>
+                        <p id="view-title" class="mt-1 text-sm text-gray-900"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">题目名称</label>
+                        <p id="view-problem-name" class="mt-1 text-sm text-gray-900"></p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">作者</label>
+                        <p id="view-author" class="mt-1 text-sm text-gray-900"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">创建时间</label>
+                        <p id="view-create-time" class="mt-1 text-sm text-gray-900"></p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">状态</label>
+                    <span id="view-status" class="mt-1 inline-block"></span>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-gray-700">题解内容</label>
+                        <div class="flex space-x-2">
+                            <button type="button" id="view-raw-btn" class="btn-secondary text-xs px-3 py-1">
+                                <i class="fa fa-code mr-1"></i> 原始文本
+                            </button>
+                            <button type="button" id="view-markdown-btn" class="btn-secondary text-xs px-3 py-1">
+                                <i class="fa fa-eye mr-1"></i> Markdown预览
+                            </button>
+                        </div>
+                    </div>
+                    <div id="view-content-raw" class="mt-1 p-4 bg-gray-50 rounded-lg text-sm text-gray-900 whitespace-pre-wrap max-h-96 overflow-y-auto"></div>
+                    <div id="view-content-markdown" class="hidden mt-1 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
+                        <div id="markdown-content" class="prose prose-sm max-w-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex justify-end">
+            <button id="close-view-modal" class="btn-secondary">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden transform transition-all scale-95 opacity-0" id="confirm-modal-content">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">确认操作</h3>
+        </div>
+        <div class="px-6 py-4">
+            <p id="confirm-message" class="text-sm text-gray-700"></p>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+            <button id="cancel-confirm" class="btn-secondary">取消</button>
+            <button id="confirm-action" class="btn-primary">确认</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<script>
+    // 全局变量
+    let currentPage = 0;
+    let pageSize = 10;
+    let totalItems = 0;
+    let currentKeyword = '';
+    let currentStatus = '';
+    let deleteSolveId = null;
+    let isEditMode = true; // 编辑模式：true-编辑，false-预览
+    let isViewRaw = true; // 查看模式：true-原始文本，false-Markdown预览
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSolves();
+        bindEvents();
+    });
+
+    // 绑定事件
+    function bindEvents() {
+        // 搜索按钮
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchSolves();
+            }
+        });
+
+        // 状态筛选按钮
+        document.querySelectorAll('.status-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 移除所有按钮的active类
+                document.querySelectorAll('.status-filter-btn').forEach(b => b.classList.remove('active'));
+                // 添加当前按钮的active类
+                this.classList.add('active');
+                // 更新状态并搜索
+                currentStatus = this.getAttribute('data-status');
+                searchSolves();
+            });
+        });
+
+        // 刷新按钮
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            loadSolves();
+        });
+
+        // 新增题解按钮
+        document.getElementById('add-solve-btn').addEventListener('click', function() {
+            openCreateModal();
+        });
+
+        // 模态框事件
+        document.getElementById('cancel-modal').addEventListener('click', closeModal);
+        document.getElementById('save-solve').addEventListener('click', saveSolve);
+        document.getElementById('cancel-delete').addEventListener('click', closeDeleteModal);
+        document.getElementById('confirm-delete').addEventListener('click', confirmDelete);
+        
+        // 查看模态框事件
+        document.getElementById('close-view-modal').addEventListener('click', closeViewModal);
+        
+        // 确认模态框事件
+        document.getElementById('cancel-confirm').addEventListener('click', closeConfirmModal);
+        
+        // Markdown预览相关事件
+        document.getElementById('edit-mode-btn').addEventListener('click', switchToEditMode);
+        document.getElementById('preview-mode-btn').addEventListener('click', switchToPreviewMode);
+        document.getElementById('view-raw-btn').addEventListener('click', switchToRawView);
+        document.getElementById('view-markdown-btn').addEventListener('click', switchToMarkdownView);
+        
+        // 实时预览
+        document.getElementById('solve-content').addEventListener('input', updatePreview);
+
+        // 点击模态框外部关闭
+        document.getElementById('solve-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        document.getElementById('delete-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDeleteModal();
+            }
+        });
+
+        document.getElementById('view-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeViewModal();
+            }
+        });
+
+        document.getElementById('confirm-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeConfirmModal();
+            }
+        });
+    }
+
+    // 加载题解列表
+    async function loadSolves() {
+        try {
+            const params = new URLSearchParams({
+                page: currentPage,
+                size: pageSize
+            });
+            
+            if (currentKeyword) {
+                params.append('keyword', currentKeyword);
+            }
+            if (currentStatus !== '') {
+                params.append('status', currentStatus);
+            }
+
+            const response = await fetch(`/admin/solve/list?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const result = await response.json();
+            
+            if (result.code === 200) {
+                displaySolves(result.data);
+                loadSolveCount();
+            } else {
+                showToast('加载题解列表失败', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading solves:', error);
+            showToast('加载题解列表失败', 'error');
+        }
+    }
+
+    // 获取题解总数
+    async function loadSolveCount() {
+        try {
+            const params = new URLSearchParams();
+            if (currentKeyword) {
+                params.append('keyword', currentKeyword);
+            }
+            if (currentStatus !== '') {
+                params.append('status', currentStatus);
+            }
+
+            const response = await fetch(`/admin/solve/count?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const result = await response.json();
+            
+            if (result.code === 200) {
+                totalItems = result.data;
+                updatePagination();
+            }
+        } catch (error) {
+            console.error('Error loading solve count:', error);
+        }
+    }
+
+    // 显示题解列表
+    function displaySolves(solves) {
+        const tbody = document.getElementById('solve-table-body');
+        tbody.innerHTML = '';
+
+        if (solves.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                        暂无题解数据
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        solves.forEach(solve => {
+            const row = document.createElement('tr');
+            row.className = 'table-row';
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${solve.id}</td>
+                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${solve.title}">${solve.title}</td>
+                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${solve.problemName}">${solve.problemName}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">${solve.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="${getStatusClass(solve.status)}">
+                        ${getStatusText(solve.status)}
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${solve.createTime}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div class="flex space-x-2">
+                        <button onclick="viewSolve(${solve.id})" class="btn-primary text-xs px-2 py-1">查看</button>
+                        <button onclick="editSolve(${solve.id})" class="btn-secondary text-xs px-2 py-1">编辑</button>
+                        ${solve.status === 0 ? `
+                            <button onclick="approveSolve(${solve.id}, true)" class="btn-success text-xs px-2 py-1">通过</button>
+                            <button onclick="approveSolve(${solve.id}, false)" class="btn-warning text-xs px-2 py-1">不通过</button>
+                        ` : ''}
+                        <button onclick="deleteSolve(${solve.id}, '${solve.title}')" class="btn-danger text-xs px-2 py-1">删除</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // 更新分页信息
+    function updatePagination() {
+        const startItem = currentPage * pageSize + 1;
+        const endItem = Math.min((currentPage + 1) * pageSize, totalItems);
+        
+        document.getElementById('showing-range-start').textContent = startItem;
+        document.getElementById('showing-range-end').textContent = endItem;
+        document.getElementById('total-count').textContent = totalItems;
+
+        // 更新分页按钮
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+
+        const totalPages = Math.ceil(totalItems / pageSize);
+        const maxVisiblePages = 5;
+        let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(0, endPage - maxVisiblePages + 1);
+        }
+
+        // 上一页按钮
+        if (currentPage > 0) {
+            const prevButton = document.createElement('button');
+            prevButton.className = 'pagination-btn pagination-btn-inactive';
+            prevButton.innerHTML = '<i class="fa fa-chevron-left"></i>';
+            prevButton.onclick = () => goToPage(currentPage - 1);
+            pagination.appendChild(prevButton);
+        }
+
+        // 页码按钮
+        for (let i = startPage; i <= endPage; i++) {
+            const button = document.createElement('button');
+            button.className = `pagination-btn ${i === currentPage ? 'pagination-btn-active' : 'pagination-btn-inactive'}`;
+            button.textContent = i + 1;
+            button.onclick = () => goToPage(i);
+            pagination.appendChild(button);
+        }
+
+        // 下一页按钮
+        if (currentPage < totalPages - 1) {
+            const nextButton = document.createElement('button');
+            nextButton.className = 'pagination-btn pagination-btn-inactive';
+            nextButton.innerHTML = '<i class="fa fa-chevron-right"></i>';
+            nextButton.onclick = () => goToPage(currentPage + 1);
+            pagination.appendChild(nextButton);
+        }
+    }
+
+    // 搜索题解
+    function searchSolves() {
+        currentKeyword = document.getElementById('search-input').value.trim();
+        currentPage = 0;
+        loadSolves();
+    }
+
+    // 跳转到指定页面
+    function goToPage(page) {
+        currentPage = page;
+        loadSolves();
+    }
+
+    // 查看题解详情
+    async function viewSolve(id) {
+        try {
+            const response = await fetch(`/admin/solve/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const result = await response.json();
+            
+            if (result.code === 200) {
+                const solve = result.data;
+                // 显示查看模态框
+                document.getElementById('view-title').textContent = solve.title;
+                document.getElementById('view-problem-name').textContent = solve.problemName;
+                document.getElementById('view-author').textContent = solve.name;
+                document.getElementById('view-create-time').textContent = solve.createTime;
+                document.getElementById('view-status').textContent = getStatusText(solve.status);
+                document.getElementById('view-status').className = getStatusClass(solve.status);
+                
+                // 设置内容
+                document.getElementById('view-content-raw').textContent = solve.content;
+                document.getElementById('markdown-content').innerHTML = marked.parse(solve.content);
+                
+                // 默认显示原始文本
+                switchToRawView();
+                openViewModal();
+            } else {
+                showToast('获取题解详情失败', 'error');
+            }
+        } catch (error) {
+            console.error('Error viewing solve:', error);
+            showToast('获取题解详情失败', 'error');
+        }
+    }
+
+    // 编辑题解
+    async function editSolve(id) {
+        try {
+            const response = await fetch(`/admin/solve/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            const result = await response.json();
+            
+            if (result.code === 200) {
+                const solve = result.data;
+                document.getElementById('modal-title').textContent = '编辑题解';
+                document.getElementById('solve-id').value = solve.id;
+                document.getElementById('solve-title').value = solve.title;
+                document.getElementById('problem-name').value = solve.problemName;
+                document.getElementById('author-name').value = solve.name;
+                document.getElementById('problem-id').value = solve.pid;
+                document.getElementById('solve-content').value = solve.content;
+                // 重置为编辑模式
+                switchToEditMode();
+                openModal();
+            } else {
+                showToast('获取题解详情失败', 'error');
+            }
+        } catch (error) {
+            console.error('Error editing solve:', error);
+            showToast('获取题解详情失败', 'error');
+        }
+    }
+
+    // 状态相关辅助函数
+    function getStatusText(status) {
+        switch(status) {
+            case 0: return '待审核';
+            case 1: return '审核通过';
+            case 2: return '审核不通过';
+            default: return '未知状态';
+        }
+    }
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 0: return 'status-pending';
+            case 1: return 'status-approved';
+            case 2: return 'status-rejected';
+            default: return 'status-pending';
+        }
+    }
+
+    // 审核题解
+    async function approveSolve(id, approved) {
+        const action = approved ? '通过' : '不通过';
+        const status = approved ? 1 : 2;
+        
+        // 显示确认模态框
+        document.getElementById('confirm-message').textContent = `确定要${action}这个题解吗？`;
+        document.getElementById('confirm-action').onclick = async () => {
+            try {
+                const response = await fetch(`/admin/solve/${id}/status?status=${status}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    showToast(`题解${action}成功`, 'success');
+                    closeConfirmModal();
+                    loadSolves();
+                } else {
+                    showToast('审核失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error approving solve:', error);
+                showToast('审核失败', 'error');
+            }
+        };
+        openConfirmModal();
+    }
+
+    // 删除题解
+    function deleteSolve(id, title) {
+        deleteSolveId = id;
+        document.getElementById('delete-solve-title').textContent = title;
+        document.getElementById('delete-modal').classList.remove('hidden');
+    }
+
+    // 确认删除
+    async function confirmDelete() {
+        if (deleteSolveId) {
+            try {
+                const response = await fetch(`/admin/solve/${deleteSolveId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                const result = await response.json();
+                
+                if (result.code === 200) {
+                    showToast('题解删除成功', 'success');
+                    closeDeleteModal();
+                    loadSolves();
+                } else {
+                    showToast('删除失败', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting solve:', error);
+                showToast('删除失败', 'error');
+            }
+        }
+    }
+
+    // 打开新增模态框
+    function openCreateModal() {
+        document.getElementById('modal-title').textContent = '新建题解';
+        document.getElementById('solve-form').reset();
+        document.getElementById('solve-id').value = '';
+        // 重置为编辑模式
+        switchToEditMode();
+        openModal();
+    }
+
+    // 打开模态框
+    function openModal() {
+        const modal = document.getElementById('solve-modal');
+        const content = document.getElementById('modal-content');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.style.transform = 'scale(1)';
+            content.style.opacity = '1';
+        }, 10);
+    }
+
+    // 关闭模态框
+    function closeModal() {
+        const modal = document.getElementById('solve-modal');
+        const content = document.getElementById('modal-content');
+        content.style.transform = 'scale(0.95)';
+        content.style.opacity = '0';
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    // 关闭删除模态框
+    function closeDeleteModal() {
+        const modal = document.getElementById('delete-modal');
+        const content = document.getElementById('delete-modal-content');
+        content.style.transform = 'scale(0.95)';
+        content.style.opacity = '0';
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+        deleteSolveId = null;
+    }
+
+    // 打开查看模态框
+    function openViewModal() {
+        const modal = document.getElementById('view-modal');
+        const content = document.getElementById('view-modal-content');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.style.transform = 'scale(1)';
+            content.style.opacity = '1';
+        }, 10);
+    }
+
+    // 关闭查看模态框
+    function closeViewModal() {
+        const modal = document.getElementById('view-modal');
+        const content = document.getElementById('view-modal-content');
+        content.style.transform = 'scale(0.95)';
+        content.style.opacity = '0';
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    // 打开确认模态框
+    function openConfirmModal() {
+        const modal = document.getElementById('confirm-modal');
+        const content = document.getElementById('confirm-modal-content');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.style.transform = 'scale(1)';
+            content.style.opacity = '1';
+        }, 10);
+    }
+
+    // 关闭确认模态框
+    function closeConfirmModal() {
+        const modal = document.getElementById('confirm-modal');
+        const content = document.getElementById('confirm-modal-content');
+        content.style.transform = 'scale(0.95)';
+        content.style.opacity = '0';
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    // 保存题解
+    async function saveSolve() {
+        const solveId = document.getElementById('solve-id').value;
+        const formData = {
+            title: document.getElementById('solve-title').value,
+            problemName: document.getElementById('problem-name').value,
+            name: document.getElementById('author-name').value,
+            pid: document.getElementById('problem-id').value,
+            content: document.getElementById('solve-content').value
+        };
+
+        // 验证必填字段
+        if (!formData.title || !formData.problemName || !formData.name || !formData.pid || !formData.content) {
+            showToast('请填写所有必填字段', 'error');
+            return;
+        }
+
+        try {
+            const url = solveId ? `/admin/solve/${solveId}` : '/admin/solve';
+            const method = solveId ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.code === 200) {
+                showToast(solveId ? '题解更新成功' : '题解创建成功', 'success');
+                closeModal();
+                loadSolves();
+            } else {
+                showToast(result.message || '操作失败', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving solve:', error);
+            showToast('操作失败', 'error');
+        }
+    }
+
+    // Markdown相关函数
+    function switchToEditMode() {
+        isEditMode = true;
+        document.getElementById('content-editor').classList.remove('hidden');
+        document.getElementById('content-preview').classList.add('hidden');
+        document.getElementById('edit-mode-btn').classList.add('bg-primary', 'text-white');
+        document.getElementById('edit-mode-btn').classList.remove('bg-gray-100', 'text-gray-600');
+        document.getElementById('preview-mode-btn').classList.remove('bg-primary', 'text-white');
+        document.getElementById('preview-mode-btn').classList.add('bg-gray-100', 'text-gray-600');
+    }
+
+    function switchToPreviewMode() {
+        isEditMode = false;
+        updatePreview();
+        document.getElementById('content-editor').classList.add('hidden');
+        document.getElementById('content-preview').classList.remove('hidden');
+        document.getElementById('preview-mode-btn').classList.add('bg-primary', 'text-white');
+        document.getElementById('preview-mode-btn').classList.remove('bg-gray-100', 'text-gray-600');
+        document.getElementById('edit-mode-btn').classList.remove('bg-primary', 'text-white');
+        document.getElementById('edit-mode-btn').classList.add('bg-gray-100', 'text-gray-600');
+    }
+
+    function switchToRawView() {
+        isViewRaw = true;
+        document.getElementById('view-content-raw').classList.remove('hidden');
+        document.getElementById('view-content-markdown').classList.add('hidden');
+        document.getElementById('view-raw-btn').classList.add('bg-primary', 'text-white');
+        document.getElementById('view-raw-btn').classList.remove('bg-gray-100', 'text-gray-600');
+        document.getElementById('view-markdown-btn').classList.remove('bg-primary', 'text-white');
+        document.getElementById('view-markdown-btn').classList.add('bg-gray-100', 'text-gray-600');
+    }
+
+    function switchToMarkdownView() {
+        isViewRaw = false;
+        document.getElementById('view-content-raw').classList.add('hidden');
+        document.getElementById('view-content-markdown').classList.remove('hidden');
+        document.getElementById('view-markdown-btn').classList.add('bg-primary', 'text-white');
+        document.getElementById('view-markdown-btn').classList.remove('bg-gray-100', 'text-gray-600');
+        document.getElementById('view-raw-btn').classList.remove('bg-primary', 'text-white');
+        document.getElementById('view-raw-btn').classList.add('bg-gray-100', 'text-gray-600');
+    }
+
+    function updatePreview() {
+        const content = document.getElementById('solve-content').value;
+        const previewContent = document.getElementById('preview-content');
+        previewContent.innerHTML = marked.parse(content);
+    }
+
+    // 显示Toast通知
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        
+        let iconClass = 'fa-info-circle';
+        let bgClass = 'bg-blue-50 border-blue-200 text-blue-800';
+        
+        if (type === 'success') {
+            iconClass = 'fa-check-circle';
+            bgClass = 'bg-green-50 border-green-200 text-green-800';
+        } else if (type === 'error') {
+            iconClass = 'fa-exclamation-circle';
+            bgClass = 'bg-red-50 border-red-200 text-red-800';
+        }
+        
+        toast.className = `px-4 py-3 rounded-lg border-l-4 ${bgClass} flex items-center shadow-lg transform transition-all duration-300 translate-x-full`;
+        toast.innerHTML = `
+            <i class="fa ${iconClass} mr-3"></i>
+            <span>${message}</span>
+        `;
+        
+        container.appendChild(toast);
+        
+        // 动画显示
+        setTimeout(() => {
+            toast.classList.remove('translate-x-full');
+        }, 10);
+        
+        // 3秒后自动隐藏
+        setTimeout(() => {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (container.contains(toast)) {
+                    container.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
+</script>
+</body>
+</html>

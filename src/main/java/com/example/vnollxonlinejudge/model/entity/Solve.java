@@ -33,5 +33,5 @@ public class Solve {
     @Column(name = "title")
     private String title;
     @Column(name = "status")
-    private Boolean status;
+    private Integer status; // 0-待审核，1-审核通过，2-审核不通过
 }

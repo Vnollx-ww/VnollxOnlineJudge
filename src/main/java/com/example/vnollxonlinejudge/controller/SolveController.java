@@ -84,9 +84,4 @@ public class SolveController {
         return Result.Success(solveService.getAllSolves(Long.parseLong(pid)),"获取题解列表成功");
     }
 
-    @PutMapping("/status/{id}")
-    public Result<List<SolveVo>> updateSolveStatus(@PathVariable String id){
-        solveService.setSolvePass(Long.parseLong(id));
-        return Result.Success("题解审核通过");
-    }
 }

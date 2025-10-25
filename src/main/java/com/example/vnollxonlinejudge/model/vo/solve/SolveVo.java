@@ -14,7 +14,7 @@ public class SolveVo {
     private Long pid;
     private String createTime;
     private String title;
-    private Boolean status;
+    private Integer status;
     public SolveVo(){}
     public SolveVo(Solve solve){
         this.id=solve.getId();
