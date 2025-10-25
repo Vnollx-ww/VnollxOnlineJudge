@@ -93,7 +93,8 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             finalResult.setFiles(new RunResult.Files());
             finalResult.getFiles().setStdout("");
             finalResult.getFiles().setStderr("");
-
+            finalResult.setTestCount(testCases.size());
+            finalResult.setPassCount(0);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -151,7 +152,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                     logger.error("判题服务响应异常: {}", response.getStatusCode());
                 }
             }
-
+            finalResult.setPassCount(finalResult.getPassCount()+1);
             return finalResult;
 
         } catch (Exception e) {

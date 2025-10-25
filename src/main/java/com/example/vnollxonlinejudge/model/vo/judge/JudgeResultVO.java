@@ -6,4 +6,6 @@ import lombok.Data;
 public class JudgeResultVO {
     private String status;
     private String errorInfo;
+    private Integer passCount;
+    private Integer testCount;
 }

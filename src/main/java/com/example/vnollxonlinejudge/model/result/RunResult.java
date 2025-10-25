@@ -11,13 +11,18 @@ public class RunResult {
     private Long time=0L;
     private Long memory=0L;
     private Long runTime=0L;
-
+    private Integer passCount;
+    private Integer testCount;
     @JsonProperty("files")
     private Files files;
 
     @JsonProperty("fileIds")
     private FileIds fileIds;
 
+    public RunResult() {
+    }
+    public void setPassCount(Integer passCount){this.passCount=passCount;}
+    public void setTestCount(Integer testCount){this.testCount=testCount;}
     public void setStatus(String status) { this.status = status; }
 
     public void setExitStatus(int exitStatus) { this.exitStatus = exitStatus; }

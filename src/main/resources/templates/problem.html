@@ -2213,7 +2213,7 @@ int main() {
         if (errorInfo) {
             resultElement.style.cursor = 'pointer';
             resultElement.innerHTML = resultText + ' <span style="font-size: 12px; opacity: 0.8;">(点击查看详情)</span>';
-            resultElement.onclick = () => showErrorDetail(errorInfo);
+            resultElement.onclick = () => showErrorDetail(errorInfo, data.data?.passCount, data.data?.testCount);
         } else {
             resultElement.style.cursor = 'default';
             resultElement.onclick = null;
@@ -2249,6 +2249,11 @@ int main() {
                 resultClass = 'error';
                 resultText = '✗ ' + (judgeResult.status || '未知错误');
                 errorInfo = judgeResult.errorInfo;
+                
+                // 添加测试点通过情况信息
+                if (judgeResult.passCount !== undefined && judgeResult.testCount !== undefined) {
+                    resultText += ` (${judgeResult.passCount}/${judgeResult.testCount})`;
+                }
             }
         } else {
             resultClass = 'error';
@@ -2262,7 +2267,7 @@ int main() {
         if (errorInfo) {
             resultElement.style.cursor = 'pointer';
             resultElement.innerHTML = resultText + ' <span style="font-size: 12px; opacity: 0.8;">(点击查看详情)</span>';
-            resultElement.onclick = () => showErrorDetail(errorInfo);
+            resultElement.onclick = () => showErrorDetail(errorInfo, data.data?.passCount, data.data?.testCount);
         } else {
             resultElement.style.cursor = 'default';
             resultElement.onclick = null;
@@ -2271,7 +2276,7 @@ int main() {
         // 结果一直保持显示，不自动清除
     }
     
-    function showErrorDetail(errorInfo) {
+    function showErrorDetail(errorInfo, passCount, testCount) {
         // 创建弹窗
         const modal = document.createElement('div');
         modal.className = 'error-detail-modal';
@@ -2282,7 +2287,7 @@ int main() {
                     <button class="error-detail-close">&times;</button>
                 </div>
                 <div class="error-detail-body">
-                    ${formatErrorInfo(errorInfo)}
+                    ${formatErrorInfo(errorInfo, passCount, testCount)}
                 </div>
             </div>
         `;
@@ -2322,17 +2327,30 @@ int main() {
         document.addEventListener('keydown', handleEsc);
     }
     
-    function formatErrorInfo(errorInfo) {
+    function formatErrorInfo(errorInfo, passCount, testCount) {
         if (!errorInfo) return '';
         
         // 处理换行符
         let formatted = errorInfo.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         
+        // 添加测试点通过情况信息
+        let result = '';
+        if (passCount !== undefined && testCount !== undefined) {
+            result += `<div class="test-case-info" style="margin-bottom: 16px;">
+                <div class="test-case-item">
+                    <span class="label">测试点通过情况:</span> 
+                    <span style="color: ${passCount === testCount ? '#28a745' : '#dc3545'}; font-weight: 600;">
+                        ${passCount}/${testCount}
+                    </span>
+                </div>
+            </div>`;
+        }
+        
         // 检查是否包含测试用例信息
         if (formatted.includes('输入:') && formatted.includes('期待输出:') && formatted.includes('实际输出:')) {
             // 解析测试用例信息
             const lines = formatted.split('\n');
-            let result = '<div class="test-case-info">';
+            result += '<div class="test-case-info">';
             let lineCount = 0;
             const maxLines = 20; // 最多显示20行
             
@@ -2366,9 +2384,11 @@ int main() {
             const maxLines = 15; // 最多显示15行
             if (lines.length > maxLines) {
                 const truncatedLines = lines.slice(0, maxLines);
-                return truncatedLines.join('<br>') + '<br><span style="color: #6c757d; font-style: italic;">... (更多内容已省略)</span>';
+                result += truncatedLines.join('<br>') + '<br><span style="color: #6c757d; font-style: italic;">... (更多内容已省略)</span>';
+            } else {
+                result += formatted.replace(/\n/g, '<br>');
             }
-            return formatted.replace(/\n/g, '<br>');
+            return result;
         }
     }
 

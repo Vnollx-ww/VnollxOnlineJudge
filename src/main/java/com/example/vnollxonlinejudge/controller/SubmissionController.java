@@ -43,6 +43,7 @@ public class SubmissionController {
             @RequestParam(required = false) String cid,
             @RequestParam(required = false) String language,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword,
             @RequestParam String pageNum,
             @RequestParam String pageSize
     ){
@@ -54,6 +55,7 @@ public class SubmissionController {
                         userId,
                         language,
                         status,
+                        keyword,
                         Integer.parseInt(pageNum),
                         Integer.parseInt(pageSize)
                 )

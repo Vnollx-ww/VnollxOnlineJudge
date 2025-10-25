@@ -118,6 +118,8 @@ public class CppJudgeStrategy implements JudgeStrategy {
             finalResult.setRunTime(0L);
             finalResult.setTime(0L);
             finalResult.setMemory(0L);
+            finalResult.setTestCount(testCases.size());
+            finalResult.setPassCount(0);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -180,7 +182,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
             // 4. Delete compiled binary
             deleteBinaryFile(binaryFileId);
-
+            finalResult.setPassCount(finalResult.getPassCount()+1);
             return finalResult;
 
         } catch (Exception e) {

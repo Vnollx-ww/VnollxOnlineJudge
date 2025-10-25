@@ -87,6 +87,8 @@ public class JudgeServiceImpl implements JudgeService {
         JudgeResultVO vo=new JudgeResultVO();
         vo.setStatus(result.getStatus());
         vo.setErrorInfo(result.getFiles().getStderr());
+        vo.setPassCount(result.getPassCount());
+        vo.setTestCount(result.getTestCount());
         return vo;
     }
 
@@ -106,6 +108,8 @@ public class JudgeServiceImpl implements JudgeService {
         JudgeResultVO vo=new JudgeResultVO();
         vo.setStatus(result.getStatus());
         vo.setErrorInfo(result.getFiles().getStderr());
+        vo.setPassCount(result.getPassCount());
+        vo.setTestCount(result.getTestCount());
         return vo;
     }
 

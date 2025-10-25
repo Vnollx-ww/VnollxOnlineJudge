@@ -12,7 +12,7 @@ public interface SubmissionService {
     void processSubmission(Submission submission);
     void batchInsert(List<Submission> submissions);
     void deleteSubmissionsByPid(Long pid);
-    List<SubmissionVo> getSubmissionList(Long cid, Long uid, String language, String status, int pageNum, int pageSize);
+    List<SubmissionVo> getSubmissionList(Long cid, Long uid, String language, String status, String keyword,int pageNum, int pageSize);
     Long getCount(Long cid,Long uid,String language,String status);
     void deleteSubmissionsByCid(Long cid);
 }

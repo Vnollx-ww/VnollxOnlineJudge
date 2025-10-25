@@ -170,7 +170,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
-    public List<SubmissionVo> getSubmissionList(Long cid, Long uid, String language, String status, int pageNum, int pageSize) {
+    public List<SubmissionVo> getSubmissionList(
+            Long cid, Long uid, String language,
+            String status, String keyword,
+            int pageNum, int pageSize
+    ) {
         Page<Submission> page = new Page<>(pageNum, pageSize);
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         wrapper.eq("cid",cid);
@@ -182,6 +186,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         if (StringUtils.isNotBlank(status)){
             wrapper.eq("status",status);
+        }
+        if (StringUtils.isNotBlank(keyword)) {
+            wrapper.and(w -> w.like("user_name", keyword)
+                    .or()
+                    .like("problem_name", keyword));
         }
         wrapper.orderByDesc("id");
         Page<Submission> result = this.page(page, wrapper);
