@@ -44,10 +44,11 @@ public class SubmissionController {
             @RequestParam(required = false) String language,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String uid,
             @RequestParam String pageNum,
             @RequestParam String pageSize
     ){
-        Long userId= UserContextHolder.getCurrentUserId();
+        Long userId = parseLongOrDefault(uid); // 使用前端传递的uid参数
         Long cidLong = parseLongOrDefault(cid); // 默认值0
         return Result.Success(
                 submissionService.getSubmissionList(
@@ -65,12 +66,13 @@ public class SubmissionController {
     public Result<Long> getSubmissionCount(
             @RequestParam(required = false) String cid,
             @RequestParam(required = false) String language,
-            @RequestParam(required = false) String status
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword
     ){
         Long userId=UserContextHolder.getCurrentUserId();
         Long cidLong = parseLongOrDefault(cid); // 默认值0
         return Result.Success(
-                submissionService.getCount(cidLong, userId, language, status)
+                submissionService.getCount(cidLong, userId, language, status,keyword)
                 ,"获取提交记录列表成功");
     }
     private Long parseLongOrDefault(String value) {

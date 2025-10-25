@@ -88,6 +88,11 @@
             flex-shrink: 0;
         }
 
+        .filter-group.buttons {
+            margin-left: auto;
+            gap: 0.75rem;
+        }
+
         .filter-label {
             font-weight: 600;
             color: var(--neutral-medium);
@@ -256,11 +261,13 @@
         .status-indicator.memory-limit { background-color: #c53030; }
 
         .filter-btn, .reset-btn {
-            padding: 0.8rem 2rem;
+            padding: 0.6rem 1.2rem;
             font-weight: 500;
-            border-radius: 10px;
+            border-radius: 8px;
             transition: all 0.2s ease;
             cursor: pointer;
+            font-size: 0.9rem;
+            white-space: nowrap;
         }
 
         .filter-btn {
@@ -640,6 +647,12 @@
                 justify-content: space-between;
             }
             
+            .filter-group.buttons {
+                margin-left: 0;
+                justify-content: flex-end;
+                gap: 1rem;
+            }
+            
             .search-input {
                 width: 100%;
                 max-width: 200px;
@@ -768,8 +781,10 @@
                 只查看我的提交
             </label>
         </div>
-        <button class="filter-btn" id="apply-filter">筛选</button>
-        <button class="reset-btn" id="reset-filter">重置</button>
+        <div class="filter-group buttons">
+            <button class="filter-btn" id="apply-filter">筛选</button>
+            <button class="reset-btn" id="reset-filter">重置</button>
+        </div>
     </div>
 
     <table class="submissions-table">
@@ -958,6 +973,7 @@
             params.append("cid","0");
             params.append("pageNum",page);
             params.append("pageSize",PAGE_SIZE);
+            
             const response = await fetch(`/submission/list?${params.toString()}`, {
                 method: 'GET',
                 headers: {
@@ -966,7 +982,6 @@
             });
             const data = await response.json();
             if (data.code !== 200) throw new Error(data.msg || '获取数据失败');
-
             renderSubmissions(data.data);
             await updatePagination();
         } catch (error) {
@@ -1032,6 +1047,7 @@
         const paginationDiv = document.getElementById('pagination');
         paginationDiv.innerHTML = '';
 
+
         if (totalPages === 0) return;
 
         const prevButton = document.createElement('button');
@@ -1040,11 +1056,17 @@
         prevButton.onclick = () => currentPage > 1 && fetchSubmissions(currentPage - 1);
         paginationDiv.appendChild(prevButton);
 
-        let start = Math.max(1, currentPage - Math.floor(PAGINATION_SHOW_COUNT / 2));
-        let end = Math.min(totalPages, start + PAGINATION_SHOW_COUNT - 1);
+        // 如果总页数小于等于要显示的页数，直接显示所有页
+        if (totalPages <= PAGINATION_SHOW_COUNT) {
+            var start = 1;
+            var end = totalPages;
+        } else {
+            var start = Math.max(1, currentPage - Math.floor(PAGINATION_SHOW_COUNT / 2));
+            var end = Math.min(totalPages, start + PAGINATION_SHOW_COUNT - 1);
 
-        if (end - start + 1 < PAGINATION_SHOW_COUNT) {
-            start = Math.max(1, totalPages - PAGINATION_SHOW_COUNT + 1);
+            if (end - start + 1 < PAGINATION_SHOW_COUNT) {
+                start = Math.max(1, totalPages - PAGINATION_SHOW_COUNT + 1);
+            }
         }
 
         if (start > 1) {

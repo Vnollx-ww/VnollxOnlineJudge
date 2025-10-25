@@ -177,7 +177,9 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     ) {
         Page<Submission> page = new Page<>(pageNum, pageSize);
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
-        wrapper.eq("cid",cid);
+        if (cid!=0){
+            wrapper.eq("cid",cid);
+        }
         if (uid!=0){
             wrapper.eq("uid",uid);
         }
@@ -200,7 +202,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
-    public Long getCount(Long cid, Long uid, String language, String status) {
+    public Long getCount(Long cid, Long uid, String language, String status,String keyword) {
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         if (cid!=0){
             wrapper.eq("cid",cid);
@@ -213,6 +215,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         if (StringUtils.isNotBlank(status)){
             wrapper.eq("status",status);
+        }
+        if (StringUtils.isNotBlank(keyword)) {
+            wrapper.and(w -> w.like("user_name", keyword)
+                    .or()
+                    .like("problem_name", keyword));
         }
         return this.count(wrapper);
     }

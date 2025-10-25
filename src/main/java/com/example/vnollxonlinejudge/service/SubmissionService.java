@@ -13,6 +13,6 @@ public interface SubmissionService {
     void batchInsert(List<Submission> submissions);
     void deleteSubmissionsByPid(Long pid);
     List<SubmissionVo> getSubmissionList(Long cid, Long uid, String language, String status, String keyword,int pageNum, int pageSize);
-    Long getCount(Long cid,Long uid,String language,String status);
+    Long getCount(Long cid,Long uid,String language,String status,String keyword);
     void deleteSubmissionsByCid(Long cid);
 }
