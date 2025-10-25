@@ -860,7 +860,18 @@
     function deleteSolve(id, title) {
         deleteSolveId = id;
         document.getElementById('delete-solve-title').textContent = title;
-        document.getElementById('delete-modal').classList.remove('hidden');
+        openDeleteModal();
+    }
+
+    // 打开删除模态框
+    function openDeleteModal() {
+        const modal = document.getElementById('delete-modal');
+        const content = document.getElementById('delete-modal-content');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.style.transform = 'scale(1)';
+            content.style.opacity = '1';
+        }, 10);
     }
 
     // 确认删除
