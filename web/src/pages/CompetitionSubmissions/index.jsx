@@ -39,10 +39,11 @@ const CompetitionSubmissions = () => {
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [status, setStatus] = useState('');
-  const [language, setLanguage] = useState('');
+  const [status, setStatus] = useState(null);
+  const [language, setLanguage] = useState(null);
 
-  const pageSize = 10;
+
+    const pageSize = 10;
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -51,13 +52,13 @@ const CompetitionSubmissions = () => {
       return;
     }
     loadCompetition();
-  }, [id]);
+  }, [id, loadCompetition, navigate]);
 
   useEffect(() => {
     if (competition) {
       checkPassword();
     }
-  }, [competition]);
+  }, [checkPassword, competition]);
 
   useEffect(() => {
     if (passwordVerified && competition) {
@@ -205,7 +206,7 @@ const CompetitionSubmissions = () => {
 
   const getStatusText = (status) => {
     const statusMap = {
-      ACCEPTED: '通过',
+      ACCEPTED: '答案正确',
       WRONG_ANSWER: '答案错误',
       TIME_LIMIT_EXCEEDED: '超时',
       MEMORY_LIMIT_EXCEEDED: '内存超限',
@@ -240,10 +241,10 @@ const CompetitionSubmissions = () => {
       key: 'problem',
       render: (_, record) => (
         <Link
-          to={`/competition/${id}/problem/${record.problemId}`}
+          to={`/competition/${id}/problem/${record.pid}`}
           style={{ color: '#1a73e8', fontWeight: 500 }}
         >
-          #{record.problemId} - {record.problemName || '未知题目'}
+          #{record.pid} - {record.problemName || '未知题目'}
         </Link>
       ),
     },
@@ -276,6 +277,21 @@ const CompetitionSubmissions = () => {
       width: 180,
       render: (time) => formatTime(time),
     },
+      {
+          title: '运行时间',
+          dataIndex: 'time',
+          key: 'runTime',
+          width: 150,
+          render: (ms) => ms!=null ? `${ms} ms` : '-',
+      },
+      {
+          title: '运行内存',
+          dataIndex: 'memory',
+          key: 'memory',
+          width: 120,
+          render: (mem) => mem!=null ? `${mem} MB` : '-',
+      },
+
   ];
 
   if (loading && !competition) {
@@ -342,35 +358,35 @@ const CompetitionSubmissions = () => {
           >
             <div style={{ marginBottom: 16 }}>
               <Space>
-                <Select
-                  placeholder="状态"
-                  value={status}
-                  onChange={setStatus}
-                  style={{ width: 150 }}
-                  allowClear
-                >
-                  <Option value="ACCEPTED">通过</Option>
-                  <Option value="WRONG_ANSWER">答案错误</Option>
-                  <Option value="TIME_LIMIT_EXCEEDED">超时</Option>
-                  <Option value="MEMORY_LIMIT_EXCEEDED">内存超限</Option>
-                  <Option value="RUNTIME_ERROR">运行错误</Option>
-                  <Option value="COMPILATION_ERROR">编译错误</Option>
-                  <Option value="PENDING">等待中</Option>
-                  <Option value="JUDGING">评测中</Option>
-                </Select>
-                <Select
-                  placeholder="语言"
-                  value={language}
-                  onChange={setLanguage}
-                  style={{ width: 150 }}
-                  allowClear
-                >
-                  <Option value="Python">Python</Option>
-                  <Option value="Java">Java</Option>
-                  <Option value="C++">C++</Option>
-                  <Option value="C">C</Option>
-                  <Option value="JavaScript">JavaScript</Option>
-                </Select>
+                  <Select
+                      placeholder="状态"
+                      value={status}
+                      onChange={setStatus}
+                      style={{ width: 150 }}
+                      allowClear
+                      notFoundContent={null}
+                  >
+                      <Option value="答案正确">答案正确</Option>
+                      <Option value="答案错误">答案错误</Option>
+                      <Option value="时间超出限制">时间超出限制</Option>
+                      <Option value="内存超出限制">内存超出限制</Option>
+                      <Option value="运行时错误">运行时错误</Option>
+                      <Option value="编译错误">编译错误</Option>
+                      <Option value="等待中">等待中</Option>
+                      <Option value="评测中">评测中</Option>
+                  </Select>
+                  <Select
+                      placeholder="语言"
+                      value={language}
+                      onChange={setLanguage}
+                      style={{ width: 150 }}
+                      allowClear
+                      notFoundContent={null}
+                  >
+                      <Option value="Python">Python</Option>
+                      <Option value="Java">Java</Option>
+                      <Option value="C++">C++</Option>
+                  </Select>
                 <Button type="primary" onClick={handleSearch}>
                   搜索
                 </Button>

@@ -1,0 +1,42 @@
+.notification-detail-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.notification-detail-card {
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.notification-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.detail-title {
+  margin: 0 !important;
+}
+
+.notification-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-status {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.detail-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #374151;
+  white-space: pre-wrap;
+}
+

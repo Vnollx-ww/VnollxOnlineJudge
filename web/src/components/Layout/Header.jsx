@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space } from 'antd';
 import {
@@ -24,14 +24,7 @@ const Header = () => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated()) {
-      loadUserInfo();
-      loadNotificationCount();
-    }
-  }, []);
-
-  const loadUserInfo = async () => {
+  const loadUserInfo = useCallback(async () => {
     try {
       const data = await api.get('/user/profile');
       if (data.code === 200) {
@@ -43,9 +36,9 @@ const Header = () => {
     } catch (error) {
       console.error('获取用户信息失败:', error);
     }
-  };
+  }, []);
 
-  const loadNotificationCount = async () => {
+  const loadNotificationCount = useCallback(async () => {
     try {
       const data = await api.get('/notification/count', { params: { status: 'false' } });
       if (data.code === 200) {
@@ -54,7 +47,26 @@ const Header = () => {
     } catch (error) {
       console.error('获取通知数量失败:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      loadUserInfo();
+      loadNotificationCount();
+    }
+  }, [loadUserInfo, loadNotificationCount]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (isAuthenticated()) {
+        loadNotificationCount();
+      }
+    };
+    window.addEventListener('notification-updated', handler);
+    return () => {
+      window.removeEventListener('notification-updated', handler);
+    };
+  }, [loadNotificationCount]);
 
   const handleLogout = () => {
     removeToken();

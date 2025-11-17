@@ -78,12 +78,13 @@ export default defineConfig({
             // 其他 /competition/xxx 都是 API，继续代理
           }
           
-          // /notification/:id (通知详情)
+          // /notification/:id (通知详情) - 仅数字ID才视为前端路由
           if (path.startsWith('/notification/')) {
             const parts = path.split('/');
-            if (parts.length === 3 && parts[2]) {
+            if (parts.length === 3 && parts[2] && /^\d+$/.test(parts[2])) {
               return path; // 跳过代理
             }
+            // 其他 /notification/* 请求均视为 API
           }
           
           // /user/:id (用户主页) - 只将数字ID识别为前端路由

@@ -27,8 +27,8 @@ const Submissions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [problemId, setProblemId] = useState('');
-  const [status, setStatus] = useState('');
-  const [language, setLanguage] = useState('');
+  const [status, setStatus] = useState(undefined);
+  const [language, setLanguage] = useState(undefined);
 
   const pageSize = 10;
 
@@ -142,14 +142,14 @@ const Submissions = () => {
       key: 'problem',
       render: (_, record) => (
         <a
-          href={`/problem/${record.problemId}`}
+          href={`/problem/${record.pid}`}
           onClick={(e) => {
             e.preventDefault();
-            navigate(`/problem/${record.problemId}`);
+            navigate(`/problem/${record.pid}`);
           }}
           className="problem-link"
         >
-          #{record.problemId} - {record.problemTitle || '未知题目'}
+          #{record.pid} - {record.problemName || '未知题目'}
         </a>
       ),
     },
@@ -179,14 +179,30 @@ const Submissions = () => {
     },
     {
       title: '时间',
-      dataIndex: 'submitTime',
+      dataIndex: 'createTime',
       key: 'submitTime',
       width: 180,
       render: (time) => {
         if (!time) return '-';
         return new Date(time).toLocaleString('zh-CN');
       },
+
     },
+      {
+          title: '运行时间',
+          dataIndex: 'time',
+          key: 'runTime',
+          width: 150,
+          render: (ms) => ms!=null ? `${ms} ms` : '-',
+      },
+      {
+          title: '运行内存',
+          dataIndex: 'memory',
+          key: 'memory',
+          width: 120,
+          render: (mem) => mem!=null ? `${mem} MB` : '-',
+      },
+
   ];
 
   return (
@@ -210,15 +226,16 @@ const Submissions = () => {
               onChange={setStatus}
               style={{ width: 150 }}
               allowClear
+              notFoundContent={null}
             >
-              <Option value="ACCEPTED">通过</Option>
-              <Option value="WRONG_ANSWER">答案错误</Option>
-              <Option value="TIME_LIMIT_EXCEEDED">超时</Option>
-              <Option value="MEMORY_LIMIT_EXCEEDED">内存超限</Option>
-              <Option value="RUNTIME_ERROR">运行错误</Option>
-              <Option value="COMPILATION_ERROR">编译错误</Option>
-              <Option value="PENDING">等待中</Option>
-              <Option value="JUDGING">评测中</Option>
+              <Option value="答案正确">答案正确</Option>
+              <Option value="答案错误">答案错误</Option>
+              <Option value="时间超出限制">时间超出限制</Option>
+              <Option value="内存超出限制">内存超出限制</Option>
+              <Option value="运行时错误">运行时错误</Option>
+              <Option value="编译错误">编译错误</Option>
+              <Option value="等待中">等待中</Option>
+              <Option value="评测中">评测中</Option>
             </Select>
             <Select
               placeholder="语言"
@@ -226,12 +243,11 @@ const Submissions = () => {
               onChange={setLanguage}
               style={{ width: 150 }}
               allowClear
+              notFoundContent={null}
             >
               <Option value="Python">Python</Option>
               <Option value="Java">Java</Option>
               <Option value="C++">C++</Option>
-              <Option value="C">C</Option>
-              <Option value="JavaScript">JavaScript</Option>
             </Select>
             <Button
               type="primary"
