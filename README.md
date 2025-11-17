@@ -1,18 +1,32 @@
 # Vnollx 在线评测系统
+<div style="text-align:center;">
 
-<div align="center">
+  <p>
+    <img src="https://cdn.simpleicons.org/springboot/6DB33F/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/mysql/4479A1/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/redis/DC382D/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/react/61DAFB/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/vite/646CFF/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/nodedotjs/339933/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/docker/2496ED/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/nginx/009639/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/rabbitmq/FF6600/ffffff" width="60" style="border-radius:50%" />
+    <img src="https://cdn.simpleicons.org/minio/C72E49/ffffff" width="60" style="border-radius:50%" />
 
-![Vnollx Online Judge](https://img.shields.io/badge/Vnollx-Online%20Judge-blue?style=for-the-badge&logo=java)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen?style=flat-square&logo=spring-boot)
-![Java](https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk)
-![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql)
-![Redis](https://img.shields.io/badge/Redis-Latest-red?style=flat-square&logo=redis)
 
-**一个功能完整的在线算法评测平台，支持多语言编程，实时评测，竞赛管理**
+  </p>
 
-[在线体验](https://www.vnollx.cloud) • [功能特性](#功能特性) • [快速开始](#快速开始) • [技术架构](#技术架构)
+<h3><b>一个功能完整的在线算法评测平台，支持多语言编程，实时评测，竞赛管理</b></h3>
+
+  <p>
+    <a href="https://www.vnollx.cloud">在线体验</a> • 
+    <a href="#功能特性">功能特性</a> • 
+    <a href="#快速开始">快速开始</a> • 
+    <a href="#技术架构">技术架构</a>
+  </p>
 
 </div>
+
 
 ## 📖 项目简介
 
@@ -41,12 +55,13 @@ Vnollx 在线评测系统是一个创新的在线平台，为程序员提供了�
 - **安全**: JWT
 
 ### 前端技术
-- **模板引擎**: Thymeleaf
-- **UI框架**: Bootstrap 5
-- **代码编辑器**: CodeMirror
-- **图标库**: Font Awesome
-- **Markdown**: Marked.js + MathJax
-- **代码高亮**: Highlight.js
+- React 19
+- Vite 7
+- Ant Design 5
+- React Router 6
+- Axios
+- Monaco Editor
+- Marked.js + Highlight.js
 
 ### 评测引擎
 - **GoJudge** - 高性能代码评测引擎
@@ -61,25 +76,80 @@ Vnollx 在线评测系统是一个创新的在线平台，为程序员提供了�
 ## 🏗️ 系统架构
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   前端界面      │    │   Spring Boot   │    │   评测引擎      │
-│   Thymeleaf     │◄──►│   应用服务      │◄──►│   GoJudge       │
-│   Bootstrap     │    │   REST API      │    │   Docker        │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   MySQL 主库    │    │   Redis 缓存    │    │   RabbitMQ      │
-│   MySQL 从库    │◄──►│   分布式锁      │◄──►│   消息队列      │
-│   数据持久化    │    │   会话存储      │    │   异步评测      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                       ┌─────────────────┐
-                       │   MinIO         │
-                       │   对象存储      │
-                       │   代码文件      │
-                       └─────────────────┘
+# 整体系统架构（带注释）
+
+             ┌─────────────────┐                     # 前端：界面层
+             │   FrontEnd      │                     # 负责 UI、路由、交互
+             │   React         │◄──►                 # 调用后端 REST API
+             │   Vite          │                     #
+             └─────────────────┘
+
+                     │
+                     │  REST API 通信
+                     ▼
+
+             ┌─────────────────┐                     # 后端：业务逻辑层
+             │   BackEnd       │                     # 用户、题目、比赛、提交等
+             │   Spring Boot   │◄──►                 # 核心服务
+             │   REST API      │                     # 鉴权 
+             └─────────────────┘
+
+                     │
+                     │  判题任务（同步/异步）
+                     ▼
+
+             ┌─────────────────┐                     # 判题机：执行代码的独立环境
+             │   Judge         │                     # Go/Judge + Docker 隔离执行
+             │   GoJudge       │                     # 编译/运行/获取结果
+             │   Docker        │                     
+             └─────────────────┘
+
+
+# -------------------- 数据与缓存层 --------------------
+
+                     │
+                     ▼
+
+             ┌─────────────────┐                     # 数据库主从结构
+             │   MySQL master  │                     # 写入主库
+             │   MySQL slave   │◄──►                 # 查询从库
+             │ Data persistence│                     # 题目/用户/记录数据
+             └─────────────────┘
+
+
+                     │
+                     │  缓存 + 分布式能力
+                     ▼
+
+             ┌─────────────────┐                     # 提升性能组件
+             │   Redis Cache   │                     # 缓存题目、会话、排行榜
+             │ Distributed Lock│                     # 防止重复提交/并发冲突
+             │   Session       │                     
+             └─────────────────┘
+
+
+                     │
+                     │  提交任务分发
+                     ▼
+
+             ┌─────────────────┐                     # 异步判题队列
+             │   RabbitMQ      │                     # 将提交送入判题机
+             │   MQ Queue      │                     # 高并发时削峰
+             │   Async Judge   │                     
+             └─────────────────┘
+
+
+# -------------------- 文件存储层 --------------------
+
+                     │
+                     ▼
+
+             ┌─────────────────┐                     # 文件存储
+             │   MinIO         │                     # 类阿里云 OSS
+             │   Oss Storage   │                     # 存代码文件 / 输入输出
+             │   Code File     │                     
+             └─────────────────┘
+
 ```
 
 ## 🚀 快速开始
@@ -90,6 +160,9 @@ Vnollx 在线评测系统是一个创新的在线平台，为程序员提供了�
 - **Maven**: 3.6+
 - **Docker**: 20.10+
 - **Docker Compose**: 2.0+
+- **Node.js**: 18+（建议 18 LTS 或 20 LTS）
+- **npm**: 9+（随 Node 安装）
+- **Vite**: 5+（由前端项目依赖自动安装）
 
 ### 一键启动
 
@@ -106,9 +179,9 @@ docker-compose up -d
 ```
 
 3. **访问系统**
-- 前端地址: http://localhost:8080
-- 管理后台: http://localhost:8080/admin-user.html
-- API文档: http://localhost:8080/actuator
+- 前端地址: http://localhost:3000
+- 管理后台: http://localhost:3000/admin
+- API文档: http://localhost:3000/actuator
 
 ### 手动部署
 
@@ -139,12 +212,21 @@ spring:
     password: admin
 ```
 
-3. **启动应用**
+3. **启动后端应用**
 ```bash
 mvn clean package
 java -jar target/VnollxOnlineJudge-0.0.1-SNAPSHOT.jar
 ```
 
+4. **启动前端应用**
+```bash
+cd web
+npm install
+npm run dev
+```
+
+
+访问localhost:3000即可看见主页
 ## 📋 功能模块
 
 ### 👤 用户管理
@@ -291,12 +373,13 @@ spring:
 - [GoJudge](https://github.com/criyle/go-judge)
 - [Bootstrap](https://getbootstrap.com/)
 - [CodeMirror](https://codemirror.net/)
+- [React](https://zh-hans.react.dev/learn)
 
 ## 📞 联系我们
 
-- **项目主页**: https://github.com/your-username/VnollxOnlineJudge
-- **问题反馈**: https://github.com/your-username/VnollxOnlineJudge/issues
-- **邮箱**: your-email@example.com
+- **项目主页**: https://github.com/Vnollx-ww/VnollxOnlineJudge
+- **问题反馈**: https://github.com/Vnollx-ww/VnollxOnlineJudge/issues
+- **邮箱**: 2720741614@qq.com
 
 ---
 
