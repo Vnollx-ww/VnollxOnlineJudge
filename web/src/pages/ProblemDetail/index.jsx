@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Typography, Tag, Button, message, Spin } from 'antd';
+import { Card, Typography, Tag, Button, message, Spin, Space, Divider } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import './ProblemDetail.css';
 
-const { Title, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
 
 const ProblemDetail = () => {
   const { id } = useParams();
@@ -55,6 +55,34 @@ const ProblemDetail = () => {
     );
   }
 
+  const renderSection = (title, content, type = 'text') => {
+    if (!content) return null;
+    return (
+      <div className="problem-section">
+        <Title level={4}>{title}</Title>
+        {type === 'pre' ? (
+          <pre className="problem-pre">{content}</pre>
+        ) : (
+          <Paragraph className="problem-section-text">{content}</Paragraph>
+        )}
+      </div>
+    );
+  };
+
+  const infoItems = [
+    { label: '时间限制', value: problem.timeLimit ? `${problem.timeLimit} ms` : '无限制' },
+    { label: '内存限制', value: problem.memoryLimit ? `${problem.memoryLimit} MB` : '无限制' },
+    { label: '提交', value: problem.submitCount ?? 0 },
+    { label: '通过', value: problem.passCount ?? 0 },
+    {
+      label: '通过率',
+      value:
+        problem.submitCount > 0
+          ? `${Math.round((problem.passCount / problem.submitCount) * 10000) / 100}%`
+          : '0%',
+    },
+  ];
+
   return (
     <div className="problem-detail-container">
       <Button
@@ -85,9 +113,46 @@ const ProblemDetail = () => {
             </span>
           </div>
         </div>
-        <div className="problem-content">
-          <Paragraph>{problem.description || '暂无描述'}</Paragraph>
+        <div className="problem-meta-grid">
+          {infoItems.map((item) => (
+            <div className="meta-card" key={item.label}>
+              <Text type="secondary">{item.label}</Text>
+              <Title level={4}>{item.value}</Title>
+            </div>
+          ))}
         </div>
+
+        {problem.tags?.length ? (
+          <div className="problem-tags">
+            <Text strong>标签：</Text>
+            <Space size={[8, 8]} wrap>
+              {problem.tags.map((tag) => (
+                <Tag key={tag}>{tag}</Tag>
+              ))}
+            </Space>
+          </div>
+        ) : null}
+
+        <Divider />
+
+        {renderSection('题目描述', problem.description)}
+        {renderSection('输入格式', problem.inputFormat)}
+        {renderSection('输出格式', problem.outputFormat)}
+
+        <div className="samples-grid">
+          {renderSection(
+            '输入样例',
+            problem.inputExample || '暂无输入样例',
+            'pre',
+          )}
+          {renderSection(
+            '输出样例',
+            problem.outputExample || '暂无输出样例',
+            'pre',
+          )}
+        </div>
+
+        {renderSection('提示', problem.hint)}
       </Card>
     </div>
   );

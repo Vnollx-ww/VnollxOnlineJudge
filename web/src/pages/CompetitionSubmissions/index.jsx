@@ -52,13 +52,13 @@ const CompetitionSubmissions = () => {
       return;
     }
     loadCompetition();
-  }, [id, loadCompetition, navigate]);
+  }, [id, navigate]);
 
   useEffect(() => {
     if (competition) {
       checkPassword();
     }
-  }, [checkPassword, competition]);
+  }, [competition]);
 
   useEffect(() => {
     if (passwordVerified && competition) {
@@ -191,20 +191,21 @@ const CompetitionSubmissions = () => {
   };
 
   const getStatusColor = (status) => {
-    const statusMap = {
-      ACCEPTED: 'success',
-      WRONG_ANSWER: 'error',
-      TIME_LIMIT_EXCEEDED: 'warning',
-      MEMORY_LIMIT_EXCEEDED: 'warning',
-      RUNTIME_ERROR: 'error',
-      COMPILATION_ERROR: 'error',
-      PENDING: 'processing',
-      JUDGING: 'processing',
+        const statusMap = {
+            '答案正确': 'success',
+            '答案错误': 'error',
+            '超时': 'warning',
+            '内存超限': 'warning',
+            '运行错误': 'error',
+            '编译错误': 'error',
+            '等待中': 'processing',
+            '评测中': 'processing',
+        };
+        return statusMap[status] || 'default';
     };
-    return statusMap[status] || 'default';
-  };
 
-  const getStatusText = (status) => {
+
+    const getStatusText = (status) => {
     const statusMap = {
       ACCEPTED: '答案正确',
       WRONG_ANSWER: '答案错误',

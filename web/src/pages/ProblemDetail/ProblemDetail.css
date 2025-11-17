@@ -1,11 +1,13 @@
 .problem-detail-container {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 24px 0;
 }
 
 .problem-card {
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  padding: 24px;
 }
 
 .problem-header {
@@ -19,8 +21,60 @@
   margin-top: 16px;
 }
 
-.problem-content {
-  margin-top: 24px;
+.problem-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.meta-card {
+  border: 1px solid rgba(26, 115, 232, 0.12);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: rgba(26, 115, 232, 0.02);
+}
+
+.problem-tags {
+  margin-bottom: 16px;
+}
+
+.problem-section {
+  margin-bottom: 32px;
+}
+
+.problem-section-text {
+  white-space: pre-line;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.problem-pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.samples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .problem-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .samples-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 
