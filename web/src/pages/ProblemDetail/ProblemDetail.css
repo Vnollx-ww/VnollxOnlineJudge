@@ -1,0 +1,27 @@
+.problem-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.problem-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.problem-header {
+  margin-bottom: 24px;
+}
+
+.problem-meta {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.problem-content {
+  margin-top: 24px;
+}
+
+
+

@@ -1,0 +1,223 @@
+.home-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.hero-section {
+  padding: 80px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f2ff 50%, #f8fafc 100%);
+  border-radius: 24px;
+  margin-bottom: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(26, 115, 232, 0.08) 0%,
+    transparent 70%
+  );
+  transform: rotate(15deg);
+  animation: pulse 20s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: rotate(15deg) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: rotate(15deg) scale(1.1);
+    opacity: 1;
+  }
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  font-size: 3.5rem !important;
+  margin-bottom: 24px !important;
+  background: linear-gradient(135deg, #1a73e8 0%, #4a90e2 50%, #ff6b6b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: #4a5568;
+  max-width: 600px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+}
+
+.stats-row {
+  margin: 48px 0 40px;
+}
+
+.stat-card {
+  text-align: center;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(26, 115, 232, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(26, 115, 232, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.cta-button {
+  height: 56px;
+  padding: 0 48px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1a73e8 0%, #4a90e2 100%);
+  border: none;
+  box-shadow: 0 8px 25px rgba(26, 115, 232, 0.3);
+  transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(26, 115, 232, 0.4);
+}
+
+.features-section {
+  padding: 80px 24px;
+  background: white;
+  border-radius: 24px;
+  margin-bottom: 40px;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.5rem !important;
+  color: #1a73e8;
+  margin-bottom: 16px !important;
+}
+
+.section-subtitle {
+  text-align: center;
+  color: #6b7280;
+  max-width: 600px;
+  margin: 0 auto 64px;
+  font-size: 1rem;
+}
+
+.features-grid {
+  margin-top: 48px;
+}
+
+.feature-card {
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(26, 115, 232, 0.1);
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #1a73e8;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover::before {
+  transform: scaleX(1);
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.feature-icon {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80px;
+  height: 80px;
+  background: rgba(26, 115, 232, 0.1);
+  border-radius: 12px;
+  margin: 0 auto;
+}
+
+.feature-title {
+  font-size: 1.5rem !important;
+  margin-bottom: 16px !important;
+  color: #2d3748;
+}
+
+.feature-description {
+  color: #6b7280;
+  line-height: 1.7;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.5rem !important;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .section-title {
+    font-size: 2rem !important;
+  }
+
+  .stats-row {
+    margin: 32px 0 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 60px 16px;
+  }
+
+  .hero-title {
+    font-size: 2rem !important;
+  }
+
+  .cta-button {
+    width: 100%;
+    height: 48px;
+  }
+}
+
+
+

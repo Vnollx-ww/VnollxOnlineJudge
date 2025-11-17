@@ -1,0 +1,146 @@
+.ranklist-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.ranklist-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.ranklist-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #1a73e8 0%, #4a90e2 100%);
+  border-radius: 16px 16px 0 0;
+  color: white;
+  margin: -24px -24px 32px -24px;
+}
+
+.page-title {
+  color: white !important;
+  margin-bottom: 8px !important;
+}
+
+.header-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+
+.top-rankings {
+  margin: 48px 0;
+}
+
+.top-rank-card {
+  text-align: center;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.top-rank-card.rank-1 {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 2px solid #fde68a;
+  transform: scale(1.05);
+}
+
+.top-rank-card.rank-2 {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #cbd5e1;
+}
+
+.top-rank-card.rank-3 {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 2px solid #fecaca;
+}
+
+.top-rank-card.current-user {
+  border: 2px dashed #3b82f6;
+  position: relative;
+}
+
+.top-rank-card.current-user::after {
+  content: '你';
+  position: absolute;
+  top: -8px;
+  right: 16px;
+  background: #3b82f6;
+  color: white;
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.top-rank-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.medal-icon {
+  margin-bottom: 16px;
+}
+
+.top-rank-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #2d3748;
+}
+
+.top-rank-id {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.top-rank-stats {
+  background: white;
+  border-radius: 20px;
+  padding: 8px 16px;
+  display: inline-block;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.pass-count {
+  color: #66bb6a;
+  font-size: 18px;
+}
+
+.ranking-list {
+  margin-top: 32px;
+}
+
+.current-user-row {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 2px dashed #3b82f6;
+}
+
+.current-user-row::before {
+  content: '你';
+  position: absolute;
+  left: -30px;
+  background: #3b82f6;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .top-rank-card.rank-1 {
+    transform: scale(1);
+  }
+
+  .top-rankings {
+    margin: 32px 0;
+  }
+}
+
+
+

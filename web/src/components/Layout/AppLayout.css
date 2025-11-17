@@ -1,0 +1,97 @@
+.app-layout {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f2ff 50%, #f8fafc 100%);
+  position: relative;
+}
+
+.app-layout::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(26, 115, 232, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(102, 187, 106, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(255, 193, 7, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-content {
+  position: relative;
+  z-index: 1;
+  min-height: calc(100vh - 64px - 80px);
+  padding: 24px;
+}
+
+.app-footer {
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  padding: 24px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-content {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.footer-content p {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  color: #4a5568;
+  margin-bottom: 16px;
+}
+
+.footer-content a {
+  color: #2d3748;
+  text-decoration: none;
+  transition: color 0.2s;
+  position: relative;
+  padding: 0 4px;
+}
+
+.footer-content a::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #1a73e8;
+  transition: width 0.3s ease;
+}
+
+.footer-content a:hover {
+  color: #1a73e8;
+}
+
+.footer-content a:hover::after {
+  width: 100%;
+}
+
+.footer-icp {
+  margin-top: 16px;
+  color: #666;
+  font-size: 12px;
+}
+
+.footer-icp a {
+  color: #666;
+  margin: 0 8px;
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    padding: 16px;
+  }
+}
+
+
+

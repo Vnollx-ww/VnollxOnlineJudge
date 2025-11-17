@@ -1,0 +1,118 @@
+.app-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(26, 115, 232, 0.1);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(20px);
+}
+
+.header-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a73e8;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+  color: #0d47a1;
+}
+
+.logo-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 2px 4px rgba(26, 115, 232, 0.3));
+  transition: all 0.3s ease;
+}
+
+.logo:hover .logo-icon {
+  transform: rotate(15deg) scale(1.1);
+  filter: drop-shadow(0 4px 8px rgba(26, 115, 232, 0.4));
+}
+
+.header-menu {
+  flex: 1;
+  border-bottom: none;
+  background: transparent;
+  margin: 0 24px;
+}
+
+.header-menu .ant-menu-item {
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.header-menu .ant-menu-item:hover {
+  border-bottom-color: #1a73e8;
+  color: #1a73e8;
+}
+
+.header-menu .ant-menu-item-selected {
+  border-bottom-color: #1a73e8;
+  color: #1a73e8;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.notification-icon {
+  font-size: 20px;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.notification-icon:hover {
+  color: #1a73e8;
+  transform: scale(1.1);
+}
+
+.user-info {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #e0f2fe, #bbdefb);
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  background: linear-gradient(135deg, #bbdefb, #90caf9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+}
+
+.user-name {
+  font-weight: 600;
+  color: #1a73e8;
+}
+
+@media (max-width: 768px) {
+  .header-menu {
+    display: none;
+  }
+
+  .header-container {
+    padding: 0 16px;
+  }
+}
+
+
+
