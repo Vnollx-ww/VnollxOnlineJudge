@@ -47,21 +47,16 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
     @Override
     public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
-        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit,null,null);
-        result.setRunTime(result.getTime() / 1000000);
-        result.setMemory(result.getMemory()/1048576);
-        switch (result.getStatus()) {
-            case "Accepted" -> result.setStatus(ACCEPTED);
-            case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
-            case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
-        }
-
-        return result;
+        return getJudgeRunResult(code, dataZipUrl, timeLimit, memoryLimit,null,null);
     }
 
     @Override
     public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
-        RunResult result = judgeCode(code, null, timeLimit, memoryLimit,inputExample,outputExample);
+        return getJudgeRunResult(code, null, timeLimit, memoryLimit,inputExample,outputExample);
+    }
+
+    private RunResult getJudgeRunResult(String code, String dataZipUrl,Long timeLimit, Long memoryLimit,String inputExample, String outputExample) {
+        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit,inputExample,outputExample);
         result.setRunTime(result.getTime() / 1000000);
         result.setMemory(result.getMemory()/1048576);
         switch (result.getStatus()) {
@@ -69,10 +64,8 @@ public class CppJudgeStrategy implements JudgeStrategy {
             case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
             case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
         }
-
         return result;
     }
-
     private RunResult standardError(String status,String error){
         RunResult result = new RunResult();
         result.setStatus(status);
