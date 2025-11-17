@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Modal } from 'antd';
+import Editor from '@monaco-editor/react';
 import {
   Table,
   Input,
@@ -29,6 +31,9 @@ const Submissions = () => {
   const [problemId, setProblemId] = useState('');
   const [status, setStatus] = useState(undefined);
   const [language, setLanguage] = useState(undefined);
+  const [codeModalVisible, setCodeModalVisible] = useState(false);
+  const [currentCode, setCurrentCode] = useState('');
+  const [currentLang, setCurrentLang] = useState('');
 
   const pageSize = 10;
 
@@ -40,6 +45,21 @@ const Submissions = () => {
     }
     loadSubmissions(1);
   }, []);
+    const handleShowCode = async (id) => {
+        try {
+            const res = await api.get(`/submission/detail/${id}`);
+            if (res.code === 200) {
+                setCurrentCode(res.data.code || '');
+                setCurrentLang(res.data.language || 'plaintext');
+                setCodeModalVisible(true);
+            } else {
+                message.error('获取代码失败');
+            }
+        } catch (error) {
+            console.error(error);
+            message.error('获取代码失败');
+        }
+    };
 
   const loadSubmissions = async (page) => {
     setLoading(true);
@@ -132,17 +152,31 @@ const Submissions = () => {
   };
 
   const columns = [
-    {
-      title: '提交ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 100,
-    },
+      {
+          title: '提交ID',
+          dataIndex: 'id',
+          key: 'id',
+          width: 100,
+          render: (id, record) => (
+              <a
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                      console.log('点击了记录:', record);  // 用于调试
+                      setCurrentCode(record.code || '（无代码）');
+                      setCurrentLang(record.language || 'plaintext');
+                      setCodeModalVisible(true);
+                  }}
+              >
+                  {id}
+              </a>
+          ),
+      },
     {
       title: '题目',
       key: 'problem',
       render: (_, record) => (
         <a
+
           href={`/problem/${record.pid}`}
           onClick={(e) => {
             e.preventDefault();
@@ -281,6 +315,28 @@ const Submissions = () => {
           />
         </div>
       </Card>
+        <Modal
+            title="代码查看"
+            open={codeModalVisible}
+            onCancel={() => setCodeModalVisible(false)}
+            footer={null}
+            width="80%"
+        >
+            <div style={{ height: '70vh' }}>
+                <Editor
+                    height="100%"
+                    language={currentLang.toLowerCase()}
+                    theme="vs-dark"
+                    value={currentCode}
+                    options={{
+                        readOnly: true,
+                        minimap: { enabled: false },
+                        fontSize: 14,
+                    }}
+                />
+            </div>
+        </Modal>
+
     </div>
   );
 };
