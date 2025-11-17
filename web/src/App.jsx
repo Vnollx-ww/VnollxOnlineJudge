@@ -19,6 +19,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
 import Admin from './pages/Admin';
+import CompetitionProblemDetail from './pages/CompetitionProblemDetail';
 import './App.css';
 
 // Ant Design 主题配置
@@ -92,6 +93,14 @@ function App() {
                 <CompetitionDetail />
               </AppLayout>
             }
+          />
+          <Route
+              path="/competition/:cid/problem/:id"
+              element={
+              <AppLayout>
+                  <CompetitionProblemDetail />
+              </AppLayout>
+          }
           />
           <Route
             path="/competition/:id/ranklist"

@@ -40,7 +40,7 @@ marked.setOptions({
 
 const languageOptions = [
   {
-    label: 'C++17',
+    label: 'C++',
     value: 'cpp',
     template: `#include <bits/stdc++.h>
 using namespace std;
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 `,
   },
   {
-    label: 'Java 11',
+    label: 'Java',
     value: 'java',
     template: `import java.io.*;
 import java.util.*;

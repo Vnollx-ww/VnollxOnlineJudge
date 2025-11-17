@@ -191,9 +191,9 @@ const CompetitionDetail = () => {
 
   const getDifficultyTag = (difficulty) => {
     const colors = {
-      简单: 'green',
-      中等: 'orange',
-      困难: 'red',
+      "简单": 'green',
+      "中等": 'orange',
+      "困难": 'red',
     };
     return <Tag color={colors[difficulty] || 'default'}>{difficulty || '未知'}</Tag>;
   };

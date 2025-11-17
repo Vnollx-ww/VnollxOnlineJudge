@@ -109,17 +109,17 @@ const Competitions = () => {
 
   const getStatusConfig = (status) => {
     const configs = {
-      进行中: {
+      "进行中": {
         color: 'processing',
         icon: <PlayCircleOutlined />,
         text: '进行中',
       },
-      暂未开始: {
+      "暂未开始": {
         color: 'default',
         icon: <ClockCircleOutlined />,
         text: '暂未开始',
       },
-      已结束: {
+      "已结束": {
         color: 'error',
         icon: <FlagOutlined />,
         text: '已结束',
