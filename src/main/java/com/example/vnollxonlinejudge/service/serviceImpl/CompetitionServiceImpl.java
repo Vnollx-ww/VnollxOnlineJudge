@@ -249,7 +249,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     @Override
     public void judgeIsOpenById(String now, Long id) {
         QueryWrapper<Competition> queryWrapper = new QueryWrapper<>();
-        queryWrapper.select("begin_time")
+        queryWrapper.select("begin_time,end_time")
                 .eq("id", id);
 
         Competition competition = this.baseMapper.selectOne(queryWrapper);
@@ -257,8 +257,12 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         LocalDateTime nowDateTime = LocalDateTime.parse(now, formatter);
         LocalDateTime beginDateTime = LocalDateTime.parse(competition.getBeginTime(), formatter);
+        LocalDateTime endDateTime = LocalDateTime.parse(competition.getEndTime(), formatter);
         if (nowDateTime.isBefore(beginDateTime)) {
             throw new BusinessException("比赛暂未开始，请遵守规则");
+        }
+        if (nowDateTime.isAfter(endDateTime)) {
+            throw new BusinessException("比赛已结束，无法提交题目");
         }
     }
 
@@ -280,11 +284,11 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     @Override
     @Transactional
     public void deleteCompetition(Long id) {
-        this.baseMapper.deleteById(id);
         competitionUserService.deleteCompetition(id);
         competitionProblemService.deleteCompetition(id);
         submissionService.deleteSubmissionsByCid(id);
         userSolvedProblemService.deleteCompetition(id);
+        this.removeById(id);
     }
 
     @Override

@@ -20,4 +20,5 @@ public interface RedisService {
     boolean IsExists(String key);
     boolean tryLock(String lockKey,int expireTime);
     void deleteKey(String key);
+    Long getTTL(String key);
 }

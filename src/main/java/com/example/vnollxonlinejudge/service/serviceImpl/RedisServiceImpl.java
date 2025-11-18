@@ -82,7 +82,7 @@ public class RedisServiceImpl implements RedisService {
                 logger.info("批量写入{}条提交记录", batchList.size());
                 // 删除已处理数据
                 stringRedisTemplateForList.opsForList().trim(SUBMISSION_QUEUE_KEY, batchList.size(), -1);
-                submissionIds.forEach(id -> redisTemplate.delete(id));
+                submissionIds.forEach(redisTemplate::delete);
             }
         } catch (Exception e) {
             logger.error("批量写入异常", e);
@@ -140,7 +140,7 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public void setKey(String key, String value, Long seconds) {
         try {
-            if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(key))) {
+            if (!stringRedisTemplate.hasKey(key)) {
                 stringRedisTemplate.opsForValue().set(key, value, seconds, TimeUnit.SECONDS);
             }
         } catch (Exception e) {
@@ -161,7 +161,7 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public Boolean checkKeyValue(String key, String value) {
         try {
-            if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(key))) {
+            if (!stringRedisTemplate.hasKey(key)) {
                 return false;
             }
             String storedValue = stringRedisTemplate.opsForValue().get(key);
@@ -175,7 +175,7 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public boolean addToSetByKey(String key, Long score, String userName, Long seconds) {
         try {
-            if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(key))) {
+            if (!stringRedisTemplate.hasKey(key)) {
                 Long initialScore = GetScore.calculateScore(0L, 0L);
                 redisTemplate.opsForZSet().add(key, userName, initialScore);
                 redisTemplate.expire(key, seconds + 600, TimeUnit.SECONDS);
@@ -247,7 +247,7 @@ public class RedisServiceImpl implements RedisService {
     @Override
     public boolean IsExists(String key) {
         try {
-            return Boolean.TRUE.equals(stringRedisTemplate.hasKey(key));
+            return stringRedisTemplate.hasKey(key);
         } catch (Exception e) {
             logger.error("检查键是否存在异常", e);
             return false;
@@ -273,6 +273,11 @@ public class RedisServiceImpl implements RedisService {
         } catch (Exception e) {
             logger.error("删除键异常", e);
         }
+    }
+
+    @Override
+    public Long getTTL(String key) {
+        return stringRedisTemplate.getExpire(key, TimeUnit.SECONDS);
     }
 
     /**

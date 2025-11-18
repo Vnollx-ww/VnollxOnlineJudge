@@ -160,11 +160,16 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey(cacheKey);
             if (problemsJson != null) {
-
                 Map<Long, Problem> problemMap = JSON.parseObject(problemsJson,
                         new TypeReference<>() {
                         });
                 problem = problemMap.get(pid);
+                if (problem==null) {
+                    problem = getById(pid);
+                    problemMap.put(pid, problem);
+                    Long ttl = redisService.getTTL(cacheKey); // 秒
+                    redisService.setKey(cacheKey, JSON.toJSONString(problemMap), ttl);
+                }
             } else {
                 if (pid!=null&&pid!=0) problem = getById(pid);
                 else{
@@ -174,6 +179,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 }
             }
         }
+
         if (problem == null) {
             throw new BusinessException("题目不存在或已被删除");
         }

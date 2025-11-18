@@ -152,7 +152,7 @@ const ProblemDetail = () => {
             const now = dayjs().format("YYYY-MM-DD HH:mm:ss");
 
             // 判断是否正在进行
-            const openRes = await api.post("/judgeIsOpen", {
+            const openRes = await api.post("/competition/judgeIsOpen", {
                 now,
                 id: cid
             });
@@ -164,7 +164,7 @@ const ProblemDetail = () => {
             }
 
             // 判断是否已经结束
-            const endRes = await api.post("/judgeIsEnd", {
+            const endRes = await api.post("/competition/judgeIsEnd", {
                 now,
                 id: cid
             });

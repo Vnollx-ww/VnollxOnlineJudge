@@ -45,6 +45,7 @@ const AdminCompetitions = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState(null);
   const [form] = Form.useForm();
+  const [messageApi, contextHolder] = message.useMessage();
 
   // 题目管理相关状态
   const [problemManageVisible, setProblemManageVisible] = useState(false);
@@ -84,7 +85,7 @@ const AdminCompetitions = () => {
         // 401错误由响应拦截器处理，这里只记录
         console.error('认证失败，请重新登录');
       } else {
-        message.error('加载比赛列表失败');
+        messageApi.error('加载比赛列表失败');
         console.error(error);
       }
     } finally {
@@ -118,13 +119,13 @@ const AdminCompetitions = () => {
     try {
       const data = await api.delete(`/admin/competition/delete/${id}`);
       if (data.code === 200) {
-        message.success('删除比赛成功');
+        messageApi.success('删除比赛成功');
         loadCompetitions();
       } else {
-        message.error(data.msg || '删除失败');
+        messageApi.error(data.msg || '删除失败');
       }
     } catch (error) {
-      message.error('删除比赛失败');
+      messageApi.error('删除比赛失败');
       console.error(error);
     }
   };
@@ -143,7 +144,7 @@ const AdminCompetitions = () => {
         setCompetitionProblems(data.data || []);
       }
     } catch (error) {
-      message.error('加载比赛题目失败');
+      messageApi.error('加载比赛题目失败');
       console.error(error);
     }
   };
@@ -155,7 +156,7 @@ const AdminCompetitions = () => {
         setAllProblems(data.data || []);
       }
     } catch (error) {
-      message.error('加载题目列表失败');
+      messageApi.error('加载题目列表失败');
       console.error(error);
     }
   };
@@ -168,7 +169,7 @@ const AdminCompetitions = () => {
 
   const handleBatchAddProblems = async () => {
     if (selectedProblems.length === 0) {
-      message.warning('请至少选择一个题目');
+      messageApi.warning('请至少选择一个题目');
       return;
     }
 
@@ -179,15 +180,15 @@ const AdminCompetitions = () => {
       });
 
       if (data.code === 200) {
-        message.success('批量添加题目成功');
+        messageApi.success('批量添加题目成功');
         setAddProblemModalVisible(false);
         setSelectedProblems([]);
         loadCompetitionProblems(currentCompetitionId);
       } else {
-        message.error(data.msg || '添加失败');
+        messageApi.error(data.msg || '添加失败');
       }
     } catch (error) {
-      message.error('添加题目失败');
+      messageApi.error('添加题目失败');
       console.error(error);
     }
   };
@@ -198,13 +199,13 @@ const AdminCompetitions = () => {
         `/admin/competition/${currentCompetitionId}/problems/${pid}`
       );
       if (data.code === 200) {
-        message.success('删除题目成功');
+        messageApi.success('删除题目成功');
         loadCompetitionProblems(currentCompetitionId);
       } else {
-        message.error(data.msg || '删除失败');
+        messageApi.error(data.msg || '删除失败');
       }
     } catch (error) {
-      message.error('删除题目失败');
+      messageApi.error('删除题目失败');
       console.error(error);
     }
   };
@@ -232,16 +233,16 @@ const AdminCompetitions = () => {
       const data = await api[method](url, submitData);
 
       if (data.code === 200) {
-        message.success(
+        messageApi.success(
           editingCompetition ? '更新比赛成功' : '创建比赛成功'
         );
         setModalVisible(false);
         loadCompetitions();
       } else {
-        message.error(data.msg || '操作失败');
+        messageApi.error(data.msg || '操作失败');
       }
     } catch (error) {
-      message.error('操作失败');
+      messageApi.error('操作失败');
       console.error(error);
     }
   };
@@ -349,6 +350,7 @@ const AdminCompetitions = () => {
 
   return (
     <div className="admin-competitions">
+      {contextHolder}
       <Card>
         <div className="page-header">
           <div>
