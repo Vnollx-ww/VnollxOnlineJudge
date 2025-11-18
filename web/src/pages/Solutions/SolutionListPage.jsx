@@ -122,7 +122,7 @@ const SolutionListPage = () => {
   return (
     <div className="solution-page">
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Card className="solution-header-card">
+        <Card className="solution-card">
           <Space direction="vertical" size="small" style={{ width: '100%' }}>
             <Button
               icon={<ArrowLeftOutlined />}
@@ -132,11 +132,11 @@ const SolutionListPage = () => {
             >
               返回题目详情
             </Button>
-            <div>
-              <Title level={2} className="solution-title">
+            <div className="solution-header">
+              <Title level={2}>
                 {pageTitle}
               </Title>
-              <Paragraph className="solution-subtitle">
+              <Paragraph type="secondary">
                 分享你的解题思路，帮助更多同学
               </Paragraph>
             </div>
@@ -182,7 +182,6 @@ const SolutionListPage = () => {
                 key={item.id}
                 hoverable
                 onClick={() => handleSolveClick(item.id)}
-                style={{ marginBottom: 16 }}
               >
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Title level={4} className="solution-card-title">

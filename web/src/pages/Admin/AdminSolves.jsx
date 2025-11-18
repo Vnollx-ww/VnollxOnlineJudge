@@ -9,10 +9,13 @@ import {
   Typography,
   Tag,
   Popconfirm,
+  Select,
 } from 'antd';
 import {
   ReloadOutlined,
   DeleteOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import './AdminSolves.css';
@@ -26,10 +29,11 @@ const AdminSolves = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState(null);
 
   useEffect(() => {
     loadSolves();
-  }, [currentPage, pageSize, keyword]);
+  }, [currentPage, pageSize, keyword, statusFilter]);
 
   const loadSolves = async () => {
     setLoading(true);
@@ -39,6 +43,7 @@ const AdminSolves = () => {
           page: currentPage.toString(),
           size: pageSize.toString(),
           keyword: keyword || undefined,
+          status: statusFilter !== null ? statusFilter : undefined,
         },
       });
       if (data.code === 200) {
@@ -65,14 +70,32 @@ const AdminSolves = () => {
     }
   };
 
+  const handleAudit = async (id, status) => {
+    try {
+      const data = await api.put(`/admin/solve/${id}/status`, null, {
+        params: { status },
+      });
+      if (data.code === 200) {
+        message.success(data.msg || '审核成功');
+        loadSolves();
+      } else {
+        message.error(data.msg || '审核失败');
+      }
+    } catch (error) {
+      message.error(error?.response?.data?.msg || '审核失败');
+    }
+  };
+
   const getStatusTag = (status) => {
     const colors = {
       0: 'default',
       1: 'success',
+      2: 'error',
     };
     const texts = {
-      0: '待审核',
-      1: '已通过',
+      0: '未审核',
+      1: '审核通过',
+      2: '审核不通过',
     };
     return <Tag color={colors[status] || 'default'}>{texts[status] || '未知'}</Tag>;
   };
@@ -110,16 +133,46 @@ const AdminSolves = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 250,
       render: (_, record) => (
         <Space>
+          <Popconfirm
+            title="确认审核通过该题解？"
+            onConfirm={() => handleAudit(record.id, 1)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button 
+              type="primary" 
+              size="small" 
+              icon={<CheckOutlined />}
+              disabled={record.status === 1}
+            >
+              通过
+            </Button>
+          </Popconfirm>
+          <Popconfirm
+            title="确认审核不通过该题解？"
+            onConfirm={() => handleAudit(record.id, 2)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button 
+              danger 
+              size="small" 
+              icon={<CloseOutlined />}
+              disabled={record.status === 2}
+            >
+              不通过
+            </Button>
+          </Popconfirm>
           <Popconfirm
             title="确定要删除这个题解吗？"
             onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
+            <Button type="link" danger size="small" icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -141,15 +194,31 @@ const AdminSolves = () => {
         </div>
 
         <div className="toolbar">
-          <Search
-            placeholder="搜索题解..."
-            allowClear
-            style={{ width: 300 }}
-            onSearch={(value) => {
-              setKeyword(value);
-              setCurrentPage(0);
-            }}
-          />
+          <Space>
+            <Search
+              placeholder="搜索题解..."
+              allowClear
+              style={{ width: 300 }}
+              onSearch={(value) => {
+                setKeyword(value);
+                setCurrentPage(0);
+              }}
+            />
+            <Select
+              placeholder="筛选审核状态"
+              style={{ width: 160 }}
+              allowClear
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value);
+                setCurrentPage(0);
+              }}
+            >
+              <Select.Option value={0}>未审核</Select.Option>
+              <Select.Option value={1}>审核通过</Select.Option>
+              <Select.Option value={2}>审核不通过</Select.Option>
+            </Select>
+          </Space>
           <Button icon={<ReloadOutlined />} onClick={loadSolves}>
             刷新
           </Button>

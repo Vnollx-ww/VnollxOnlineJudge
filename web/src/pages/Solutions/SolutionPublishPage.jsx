@@ -109,17 +109,17 @@ const SolutionPublishPage = () => {
   }, [content]);
 
   return (
-    <div className="solution-page">
+    <div className="solution-publish-container">
+      <Button
+        type="link"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: problemInfo?.title } })}
+        style={{ paddingLeft: 0, marginBottom: 16 }}
+      >
+        返回题解列表
+      </Button>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Button
-          type="link"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: problemInfo?.title } })}
-          style={{ paddingLeft: 0 }}
-        >
-          返回题解列表
-        </Button>
-        <Card className="solution-header-card">
+        <Card className="solution-publish-card">
           <Title level={2}>发布题解</Title>
           <Paragraph type="secondary">
             分享你的解题思路，支持 Markdown / LaTeX。
@@ -129,7 +129,7 @@ const SolutionPublishPage = () => {
           </Paragraph>
         </Card>
 
-        <Card>
+        <Card className="solution-publish-card">
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
             <div>
               <Title level={4}>题目信息</Title>
