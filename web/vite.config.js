@@ -54,10 +54,9 @@ export default defineConfig({
           // 检查是否是前端动态路由模式
           // /problem/:id (题目详情) - 排除 /problem/list, /problem/count 等 API
           if (path.startsWith('/problem/')) {
-            const parts = path.split('/');
-            if (parts.length === 3 && parts[2] && !isNaN(parts[2])) {
-              // /problem/123 格式，是前端路由
-              return path; // 跳过代理
+            const problemRoutePattern = /^\/problem\/(\d+)(?:\/solutions(?:\/(?:publish|\d+))?)?$/;
+            if (problemRoutePattern.test(path)) {
+              return path; // 前端题目及题解路由
             }
             // 其他 /problem/xxx 都是 API，继续代理
           }

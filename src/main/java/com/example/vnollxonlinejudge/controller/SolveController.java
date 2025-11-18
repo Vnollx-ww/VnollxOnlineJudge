@@ -84,4 +84,9 @@ public class SolveController {
         return Result.Success(solveService.getAllSolves(Long.parseLong(pid)),"获取题解列表成功");
     }
 
+    @GetMapping("/detail")
+    public Result<SolveVo> getSolveDetail(@RequestParam Long id){
+        return Result.Success(solveService.getSolve(id),"获取题解详情成功");
+    }
+
 }

@@ -18,6 +18,9 @@ import About from './pages/About';
 import UserProfile from './pages/UserProfile';
 import Admin from './pages/Admin';
 import CompetitionProblemDetail from './pages/CompetitionProblemDetail';
+import SolutionListPage from './pages/Solutions/SolutionListPage';
+import SolutionDetailPage from './pages/Solutions/SolutionDetailPage';
+import SolutionPublishPage from './pages/Solutions/SolutionPublishPage';
 import './App.css';
 
 // Ant Design 主题配置
@@ -55,6 +58,30 @@ function App() {
             element={
               <AppLayout>
                 <ProblemDetail />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/problem/:problemId/solutions"
+            element={
+              <AppLayout>
+                <SolutionListPage />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/problem/:problemId/solutions/:solveId"
+            element={
+              <AppLayout>
+                <SolutionDetailPage />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/problem/:problemId/solutions/publish"
+            element={
+              <AppLayout>
+                <SolutionPublishPage />
               </AppLayout>
             }
           />

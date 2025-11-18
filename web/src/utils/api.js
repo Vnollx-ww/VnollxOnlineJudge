@@ -1,4 +1,5 @@
 import axios from 'axios';
+import process from "react-syntax-highlighter/.eslintrc.js";
 
 // 创建 axios 实例
 const api = axios.create({
@@ -18,7 +19,7 @@ api.interceptors.request.use(
       }
     } else {
       // 如果没有token，记录警告（但不阻止请求，让后端处理）
-      console.warn('请求缺少token:', config.url);
+      //console.warn('请求缺少token:', config.url);
     }
     return config;
   },

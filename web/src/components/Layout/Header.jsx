@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space, Modal } from 'antd';
+import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space, Modal, message } from 'antd';
 import {
   HomeOutlined,
   BookOutlined,
@@ -26,6 +26,7 @@ const Header = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [modal, contextHolder] = Modal.useModal();
+  const [messageApi, messageContextHolder] = message.useMessage();
   //const [loading, setLoading] = useState(false);
 
   const loadUserInfo = useCallback(async () => {
@@ -81,6 +82,18 @@ const Header = () => {
     setAuthModalOpen(false);
   };
 
+  const handleGuardedNavigate = useCallback(
+    (path, requireAuth = false) => {
+      if (requireAuth && !isAuthenticated()) {
+        messageApi.warning('请先登录后再访问');
+        openAuthModal('login');
+        return;
+      }
+      navigate(path);
+    },
+    [messageApi, navigate]
+  );
+
   const handleLogoutConfirm = () => {
     modal.confirm({
       title: '确认退出登录？',
@@ -95,6 +108,7 @@ const Header = () => {
         localStorage.removeItem('identity');
         setUser(null);
         navigate('/');
+        messageApi.success('已退出登录');
       },
     });
   };
@@ -135,38 +149,63 @@ const Header = () => {
     {
       key: '/',
       icon: <HomeOutlined />,
-      label: <Link to="/">首页</Link>,
+      label: (
+        <span onClick={() => handleGuardedNavigate('/', false)}>
+          首页
+        </span>
+      ),
     },
     {
       key: '/problems',
       icon: <BookOutlined />,
-      label: <Link to="/problems">题目列表</Link>,
+      label: (
+        <span onClick={() => handleGuardedNavigate('/problems', true)}>
+          题目列表
+        </span>
+      ),
     },
     {
       key: '/submissions',
       icon: <FileTextOutlined />,
-      label: <Link to="/submissions">提交列表</Link>,
+      label: (
+        <span onClick={() => handleGuardedNavigate('/submissions', true)}>
+          提交列表
+        </span>
+      ),
     },
     {
       key: '/ranklist',
       icon: <TrophyOutlined />,
-      label: <Link to="/ranklist">排行榜</Link>,
+      label: (
+        <span onClick={() => handleGuardedNavigate('/ranklist', true)}>
+          排行榜
+        </span>
+      ),
     },
     {
       key: '/competitions',
       icon: <TrophyOutlined />,
-      label: <Link to="/competitions">比赛</Link>,
+      label: (
+        <span onClick={() => handleGuardedNavigate('/competitions', true)}>
+          比赛
+        </span>
+      ),
     },
     {
       key: '/about',
       icon: <InfoCircleOutlined />,
-      label: <Link to="/about">关于</Link>,
+      label: (
+        <span onClick={() => handleGuardedNavigate('/about', true)}>
+          关于
+        </span>
+      ),
     },
   ];
 
   return (
     <AntHeader className="app-header">
       {contextHolder}
+      {messageContextHolder}
       <div className="header-container">
         <Link to="/" className="logo">
           <span className="logo-icon">⚡</span>

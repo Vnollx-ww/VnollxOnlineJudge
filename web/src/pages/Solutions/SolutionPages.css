@@ -1,0 +1,130 @@
+:root {
+  --solution-primary: #1a73e8;
+  --solution-secondary: #60a5fa;
+  --solution-accent: #a855f7;
+  --solution-card-bg: #ffffff;
+  --solution-bg: #f4f7fb;
+}
+
+.solution-page {
+  min-height: calc(100vh - 120px);
+  padding: 24px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.solution-header-card {
+  border-radius: 20px;
+  background: var(--solution-card-bg);
+  box-shadow: 0 20px 50px rgba(23, 35, 90, 0.08);
+  border: none;
+}
+
+.solution-header-card .solution-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.solution-header-card .solution-subtitle {
+  color: #6b7280;
+}
+
+.solution-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.solution-meta-card {
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(26, 115, 232, 0.08), rgba(96, 165, 250, 0.15));
+  padding: 16px;
+}
+
+.solution-meta-label {
+  display: block;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.solution-meta-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.solution-card-list .ant-card {
+  border-radius: 18px;
+  border: 1px solid rgba(26, 115, 232, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-width: 900px;
+  margin: 0 auto 16px;
+}
+
+.solution-card-list .ant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 30px rgba(26, 115, 232, 0.15);
+}
+
+.solution-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.solution-card-content {
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+
+.solution-detail-container,
+.solution-publish-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.solution-detail-card,
+.solution-publish-card {
+  border-radius: 20px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(26, 115, 232, 0.08);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+}
+
+.solution-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.solution-editor-card {
+  border-radius: 20px;
+}
+
+.solution-preview {
+  min-height: 200px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.solution-preview .markdown-body {
+  color: inherit;
+}
+
+.solution-preview .markdown-body pre {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+@media (max-width: 768px) {
+  .solution-page {
+    padding: 12px;
+  }
+}

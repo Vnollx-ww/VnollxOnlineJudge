@@ -15,7 +15,7 @@ import {
   Avatar,
   Popconfirm,
 } from 'antd';
-import { ArrowLeftOutlined, CodeOutlined, CommentOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CodeOutlined, CommentOutlined, BookOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -412,6 +412,29 @@ const ProblemDetail = () => {
               %
             </span>
           </div>
+          <Space size="middle">
+            <Button
+              icon={<BookOutlined />}
+              onClick={() =>
+                navigate(`/problem/${problem.id}/solutions`, {
+                  state: { title: problem.title },
+                })
+              }
+            >
+              查看题解
+            </Button>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() =>
+                navigate(`/problem/${problem.id}/solutions/publish`, {
+                  state: { title: problem.title },
+                })
+              }
+            >
+              发布题解
+            </Button>
+          </Space>
         </div>
           <div className="problem-meta-grid">
             {infoItems.map((item) => (
