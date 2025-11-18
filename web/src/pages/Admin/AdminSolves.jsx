@@ -30,6 +30,7 @@ const AdminSolves = () => {
   const [pageSize, setPageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
+  const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
     loadSolves();
@@ -54,7 +55,7 @@ const AdminSolves = () => {
         // 401错误由响应拦截器处理，这里只记录
         console.error('认证失败，请重新登录');
       } else {
-        message.error('加载题解列表失败');
+        messageApi.error('加载题解列表失败');
         console.error(error);
       }
     } finally {
@@ -64,9 +65,15 @@ const AdminSolves = () => {
 
   const handleDelete = async (id) => {
     try {
-      message.info('删除功能开发中');
+      const data = await api.delete(`/admin/solve/${id}`);
+      if (data.code === 200) {
+        messageApi.success('删除题解成功');
+        loadSolves();
+      } else {
+        messageApi.error(data.msg || '删除失败');
+      }
     } catch (error) {
-      message.error('删除题解失败');
+      messageApi.error(error?.response?.data?.msg || '删除题解失败');
     }
   };
 
@@ -76,13 +83,13 @@ const AdminSolves = () => {
         params: { status },
       });
       if (data.code === 200) {
-        message.success(data.msg || '审核成功');
+        messageApi.success(data.msg || '审核成功');
         loadSolves();
       } else {
-        message.error(data.msg || '审核失败');
+        messageApi.error(data.msg || '审核失败');
       }
     } catch (error) {
-      message.error(error?.response?.data?.msg || '审核失败');
+      messageApi.error(error?.response?.data?.msg || '审核失败');
     }
   };
 
@@ -183,6 +190,7 @@ const AdminSolves = () => {
 
   return (
     <div className="admin-solves">
+      {contextHolder}
       <Card>
         <div className="page-header">
           <div>

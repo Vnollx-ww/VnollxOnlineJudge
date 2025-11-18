@@ -36,6 +36,7 @@ const AdminUsers = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
+  const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
     loadUsers();
@@ -66,7 +67,7 @@ const AdminUsers = () => {
         // 401错误由响应拦截器处理，这里只记录
         console.error('认证失败，请重新登录');
       } else {
-        message.error('加载用户列表失败');
+        messageApi.error('加载用户列表失败');
         console.error(error);
       }
     } finally {
@@ -94,13 +95,13 @@ const AdminUsers = () => {
     try {
       const data = await api.delete(`/admin/user/delete/${id}`);
       if (data.code === 200) {
-        message.success('删除用户成功');
+        messageApi.success('删除用户成功');
         loadUsers();
       } else {
-        message.error(data.msg || '删除失败');
+        messageApi.error(data.msg || '删除失败');
       }
     } catch (error) {
-      message.error('删除用户失败');
+      messageApi.error('删除用户失败');
     }
   };
 
@@ -112,24 +113,24 @@ const AdminUsers = () => {
           ...values,
         });
         if (data.code === 200) {
-          message.success('更新用户成功');
+          messageApi.success('更新用户成功');
           setModalVisible(false);
           loadUsers();
         } else {
-          message.error(data.msg || '更新失败');
+          messageApi.error(data.msg || '更新失败');
         }
       } else {
         const data = await api.post('/admin/user/add', values);
         if (data.code === 200) {
-          message.success('添加用户成功');
+          messageApi.success('添加用户成功');
           setModalVisible(false);
           loadUsers();
         } else {
-          message.error(data.msg || '添加失败');
+          messageApi.error(data.msg || '添加失败');
         }
       }
     } catch (error) {
-      message.error('操作失败');
+      messageApi.error('操作失败');
     }
   };
 
@@ -198,6 +199,7 @@ const AdminUsers = () => {
 
   return (
     <div className="admin-users">
+      {contextHolder}
       <Card>
         <div className="page-header">
           <div>
