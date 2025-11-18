@@ -42,6 +42,7 @@ const AdminProblems = () => {
   const [form] = Form.useForm();
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
     loadProblems();
@@ -72,7 +73,7 @@ const AdminProblems = () => {
         // 401错误由响应拦截器处理，这里只记录
         console.error('认证失败，请重新登录');
       } else {
-        message.error('加载题目列表失败');
+        messageApi.error('加载题目列表失败');
         console.error(error);
       }
     } finally {
@@ -110,13 +111,13 @@ const AdminProblems = () => {
     try {
       const data = await api.delete(`/admin/problem/delete/${id}`);
       if (data.code === 200) {
-        message.success('删除题目成功');
+        messageApi.success('删除题目成功');
         loadProblems();
       } else {
-        message.error(data.msg || '删除失败');
+        messageApi.error(data.msg || '删除失败');
       }
     } catch (error) {
-      message.error('删除题目失败');
+      messageApi.error('删除题目失败');
       console.error(error);
     }
   };
@@ -162,7 +163,7 @@ const AdminProblems = () => {
       }
       
       if (!editingProblem && !hasFile) {
-        message.error('新建题目必须上传测试数据文件');
+        messageApi.error('新建题目必须上传测试数据文件');
         return;
       }
 
@@ -186,14 +187,14 @@ const AdminProblems = () => {
       }
 
       if (data.code === 200) {
-        message.success(editingProblem ? '更新题目成功' : '创建题目成功');
+        messageApi.success(editingProblem ? '更新题目成功' : '创建题目成功');
         setModalVisible(false);
         loadProblems();
       } else {
-        message.error(data.msg || '操作失败');
+        messageApi.error(data.msg || '操作失败');
       }
     } catch (error) {
-      message.error('操作失败');
+      messageApi.error('操作失败');
       console.error(error);
     }
   };
@@ -201,15 +202,15 @@ const AdminProblems = () => {
   const addTag = () => {
     if (!tagInput.trim()) return;
     if (tags.length >= 5) {
-      message.warning('最多只能添加5个标签');
+      messageApi.warning('最多只能添加5个标签');
       return;
     }
     if (tagInput.length > 10) {
-      message.warning('标签长度不能超过10个字符');
+      messageApi.warning('标签长度不能超过10个字符');
       return;
     }
     if (tags.includes(tagInput.trim())) {
-      message.warning('该标签已存在');
+      messageApi.warning('该标签已存在');
       return;
     }
     setTags([...tags, tagInput.trim()]);
@@ -301,6 +302,7 @@ const AdminProblems = () => {
 
   return (
     <div className="admin-problems">
+      {contextHolder}
       <Card>
         <div className="page-header">
           <div>
