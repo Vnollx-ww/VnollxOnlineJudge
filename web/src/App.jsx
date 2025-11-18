@@ -15,8 +15,6 @@ import Notifications from './pages/Notifications';
 import NotificationDetail from './pages/NotificationDetail';
 import Settings from './pages/Settings';
 import About from './pages/About';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
 import Admin from './pages/Admin';
 import CompetitionProblemDetail from './pages/CompetitionProblemDetail';
@@ -36,8 +34,6 @@ function App() {
     <ConfigProvider locale={zhCN} theme={theme}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route
             path="/"
             element={

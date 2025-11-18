@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space } from 'antd';
+import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space, Modal } from 'antd';
 import {
   HomeOutlined,
   BookOutlined,
@@ -13,7 +13,8 @@ import {
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import api from '../../utils/api';
-import { isAuthenticated, removeToken, getUserInfo } from '../../utils/auth';
+import { isAuthenticated, removeToken } from '../../utils/auth';
+import AuthModal from '../Auth/AuthModal';
 import './Header.css';
 
 const { Header: AntHeader } = Layout;
@@ -22,6 +23,9 @@ const Header = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [modal, contextHolder] = Modal.useModal();
   //const [loading, setLoading] = useState(false);
 
   const loadUserInfo = useCallback(async () => {
@@ -68,10 +72,31 @@ const Header = () => {
     };
   }, [loadNotificationCount]);
 
-  const handleLogout = () => {
-    removeToken();
-    setUser(null);
-    navigate('/');
+  const openAuthModal = (mode) => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+  };
+
+  const handleLogoutConfirm = () => {
+    modal.confirm({
+      title: '确认退出登录？',
+      content: '退出后需要重新登录才能继续操作。',
+      okText: '退出',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: () => {
+        removeToken();
+        localStorage.removeItem('id');
+        localStorage.removeItem('name');
+        localStorage.removeItem('identity');
+        setUser(null);
+        navigate('/');
+      },
+    });
   };
 
   const userMenuItems = [
@@ -102,7 +127,7 @@ const Header = () => {
       icon: <LogoutOutlined />,
       label: '退出登录',
       danger: true,
-      onClick: handleLogout,
+      onClick: handleLogoutConfirm,
     },
   ];
 
@@ -141,6 +166,7 @@ const Header = () => {
 
   return (
     <AntHeader className="app-header">
+      {contextHolder}
       <div className="header-container">
         <Link to="/" className="logo">
           <span className="logo-icon">⚡</span>
@@ -177,16 +203,22 @@ const Header = () => {
             </Space>
           ) : (
             <Space>
-              <Button type="default" onClick={() => navigate('/login')}>
+              <Button type="default" onClick={() => openAuthModal('login')}>
                 登录
               </Button>
-              <Button type="primary" onClick={() => navigate('/register')}>
+              <Button type="primary" onClick={() => openAuthModal('register')}>
                 注册
               </Button>
             </Space>
           )}
         </div>
       </div>
+      <AuthModal
+        open={authModalOpen}
+        mode={authMode}
+        onClose={closeAuthModal}
+        onModeChange={setAuthMode}
+      />
     </AntHeader>
   );
 };
