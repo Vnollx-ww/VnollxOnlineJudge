@@ -1,6 +1,12 @@
-import { useState } from 'react';
-import { Layout, Modal, Typography } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Layout, Modal, Typography, Button } from 'antd';
+import { SwapOutlined } from '@ant-design/icons';
 import Header from './Header';
+import Sidebar from './Sidebar';
+import AuthModal from '../Auth/AuthModal';
+import AIAssistant from '../AIAssistant';
+import api from '../../utils/api';
+import { isAuthenticated } from '../../utils/auth';
 import './AppLayout.css';
 
 const { Content, Footer } = Layout;
@@ -10,13 +16,92 @@ const AppLayout = ({ children }) => {
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
+  const [layoutMode, setLayoutMode] = useState(() => {
+    return localStorage.getItem('layoutMode') || 'top';
+  });
+  const [user, setUser] = useState(null);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+
+  const loadUserInfo = useCallback(async () => {
+    try {
+      const data = await api.get('/user/profile');
+      if (data.code === 200) {
+        setUser(data.data);
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error);
+    }
+  }, []);
+
+  const loadNotificationCount = useCallback(async () => {
+    try {
+      const data = await api.get('/notification/count', { params: { status: 'false' } });
+      if (data.code === 200) {
+        setNotificationCount(data.data || 0);
+      }
+    } catch (error) {
+      console.error('获取通知数量失败:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      loadUserInfo();
+      loadNotificationCount();
+    }
+  }, [loadUserInfo, loadNotificationCount]);
+
+  useEffect(() => {
+    const handler = () => {
+      if (isAuthenticated()) {
+        loadNotificationCount();
+      }
+    };
+    window.addEventListener('notification-updated', handler);
+    return () => {
+      window.removeEventListener('notification-updated', handler);
+    };
+  }, [loadNotificationCount]);
+
+  const toggleLayoutMode = () => {
+    const newMode = layoutMode === 'top' ? 'left' : 'top';
+    setLayoutMode(newMode);
+    localStorage.setItem('layoutMode', newMode);
+  };
+
+  const openAuthModal = (mode) => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setAuthModalOpen(false);
+  };
 
   return (
-    <Layout className="app-layout">
-      <Header />
-      <Content className="app-content">
-        {children}
-      </Content>
+    <Layout className={`app-layout layout-${layoutMode}`}>
+      {layoutMode === 'left' ? (
+        <Sidebar
+          user={user}
+          notificationCount={notificationCount}
+          loadUserInfo={loadUserInfo}
+          loadNotificationCount={loadNotificationCount}
+          openAuthModal={openAuthModal}
+          layoutMode={layoutMode}
+          toggleLayoutMode={toggleLayoutMode}
+        />
+      ) : (
+        <Header
+          layoutMode={layoutMode}
+          toggleLayoutMode={toggleLayoutMode}
+        />
+      )}
+      <Layout className="main-layout">
+        <Content className="app-content">
+          {children}
+        </Content>
       <Footer className="app-footer">
         <div className="footer-content">
           <p>
@@ -200,6 +285,15 @@ const AppLayout = ({ children }) => {
           <Paragraph>我们会尽快处理您的问题，感谢您的理解与支持！</Paragraph>
         </div>
       </Modal>
+
+      <AuthModal
+        open={authModalOpen}
+        mode={authMode}
+        onClose={closeAuthModal}
+        onModeChange={setAuthMode}
+      />
+      <AIAssistant />
+      </Layout>
     </Layout>
   );
 };

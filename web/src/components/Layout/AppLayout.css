@@ -87,9 +87,27 @@
   margin: 0 8px;
 }
 
+/* 左侧导航布局 */
+.layout-left .main-layout {
+  margin-left: 220px;
+}
+
+.layout-left .app-content {
+  min-height: calc(100vh - 80px);
+}
+
+/* 顶部导航布局 */
+.layout-top .main-layout {
+  margin-left: 0;
+}
+
 @media (max-width: 768px) {
   .app-content {
     padding: 16px;
+  }
+
+  .layout-left .main-layout {
+    margin-left: 0;
   }
 }
 

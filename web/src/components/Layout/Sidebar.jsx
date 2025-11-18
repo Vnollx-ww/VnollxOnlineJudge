@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space, Modal, message } from 'antd';
+import { Layout, Menu, Button, Dropdown, Avatar, Badge, Space, Modal, message, Tooltip } from 'antd';
 import {
   HomeOutlined,
   BookOutlined,
@@ -15,73 +15,14 @@ import {
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated, removeToken } from '../../utils/auth';
-import AuthModal from '../Auth/AuthModal';
-import './Header.css';
+import './Sidebar.css';
 
-const { Header: AntHeader } = Layout;
+const { Sider } = Layout;
 
-const Header = ({ layoutMode, toggleLayoutMode }) => {
+const Sidebar = ({ user, notificationCount, loadUserInfo, loadNotificationCount, openAuthModal, layoutMode, toggleLayoutMode }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
   const [modal, contextHolder] = Modal.useModal();
   const [messageApi, messageContextHolder] = message.useMessage();
-  //const [loading, setLoading] = useState(false);
-
-  const loadUserInfo = useCallback(async () => {
-    try {
-      const data = await api.get('/user/profile');
-      if (data.code === 200) {
-        setUser(data.data);
-        localStorage.setItem('id', data.data.id);
-        localStorage.setItem('name', data.data.name);
-        localStorage.setItem('identity', data.data.identity);
-      }
-    } catch (error) {
-      console.error('获取用户信息失败:', error);
-    }
-  }, []);
-
-  const loadNotificationCount = useCallback(async () => {
-    try {
-      const data = await api.get('/notification/count', { params: { status: 'false' } });
-      if (data.code === 200) {
-        setNotificationCount(data.data || 0);
-      }
-    } catch (error) {
-      console.error('获取通知数量失败:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated()) {
-      loadUserInfo();
-      loadNotificationCount();
-    }
-  }, [loadUserInfo, loadNotificationCount]);
-
-  useEffect(() => {
-    const handler = () => {
-      if (isAuthenticated()) {
-        loadNotificationCount();
-      }
-    };
-    window.addEventListener('notification-updated', handler);
-    return () => {
-      window.removeEventListener('notification-updated', handler);
-    };
-  }, [loadNotificationCount]);
-
-  const openAuthModal = (mode) => {
-    setAuthMode(mode);
-    setAuthModalOpen(true);
-  };
-
-  const closeAuthModal = () => {
-    setAuthModalOpen(false);
-  };
 
   const handleGuardedNavigate = useCallback(
     (path, requireAuth = false) => {
@@ -92,7 +33,7 @@ const Header = ({ layoutMode, toggleLayoutMode }) => {
       }
       navigate(path);
     },
-    [messageApi, navigate]
+    [messageApi, navigate, openAuthModal]
   );
 
   const handleLogoutConfirm = () => {
@@ -107,9 +48,9 @@ const Header = ({ layoutMode, toggleLayoutMode }) => {
         localStorage.removeItem('id');
         localStorage.removeItem('name');
         localStorage.removeItem('identity');
-        setUser(null);
         navigate('/');
         messageApi.success('已退出登录');
+        window.location.reload();
       },
     });
   };
@@ -186,39 +127,42 @@ const Header = ({ layoutMode, toggleLayoutMode }) => {
   ];
 
   return (
-    <AntHeader className="app-header">
+    <Sider className="app-sidebar" width={220} theme="light">
       {contextHolder}
       {messageContextHolder}
-      <div className="header-container">
-        <Link to="/" className="logo">
-          <span className="logo-icon">⚡</span>
-          <span className="logo-text">VnollxOJ</span>
-        </Link>
+      <div className="sidebar-container">
+        <div className="sidebar-header">
+          <Link to="/" className="sidebar-logo">
+            <span className="logo-icon">⚡</span>
+            <span className="logo-text">VnollxOJ</span>
+          </Link>
+          <Tooltip title="切换为顶部导航" placement="right">
+            <Button
+              type="text"
+              icon={<SwapOutlined />}
+              onClick={toggleLayoutMode}
+              className="sidebar-toggle-btn"
+            />
+          </Tooltip>
+        </div>
 
         <Menu
-          mode="horizontal"
+          mode="inline"
           items={menuItems}
-          className="header-menu"
+          className="sidebar-menu"
           selectedKeys={[window.location.pathname]}
           onClick={handleMenuClick}
         />
 
-        <div className="header-actions">
-          <Button
-            type="text"
-            icon={<SwapOutlined />}
-            onClick={toggleLayoutMode}
-            title="切换为左侧导航"
-            className="layout-toggle-icon"
-          />
+        <div className="sidebar-footer">
           {isAuthenticated() && user ? (
-            <Space size="middle">
-              <Badge count={notificationCount} size="small">
-                <Link to="/notifications">
+            <div className="sidebar-user">
+              <Badge count={notificationCount} size="small" offset={[-5, 5]}>
+                <Link to="/notifications" className="notification-link">
                   <BellOutlined className="notification-icon" />
                 </Link>
               </Badge>
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Dropdown menu={{ items: userMenuItems }} placement="topRight">
                 <Space className="user-info" style={{ cursor: 'pointer' }}>
                   <Avatar
                     style={{
@@ -230,28 +174,21 @@ const Header = ({ layoutMode, toggleLayoutMode }) => {
                   <span className="user-name">{user.name}</span>
                 </Space>
               </Dropdown>
-            </Space>
+            </div>
           ) : (
-            <Space>
-              <Button type="default" onClick={() => openAuthModal('login')}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Button block type="default" onClick={() => openAuthModal('login')}>
                 登录
               </Button>
-              <Button type="primary" onClick={() => openAuthModal('register')}>
+              <Button block type="primary" onClick={() => openAuthModal('register')}>
                 注册
               </Button>
             </Space>
           )}
         </div>
       </div>
-      <AuthModal
-        open={authModalOpen}
-        mode={authMode}
-        onClose={closeAuthModal}
-        onModeChange={setAuthMode}
-      />
-    </AntHeader>
+    </Sider>
   );
 };
 
-export default Header;
-
+export default Sidebar;
