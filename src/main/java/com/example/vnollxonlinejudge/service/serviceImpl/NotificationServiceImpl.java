@@ -58,7 +58,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     public void deleteNotification(Long id) {
         QueryWrapper<Notification>wrapper=new QueryWrapper<>();
         wrapper.eq("id",id);
-        if (this.count()==0){
+        if (this.count(wrapper)==0){
             throw new BusinessException("通知不存在或已被删除");
         }
         this.baseMapper.deleteById(id);

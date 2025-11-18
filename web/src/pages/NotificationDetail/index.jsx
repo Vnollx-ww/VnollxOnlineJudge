@@ -27,6 +27,7 @@ const NotificationDetail = () => {
   const navigate = useNavigate();
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [modal, contextHolder] = Modal.useModal();
 
   const dispatchNotificationUpdate = () => {
     if (typeof window !== 'undefined') {
@@ -79,7 +80,7 @@ const NotificationDetail = () => {
   };
 
   const handleDelete = () => {
-    Modal.confirm({
+    modal.confirm({
       title: '确认删除该通知？',
       okText: '删除',
       cancelText: '取消',
@@ -100,6 +101,7 @@ const NotificationDetail = () => {
 
   return (
     <div className="notification-detail-container">
+      {contextHolder}
       <Card
         bordered={false}
         className="notification-detail-card"

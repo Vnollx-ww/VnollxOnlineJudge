@@ -40,6 +40,7 @@ const Notifications = () => {
   const [keyword, setKeyword] = useState('');
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [modal, contextHolder] = Modal.useModal();
 
   const loadNotificationsRef = useRef(null);
 
@@ -148,7 +149,7 @@ const Notifications = () => {
   };
 
   const handleDelete = (id) => {
-    Modal.confirm({
+    modal.confirm({
       title: '确认删除该通知？',
       content: '删除后无法恢复。',
       okText: '删除',
@@ -210,6 +211,7 @@ const Notifications = () => {
 
   return (
     <div className="notifications-page">
+      {contextHolder}
       <Card className="notifications-card" bordered={false}>
         <div className="notifications-header">
           <Space size="large" align="center">

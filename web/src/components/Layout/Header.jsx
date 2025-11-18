@@ -145,60 +145,42 @@ const Header = () => {
     },
   ];
 
+  const handleMenuClick = (e) => {
+    const path = e.key;
+    const requireAuth = path !== '/';
+    handleGuardedNavigate(path, requireAuth);
+  };
+
   const menuItems = [
     {
       key: '/',
       icon: <HomeOutlined />,
-      label: (
-        <span onClick={() => handleGuardedNavigate('/', false)}>
-          首页
-        </span>
-      ),
+      label: '首页',
     },
     {
       key: '/problems',
       icon: <BookOutlined />,
-      label: (
-        <span onClick={() => handleGuardedNavigate('/problems', true)}>
-          题目列表
-        </span>
-      ),
+      label: '题目列表',
     },
     {
       key: '/submissions',
       icon: <FileTextOutlined />,
-      label: (
-        <span onClick={() => handleGuardedNavigate('/submissions', true)}>
-          提交列表
-        </span>
-      ),
+      label: '提交列表',
     },
     {
       key: '/ranklist',
       icon: <TrophyOutlined />,
-      label: (
-        <span onClick={() => handleGuardedNavigate('/ranklist', true)}>
-          排行榜
-        </span>
-      ),
+      label: '排行榜',
     },
     {
       key: '/competitions',
       icon: <TrophyOutlined />,
-      label: (
-        <span onClick={() => handleGuardedNavigate('/competitions', true)}>
-          比赛
-        </span>
-      ),
+      label: '比赛',
     },
     {
       key: '/about',
       icon: <InfoCircleOutlined />,
-      label: (
-        <span onClick={() => handleGuardedNavigate('/about', true)}>
-          关于
-        </span>
-      ),
+      label: '关于',
     },
   ];
 
@@ -217,6 +199,7 @@ const Header = () => {
           items={menuItems}
           className="header-menu"
           selectedKeys={[window.location.pathname]}
+          onClick={handleMenuClick}
         />
 
         <div className="header-actions">
