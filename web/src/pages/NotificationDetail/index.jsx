@@ -27,7 +27,8 @@ const NotificationDetail = () => {
   const navigate = useNavigate();
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [modal, contextHolder] = Modal.useModal();
+  const [modal, modalContextHolder] = Modal.useModal();
+  const [messageApi, messageContextHolder] = message.useMessage();
 
   const dispatchNotificationUpdate = () => {
     if (typeof window !== 'undefined') {
@@ -44,11 +45,11 @@ const NotificationDetail = () => {
         setNotification(data.data);
         dispatchNotificationUpdate();
       } else {
-        message.error(data.msg || '加载通知详情失败');
+        messageApi.error(data.msg || '加载通知详情失败');
       }
     } catch (error) {
       console.error(error);
-      message.error('加载通知详情失败，请稍后重试');
+      messageApi.error('加载通知详情失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -56,26 +57,26 @@ const NotificationDetail = () => {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      message.error('请先登录！');
+      messageApi.error('请先登录！');
       navigate('/login');
       return;
     }
     loadDetail();
-  }, [id, navigate]);
+  }, [id, navigate, messageApi]);
 
   const handleMarkRead = async () => {
     if (!notification || notification.is_read) {
-      message.info('该通知已是已读状态');
+      messageApi.info('该通知已是已读状态');
       return;
     }
     try {
       await api.put(`/notification/read/${id}`);
-      message.success('已标记为已读');
+      messageApi.success('已标记为已读');
       dispatchNotificationUpdate();
       loadDetail();
     } catch (error) {
       console.error(error);
-      message.error('操作失败，请稍后重试');
+      messageApi.error('操作失败，请稍后重试');
     }
   };
 
@@ -88,12 +89,12 @@ const NotificationDetail = () => {
       async onOk() {
         try {
           await api.delete(`/notification/delete/${id}`);
-          message.success('删除成功');
+          messageApi.success('删除成功');
           dispatchNotificationUpdate();
           navigate('/notifications');
         } catch (error) {
           console.error(error);
-          message.error('删除失败，请稍后重试');
+          messageApi.error('删除失败，请稍后重试');
         }
       },
     });
@@ -101,7 +102,8 @@ const NotificationDetail = () => {
 
   return (
     <div className="notification-detail-container">
-      {contextHolder}
+      {modalContextHolder}
+      {messageContextHolder}
       <Card
         bordered={false}
         className="notification-detail-card"

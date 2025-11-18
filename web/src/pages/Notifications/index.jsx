@@ -40,7 +40,8 @@ const Notifications = () => {
   const [keyword, setKeyword] = useState('');
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [modal, contextHolder] = Modal.useModal();
+  const [modal, modalContextHolder] = Modal.useModal();
+  const [messageApi, messageContextHolder] = message.useMessage();
 
   const loadNotificationsRef = useRef(null);
 
@@ -82,7 +83,7 @@ const Notifications = () => {
         setNotifications(data.data || []);
         setCurrentPage(page);
       } else {
-        message.error(data.msg || '加载通知失败');
+        messageApi.error(data.msg || '加载通知失败');
       }
 
       const countParams = {};
@@ -100,7 +101,7 @@ const Notifications = () => {
       }
     } catch (error) {
       console.error(error);
-      message.error('加载通知失败，请稍后重试');
+      messageApi.error('加载通知失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -110,12 +111,12 @@ const Notifications = () => {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      message.error('请先登录！');
+      messageApi.error('请先登录！');
       navigate('/login');
       return;
     }
     loadNotificationsRef.current?.(1);
-  }, [navigate]);
+  }, [navigate, messageApi]);
 
   const handleSearch = () => {
     loadNotifications(1);
@@ -139,12 +140,12 @@ const Notifications = () => {
   const handleMarkRead = async (id) => {
     try {
       await api.put(`/notification/read/${id}`);
-      message.success('已标记为已读');
+      messageApi.success('已标记为已读');
       dispatchNotificationUpdate();
       loadNotifications(currentPage);
     } catch (error) {
       console.error(error);
-      message.error('操作失败，请稍后重试');
+      messageApi.error('操作失败，请稍后重试');
     }
   };
 
@@ -158,7 +159,7 @@ const Notifications = () => {
       async onOk() {
         try {
           await api.delete(`/notification/delete/${id}`);
-          message.success('删除成功');
+          messageApi.success('删除成功');
           dispatchNotificationUpdate();
           const nextPage =
             notifications.length === 1 && currentPage > 1
@@ -167,7 +168,7 @@ const Notifications = () => {
           loadNotifications(nextPage);
         } catch (error) {
           console.error(error);
-          message.error('删除失败，请稍后重试');
+          messageApi.error('删除失败，请稍后重试');
         }
       },
     });
@@ -211,7 +212,8 @@ const Notifications = () => {
 
   return (
     <div className="notifications-page">
-      {contextHolder}
+      {modalContextHolder}
+      {messageContextHolder}
       <Card className="notifications-card" bordered={false}>
         <div className="notifications-header">
           <Space size="large" align="center">
