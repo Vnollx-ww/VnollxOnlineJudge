@@ -30,7 +30,7 @@ const Problems = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
 
-  const pageSize = 10;
+  const pageSize = 15;
 
   useEffect(() => {
     if (!isAuthenticated()) {

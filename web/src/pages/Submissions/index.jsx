@@ -35,7 +35,7 @@ const Submissions = () => {
   const [currentCode, setCurrentCode] = useState('');
   const [currentLang, setCurrentLang] = useState('');
 
-  const pageSize = 10;
+  const pageSize = 15;
 
   useEffect(() => {
     if (!isAuthenticated()) {
