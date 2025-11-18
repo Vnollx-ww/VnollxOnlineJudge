@@ -156,9 +156,10 @@ const Ranklist = () => {
     <div className="ranklist-container">
       <Card className="ranklist-card">
         <div className="ranklist-header">
-          <Title level={2} className="page-title">
+          <Title level={1} className="page-title">
             <TrophyOutlined /> 排行榜
           </Title>
+            <p style={{ height: '16px', margin: 0 }}></p>
           <p className="header-subtitle">
             根据用户通过题目数量排名，通过数相同则提交少的靠前
           </p>

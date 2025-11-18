@@ -14,20 +14,23 @@
   text-align: center;
   margin-bottom: 32px;
   padding: 24px;
-  background: linear-gradient(135deg, #1a73e8 0%, #4a90e2 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #bbdefb 100%);
   border-radius: 16px 16px 0 0;
   color: white;
   margin: -24px -24px 32px -24px;
 }
 
 .page-title {
-  color: white !important;
+  color: #1a237e !important;
   margin-bottom: 8px !important;
+  margin-top: -8px !important;
 }
 
 .header-subtitle {
-  color: rgba(255, 255, 255, 0.9);
+  color: #475569;
   margin: 0;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .top-rankings {
