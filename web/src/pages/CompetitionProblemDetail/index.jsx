@@ -42,12 +42,12 @@ const languageOptions = [
     {
         label: 'C++',
         value: 'cpp',
-        template: `#include <bits/stdc++.h>
+        template: `#include <iostream>
+// 注意：本平台禁止使用 #include <bits/stdc++.h>
+// 请根据需要自行包含标准库头文件
 using namespace std;
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
 
     // 请在此处编写你的代码
 
@@ -80,6 +80,7 @@ public class Main {
 `,
     },
 ];
+
 
 const ProblemDetail = () => {
     const { cid, id } = useParams();

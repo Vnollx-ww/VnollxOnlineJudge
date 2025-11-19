@@ -15,6 +15,8 @@ import {
   Typography,
   Tag,
   Popconfirm,
+  Row,
+  Col,
 } from 'antd';
 import {
   PlusOutlined,
@@ -42,6 +44,7 @@ const AdminProblems = () => {
   const [form] = Form.useForm();
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
+  const [fileList, setFileList] = useState([]);
   const [messageApi, contextHolder] = message.useMessage();
 
   useEffect(() => {
@@ -81,30 +84,34 @@ const AdminProblems = () => {
     }
   };
 
-  const handleAdd = () => {
-    setEditingProblem(null);
-    setTags([]);
-    form.resetFields();
+  const showModal = (problem = null) => {
+    setEditingProblem(problem);
     setModalVisible(true);
+    if (problem) {
+      form.setFieldsValue({
+        title: problem.title,
+        description: problem.description,
+        timeLimit: problem.timeLimit,
+        memoryLimit: problem.memoryLimit,
+        difficulty: problem.difficulty,
+        inputFormat: problem.inputFormat,
+        outputFormat: problem.outputFormat,
+        inputExample: problem.inputExample,
+        outputExample: problem.outputExample,
+        hint: problem.hint,
+        open: problem.open,
+      });
+      setTags(problem.tags || []);
+      setFileList([]);
+    } else {
+      form.resetFields();
+      setTags([]);
+      setFileList([]);
+    }
   };
 
-  const handleEdit = (problem) => {
-    setEditingProblem(problem);
-    form.setFieldsValue({
-      title: problem.title,
-      description: problem.description,
-      timeLimit: problem.timeLimit,
-      memoryLimit: problem.memoryLimit,
-      difficulty: problem.difficulty,
-      inputFormat: problem.inputFormat,
-      outputFormat: problem.outputFormat,
-      inputExample: problem.inputExample,
-      outputExample: problem.outputExample,
-      hint: problem.hint,
-      open: problem.open,
-    });
-    setTags(problem.tags || []);
-    setModalVisible(true);
+  const handleAdd = () => {
+    showModal(null);
   };
 
   const handleDelete = async (id) => {
@@ -142,23 +149,29 @@ const AdminProblems = () => {
       formData.append('hint', values.hint || '');
       formData.append('open', values.open ? 'true' : 'false');
       
-      // 处理标签 - 后端期望的是List<String>，Spring会自动将逗号分隔的字符串转换为List
-      // 或者我们可以发送多个tags参数，但根据原始HTML代码，使用逗号分隔的字符串
+      // 处理标签 - 后端期望的是List<String>
       if (tags.length > 0) {
         // 发送多个tags参数，Spring会自动转换为List
         tags.forEach((tag) => {
           formData.append('tags', tag);
         });
+      } else {
+        // 没有标签时，发送空数组（通过发送空的tags参数）
+        formData.append('tags', '');
       }
 
-      // 处理测试用例文件
-      const testCaseFile = form.getFieldValue('testCaseFile');
+      // 处理测试用例文件 - 直接从 fileList 状态获取
       let hasFile = false;
-      if (testCaseFile && Array.isArray(testCaseFile) && testCaseFile.length > 0) {
-        const file = testCaseFile[0].originFileObj || testCaseFile[0];
-        if (file) {
+      if (fileList && fileList.length > 0) {
+        const fileObj = fileList[0];
+        const file = fileObj.originFileObj || fileObj;
+        
+        if (file && file instanceof File) {
           formData.append('testCaseFile', file);
           hasFile = true;
+          console.log('上传文件:', file.name, '大小:', file.size);
+        } else {
+          console.error('文件对象无效:', fileObj);
         }
       }
       
@@ -359,7 +372,7 @@ const AdminProblems = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-        width={800}
+        width={1200}
         style={{ top: 20 }}
       >
         <Form
@@ -371,6 +384,7 @@ const AdminProblems = () => {
             open: true,
           }}
         >
+          {/* 第一行：标题 */}
           <Form.Item
             name="title"
             label="题目标题"
@@ -379,6 +393,7 @@ const AdminProblems = () => {
             <Input />
           </Form.Item>
 
+          {/* 第二行：标签 */}
           <Form.Item label="标签">
             <Space.Compact style={{ width: '100%' }}>
               <Input
@@ -406,119 +421,148 @@ const AdminProblems = () => {
             </Text>
           </Form.Item>
 
+          {/* 第三行：题目描述 */}
           <Form.Item
             name="description"
             label="题目描述"
             rules={[{ required: true, message: '请输入题目描述' }]}
           >
-            <Input.TextArea rows={6} />
+            <Input.TextArea rows={4} />
           </Form.Item>
 
-          <Form.Item
-            name="timeLimit"
-            label="时间限制 (ms)"
-            rules={[
-              { required: true, message: '请输入时间限制' },
-              { type: 'number', min: 1, max: 10000, message: '时间限制必须在1-10000ms之间' },
-            ]}
-          >
-            <InputNumber style={{ width: '100%' }} min={1} max={10000} />
-          </Form.Item>
+          {/* 第四行：两列布局 - 基本信息 */}
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                name="timeLimit"
+                label="时间限制 (ms)"
+                rules={[
+                  { required: true, message: '请输入时间限制' },
+                  { type: 'number', min: 1, max: 10000, message: '时间限制必须在1-10000ms之间' },
+                ]}
+              >
+                <InputNumber style={{ width: '100%' }} min={1} max={10000} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="memoryLimit"
+                label="内存限制 (MB)"
+                rules={[
+                  { required: true, message: '请输入内存限制' },
+                  { type: 'number', min: 1, max: 512, message: '内存限制必须在1-512MB之间' },
+                ]}
+              >
+                <InputNumber style={{ width: '100%' }} min={1} max={512} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="difficulty"
+                label="难度"
+                rules={[{ required: true, message: '请选择难度' }]}
+              >
+                <Select>
+                  <Option value="简单">简单</Option>
+                  <Option value="中等">中等</Option>
+                  <Option value="困难">困难</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="memoryLimit"
-            label="内存限制 (MB)"
-            rules={[
-              { required: true, message: '请输入内存限制' },
-              { type: 'number', min: 1, max: 512, message: '内存限制必须在1-512MB之间' },
-            ]}
-          >
-            <InputNumber style={{ width: '100%' }} min={1} max={512} />
-          </Form.Item>
+          {/* 第五行：两列布局 - 输入输出格式 */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="inputFormat"
+                label="输入格式"
+                rules={[{ required: true, message: '请输入输入格式' }]}
+              >
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="outputFormat"
+                label="输出格式"
+                rules={[{ required: true, message: '请输入输出格式' }]}
+              >
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="difficulty"
-            label="难度"
-            rules={[{ required: true, message: '请选择难度' }]}
-          >
-            <Select>
-              <Option value="简单">简单</Option>
-              <Option value="中等">中等</Option>
-              <Option value="困难">困难</Option>
-            </Select>
-          </Form.Item>
+          {/* 第六行：两列布局 - 输入输出样例 */}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="inputExample" label="输入样例">
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="outputExample" label="输出样例">
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            name="inputFormat"
-            label="输入格式"
-            rules={[{ required: true, message: '请输入输入格式' }]}
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item
-            name="outputFormat"
-            label="输出格式"
-            rules={[{ required: true, message: '请输入输出格式' }]}
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item name="inputExample" label="输入样例">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
-          <Form.Item name="outputExample" label="输出样例">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-
+          {/* 第七行：提示 */}
           <Form.Item name="hint" label="提示">
-            <Input.TextArea rows={3} />
+            <Input.TextArea rows={2} />
           </Form.Item>
 
-          <Form.Item
-            name="testCaseFile"
-            label="测试数据文件"
-            rules={
-              !editingProblem
-                ? [
-                    {
-                      required: true,
-                      message: '请上传测试数据文件',
-                      validator: (_, value) => {
-                        if (!value || (Array.isArray(value) && value.length === 0)) {
-                          return Promise.reject(new Error('请上传测试数据文件'));
-                        }
-                        return Promise.resolve();
-                      },
-                    },
-                  ]
-                : []
-            }
-            getValueFromEvent={(e) => {
-              if (Array.isArray(e)) {
-                return e;
-              }
-              return e?.fileList || [];
-            }}
-          >
-            <Upload
-              beforeUpload={() => false}
-              maxCount={1}
-              accept=".zip,.rar,.7z"
-            >
-              <Button icon={<UploadOutlined />}>选择文件</Button>
-            </Upload>
-            <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-              {editingProblem
-                ? '不选择文件则保留原有测试数据'
-                : '必须上传测试数据文件（zip/rar/7z格式）'}
-            </Text>
-          </Form.Item>
-
-          <Form.Item name="open" label="是否公开" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+          {/* 第八行：两列布局 - 文件上传和公开设置 */}
+          <Row gutter={16}>
+            <Col span={18}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <Text>测试数据文件</Text>
+                  {!editingProblem && <Text type="danger"> *</Text>}
+                </div>
+                <Upload
+                  fileList={fileList}
+                  onChange={({ fileList: newFileList }) => {
+                    setFileList(newFileList);
+                  }}
+                  beforeUpload={(file) => {
+                    // 验证文件类型
+                    const isValidType = file.name.endsWith('.zip') || 
+                                       file.name.endsWith('.rar') || 
+                                       file.name.endsWith('.7z');
+                    if (!isValidType) {
+                      messageApi.error('只能上传 .zip, .rar, .7z 格式的文件！');
+                      return Upload.LIST_IGNORE;
+                    }
+                    
+                    // 验证文件大小（限制 100MB）
+                    const isLt100M = file.size / 1024 / 1024 < 100;
+                    if (!isLt100M) {
+                      messageApi.error('文件大小不能超过 100MB！');
+                      return Upload.LIST_IGNORE;
+                    }
+                    
+                    console.log('文件选择成功:', file.name, '大小:', (file.size / 1024).toFixed(2), 'KB');
+                    return false; // 阻止自动上传
+                  }}
+                  maxCount={1}
+                  accept=".zip,.rar,.7z"
+                >
+                  <Button icon={<UploadOutlined />}>选择文件</Button>
+                </Upload>
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                  {editingProblem
+                    ? '不选择文件则保留原有测试数据'
+                    : '必须上传测试数据文件（zip/rar/7z格式）'}
+                </Text>
+              </div>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="open" label="是否公开" valuePropName="checked">
+                <Switch />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item>
             <Space>

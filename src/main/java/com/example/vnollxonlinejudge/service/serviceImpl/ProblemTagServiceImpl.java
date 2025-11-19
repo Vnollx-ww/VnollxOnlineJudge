@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.entity.ProblemTag;
 import com.example.vnollxonlinejudge.mapper.ProblemTagMapper;
 import com.example.vnollxonlinejudge.service.ProblemTagService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 @Service
@@ -44,6 +46,21 @@ public class ProblemTagServiceImpl extends ServiceImpl<ProblemTagMapper, Problem
         problemTag.setProblemId(pid);
         problemTag.setTagName(name);
         this.save(problemTag);
+    }
+
+    @Override
+    @Transactional
+    public void addRelatedTags(List<String> names, Long pid) {
+        List<ProblemTag> problemTags = names.stream()
+                .map(name -> {
+                    ProblemTag tag = new ProblemTag();
+                    tag.setProblemId(pid);
+                    tag.setTagName(name);
+                    return tag;
+                })
+                .collect(Collectors.toList());
+
+        this.saveBatch(problemTags);
     }
 
     @Override

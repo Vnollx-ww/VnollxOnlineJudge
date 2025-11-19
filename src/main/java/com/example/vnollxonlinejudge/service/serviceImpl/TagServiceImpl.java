@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,19 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
         }
         problemTagService.deleteRelated(tag.getName());
         this.baseMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void addTags(List<String> tags) {
+        List<Tag> tagList = tags.stream()
+                .map(s -> {
+                    Tag tag = new Tag();
+                    tag.setName(s);
+                    return tag;
+                })
+                .toList();
+        this.saveBatch(tagList);
     }
 
     @Override

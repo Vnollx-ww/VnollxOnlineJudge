@@ -134,16 +134,20 @@ const AdminUsers = () => {
     }
   };
 
-  const getIdentityTag = (identity) => {
-    const colors = {
-      USER: 'blue',
-      ADMIN: 'orange',
-      SUPER_ADMIN: 'red',
-    };
-    return <Tag color={colors[identity] || 'default'}>{identity}</Tag>;
-  };
+    const getIdentityTag = (identity) => {
+        const map = {
+            USER: { text: '用户', color: 'blue' },
+            ADMIN: { text: '管理员', color: 'orange' },
+            SUPER_ADMIN: { text: '超级管理员', color: 'red' },
+        };
 
-  const columns = [
+        const item = map[identity] || { text: identity, color: 'default' };
+
+        return <Tag color={item.color}>{item.text}</Tag>;
+    };
+
+
+    const columns = [
     {
       title: '用户名',
       dataIndex: 'name',
@@ -170,6 +174,12 @@ const AdminUsers = () => {
       dataIndex: 'passCount',
       key: 'passCount',
     },
+      {
+          title: '上次登录时间',
+          dataIndex: 'lastLoginTime',
+          key: 'lastLoginTime',
+          render: (text) => text ? text.replace('T', ' ') : '-',
+      },
     {
       title: '操作',
       key: 'action',

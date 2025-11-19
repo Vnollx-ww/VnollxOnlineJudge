@@ -61,5 +61,7 @@ public class Problem {
     private Boolean open;
     @Column(name = "version")
     private Integer version;
+    @Column(name = "snake_id")
+    private Long snakeId;
 
 }

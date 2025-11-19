@@ -39,37 +39,37 @@ marked.setOptions({
 });
 
 const languageOptions = [
-  {
-    label: 'C++',
-    value: 'cpp',
-    template: `#include <bits/stdc++.h>
+    {
+        label: 'C++',
+        value: 'cpp',
+        template: `#include <iostream>
+// 注意：本平台禁止使用 #include <bits/stdc++.h>
+// 请根据需要自行包含标准库头文件
 using namespace std;
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
 
     // 请在此处编写你的代码
 
     return 0;
 }
 `,
-  },
-  {
-    label: 'Python 3',
-    value: 'python',
-    template: `# 请在此处编写你的代码
+    },
+    {
+        label: 'Python 3',
+        value: 'python',
+        template: `# 请在此处编写你的代码
 def main():
     pass
 
 if __name__ == "__main__":
     main()
 `,
-  },
-  {
-    label: 'Java',
-    value: 'java',
-    template: `import java.io.*;
+    },
+    {
+        label: 'Java',
+        value: 'java',
+        template: `import java.io.*;
 import java.util.*;
 
 public class Main {
@@ -78,8 +78,9 @@ public class Main {
     }
 }
 `,
-  },
+    },
 ];
+
 
 const ProblemDetail = () => {
   const { id } = useParams();

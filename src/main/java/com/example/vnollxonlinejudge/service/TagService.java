@@ -7,6 +7,6 @@ import java.util.List;
 public interface TagService {
     void createTag(String name);
     void deleteTag(Long id);
-
+    void addTags(List<String> tags);
     List<TagVo> getTagList();
 }

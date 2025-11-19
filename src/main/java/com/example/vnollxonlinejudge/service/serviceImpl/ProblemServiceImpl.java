@@ -15,6 +15,7 @@ import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
 import com.example.vnollxonlinejudge.service.*;
+import com.example.vnollxonlinejudge.utils.SnowflakeIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -76,13 +78,16 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 .hint(dto.getHint())
                 .open(Objects.equals(dto.getOpen(), "true"))
                 .build();
-
+        SnowflakeIdGenerator gen = new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
+        problem.setSnakeId(gen.nextId());
         save(problem); // 插入数据库，获取自增ID
         problemTagService.deleteTagByProblem(problem.getId());
-        for (String s:dto.getTags()){
-            tagService.createTag(s);
-            problemTagService.addRelated(s,problem.getId());
-        }
+        tagService.addTags(dto.getTags());
+        problemTagService.addRelatedTags(dto.getTags(),problem.getId());
+
+        QueryWrapper<Problem> queryWrapper=new QueryWrapper<>();
+        queryWrapper.eq("snake_id",problem.getSnakeId());
+        problem=this.getOne(queryWrapper);
         // 2. 使用获取到的ID处理文件上传
         try {
             if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
