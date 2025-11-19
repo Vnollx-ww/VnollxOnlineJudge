@@ -7,7 +7,7 @@ create table comment
     create_time varchar(255) not null,
     problem_id  bigint       not null,
     parent_id   bigint       null,
-    user_id     bigint       null comment '评论用户的id'
+    user_id     bigint       null comment 'id'
 );
 
 create index idx_create_time
@@ -43,7 +43,7 @@ create table notification
     description text                 null,
     create_time varchar(100)         null,
     uid         bigint               not null,
-    is_read     tinyint(1) default 0 null comment '是否已读',
+    is_read     tinyint(1) default 0 null,
     comment_id  bigint               null
 )
     collate = utf8mb4_unicode_ci;
@@ -108,7 +108,7 @@ create table solve
     name         varchar(50) null,
     problem_name varchar(50) null,
     title        text        not null,
-    status       int  default 0 null comment '审核状态：0-待审核，1-审核通过，2-审核不通过'
+    status       int         null
 );
 
 create table submission
@@ -125,7 +125,7 @@ create table submission
     problem_name varchar(255)     null,
     code         text             null,
     cid          bigint default 0 null,
-    memory       int              not null comment '内存占用'
+    memory       int              not null
 );
 
 create table tag
@@ -156,19 +156,20 @@ create index idx_problem_id
 
 create table user
 (
-    id           int auto_increment
+    id              int auto_increment
         primary key,
-    name         varchar(255)                  not null,
-    password     varchar(255) default '123456' null,
-    email        varchar(255)                  not null,
-    submit_count int                           null,
-    pass_count   int                           null,
-    penalty_time int          default 0        null,
-    version      int          default 1        null,
-    identity     varchar(50)  default 'USER'   not null,
-    salt         varchar(255)                  not null comment '盐值',
-    avatar       varchar(255)                  null comment '头像地址',
-    signature    varchar(128)                  null comment '个性签名',
+    name            varchar(255)                  not null,
+    password        varchar(255) default '123456' null,
+    email           varchar(255)                  not null,
+    submit_count    int          default 0        null,
+    pass_count      int          default 0        null,
+    penalty_time    int          default 0        null,
+    version         int          default 1        null,
+    identity        varchar(50)  default 'USER'   not null,
+    salt            varchar(255)                  null,
+    avatar          varchar(255)                  null,
+    signature       varchar(128)                  null,
+    last_login_time datetime                      null,
     constraint email
         unique (email)
 );
@@ -195,12 +196,31 @@ create index user_id
 
 create table user_solved_problem
 (
-    user_id        int    not null,
-    problem_id     bigint not null,
-    competition_id int    not null,
+    user_id        int          not null,
+    problem_id     bigint       not null,
+    competition_id int          not null,
+    problem_name   varchar(100) null,
     primary key (user_id, problem_id, competition_id)
 );
 
 create index problem_id
     on user_solved_problem (problem_id);
+
+create index user_solved_problem_user_id_index
+    on user_solved_problem (user_id);
+
+create table user_tag
+(
+    id           bigint auto_increment
+        primary key,
+    pass_count   bigint default 0 null,
+    uid          bigint           null,
+    tag          varchar(50)      null,
+    submit_count bigint default 0 null,
+    constraint user_tag_pk
+        unique (uid, tag)
+);
+
+create index user_tag_uid_index
+    on user_tag (uid);
 
