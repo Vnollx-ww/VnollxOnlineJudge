@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntdApp } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import AppLayout from './components/Layout/AppLayout';
 import Home from './pages/Home';
@@ -35,8 +35,9 @@ const theme = {
 function App() {
   return (
     <ConfigProvider locale={zhCN} theme={theme}>
-      <BrowserRouter>
-        <Routes>
+      <AntdApp>
+        <BrowserRouter>
+          <Routes>
           <Route
             path="/"
             element={
@@ -183,8 +184,9 @@ function App() {
           />
           <Route path="/admin/*" element={<Admin />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+          </Routes>
+        </BrowserRouter>
+      </AntdApp>
     </ConfigProvider>
   );
 }

@@ -9,7 +9,7 @@ import {
   Button,
   Modal,
   Input,
-  message,
+  App,
   Spin,
   Empty,
 } from 'antd';
@@ -27,6 +27,7 @@ import './CompetitionDetail.css';
 const { Title, Text, Paragraph } = Typography;
 
 const CompetitionDetail = () => {
+  const { message } = App.useApp();
   const { id } = useParams();
   const navigate = useNavigate();
   const [competition, setCompetition] = useState(null);
@@ -117,7 +118,9 @@ const CompetitionDetail = () => {
         message.error(data.msg || '密码错误');
       }
     } catch (error) {
-      message.error('密码验证失败');
+      // 优先显示后端返回的错误消息
+      const errorMsg = error.response?.data?.msg || error.message || '密码验证失败';
+      message.error(errorMsg);
       console.error(error);
     }
   };
