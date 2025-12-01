@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.convert.SubmissionConvert;
 import com.example.vnollxonlinejudge.model.query.SubmissionQuery;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
@@ -33,7 +34,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private final RedisService redisService;
     private final UserService userService;
     private final CompetitionUserService competitionUserService;
-
+    private final SubmissionConvert submissionConvert;
     private final UserTagService userTagService;
     private final ProblemTagService problemTagService;
 
@@ -44,7 +45,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             UserService userService,
             CompetitionUserService competitionUserService,
             UserTagService userTagService,
-            ProblemTagService problemTagService
+            ProblemTagService problemTagService,
+            SubmissionConvert submissionConvert
     ) {
         this.problemService = problemService;
         this.redisService=redisService;
@@ -52,6 +54,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         this.competitionUserService=competitionUserService;
         this.userTagService=userTagService;
         this.problemTagService=problemTagService;
+        this.submissionConvert=submissionConvert;
     }
 
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
@@ -80,7 +83,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         String code=submission.getCode();
         String option=submission.getLanguage();
         String createTime=submission.getCreateTime();
-        ProblemVo problem=null;
+        ProblemVo problem;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
         if (cid != 0) {
             timeOutKey=String.format(TIME_OUT_KEY,cid);
@@ -103,7 +106,6 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         //获取题目信息！！！！
         if (cid == 0) problem = problemService.getProblemInfo(pid,0L,null);
         else{
-            //String cacheKey = "competition:" + cid + ":problems";
             String problemsJson = redisService.getValueByKey("competition:" + cid + ":problems");
             TypeReference<Map<Long, ProblemVo>> typeRef = new TypeReference<Map<Long, ProblemVo>>() {
             };
@@ -117,10 +119,6 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             if (!ok) { //是否首次通过
                 List<String> tagList=problemTagService.getTagNames(problem.getId());
                 userTagService.updateTagPassStatus(uid,tagList,1L);
-                System.out.println(problem.getTitle());
-                for (String tag:tagList){
-                    System.out.println(tag);
-                }
                 problemService.addUserSolveRecord(pid,uid,cid,problem.getTitle()); //对问题添加通过记录
                 if (cid == 0) { //如果非比赛
                     userService.updateSubmitCount(uid,1);//用户通过数加一，用户自己不太可能同时提交多次，所以无需加锁
@@ -143,13 +141,13 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,userName);//是比赛，而且之前也没通过，那就需要罚时了
             }
         }
-        //提交后对题目提交数，用户提交数进行处理！！！！
 
         //提交记录写入缓存，缓存定期同步数据库！！！！
-        String language="";
-        if(Objects.equals(option, "java"))language="Java";
-        else if(Objects.equals(option, "python"))language="Python";
-        else language="C++";
+        String language = switch (option) {
+            case "java" -> "Java";
+            case "python" -> "Python";
+            default -> "C++";
+        };
         redisService.cacheSubmission(
                 userName, problem.getTitle(), code, submission.getStatus(),
                 createTime, language, uid, pid,
@@ -178,9 +176,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         Page<Submission> page = new Page<>(submissionQuery.getPageNum(), submissionQuery.getPageSize());
         Page<Submission> result = this.page(page, wrapper);
 
-        return result.getRecords().stream()
-                .map(SubmissionVo::new)
-                .collect(Collectors.toList());
+        return submissionConvert.toVoList(result.getRecords());
     }
 
     @Override
@@ -196,27 +192,23 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         this.baseMapper.delete(wrapper);
     }
 
-    private QueryWrapper<Submission> buildQueryWrapper(SubmissionQuery q) {
+    private QueryWrapper<Submission> buildQueryWrapper(SubmissionQuery query) {
         QueryWrapper<Submission> wrapper = new QueryWrapper<>();
 
-        if (q.getCid() != null && q.getCid() != 0) {
-            wrapper.eq("cid", q.getCid());
+        if (query.getCid() != null && query.getCid() != 0) {
+            wrapper.eq("cid", query.getCid());
         }
-
-        if (q.getUid() != null && q.getUid() != 0) {
-            wrapper.eq("uid", q.getUid());
+        if (query.getUid() != null && query.getUid() != 0) {
+            wrapper.eq("uid", query.getUid());
         }
-
-        if (StringUtils.isNotBlank(q.getLanguage())) {
-            wrapper.eq("language", q.getLanguage());
+        if (StringUtils.isNotBlank(query.getLanguage())) {
+            wrapper.eq("language", query.getLanguage());
         }
-
-        if (StringUtils.isNotBlank(q.getStatus())) {
-            wrapper.eq("status", q.getStatus());
+        if (StringUtils.isNotBlank(query.getStatus())) {
+            wrapper.eq("status", query.getStatus());
         }
-
-        if (StringUtils.isNotBlank(q.getKeyword())) {
-            String keyword = q.getKeyword();
+        if (StringUtils.isNotBlank(query.getKeyword())) {
+            String keyword = query.getKeyword();
             wrapper.and(w -> w.like("user_name", keyword)
                     .or()
                     .like("problem_name", keyword));

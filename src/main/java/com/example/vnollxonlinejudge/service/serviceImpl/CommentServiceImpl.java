@@ -3,6 +3,7 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.convert.CommentConvert;
 import com.example.vnollxonlinejudge.mapper.CommentMapper;
 import com.example.vnollxonlinejudge.model.dto.comment.PublishCommentDTO;
 import com.example.vnollxonlinejudge.model.entity.Comment;
@@ -24,23 +25,20 @@ import java.util.*;
 @Service
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
     private final NotificationProducer notificationProducer;
-
+    private final CommentConvert commentConvert;
     @Autowired
-    public CommentServiceImpl(NotificationProducer notificationProducer) {
+    public CommentServiceImpl(
+            NotificationProducer notificationProducer,
+            CommentConvert commentConvert
+    ) {
         this.notificationProducer=notificationProducer;
+        this.commentConvert=commentConvert;
     }
 
     @Override
     @Transactional
     public void publishComment(PublishCommentDTO dto,Long uid) {
-        Comment comment = Comment.builder()
-                .content(dto.getContent())
-                .createTime(dto.getCreateTime())
-                .username(dto.getUsername())
-                .parentId(dto.getParentId())
-                .problemId(dto.getProblemId())
-                .userId(uid)
-                .build();
+        Comment comment = commentConvert.toEntity(dto, uid);
         this.save(comment);
 
         if (dto.getReceiveUserId()==null||dto.getReceiveUserId()==0||Objects.equals(uid, dto.getReceiveUserId()))return ;
