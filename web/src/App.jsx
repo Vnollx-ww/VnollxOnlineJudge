@@ -22,6 +22,7 @@ import SolutionListPage from './pages/Solutions/SolutionListPage';
 import SolutionDetailPage from './pages/Solutions/SolutionDetailPage';
 import SolutionPublishPage from './pages/Solutions/SolutionPublishPage';
 import './App.css';
+import VnollxHome from "./pages/VnollxHome/index.jsx";
 
 // Ant Design 主题配置
 const theme = {
@@ -46,6 +47,14 @@ function App() {
               </AppLayout>
             }
           />
+              <Route
+                  path="/home"
+                  element={
+                      <AppLayout>
+                          <VnollxHome />
+                      </AppLayout>
+                  }
+              />
           <Route
             path="/problems"
             element={

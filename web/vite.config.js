@@ -71,6 +71,7 @@ export default defineConfig({
             '/login',
             '/register',
             '/problems',
+            'home',
             '/submissions',
             '/ranklist',
             '/competitions',
