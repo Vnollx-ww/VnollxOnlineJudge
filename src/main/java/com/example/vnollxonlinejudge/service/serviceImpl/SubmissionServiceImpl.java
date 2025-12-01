@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.model.query.SubmissionQuery;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
 import com.example.vnollxonlinejudge.model.entity.Submission;
@@ -170,57 +171,21 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
-    public List<SubmissionVo> getSubmissionList(
-            Long cid, Long uid, String language,
-            String status, String keyword,
-            int pageNum, int pageSize
-    ) {
-        Page<Submission> page = new Page<>(pageNum, pageSize);
-        QueryWrapper<Submission> wrapper=new QueryWrapper<>();
-        if (cid!=0){
-            wrapper.eq("cid",cid);
-        }
-        if (uid!=0){
-            wrapper.eq("uid",uid);
-        }
-        if (StringUtils.isNotBlank(language)){
-            wrapper.eq("language",language);
-        }
-        if (StringUtils.isNotBlank(status)){
-            wrapper.eq("status",status);
-        }
-        if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like("user_name", keyword)
-                    .or()
-                    .like("problem_name", keyword));
-        }
+    public List<SubmissionVo> getSubmissionList(SubmissionQuery submissionQuery) {
+        QueryWrapper<Submission> wrapper = buildQueryWrapper(submissionQuery);
+
         wrapper.orderByDesc("id");
+        Page<Submission> page = new Page<>(submissionQuery.getPageNum(), submissionQuery.getPageSize());
         Page<Submission> result = this.page(page, wrapper);
+
         return result.getRecords().stream()
                 .map(SubmissionVo::new)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public Long getCount(Long cid, Long uid, String language, String status,String keyword) {
-        QueryWrapper<Submission> wrapper=new QueryWrapper<>();
-        if (cid!=0){
-            wrapper.eq("cid",cid);
-        }
-        if (uid!=null&&uid!=0){
-            wrapper.eq("uid",uid);
-        }
-        if (StringUtils.isNotBlank(language)){
-            wrapper.eq("language",language);
-        }
-        if (StringUtils.isNotBlank(status)){
-            wrapper.eq("status",status);
-        }
-        if (StringUtils.isNotBlank(keyword)) {
-            wrapper.and(w -> w.like("user_name", keyword)
-                    .or()
-                    .like("problem_name", keyword));
-        }
+    public Long getCount(SubmissionQuery submissionQuery) {
+        QueryWrapper<Submission> wrapper = buildQueryWrapper(submissionQuery);
         return this.count(wrapper);
     }
 
@@ -229,5 +194,33 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         wrapper.eq("cid",cid);
         this.baseMapper.delete(wrapper);
+    }
+
+    private QueryWrapper<Submission> buildQueryWrapper(SubmissionQuery q) {
+        QueryWrapper<Submission> wrapper = new QueryWrapper<>();
+
+        if (q.getCid() != null && q.getCid() != 0) {
+            wrapper.eq("cid", q.getCid());
+        }
+
+        if (q.getUid() != null && q.getUid() != 0) {
+            wrapper.eq("uid", q.getUid());
+        }
+
+        if (StringUtils.isNotBlank(q.getLanguage())) {
+            wrapper.eq("language", q.getLanguage());
+        }
+
+        if (StringUtils.isNotBlank(q.getStatus())) {
+            wrapper.eq("status", q.getStatus());
+        }
+
+        if (StringUtils.isNotBlank(q.getKeyword())) {
+            String keyword = q.getKeyword();
+            wrapper.and(w -> w.like("user_name", keyword)
+                    .or()
+                    .like("problem_name", keyword));
+        }
+        return wrapper;
     }
 }

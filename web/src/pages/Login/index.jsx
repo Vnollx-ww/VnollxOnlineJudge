@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
-import { setToken } from '../../utils/auth';
+import { setToken, setUserInfo } from '../../utils/auth';
 import './Login.css';
 
 const { Title, Text } = Typography;
@@ -18,6 +18,17 @@ const Login = () => {
       const data = await api.post('/user/login', values);
       if (data.code === 200) {
         setToken(data.data);
+        
+        // 获取用户信息
+        try {
+          const userRes = await api.get('/user/profile');
+          if (userRes.code === 200) {
+            setUserInfo(userRes.data);
+          }
+        } catch (error) {
+          console.error('获取用户信息失败:', error);
+        }
+
         message.success('登录成功');
         navigate('/');
         window.location.reload();

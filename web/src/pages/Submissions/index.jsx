@@ -13,10 +13,11 @@ import {
   Typography,
   message,
   Pagination,
+  Switch,
 } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
-import { isAuthenticated } from '../../utils/auth';
+import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import './Submissions.css';
 
 const { Title } = Typography;
@@ -31,6 +32,7 @@ const Submissions = () => {
   const [problemId, setProblemId] = useState('');
   const [status, setStatus] = useState(undefined);
   const [language, setLanguage] = useState(undefined);
+  const [onlyMine, setOnlyMine] = useState(false);
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [currentCode, setCurrentCode] = useState('');
   const [currentLang, setCurrentLang] = useState('');
@@ -43,8 +45,9 @@ const Submissions = () => {
       navigate('/');
       return;
     }
+    setCurrentPage(1);
     loadSubmissions(1);
-  }, []);
+  }, [onlyMine]);
     const handleShowCode = async (id) => {
         try {
             const res = await api.get(`/submission/detail/${id}`);
@@ -64,6 +67,29 @@ const Submissions = () => {
   const loadSubmissions = async (page) => {
     setLoading(true);
     try {
+      let currentUid = null;
+      if (onlyMine) {
+        const userInfo = getUserInfo();
+        if (userInfo && userInfo.id) {
+          currentUid = userInfo.id;
+        } else {
+          // 如果本地没有ID，尝试重新获取用户信息
+          try {
+            const res = await api.get('/user/profile');
+            if (res.code === 200) {
+              setUserInfo(res.data);
+              currentUid = res.data.id;
+            }
+          } catch (e) {
+            console.error('获取用户信息失败', e);
+          }
+        }
+        
+        if (!currentUid) {
+            message.warning('无法获取用户信息，请重新登录');
+        }
+      }
+
       const params = {
         pageNum: String(page),
         pageSize: String(pageSize),
@@ -77,6 +103,9 @@ const Submissions = () => {
       if (language) {
         params.language = language;
       }
+      if (currentUid) {
+        params.uid = currentUid;
+      }
 
       const data = await api.get('/submission/list', { params });
       if (data.code === 200) {
@@ -88,6 +117,9 @@ const Submissions = () => {
       if (problemId) countParams.keyword = problemId;
       if (status) countParams.status = status;
       if (language) countParams.language = language;
+      if (currentUid) {
+        countParams.uid = currentUid;
+      }
       
       const countData = await api.get('/submission/count', { params: countParams });
       if (countData.code === 200) {
@@ -247,8 +279,8 @@ const Submissions = () => {
           提交记录
         </Title>
 
-        <div className="filter-container">
-          <Space.Compact style={{ width: '100%' }}>
+        <div className="filter-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <Space.Compact style={{ width: 'auto' }}>
             <Input
               placeholder="题目ID"
               value={problemId}
@@ -292,6 +324,13 @@ const Submissions = () => {
               搜索
             </Button>
           </Space.Compact>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>仅看自己</span>
+            <Switch
+                checked={onlyMine}
+                onChange={setOnlyMine}
+            />
+          </div>
         </div>
 
         <Table

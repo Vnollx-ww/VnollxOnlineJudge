@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.service;
 
+import com.example.vnollxonlinejudge.model.query.SubmissionQuery;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 
@@ -12,7 +13,7 @@ public interface SubmissionService {
     void processSubmission(Submission submission);
     void batchInsert(List<Submission> submissions);
     void deleteSubmissionsByPid(Long pid);
-    List<SubmissionVo> getSubmissionList(Long cid, Long uid, String language, String status, String keyword,int pageNum, int pageSize);
-    Long getCount(Long cid,Long uid,String language,String status,String keyword);
+    List<SubmissionVo> getSubmissionList(SubmissionQuery submissionQuery);
+    Long getCount(SubmissionQuery submissionQuery);
     void deleteSubmissionsByCid(Long cid);
 }
