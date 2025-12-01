@@ -1,20 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Statistic, Row, Col, Button, Typography } from 'antd';
-import {
-  BookOutlined,
-  UserOutlined,
-  CodeOutlined,
-  TrophyOutlined,
-} from '@ant-design/icons';
+import { Card, Statistic, Row, Col, Button, Typography, message } from 'antd';
+import { 
+  BookOpen, 
+  Users, 
+  Code2, 
+  Trophy, 
+  ArrowRight,
+  Terminal,
+  Cpu,
+  Globe
+} from 'lucide-react';
 import api from '../../utils/api';
+import { isAuthenticated } from '../../utils/auth';
 import ParticleBackground from '../../components/ParticleBackground';
 import CountUp from '../../components/CountUp';
+import CodeWindow from '../../components/CodeWindow';
 import './Home.css';
 
 const { Title, Paragraph } = Typography;
 
-const Home = () => {
+const Home = ({ openAuthModal }) => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     problemCount: 0,
@@ -22,11 +28,36 @@ const Home = () => {
     submissionCount: 0,
     competitionCount: 0,
   });
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
   }, []);
+
+  const handleStartCoding = () => {
+    if (isAuthenticated()) {
+      navigate('/problems');
+    } else {
+      message.info('请先登录');
+      openAuthModal && openAuthModal('login');
+    }
+  };
+
+  const handleViewRank = () => {
+    if (isAuthenticated()) {
+      navigate('/ranklist');
+    } else {
+      message.info('请先登录');
+      openAuthModal && openAuthModal('login');
+    }
+  };
+
+  const handleRegister = () => {
+    if (isAuthenticated()) {
+      message.info('您已登录');
+    } else {
+      openAuthModal && openAuthModal('register');
+    }
+  };
 
   const loadStats = async () => {
     try {
@@ -48,42 +79,39 @@ const Home = () => {
       });
     } catch (error) {
       console.error('加载统计数据失败:', error);
-      // 使用默认值
       setStats({
         problemCount: 1000,
         userCount: 5000,
         submissionCount: 50000,
         competitionCount: 100,
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const features = [
     {
-      icon: <BookOutlined style={{ fontSize: 48, color: '#1a73e8' }} />,
-      title: '丰富的题目资源',
+      icon: <BookOpen size={40} color="#1a73e8" />,
+      title: '海量题库',
       description:
-        '1000+道精选算法题，覆盖基础到进阶难度，分类清晰，包含详细解题思路和参考答案，满足不同阶段学习者的需求。',
+        '精选1000+道算法题目，覆盖数据结构、动态规划、图论等核心领域，助你夯实基础。',
     },
     {
-      icon: <CodeOutlined style={{ fontSize: 48, color: '#66bb6a' }} />,
-      title: '实时评测系统',
+      icon: <Cpu size={40} color="#66bb6a" />,
+      title: '高性能评测',
       description:
-        '高效的在线评测系统，提交代码后立即获得反馈，包含详细的错误信息和运行时间、内存占用等性能指标。',
+        '分布式评测集群，支持毫秒级反馈。提供详细的内存、时间消耗分析，优化代码性能。',
     },
     {
-      icon: <TrophyOutlined style={{ fontSize: 48, color: '#ff9800' }} />,
-      title: '竞赛与排名',
+      icon: <Trophy size={40} color="#ff9800" />,
+      title: '竞赛系统',
       description:
-        '定期举办算法竞赛，真实模拟比赛环境，个人和团队排行榜实时更新，激发学习动力，见证成长历程。',
+        '支持ACM/OI赛制，实时榜单更新。定期举办积分赛，模拟真实大厂笔试环境。',
     },
     {
-      icon: <UserOutlined style={{ fontSize: 48, color: '#9c27b0' }} />,
-      title: '社区交流',
+      icon: <Users size={40} color="#9c27b0" />,
+      title: '极客社区',
       description:
-        '活跃的用户社区，支持题解分享和讨论，与志同道合的开发者交流学习经验，共同进步。',
+        '汇聚算法爱好者，分享高质量题解。支持代码在线讨论，共同探索最优解。',
     },
   ];
 
@@ -91,89 +119,143 @@ const Home = () => {
     <div className="home-container">
       {/* Hero Section */}
       <div className="hero-section">
-        {/* Hero区域背景粒子 (白色) */}
-        <ParticleBackground color="255, 255, 255" />
-        <div className="hero-content">
-          <Title level={1} className="hero-title">
-            用代码解决算法难题
-          </Title>
-          <Paragraph className="hero-subtitle">
-            精选1000+算法题目，支持Python/Java/C++等多种语言在线提交，实时评测系统助你快速提升编程能力
-          </Paragraph>
-
-          {/* 统计数据 */}
-          <Row gutter={[32, 32]} className="stats-row">
-            <Col xs={12} sm={12} md={6}>
-              <Card className="stat-card">
-                <Statistic
-                  title="算法题目"
-                  value={stats.problemCount}
-                  formatter={(value) => <CountUp end={value} />}
-                  prefix={<BookOutlined />}
-                  valueStyle={{ color: '#1a73e8' }}
-                />
-              </Card>
+        {/* Hero区域改为深色粒子以适配浅色背景 */}
+        <ParticleBackground color="26, 115, 232" style={{ opacity: 0.4 }} />
+        
+        <div className="hero-content-wrapper">
+          <Row gutter={[48, 48]} align="middle">
+            <Col xs={24} lg={12}>
+              <div className="hero-text-content">
+                <div className="hero-badge">
+                  <span className="badge-dot"></span>
+                  Vnollx OJ 2.0 全新上线
+                </div>
+                <Title level={1} className="hero-title">
+                  探索算法之美<br />
+                  <span className="text-gradient">构建代码世界</span>
+                </Title>
+                <Paragraph className="hero-subtitle">
+                  专为程序员打造的在线算法训练平台。无论你是算法初学者还是竞赛大神，在这里都能找到属于你的挑战。
+                </Paragraph>
+                <div className="hero-actions">
+                  <Button
+                    type="primary"
+                    size="large"
+                    className="cta-button primary"
+                    icon={<Code2 size={20} />}
+                    onClick={handleStartCoding}
+                  >
+                    开始刷题
+                  </Button>
+                  <Button
+                    size="large"
+                    className="cta-button secondary"
+                    onClick={handleViewRank}
+                  >
+                    查看榜单
+                  </Button>
+                </div>
+                
+                <div className="hero-stats-mini">
+                  <div className="stat-item-mini">
+                    <strong>1000+</strong>
+                    <span>精选题目</span>
+                  </div>
+                  <div className="divider"></div>
+                  <div className="stat-item-mini">
+                    <strong>50k+</strong>
+                    <span>代码提交</span>
+                  </div>
+                  <div className="divider"></div>
+                  <div className="stat-item-mini">
+                    <strong>24h</strong>
+                    <span>全天候评测</span>
+                  </div>
+                </div>
+              </div>
             </Col>
-            <Col xs={12} sm={12} md={6}>
-              <Card className="stat-card">
-                <Statistic
-                  title="注册用户"
-                  value={stats.userCount}
-                  formatter={(value) => <CountUp end={value} />}
-                  prefix={<UserOutlined />}
-                  valueStyle={{ color: '#66bb6a' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={12} md={6}>
-              <Card className="stat-card">
-                <Statistic
-                  title="代码提交"
-                  value={stats.submissionCount}
-                  formatter={(value) => <CountUp end={value} />}
-                  prefix={<CodeOutlined />}
-                  valueStyle={{ color: '#ff9800' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={12} sm={12} md={6}>
-              <Card className="stat-card">
-                <Statistic
-                  title="竞赛场次"
-                  value={stats.competitionCount}
-                  formatter={(value) => <CountUp end={value} />}
-                  prefix={<TrophyOutlined />}
-                  valueStyle={{ color: '#9c27b0' }}
-                />
-              </Card>
+            <Col xs={24} lg={12}>
+              <div className="hero-visual">
+                <div className="visual-glow"></div>
+                <CodeWindow />
+              </div>
             </Col>
           </Row>
-
-          <Button
-            type="primary"
-            size="large"
-            className="cta-button"
-            onClick={() => navigate('/problems')}
-          >
-            立即开始挑战
-          </Button>
         </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="stats-section">
+        <Row gutter={[32, 32]}>
+          <Col xs={12} sm={12} lg={6}>
+            <div className="stat-card-modern">
+              <div className="stat-icon-wrapper blue">
+                <BookOpen size={24} />
+              </div>
+              <Statistic
+                value={stats.problemCount}
+                formatter={(value) => <CountUp end={value} />}
+                valueStyle={{ fontWeight: 'bold' }}
+              />
+              <div className="stat-label">算法题目</div>
+            </div>
+          </Col>
+          <Col xs={12} sm={12} lg={6}>
+            <div className="stat-card-modern">
+              <div className="stat-icon-wrapper green">
+                <Users size={24} />
+              </div>
+              <Statistic
+                value={stats.userCount}
+                formatter={(value) => <CountUp end={value} />}
+                valueStyle={{ fontWeight: 'bold' }}
+              />
+              <div className="stat-label">注册用户</div>
+            </div>
+          </Col>
+          <Col xs={12} sm={12} lg={6}>
+            <div className="stat-card-modern">
+              <div className="stat-icon-wrapper orange">
+                <Terminal size={24} />
+              </div>
+              <Statistic
+                value={stats.submissionCount}
+                formatter={(value) => <CountUp end={value} />}
+                valueStyle={{ fontWeight: 'bold' }}
+              />
+              <div className="stat-label">提交记录</div>
+            </div>
+          </Col>
+          <Col xs={12} sm={12} lg={6}>
+            <div className="stat-card-modern">
+              <div className="stat-icon-wrapper purple">
+                <Trophy size={24} />
+              </div>
+              <Statistic
+                value={stats.competitionCount}
+                formatter={(value) => <CountUp end={value} />}
+                valueStyle={{ fontWeight: 'bold' }}
+              />
+              <div className="stat-label">竞赛场次</div>
+            </div>
+          </Col>
+        </Row>
       </div>
 
       {/* Features Section */}
       <div className="features-section">
-        <Title level={2} className="section-title">
-          平台特色
-        </Title>
-        <Paragraph className="section-subtitle">
-          我们提供全方位的算法训练支持，帮助你高效提升编程能力，轻松应对各类算法挑战
-        </Paragraph>
+        <div className="section-header">
+          <Title level={2}>为什么选择 Vnollx OJ</Title>
+          <Paragraph className="section-subtitle">
+            我们致力于提供最优质的刷题体验，助你成为算法大师
+          </Paragraph>
+        </div>
 
-        <Row gutter={[24, 24]} className="features-grid">
+        <Row gutter={[32, 32]} className="features-grid">
           {features.map((feature, index) => (
             <Col xs={24} sm={12} lg={6} key={index}>
-              <Card className="feature-card" hoverable>
-                <div className="feature-icon">{feature.icon}</div>
+              <Card className="feature-card" hoverable bordered={false}>
+                <div className="feature-icon-box">{feature.icon}</div>
                 <Title level={4} className="feature-title">
                   {feature.title}
                 </Title>
@@ -185,9 +267,28 @@ const Home = () => {
           ))}
         </Row>
       </div>
+
+      {/* CTA Section */}
+      <div className="cta-section">
+        <div className="cta-content">
+          <Title level={2} style={{ color: 'white', marginBottom: 16 }}>准备好接受挑战了吗？</Title>
+          <Paragraph style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, marginBottom: 32 }}>
+            加入 Vnollx OJ，与数千名开发者一起提升编程能力。
+          </Paragraph>
+          <Button 
+            type="primary" 
+            size="large" 
+            className="cta-button-glow"
+            onClick={handleRegister}
+          >
+            立即免费注册 <ArrowRight size={18} style={{ marginLeft: 8 }} />
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default Home;
+
 

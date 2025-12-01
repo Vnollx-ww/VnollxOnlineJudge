@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layout, Modal, Typography, Button } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import Header from './Header';
@@ -110,7 +110,9 @@ const AppLayout = ({ children }) => {
       )}
       <Layout className="main-layout">
         <Content className="app-content">
-          {children}
+          {React.isValidElement(children) 
+            ? React.cloneElement(children, { openAuthModal }) 
+            : children}
         </Content>
       <Footer className="app-footer">
         <div className="footer-content">
