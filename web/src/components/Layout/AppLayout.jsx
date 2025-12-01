@@ -5,6 +5,7 @@ import Header from './Header';
 import Sidebar from './Sidebar';
 import AuthModal from '../Auth/AuthModal';
 import AIAssistant from '../AIAssistant';
+import ParticleBackground from '../ParticleBackground';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import './AppLayout.css';
@@ -82,6 +83,15 @@ const AppLayout = ({ children }) => {
 
   return (
     <Layout className={`app-layout layout-${layoutMode}`}>
+      <ParticleBackground 
+        color="26, 115, 232" 
+        style={{ 
+          position: 'fixed', 
+          zIndex: 0,
+          opacity: 0.4,
+          pointerEvents: 'none'
+        }} 
+      />
       {layoutMode === 'left' ? (
         <Sidebar
           user={user}

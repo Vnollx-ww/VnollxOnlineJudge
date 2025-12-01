@@ -89,16 +89,6 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      {/* 全局背景粒子 (深色) */}
-      <ParticleBackground 
-        color="26, 115, 232" 
-        style={{ 
-          position: 'fixed', 
-          zIndex: -1,
-          opacity: 0.3 
-        }} 
-      />
-
       {/* Hero Section */}
       <div className="hero-section">
         {/* Hero区域背景粒子 (白色) */}

@@ -8,6 +8,18 @@ const ParticleBackground = ({ color = '255, 255, 255', style = {} }) => {
     const ctx = canvas.getContext('2d');
     let animationFrameId;
     let particles = [];
+    let mouse = { x: null, y: null, radius: 150 };
+
+    const handleMouseMove = (event) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = event.clientX - rect.left;
+      mouse.y = event.clientY - rect.top;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.x = null;
+      mouse.y = null;
+    };
 
     const resizeCanvas = () => {
       const parent = canvas.parentElement;
@@ -31,6 +43,8 @@ const ParticleBackground = ({ color = '255, 255, 255', style = {} }) => {
           vx: (Math.random() - 0.5) * 1,
           vy: (Math.random() - 0.5) * 1,
           size: Math.random() * 2 + 1,
+          baseX: Math.random() * canvas.width, // Store base position for return (optional, but bouncing is current behavior)
+          baseY: Math.random() * canvas.height
         });
       }
     };
@@ -43,9 +57,42 @@ const ParticleBackground = ({ color = '255, 255, 255', style = {} }) => {
         p.x += p.vx;
         p.y += p.vy;
 
+        // Mouse interaction
+        if (mouse.x != null) {
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < mouse.radius) {
+            // Repulsion force
+            const forceDirectionX = dx / distance;
+            const forceDirectionY = dy / distance;
+            const force = (mouse.radius - distance) / mouse.radius;
+            const directionX = forceDirectionX * force * 2; 
+            const directionY = forceDirectionY * force * 2;
+            
+            p.x += directionX;
+            p.y += directionY;
+
+            // Draw connection to mouse
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(${color}, ${0.5 * (1 - distance / mouse.radius)})`;
+            ctx.lineWidth = 1;
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.stroke();
+          }
+        }
+
         // Bounce off walls
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        if (p.x < 0 || p.x > canvas.width) {
+           p.vx *= -1;
+           p.x = Math.max(0, Math.min(canvas.width, p.x)); // Clamp to prevent sticking
+        }
+        if (p.y < 0 || p.y > canvas.height) {
+           p.vy *= -1;
+           p.y = Math.max(0, Math.min(canvas.height, p.y));
+        }
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -75,10 +122,14 @@ const ParticleBackground = ({ color = '255, 255, 255', style = {} }) => {
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave); // Note: This tracks leaving the window
     drawParticles();
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationFrameId);
     };
   }, [color]);
