@@ -98,7 +98,7 @@ const Ranklist = () => {
           </Avatar>
           <div>
             <div style={{ fontWeight: 600 }}>{record.name}</div>
-            <div style={{ fontSize: 12, color: '#999' }}>ID: {record.id}</div>
+              {/*<div style={{ fontSize: 12, color: '#999' }}>ID: {record.id}</div>*/}
           </div>
         </div>
       ),
@@ -181,7 +181,7 @@ const Ranklist = () => {
                     >
                       <div className="medal-icon">{getMedalIcon(rank)}</div>
                       <div className="top-rank-name">{user.name}</div>
-                      <div className="top-rank-id">ID: {user.id}</div>
+                        {/*<div className="top-rank-id">ID: {user.id}</div>*/}
                       <div className="top-rank-stats">
                         已通过 <span className="pass-count">{user.passCount}</span>{' '}
                         题
