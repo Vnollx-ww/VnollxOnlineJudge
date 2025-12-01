@@ -8,6 +8,8 @@ import {
   TrophyOutlined,
 } from '@ant-design/icons';
 import api from '../../utils/api';
+import ParticleBackground from '../../components/ParticleBackground';
+import CountUp from '../../components/CountUp';
 import './Home.css';
 
 const { Title, Paragraph } = Typography;
@@ -87,8 +89,20 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      {/* 全局背景粒子 (深色) */}
+      <ParticleBackground 
+        color="26, 115, 232" 
+        style={{ 
+          position: 'fixed', 
+          zIndex: -1,
+          opacity: 0.3 
+        }} 
+      />
+
       {/* Hero Section */}
       <div className="hero-section">
+        {/* Hero区域背景粒子 (白色) */}
+        <ParticleBackground color="255, 255, 255" />
         <div className="hero-content">
           <Title level={1} className="hero-title">
             用代码解决算法难题
@@ -104,6 +118,7 @@ const Home = () => {
                 <Statistic
                   title="算法题目"
                   value={stats.problemCount}
+                  formatter={(value) => <CountUp end={value} />}
                   prefix={<BookOutlined />}
                   valueStyle={{ color: '#1a73e8' }}
                 />
@@ -114,6 +129,7 @@ const Home = () => {
                 <Statistic
                   title="注册用户"
                   value={stats.userCount}
+                  formatter={(value) => <CountUp end={value} />}
                   prefix={<UserOutlined />}
                   valueStyle={{ color: '#66bb6a' }}
                 />
@@ -124,6 +140,7 @@ const Home = () => {
                 <Statistic
                   title="代码提交"
                   value={stats.submissionCount}
+                  formatter={(value) => <CountUp end={value} />}
                   prefix={<CodeOutlined />}
                   valueStyle={{ color: '#ff9800' }}
                 />
@@ -134,6 +151,7 @@ const Home = () => {
                 <Statistic
                   title="竞赛场次"
                   value={stats.competitionCount}
+                  formatter={(value) => <CountUp end={value} />}
                   prefix={<TrophyOutlined />}
                   valueStyle={{ color: '#9c27b0' }}
                 />
