@@ -23,6 +23,7 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
+import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import './ProblemDetail.css';
 
 const { Title, Text } = Typography;
@@ -98,8 +99,34 @@ const ProblemDetail = () => {
   const [commentContent, setCommentContent] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [currentSnowflakeId, setCurrentSnowflakeId] = useState(null);
 
   const userInfo = getUserInfo();
+
+  const handleWebSocketMessage = useCallback((msg) => {
+    if (msg && msg.snowflakeId === currentSnowflakeId) {
+      const status = msg.status || '未知状态';
+      let type = 'info';
+      if (status === '答案正确') type = 'success';
+      else if (status === '评测中') type = 'info';
+      else if (status === '编译错误') type = 'warning';
+      else type = 'error';
+
+      setSubmitResult({
+        type,
+        message: status,
+        detail: msg.status === '评测中' ? '正在进行评测...' : `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`,
+      });
+
+      if (status !== '评测中') {
+        window.dispatchEvent(new Event('notification-updated'));
+        // 评测结束，重新加载题目信息（更新提交数/通过数）
+        loadProblem();
+      }
+    }
+  }, [currentSnowflakeId]);
+
+  useJudgeWebSocket(handleWebSocketMessage);
 
   const renderMarkdown = useCallback((content, fallback = '暂无内容') => {
     const raw = content && content.trim() ? content : fallback;
@@ -257,12 +284,16 @@ const ProblemDetail = () => {
       };
       const data = await api.post('/judge/submit', payload);
       if (data.code === 200) {
-        const status = data.data.status || '未知状态';
-        const type = status === '答案正确' ? 'success' : status === '编译错误' ? 'warning' : 'error';
+        // 保存 snowflakeId 以便 WebSocket 过滤消息
+        if (data.data.snowflakeId) {
+            setCurrentSnowflakeId(String(data.data.snowflakeId));
+        }
+        
+        const status = '等待评测'; // 初始状态
         setSubmitResult({
-          type,
+          type: 'info',
           message: status,
-          detail: data.data.errorInfo,
+          detail: '已提交，等待评测...',
         });
         window.dispatchEvent(new Event('notification-updated'));
       } else {

@@ -8,4 +8,5 @@ public class JudgeResultVO {
     private String errorInfo;
     private Integer passCount;
     private Integer testCount;
+    private Long snowflakeId;
 }

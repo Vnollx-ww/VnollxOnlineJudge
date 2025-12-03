@@ -59,14 +59,6 @@ public class JudgeServiceImpl implements JudgeService {
                 .snowflakeId(snowflakeId)
                 .build();
 
-        JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
-
-        RunResult result=strategy.judge(
-                judgeInfo.getCode(),
-                judgeInfo.getPid() + ".zip",
-                judgeInfo.getTime(),
-                judgeInfo.getMemory()
-        );
         Submission submission = Submission.builder()
                 .code(judgeInfo.getCode())
                 .language(judgeInfo.getLanguage())
@@ -77,8 +69,8 @@ public class JudgeServiceImpl implements JudgeService {
                 .createTime(judgeInfo.getCreateTime())
                 .userName(judgeInfo.getUname())
                 .status("等待评测")
-                .time(result.getRunTime())
-                .memory(result.getMemory())
+                .time(0L) // Initial time
+                .memory(0L) // Initial memory
                 .snowflakeId(snowflakeId)
                 .build();
 
@@ -90,8 +82,9 @@ public class JudgeServiceImpl implements JudgeService {
             logger.error("发送提交记录消息到MQ失败： judgeInfo={}, error=", judgeInfo, e);
             // 可以在这里接入监控告警，让开发者知道MQ出了问题
         }
-
-        return new JudgeResultVO();
+        JudgeResultVO vo = new JudgeResultVO();
+        vo.setSnowflakeId(snowflakeId);
+        return vo;
     }
 
     @Override

@@ -18,6 +18,6 @@ public class JudgeInfo {
     private Long uid;
     private Long pid;
     private String uname;
-    private Long snowflakeId;
     private String createTime;
+    private Long snowflakeId;
 }

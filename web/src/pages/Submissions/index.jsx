@@ -18,6 +18,7 @@ import {
 import { SearchOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
+import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import './Submissions.css';
 
 const { Title } = Typography;
@@ -36,6 +37,35 @@ const Submissions = () => {
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [currentCode, setCurrentCode] = useState('');
   const [currentLang, setCurrentLang] = useState('');
+
+  const handleWebSocketMessage = (msg) => {
+    if (!msg || !msg.snowflakeId) return;
+    
+    setSubmissions((prev) => 
+      prev.map((item) => {
+        // 尝试匹配 snowflakeId (如果有) 或者只是简单的刷新列表
+        // 由于列表接口可能未返回 snowflakeId，这里如果匹配不到，可以选择重新加载列表
+        // 但为了性能，我们先假设列表项里可能有这个字段，或者我们只关心状态更新
+        if (String(item.snowflakeId) === String(msg.snowflakeId)) {
+          return {
+            ...item,
+            status: msg.status,
+            time: msg.time,
+            memory: msg.memory,
+          };
+        }
+        return item;
+      })
+    );
+    
+    // 如果是评测完成，且我们无法精确更新(比如没有snowflakeId)，也可以选择 reloadSubmissions(currentPage)
+    // 这里为了简单和保险，当收到非评测中状态时，重新加载当前页
+    if (msg.status !== '评测中') {
+        loadSubmissions(currentPage);
+    }
+  };
+
+  useJudgeWebSocket(handleWebSocketMessage);
 
   const pageSize = 15;
 
