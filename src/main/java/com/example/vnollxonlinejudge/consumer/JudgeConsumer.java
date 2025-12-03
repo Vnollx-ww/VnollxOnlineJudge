@@ -39,11 +39,11 @@ public class JudgeConsumer {
         this.judgeStrategyFactory=judgeStrategyFactory;
         this.judgeWebSocketHandler = judgeWebSocketHandler;
     }
-    @RabbitListener(queues = "judgeQueue_v1")
+    @RabbitListener(queues = "judgeQueue")
     public void handleSubmission(Message message)  {
 
         try {
-            logger.info("Received message from judgeQueue_v1");
+            logger.info("Received message from judgeQueue");
             JudgeInfo judgeInfo = objectMapper.readValue(
                     message.getBody(),
                     JudgeInfo.class

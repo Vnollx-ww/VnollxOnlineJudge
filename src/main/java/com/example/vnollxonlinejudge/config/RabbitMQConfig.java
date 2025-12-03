@@ -24,10 +24,10 @@ public class RabbitMQConfig {
 
     // 队列定义
     @Bean
-    public Queue judgeQueue_v1() {
+    public Queue judgeQueue() {
         Map<String, Object> queueArgs = new HashMap<>();
         queueArgs.put("x-max-priority", 10);
-        return new Queue("judgeQueue_v1", true, false, false, queueArgs);
+        return new Queue("judgeQueue", true, false, false, queueArgs);
     }
 
     @Bean
@@ -54,7 +54,7 @@ public class RabbitMQConfig {
     // 绑定
     @Bean
     public Binding judgeBinding() {
-        return BindingBuilder.bind(judgeQueue_v1())
+        return BindingBuilder.bind(judgeQueue())
                 .to(judgeExchange())
                 .with("judge.submit");
     }
