@@ -7,7 +7,7 @@ import AuthModal from '../Auth/AuthModal';
 import AIAssistant from '../AIAssistant';
 import ParticleBackground from '../ParticleBackground';
 import api from '../../utils/api';
-import { isAuthenticated } from '../../utils/auth';
+import { isAuthenticated, setUserInfo } from '../../utils/auth';
 import './AppLayout.css';
 
 const { Content, Footer } = Layout;
@@ -30,6 +30,7 @@ const AppLayout = ({ children }) => {
       const data = await api.get('/user/profile');
       if (data.code === 200) {
         setUser(data.data);
+        setUserInfo(data.data);
       }
     } catch (error) {
       console.error('获取用户信息失败:', error);

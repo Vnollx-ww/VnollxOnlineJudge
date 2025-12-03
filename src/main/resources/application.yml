@@ -11,7 +11,7 @@ spring:
       datasource:
         master:
           driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://mysql-master:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+          url: jdbc:mysql://111.230.105.54:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
           username: root
           password: rootpassword
           type: com.alibaba.druid.pool.DruidDataSource
@@ -23,7 +23,7 @@ spring:
           type: com.alibaba.druid.pool.DruidDataSource
   data:
     redis:
-      host: redis
+      host: 111.230.105.54
       port: 6379
       timeout: 10000
       connect-timeout: 10000
@@ -34,7 +34,7 @@ spring:
           min-idle: 5
         shutdown-timeout: 200
   rabbitmq:
-    host: rabbitmq
+    host: 111.230.105.54
     port: 5672
     username: admin
     password: admin

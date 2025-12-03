@@ -1,6 +1,5 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
-import com.example.vnollxonlinejudge.consumer.SubmissionConsumer;
 import com.example.vnollxonlinejudge.judge.JudgeStrategy;
 import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
@@ -10,13 +9,12 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.model.vo.judge.JudgeResultVO;
-import com.example.vnollxonlinejudge.producer.SubmissionProducer;
+import com.example.vnollxonlinejudge.producer.JudgeProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.service.RedisService;
 
-import com.example.vnollxonlinejudge.service.UserService;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import com.example.vnollxonlinejudge.service.SubmissionService;
+import com.example.vnollxonlinejudge.utils.SnowflakeIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,24 +24,28 @@ import org.springframework.stereotype.Service;
 @Service
 public class JudgeServiceImpl implements JudgeService {
     private static final Logger logger = LoggerFactory.getLogger(JudgeServiceImpl.class);
-    private final SubmissionProducer submissionProducer;
+    private final JudgeProducer judgeProducer;
     private final RedisService redisService;
     private final JudgeStrategyFactory judgeStrategyFactory;
-
+    private final SubmissionService submissionService;
+    private static final SnowflakeIdGenerator gen =
+            new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
     public JudgeServiceImpl(
-            SubmissionProducer submissionProducer,
+            JudgeProducer judgeProducer,
             RedisService redisService,
-            JudgeStrategyFactory judgeStrategyFactory
+            JudgeStrategyFactory judgeStrategyFactory,
+            SubmissionService submissionService
     ) {
-        this.submissionProducer=submissionProducer;
+        this.judgeProducer=judgeProducer;
         this.redisService=redisService;
         this.judgeStrategyFactory=judgeStrategyFactory;
+        this.submissionService=submissionService;
     }
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
         tryLock(uid, Long.valueOf(req.getPid()));
-        
+        Long snowflakeId = gen.nextId();
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
                 .language(req.getOption())
@@ -54,6 +56,7 @@ public class JudgeServiceImpl implements JudgeService {
                 .pid(Long.parseLong(req.getPid()))
                 .createTime(req.getCreate_time())
                 .uname(req.getUname())
+                .snowflakeId(snowflakeId)
                 .build();
 
         JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
@@ -64,33 +67,31 @@ public class JudgeServiceImpl implements JudgeService {
                 judgeInfo.getTime(),
                 judgeInfo.getMemory()
         );
-
         Submission submission = Submission.builder()
                 .code(judgeInfo.getCode())
                 .language(judgeInfo.getLanguage())
+                .problemName(req.getTitle())
                 .pid(judgeInfo.getPid())
                 .cid(judgeInfo.getCid())
                 .uid(judgeInfo.getUid())
                 .createTime(judgeInfo.getCreateTime())
                 .userName(judgeInfo.getUname())
-                .status(result.getStatus())
+                .status("等待评测")
                 .time(result.getRunTime())
                 .memory(result.getMemory())
+                .snowflakeId(snowflakeId)
                 .build();
 
+        submissionService.processSubmission(submission);
         try {
             int priority = 1;
-            submissionProducer.sendSubmission(priority, submission);
+            judgeProducer.sendJudge(priority, judgeInfo);
         } catch (Exception e) {
-            logger.error("发送提交记录消息到MQ失败： submission={}, error=", submission, e);
+            logger.error("发送提交记录消息到MQ失败： judgeInfo={}, error=", judgeInfo, e);
             // 可以在这里接入监控告警，让开发者知道MQ出了问题
         }
-        JudgeResultVO vo=new JudgeResultVO();
-        vo.setStatus(result.getStatus());
-        vo.setErrorInfo(result.getFiles().getStderr());
-        vo.setPassCount(result.getPassCount());
-        vo.setTestCount(result.getTestCount());
-        return vo;
+
+        return new JudgeResultVO();
     }
 
     @Override

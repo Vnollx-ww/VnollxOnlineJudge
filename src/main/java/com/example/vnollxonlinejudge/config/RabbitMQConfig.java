@@ -24,10 +24,10 @@ public class RabbitMQConfig {
 
     // 队列定义
     @Bean
-    public Queue submissionQueue() {
+    public Queue judgeQueue() {
         Map<String, Object> queueArgs = new HashMap<>();
         queueArgs.put("x-max-priority", 10);
-        return new Queue("submissionQueue", true, false, false, queueArgs);
+        return new Queue("judgeQueue", true, false, false, queueArgs);
     }
 
     @Bean
@@ -42,7 +42,7 @@ public class RabbitMQConfig {
 
     // 交换器定义
     @Bean
-    public DirectExchange submissionExchange() {
+    public DirectExchange judgeExchange() {
         return new DirectExchange("judge");
     }
 
@@ -53,9 +53,9 @@ public class RabbitMQConfig {
 
     // 绑定
     @Bean
-    public Binding submissionBinding() {
-        return BindingBuilder.bind(submissionQueue())
-                .to(submissionExchange())
+    public Binding judgeBinding() {
+        return BindingBuilder.bind(judgeQueue())
+                .to(judgeExchange())
                 .with("judge.submit");
     }
 

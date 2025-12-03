@@ -148,11 +148,13 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             case "python" -> "Python";
             default -> "C++";
         };
-        redisService.cacheSubmission(
+        submission.setLanguage(language);
+        this.save(submission);
+        /*redisService.cacheSubmission(
                 userName, problem.getTitle(), code, submission.getStatus(),
                 createTime, language, uid, pid,
                 submission.getTime(), submission.getMemory(),cid
-        );
+        );*/
     }
 
     @Override
@@ -177,6 +179,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         Page<Submission> result = this.page(page, wrapper);
 
         return submissionConvert.toVoList(result.getRecords());
+
     }
 
     @Override
@@ -192,10 +195,22 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         this.baseMapper.delete(wrapper);
     }
 
+    @Override
+    public void updateSubmissionJudgeStatusBySnowflake(Long snowflakeId,String judgeStatus,Long time,Long memory) {
+        QueryWrapper<Submission> wrapper=new QueryWrapper<>();
+        wrapper.eq("snowflake_id",snowflakeId);
+        Submission submission=this.baseMapper.selectOne(wrapper);
+        submission.setStatus(judgeStatus);
+        submission.setMemory(memory);
+        submission.setTime(time);
+        this.updateById(submission);
+    }
+
+
     private QueryWrapper<Submission> buildQueryWrapper(SubmissionQuery query) {
         QueryWrapper<Submission> wrapper = new QueryWrapper<>();
 
-        if (query.getCid() != null && query.getCid() != 0) {
+        if (query.getCid() != null ) {
             wrapper.eq("cid", query.getCid());
         }
         if (query.getUid() != null && query.getUid() != 0) {

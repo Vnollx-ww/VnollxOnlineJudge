@@ -44,7 +44,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     private final OssService ossService;
     private final SubmissionService submissionService;
     private final TagService tagService;
-
+    private final static SnowflakeIdGenerator gen = new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
     public ProblemServiceImpl(
             ProblemTagService problemTagService,
@@ -78,7 +78,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 .hint(dto.getHint())
                 .open(Objects.equals(dto.getOpen(), "true"))
                 .build();
-        SnowflakeIdGenerator gen = new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
         problem.setSnakeId(gen.nextId());
         save(problem); // 插入数据库，获取自增ID
         problemTagService.deleteTagByProblem(problem.getId());

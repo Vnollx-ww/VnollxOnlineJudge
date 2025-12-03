@@ -283,10 +283,11 @@ const ProblemDetail = () => {
         try {
             const payload = {
                 code,
+                title:problem.title,
                 option: language,
                 pid: String(problem.id),
                 uname: userInfo.name,
-                cid: '0',
+                cid: cid,
                 create_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
                 time: String(problem.timeLimit || 1000),
                 memory: String(problem.memoryLimit || 256),

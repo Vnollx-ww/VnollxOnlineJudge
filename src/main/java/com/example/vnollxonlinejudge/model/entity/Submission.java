@@ -43,6 +43,6 @@ public class Submission {
 
     @Column(name = "pid")
     private Long pid;
-
-
+    @Column(name="snow_flake_id")
+    private Long snowflakeId;
 }

@@ -1,9 +1,9 @@
 package com.example.vnollxonlinejudge.producer;
 
+import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.AmqpException;
@@ -16,23 +16,23 @@ import org.springframework.amqp.core.MessageBuilder;
 import java.util.UUID;
 
 @Service
-public class SubmissionProducer {
-    private static final Logger logger = LoggerFactory.getLogger(SubmissionProducer.class);
+public class JudgeProducer {
+    private static final Logger logger = LoggerFactory.getLogger(JudgeProducer.class);
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     @Autowired
-    public SubmissionProducer(
+    public JudgeProducer(
             RabbitTemplate rabbitTemplate,
             ObjectMapper objectMapper
     ){
         this.rabbitTemplate=rabbitTemplate;
         this.objectMapper=objectMapper;
     }
-    public void sendSubmission(int priority, Submission submission){
+    public void sendJudge(int priority, JudgeInfo judgeInfo){
         String correlationId = UUID.randomUUID().toString();
         try {
             // 1. 序列化消息（可能抛出 JsonProcessingException）
-            byte[] messageBody = objectMapper.writeValueAsBytes(submission);
+            byte[] messageBody = objectMapper.writeValueAsBytes(judgeInfo);
 
             // 2. 构建消息
             Message message = MessageBuilder
@@ -44,12 +44,12 @@ public class SubmissionProducer {
             // 3. 发送消息（可能抛出 AmqpException 等）
             rabbitTemplate.send("judge", "judge.submit", message);
 
-            logger.debug("消息发送成功, correlationId: {}, submissionId: {}",
-                    correlationId, submission.getId());
+            logger.debug("消息发送成功, correlationId: {}",
+                    correlationId);
 
         } catch (JsonProcessingException e) {
             // 序列化失败
-            logger.error("消息序列化失败: submission={}", submission, e);
+            logger.error("消息序列化失败: judgeInfo={}", judgeInfo, e);
             throw new RuntimeException("消息序列化失败: " + e.getMessage(), e);
 
         } catch (AmqpException e) {

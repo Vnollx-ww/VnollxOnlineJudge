@@ -2,15 +2,11 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.example.vnollxonlinejudge.config.EmailConfig;
 import com.example.vnollxonlinejudge.exception.BusinessException;
-import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.entity.User;
-import com.example.vnollxonlinejudge.producer.SubmissionProducer;
 import com.example.vnollxonlinejudge.service.EmailService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.utils.CaptchaGenerator;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
 import org.springframework.beans.factory.annotation.Autowired;

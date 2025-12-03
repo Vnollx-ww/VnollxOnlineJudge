@@ -8,6 +8,9 @@ public class SubmitCodeDTO {
     private String code;
     private String option;
     private String pid;
+    private String title;
+    private String userName;
+    private String userPenaltyKey;
     private String uname;
     private String cid;
     private String create_time;
