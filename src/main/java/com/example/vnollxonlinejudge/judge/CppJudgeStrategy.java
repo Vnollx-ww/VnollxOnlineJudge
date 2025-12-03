@@ -191,7 +191,6 @@ public class CppJudgeStrategy implements JudgeStrategy {
     }
 
     private String compileCode(String code) {
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -207,7 +206,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
             );
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                RunResult result = response.getBody().get(0);
+                RunResult result = response.getBody().getFirst();
                 if ("Accepted".equals(result.getStatus()) && result.getFileIds() != null) {
                     return result.getFileIds().getA();
                 } else if ("Memory Limit Exceeded".equals(result.getStatus())) {

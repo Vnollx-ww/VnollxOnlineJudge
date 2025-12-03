@@ -43,6 +43,7 @@ public class JudgeServiceImpl implements JudgeService {
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
         tryLock(uid, Long.valueOf(req.getPid()));
+        
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
                 .language(req.getOption())
