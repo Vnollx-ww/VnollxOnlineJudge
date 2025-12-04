@@ -51,7 +51,7 @@ public class JudgeConsumer {
             logger.info("Processing submission: snowflakeId={}, uid={}", judgeInfo.getSnowflakeId(), judgeInfo.getUid());
 
             JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
-            //submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null);
+            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null);
             sendUpdate(judgeInfo, "评测中", null, null, null);
 
 
