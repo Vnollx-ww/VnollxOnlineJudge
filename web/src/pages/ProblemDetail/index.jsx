@@ -112,16 +112,26 @@ const ProblemDetail = () => {
       else if (status === '编译错误') type = 'warning';
       else type = 'error';
 
+      // 构建详细信息
+      let detail = '';
+      if (msg.status === '评测中') {
+        detail = '正在进行评测...';
+      } else {
+        detail = `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`;
+        // 如果有错误信息，追加到详细信息中
+        if (msg.errorInfo) {
+          detail += `\n\n${msg.errorInfo}`;
+        }
+      }
+
       setSubmitResult({
         type,
         message: status,
-        detail: msg.status === '评测中' ? '正在进行评测...' : `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`,
+        detail,
       });
 
       if (status !== '评测中') {
         window.dispatchEvent(new Event('notification-updated'));
-        // 评测结束，重新加载题目信息（更新提交数/通过数）
-        loadProblem();
       }
     }
   }, [currentSnowflakeId]);
@@ -286,7 +296,7 @@ const ProblemDetail = () => {
       if (data.code === 200) {
         // 保存 snowflakeId 以便 WebSocket 过滤消息
         if (data.data.snowflakeId) {
-            setCurrentSnowflakeId(String(data.data.snowflakeId));
+            setCurrentSnowflakeId(data.data.snowflakeId);
         }
         
         const status = '等待评测'; // 初始状态
@@ -611,7 +621,7 @@ const ProblemDetail = () => {
                 <Alert
                   type={submitResult.type}
                   message={`提交结果：${submitResult.message}`}
-                  description={submitResult.detail}
+                  description={<div style={{ whiteSpace: 'pre-wrap' }}>{submitResult.detail}</div>}
                   showIcon
                   closable
                   onClose={() => setSubmitResult(null)}

@@ -39,7 +39,7 @@ public class JudgeConsumer {
         this.judgeStrategyFactory=judgeStrategyFactory;
         this.judgeWebSocketHandler = judgeWebSocketHandler;
     }
-    @RabbitListener(queues = "judgeQueue")
+    @RabbitListener(queues = "submissionQueue")
     public void handleSubmission(Message message)  {
 
         try {
@@ -51,9 +51,8 @@ public class JudgeConsumer {
             logger.info("Processing submission: snowflakeId={}, uid={}", judgeInfo.getSnowflakeId(), judgeInfo.getUid());
 
             JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
-
-            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null);
-            sendUpdate(judgeInfo, "评测中", null, null);
+            //submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null);
+            sendUpdate(judgeInfo, "评测中", null, null, null);
 
 
             RunResult result=strategy.judge(
@@ -63,7 +62,13 @@ public class JudgeConsumer {
                     judgeInfo.getMemory()
             );
             submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),result.getStatus(), result.getRunTime(),result.getMemory());
-            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory());
+            
+            // 获取错误信息（如果有）
+            String errorInfo = null;
+            if (result.getFiles() != null && result.getFiles().getStderr() != null) {
+                errorInfo = result.getFiles().getStderr();
+            }
+            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), errorInfo);
 
         } catch (IOException e) {
             logger.error("消息反序列化失败：",e);
@@ -71,13 +76,14 @@ public class JudgeConsumer {
         }
     }
 
-    private void sendUpdate(JudgeInfo judgeInfo, String status, Long time, Long memory) {
+    private void sendUpdate(JudgeInfo judgeInfo, String status, Long time, Long memory, String errorInfo) {
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("snowflakeId", String.valueOf(judgeInfo.getSnowflakeId())); // Ensure it's a string for JS
             data.put("status", status);
             data.put("time", time);
             data.put("memory", memory);
+            data.put("errorInfo", errorInfo); // 添加错误信息
 
             String json = objectMapper.writeValueAsString(data);
             judgeWebSocketHandler.sendMessageToUser(judgeInfo.getUid(), json);

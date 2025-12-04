@@ -1,5 +1,9 @@
 package com.example.vnollxonlinejudge.websocket;
 
+import com.example.vnollxonlinejudge.service.serviceImpl.JudgeServiceImpl;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -15,7 +19,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 public class JudgeWebSocketHandler extends TextWebSocketHandler {
-
+    private static final Logger logger = LoggerFactory.getLogger(JudgeWebSocketHandler.class);
     // Thread-safe map to store user sessions: uid -> List of sessions (multiple tabs)
     private static final Map<Long, List<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
 
@@ -30,7 +34,7 @@ public class JudgeWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+    public void afterConnectionClosed(@NotNull WebSocketSession session, @NotNull CloseStatus status) throws Exception {
         Long uid = getUidFromSession(session);
         if (uid != null) {
             List<WebSocketSession> sessions = userSessions.get(uid);
@@ -50,9 +54,8 @@ public class JudgeWebSocketHandler extends TextWebSocketHandler {
                 if (session.isOpen()) {
                     try {
                         session.sendMessage(new TextMessage(message));
-                        System.out.println("Sent WebSocket message to user " + uid + ": " + message);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.error(e.getMessage());
                     }
                 }
             }

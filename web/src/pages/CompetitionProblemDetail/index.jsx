@@ -115,10 +115,20 @@ const ProblemDetail = () => {
             else if (status === '编译错误') type = 'warning';
             else type = 'error';
 
+            // 构建详细信息
+            let detail = '';
+            if (msg.status === '评测中') {
+                detail = '正在进行评测...';
+            } else {
+                // 比赛模式：只显示基本信息，不显示测试用例详情
+                detail = `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`;
+                // 不显示 errorInfo，避免泄露测试用例
+            }
+
             setSubmitResult({
                 type,
                 message: status,
-                detail: msg.status === '评测中' ? '正在进行评测...' : `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`,
+                detail,
             });
 
             if (status !== '评测中') {
@@ -321,7 +331,7 @@ const ProblemDetail = () => {
             if (data.code === 200) {
                 // 保存 snowflakeId 以便 WebSocket 过滤消息
                 if (data.data.snowflakeId) {
-                    setCurrentSnowflakeId(String(data.data.snowflakeId));
+                    setCurrentSnowflakeId(data.data.snowflakeId);
                 }
 
                 const status = '等待评测'; // 初始状态
@@ -630,7 +640,7 @@ const ProblemDetail = () => {
                                 <Alert
                                     type={submitResult.type}
                                     message={`提交结果：${submitResult.message}`}
-                                    description={submitResult.detail}
+                                    description={<div style={{ whiteSpace: 'pre-wrap' }}>{submitResult.detail}</div>}
                                     showIcon
                                     closable
                                     onClose={() => setSubmitResult(null)}

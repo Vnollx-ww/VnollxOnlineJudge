@@ -9,6 +9,7 @@ import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,14 +45,19 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
 
     @Override
     public void createRecord(Long cid, Long uid, String name) {
-        CompetitionUser record = new CompetitionUser();
-        record.setPassCount(0);
-        record.setName(name);
-        record.setPenaltyTime(0);
-        record.setCompetitionId(cid);
-        record.setUserId(uid);
-        save(record);
-        competitionService.addNumber(cid);
+        try {
+            CompetitionUser record = new CompetitionUser();
+            record.setPassCount(0);
+            record.setName(name);
+            record.setPenaltyTime(0);
+            record.setCompetitionId(cid);
+            record.setUserId(uid);
+            save(record);
+            competitionService.addNumber(cid);
+        } catch (DuplicateKeyException e) {
+            // 记录已存在，忽略异常（用户之前已参加过该比赛）
+            // 这是正常情况，不需要抛出异常
+        }
     }
 
     @Override

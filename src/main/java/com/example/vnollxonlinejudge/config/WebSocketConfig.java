@@ -21,6 +21,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(judgeWebSocketHandler, "/ws/judge")
-                .setAllowedOrigins("*"); // Allow cross-origin for development
+                .setAllowedOriginPatterns("*"); // Allow cross-origin for development using patterns
     }
 }
