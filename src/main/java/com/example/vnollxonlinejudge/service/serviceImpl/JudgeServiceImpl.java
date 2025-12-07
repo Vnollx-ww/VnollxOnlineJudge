@@ -69,8 +69,8 @@ public class JudgeServiceImpl implements JudgeService {
                 .createTime(judgeInfo.getCreateTime())
                 .userName(judgeInfo.getUname())
                 .status("等待评测")
-                .time(0L) // Initial time
-                .memory(0L) // Initial memory
+                .time(0L) // 初始时间
+                .memory(0L) // 初始内存
                 .snowflakeId(snowflakeId)
                 .build();
 

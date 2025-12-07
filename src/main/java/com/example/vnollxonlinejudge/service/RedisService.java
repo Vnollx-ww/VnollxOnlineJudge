@@ -6,9 +6,6 @@ import java.util.*;
 
 
 public interface RedisService {
-    void cacheSubmission(String userName, String title, String code,
-                         String result, String createTime, String language,
-                         Long uid, Long pid, Long time, Long memory,Long cid);
     void setKey(String key,String value,Long seconds);
     String getValueByKey(String key);
     Boolean checkKeyValue(String key,String value);

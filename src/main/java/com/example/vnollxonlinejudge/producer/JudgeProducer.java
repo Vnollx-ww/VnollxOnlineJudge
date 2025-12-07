@@ -53,7 +53,7 @@ public class JudgeProducer {
             throw new RuntimeException("消息序列化失败: " + e.getMessage(), e);
 
         } catch (AmqpException e) {
-            // RabbitMQ 相关的异常
+            // RabbitMQ 发送异常
             logger.error("消息发送到RabbitMQ失败: 交换机=judge, 路由键=judge.submit, 消息Id={}",
                     correlationId, e);
             throw new RuntimeException("消息发送失败: " + e.getMessage(), e);

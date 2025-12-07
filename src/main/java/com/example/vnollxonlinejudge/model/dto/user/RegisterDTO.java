@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 public class RegisterDTO {
-    // getters and setters
+    // 属性定义
     @NotBlank(message = "用户名不能为空")
     @Size(min = 2, max = 20, message = "用户名长度必须在2-20位之间")
     private String name;

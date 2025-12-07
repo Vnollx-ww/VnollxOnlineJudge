@@ -30,6 +30,8 @@ public class PythonJudgeStrategy implements JudgeStrategy {
     private final RestTemplate restTemplate;
     private final String RUN_URL;
     private static final Logger logger = LoggerFactory.getLogger(PythonJudgeStrategy.class);
+    private static final int BATCH_SIZE = 20; // 每批最多处理的测试用例数
+
     @Autowired
     public PythonJudgeStrategy(
             TestCaseCacheService testCaseCacheService,
@@ -87,25 +89,30 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                 testCases =testCaseCacheService.getTestCases(zipFilePath);
             }
 
-            // 3. 执行测试用例
+            // 批量执行测试用例
             RunResult finalResult = new RunResult();
-            finalResult.setStatus("Accepted"); // 默认状态
+            finalResult.setStatus("Accepted");
             finalResult.setFiles(new RunResult.Files());
             finalResult.getFiles().setStdout("");
             finalResult.getFiles().setStderr("");
+            finalResult.setRunTime(0L);
+            finalResult.setTime(0L);
+            finalResult.setMemory(0L);
             finalResult.setTestCount(testCases.size());
             finalResult.setPassCount(0);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            for (String[] testCase : testCases) {
-                String input = testCase[0];
-                String jsonPayload = buildRunPayload(submittedCode, input,
-                        timeLimitMs * 1000000L,
-                        memoryLimitMB * 1024 * 1024);
+            // 分批处理测试用例
+            for (int batchStart = 0; batchStart < testCases.size(); batchStart += BATCH_SIZE) {
+                int batchEnd = Math.min(batchStart + BATCH_SIZE, testCases.size());
+                List<String[]> batch = testCases.subList(batchStart, batchEnd);
+
+                // 构建批量请求
+                String jsonPayload = buildBatchRunPayload(submittedCode, batch, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
                 HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
 
-                // 发送执行请求
+                // 一次请求执行整批测试用例
                 ResponseEntity<List<RunResult>> response = restTemplate.exchange(
                         RUN_URL,
                         HttpMethod.POST,
@@ -113,20 +120,36 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                         new ParameterizedTypeReference<List<RunResult>>() {}
                 );
 
-                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    RunResult result = response.getBody().get(0);
+                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                    finalResult.setStatus("判题错误");
+                    logger.error("批量判题请求失败");
+                    finalResult.getFiles().setStderr("Failed to execute batch test cases");
+                    return finalResult;
+                }
 
-                    // 记录最大时间和内存使用
+                List<RunResult> results = response.getBody();
+
+                // 处理批量返回的结果
+                for (int i = 0; i < results.size(); i++) {
+                    RunResult result = results.get(i);
+                    String[] testCase = batch.get(i);
+
+                    // 更新最大时间和内存
                     finalResult.setTime(Math.max(finalResult.getTime(), result.getTime()));
                     finalResult.setMemory(Math.max(finalResult.getMemory(), result.getMemory()));
+                    finalResult.setRunTime(Math.max(finalResult.getRunTime(), result.getRunTime()));
 
+                    // 检查运行状态
                     if (!"Accepted".equals(result.getStatus())) {
                         finalResult.setStatus(result.getStatus());
                         finalResult.setExitStatus(result.getExitStatus());
-                        finalResult.getFiles().setStderr(result.getFiles().getStderr());
+                        if (result.getFiles() != null) {
+                            finalResult.getFiles().setStderr(result.getFiles().getStderr());
+                        }
                         return finalResult;
-                    };
-                    // 验证输出结果
+                    }
+
+                    // 检验输出结果
                     try {
                         String expectedOutput = testCase[1].trim();
                         String actualOutput = result.getFiles().getStdout().trim();
@@ -134,9 +157,9 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                         if (!expectedOutput.equals(actualOutput)) {
                             String errorMessage = String.format(
                                     "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
-                                    truncateString(testCase[0], 100),      // 输入限制100
-                                    truncateString(expectedOutput, 200),   // 输出限制200
-                                    truncateString(actualOutput, 200)      // 输出限制200
+                                    truncateString(testCase[0], 100),
+                                    truncateString(expectedOutput, 200),
+                                    truncateString(actualOutput, 200)
                             );
                             finalResult.setStatus("答案错误");
                             finalResult.getFiles().setStderr(errorMessage);
@@ -147,12 +170,10 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                         finalResult.getFiles().setStderr("输出比较异常: " + e.getMessage());
                         return finalResult;
                     }
-                } else {
-                    finalResult.setStatus("判题错误");
-                    logger.error("判题服务响应异常: {}", response.getStatusCode());
                 }
             }
-            finalResult.setPassCount(finalResult.getPassCount()+1);
+
+            finalResult.setPassCount(testCases.size());
             return finalResult;
 
         } catch (Exception e) {
@@ -165,28 +186,38 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             return result;
         }
     }
+
     private String truncateString(String str, int maxLength) {
         if (str == null) return "null";
         if (str.length() <= maxLength) return str;
         return str.substring(0, maxLength) + "...(截断，总长度:" + str.length() + ")";
     }
-    private String buildRunPayload(String code, String input, Long cpuLimit, Long memoryLimit) {
-        // 转义特殊字符
-        String escapedCode = code.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
 
-        String escapedInput = input.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
+    /**
+     * 构建批量运行请求的 JSON payload
+     * go-judge 支持在一个请求中包含多个 cmd，会并行执行
+     */
+    private String buildBatchRunPayload(String code, List<String[]> testCases, Long cpuLimit, Long memoryLimit) {
+        String escapedCode = escapeString(code);
+        StringBuilder cmds = new StringBuilder();
+        for (int i = 0; i < testCases.size(); i++) {
+            if (i > 0) {
+                cmds.append(",");
+            }
+            String input = testCases.get(i)[0];
+            cmds.append(buildSingleCmd(escapedCode, input, cpuLimit, memoryLimit));
+        }
+        return "{\"cmd\": [" + cmds + "]}";
+    }
+
+    /**
+     * 构建单个测试用例的 cmd 对象
+     */
+    private String buildSingleCmd(String escapedCode, String input, Long cpuLimit, Long memoryLimit) {
+        String escapedInput = escapeString(input);
 
         return String.format("""
-        {
-            "cmd": [{
+            {
                 "args": ["/usr/bin/python3", "main.py"],
                 "env": ["PATH=/usr/bin:/bin"],
                 "files": [{
@@ -207,9 +238,17 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                     }
                 },
                 "copyOut": ["stdout", "stderr"]
-            }]
-        }
-        """, escapedInput, cpuLimit, memoryLimit, escapedCode);
+            }""", escapedInput, cpuLimit, memoryLimit, escapedCode);
     }
 
+    /**
+     * 转义特殊字符
+     */
+    private String escapeString(String str) {
+        return str.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\t", "\\t");
+    }
 }

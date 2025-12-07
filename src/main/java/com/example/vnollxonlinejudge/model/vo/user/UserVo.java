@@ -18,7 +18,7 @@ public class UserVo {
     private String avatar;
     private String signature;
     private LocalDateTime lastLoginTime;
-    // constructors
+    // 构造函数
     public UserVo() {}
 
     public UserVo(User user) {

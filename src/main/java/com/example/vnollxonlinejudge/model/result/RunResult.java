@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 public class RunResult {
-    // getter 和 setter 方法
+    // 属性定义
     private String status;
     private int exitStatus;
     private Long time=0L;
@@ -51,8 +51,13 @@ public class RunResult {
     // 内部类：映射 fileIds 字段
     @Getter
     public static class FileIds {
-        private String a;  // 编译后的二进制文件 id
+        private String a;  // C++ 编译后的二进制文件 id
+
+        @JsonProperty("Main.class")
+        private String mainClass;  // Java 编译后的类文件 id
 
         public void setA(String a) { this.a = a; }
+
+        public void setMainClass(String mainClass) { this.mainClass = mainClass; }
     }
 }

@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Component
 public class JudgeWebSocketHandler extends TextWebSocketHandler {
     private static final Logger logger = LoggerFactory.getLogger(JudgeWebSocketHandler.class);
-    // Thread-safe map to store user sessions: uid -> List of sessions (multiple tabs)
+    // 线程安全的用户会话映射: uid -> 会话列表（支持多标签页）
     private static final Map<Long, List<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
 
     @Override

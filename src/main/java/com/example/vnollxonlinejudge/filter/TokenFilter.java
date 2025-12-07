@@ -109,14 +109,14 @@ public class TokenFilter implements Filter {
                 return;
             }
 
-            // Validate Token
+            // 验证 Token
             if (!JwtToken.validateToken(token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().println("无效的Token");
                 return;
             }
 
-            // Parse user ID
+            // 解析用户 ID
             String userId = JwtToken.getUserIdFromToken(token);
             String identity= JwtToken.getUserIdentityFromToken(token);
 

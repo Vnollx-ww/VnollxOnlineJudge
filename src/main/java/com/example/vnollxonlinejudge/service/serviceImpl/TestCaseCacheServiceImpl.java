@@ -72,25 +72,25 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
      * 从MinIO下载并解析测试用例
      */
     private List<String[]> downloadAndParseTestCases(String zipFilePath) throws Exception {
-        // Download test cases zip from MinIO
+        // 从 MinIO 下载测试用例压缩包
         InputStream zipStream = minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket(MINIO_BUCKET_NAME)
                         .object(zipFilePath)
                         .build());
 
-        // Save to temp file
+        // 保存到临时文件
         Path tempZipPath = Files.createTempFile("testcases", ".zip");
         try {
             Files.copy(zipStream, tempZipPath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Read test cases
+            // 读取测试用例
             List<String[]> testCases = readTestCasesFromZip(tempZipPath.toString());
             logger.info("成功从MinIO下载并解析测试用例: {}, 共{}个测试点", zipFilePath, testCases.size());
 
             return testCases;
         } finally {
-            // Clean up temp file
+            // 清理临时文件
             try {
                 Files.deleteIfExists(tempZipPath);
             } catch (Exception e) {

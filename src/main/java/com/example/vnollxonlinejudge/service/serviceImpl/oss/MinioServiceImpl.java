@@ -34,7 +34,7 @@ public class MinioServiceImpl implements OssService {
     @Override
     public void uploadFile(String fileUrl,MultipartFile testCaseFile) throws IOException {
         try {
-            // MinIO的putObject会自动覆盖同名文件，无需手动检查删除
+            // MinIO 的 putObject 会自动覆盖同名文件，无需手动检查删除
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucket)
                     .object(fileUrl)
