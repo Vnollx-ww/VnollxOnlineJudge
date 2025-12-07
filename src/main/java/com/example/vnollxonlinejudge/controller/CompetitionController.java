@@ -29,19 +29,6 @@ public class CompetitionController {
         this.competitionService = competitionService;
         this.problemService = problemService;
     }
-
-    @GetMapping("/{id}")
-    public ModelAndView competitionDetail(@PathVariable Long id) {
-        CompetitionVo competition = competitionService.getCompetitionById(id);
-        ModelAndView modelAndView = new ModelAndView();
-        if (competition == null) {
-            modelAndView.setViewName("error/404");
-        } else {
-            modelAndView.addObject("competition",competition);
-            modelAndView.setViewName("competition");
-        }
-        return modelAndView;
-    }
     @GetMapping("/ranklist/{id}")
     public ModelAndView competitionRankListDetail(@PathVariable Long id) {
         CompetitionVo competition = competitionService.getCompetitionById(id);

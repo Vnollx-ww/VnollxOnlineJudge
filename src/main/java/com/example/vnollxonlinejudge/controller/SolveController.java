@@ -29,42 +29,6 @@ public class SolveController {
         this.problemService = problemService;
         this.solveService = solveService;
     }
-    @GetMapping("/{id}")
-    public ModelAndView solveDetail(@PathVariable Long id) {
-        SolveVo solve= solveService.getSolve(id);
-        ModelAndView modelAndView = new ModelAndView();
-        if ( solve == null) {
-            modelAndView.setViewName("error/404");
-        } else {
-            modelAndView.addObject("solve",  solve);
-            modelAndView.setViewName("solve");
-        }
-        return modelAndView;
-    }
-    @GetMapping("/list/{id}")
-    public ModelAndView solveListDetail(@PathVariable Long id) {
-        ProblemVo problem = problemService.getProblemInfo(id,0L,null);
-        ModelAndView modelAndView = new ModelAndView();
-        if (problem == null) {
-            modelAndView.setViewName("error/404");
-        } else {
-            modelAndView.addObject("solvelist", problem );
-            modelAndView.setViewName("solvelist");
-        }
-        return modelAndView;
-    }
-    @GetMapping("/publish/{id}")
-    public ModelAndView solvePublishDetail(@PathVariable Long id) {
-        ProblemVo problem = problemService.getProblemInfo(id,0L,null);
-        ModelAndView modelAndView = new ModelAndView();
-        if (problem  == null) {
-            modelAndView.setViewName("error/404");
-        } else {
-            modelAndView.addObject("problem", problem );
-            modelAndView.setViewName("publishSolution");
-        }
-        return modelAndView;
-    }
     @PostMapping("/create")
     public Result<Void> createSolve(@RequestBody CreateSolveDTO req){
         Long userId=UserContextHolder.getCurrentUserId();

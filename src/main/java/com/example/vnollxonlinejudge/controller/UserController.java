@@ -27,15 +27,7 @@ public class UserController {
     public UserController(UserService userService,UserTagService userTagService) {
 
         this.userService = userService;
-        this.userTagService=userTagService;
-    }
-    @GetMapping("/{id}")
-    public ModelAndView userDetail(@PathVariable Long id) {
-        UserVo data=userService.getUserById(id);
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.addObject("user", data);
-        modelAndView.setViewName("user");
-        return modelAndView;
+        this.userTagService = userTagService;
     }
     @PostMapping("/login")
     public Result<String> login(@RequestBody LoginDTO request){

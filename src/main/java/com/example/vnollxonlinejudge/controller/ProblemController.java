@@ -34,22 +34,6 @@ public class ProblemController {
         this.bloomFilter = bloomFilter;
         this.problemService = problemService;
     }
-
-    @GetMapping("/{id}")
-    public ModelAndView problemDetail(@PathVariable Long id) {
-        if (!bloomFilter.contains(String.valueOf(id))){
-            throw new BusinessException("题目不存在");
-        }
-        ModelAndView modelAndView = new ModelAndView();
-        ProblemVo problem = problemService.getProblemInfo(id, 0L,null);
-        if (problem == null) {
-            modelAndView.setViewName("error/404");
-        } else {
-            modelAndView.addObject("problem", problem);
-            modelAndView.setViewName("problem");
-        }
-        return modelAndView;
-    }
     @GetMapping("/get")
     public Result<ProblemVo> getProblemById(@RequestParam(required = false) String id,@RequestParam(required = false) String name){
         Long pid=null;
