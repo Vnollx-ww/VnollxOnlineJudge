@@ -15,8 +15,7 @@ export const useJudgeWebSocket = (onMessage) => {
     if (!id) return;
 
     // 建立 WebSocket 连接
-    // 使用当前 host (例如 localhost:3000)，通过 Vite 代理转发到后端
-    // 这样可以避免端口不一致、CORS 等问题
+    // 通过当前域名连接，由 Nginx 代理到后端
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/judge?uid=${id}`;
     

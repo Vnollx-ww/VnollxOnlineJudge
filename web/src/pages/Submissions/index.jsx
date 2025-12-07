@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from 'antd';
-import Editor from '@monaco-editor/react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   Table,
   Input,
@@ -397,18 +398,15 @@ const Submissions = () => {
             footer={null}
             width="80%"
         >
-            <div style={{ height: '70vh' }}>
-                <Editor
-                    height="100%"
-                    language={currentLang.toLowerCase()}
-                    theme="vs-dark"
-                    value={currentCode}
-                    options={{
-                        readOnly: true,
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                    }}
-                />
+            <div style={{ maxHeight: '70vh', overflow: 'auto' }}>
+                <SyntaxHighlighter
+                    language={currentLang.toLowerCase() === 'c++' ? 'cpp' : currentLang.toLowerCase()}
+                    style={vscDarkPlus}
+                    showLineNumbers
+                    customStyle={{ margin: 0, borderRadius: 8, fontSize: 14 }}
+                >
+                    {currentCode}
+                </SyntaxHighlighter>
             </div>
         </Modal>
 

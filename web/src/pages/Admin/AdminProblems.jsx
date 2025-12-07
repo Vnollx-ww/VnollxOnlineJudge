@@ -293,7 +293,7 @@ const AdminProblems = () => {
           <Button
             type="link"
             icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
+            onClick={() => showModal(record)}
           >
             编辑
           </Button>

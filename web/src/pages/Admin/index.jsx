@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
-import { Layout, Menu, Typography, Avatar, message, Spin } from 'antd';
+import { Layout, Menu, Typography, Avatar, message, Spin, Button } from 'antd';
 import {
   UserOutlined,
   QuestionCircleOutlined,
   BulbOutlined,
   TrophyOutlined,
   SafetyOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
@@ -192,7 +193,14 @@ const Admin = () => {
             Vnollx在线评测系统 - 管理后台
           </Title>
           <div className="admin-user-info">
-            <Avatar icon={<UserOutlined />} />
+            <Button 
+              type="primary" 
+              icon={<HomeOutlined />} 
+              onClick={() => navigate('/')}
+            >
+              返回主页
+            </Button>
+            <Avatar icon={<UserOutlined />} style={{ marginLeft: 16 }} />
             <span style={{ marginLeft: 8 }}>管理员</span>
           </div>
         </Header>
