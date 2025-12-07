@@ -32,6 +32,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
     private static final String WRONG_ANSWER="答案错误";
     private static final String ACCEPTED="答案正确";
+    private static final int BATCH_SIZE = 20; // 每批最多处理的测试用例数
 
     @Autowired
     public CppJudgeStrategy(
@@ -102,7 +103,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 return standardError("判题错误，测试用例为空","无法获取测试用例");
             }
 
-            // 3. Execute test cases
+            // 3. Execute test cases in batches
             RunResult finalResult = new RunResult();
             finalResult.setStatus("Accepted");
             finalResult.setFiles(new RunResult.Files());
@@ -116,12 +117,23 @@ public class CppJudgeStrategy implements JudgeStrategy {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            for (String[] testCase : testCases) {
-                String input = testCase[0] + " " + testCase[1];
-                String jsonPayload = buildRunPayload(input, binaryFileId, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
+            // 分批处理测试用例
+            int totalBatches = (int) Math.ceil((double) testCases.size() / BATCH_SIZE);
+            //logger.info("开始批量评测: 共 {} 个测试用例, 分 {} 批处理", testCases.size(), totalBatches);
+
+            for (int batchStart = 0; batchStart < testCases.size(); batchStart += BATCH_SIZE) {
+                int batchEnd = Math.min(batchStart + BATCH_SIZE, testCases.size());
+                List<String[]> batch = testCases.subList(batchStart, batchEnd);
+                int currentBatch = batchStart / BATCH_SIZE + 1;
+
+                //logger.info("执行第 {}/{} 批, 包含 {} 个测试用例", currentBatch, totalBatches, batch.size());
+
+                // 构建批量请求
+                String jsonPayload = buildBatchRunPayload(batch, binaryFileId, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
                 HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
 
-                // 使用连接池发送请求
+                long startTime = System.currentTimeMillis();
+                // 一次请求执行整批测试用例
                 ResponseEntity<List<RunResult>> response = restTemplate.exchange(
                         RUN_URL,
                         HttpMethod.POST,
@@ -129,22 +141,38 @@ public class CppJudgeStrategy implements JudgeStrategy {
                         new ParameterizedTypeReference<List<RunResult>>() {}
                 );
 
-                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                    RunResult result = response.getBody().get(0);
-                    // 计算时间和内存
+                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                    finalResult.setStatus("判题错误");
+                    logger.error("批量判题请求失败");
+                    finalResult.getFiles().setStderr("Failed to execute batch test cases");
+                    return finalResult;
+                }
+
+                List<RunResult> results = response.getBody();
+                long elapsed = System.currentTimeMillis() - startTime;
+                //logger.info("第 {} 批执行完成, 耗时 {}ms, 返回 {} 个结果", currentBatch, elapsed, results.size());
+
+                // 处理批量返回的结果
+                for (int i = 0; i < results.size(); i++) {
+                    RunResult result = results.get(i);
+                    String[] testCase = batch.get(i);
+
+                    // 更新最大时间和内存
                     finalResult.setTime(Math.max(finalResult.getTime(), result.getTime()));
                     finalResult.setMemory(Math.max(finalResult.getMemory(), result.getMemory()));
                     finalResult.setRunTime(Math.max(finalResult.getRunTime(), result.getRunTime()));
 
+                    // 检查运行状态
                     if (!"Accepted".equals(result.getStatus())) {
-                        if (finalResult.getStatus().equals("Signalled")){
+                        if ("Signalled".equals(result.getStatus())) {
                             finalResult.setMemory(memoryLimitMB * 1024 * 1024);
                         }
                         finalResult.setStatus(result.getStatus());
+                        deleteBinaryFile(binaryFileId);
                         return finalResult;
                     }
 
-                    // 检验结果
+                    // 检验输出结果
                     try {
                         String expectedOutput = testCase[1];
                         String actualOutput = result.getFiles().getStdout().trim();
@@ -152,30 +180,28 @@ public class CppJudgeStrategy implements JudgeStrategy {
                         if (!expectedOutput.equals(actualOutput)) {
                             String errorMessage = String.format(
                                     "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
-                                    truncateString(testCase[0], 100),      // 输入限制100
-                                    truncateString(expectedOutput, 200),   // 输出限制200
-                                    truncateString(actualOutput, 200)      // 输出限制200
+                                    truncateString(testCase[0], 100),
+                                    truncateString(expectedOutput, 200),
+                                    truncateString(actualOutput, 200)
                             );
                             finalResult.setStatus(WRONG_ANSWER);
                             finalResult.getFiles().setStderr(errorMessage);
+                            deleteBinaryFile(binaryFileId);
                             return finalResult;
                         }
                     } catch (Exception e) {
                         finalResult.setStatus(WRONG_ANSWER);
-                        finalResult.getFiles().setStderr(finalResult.getFiles().getStderr() +
-                                "比较输出出错: " + e.getMessage() + "\n");
+                        finalResult.getFiles().setStderr("比较输出出错: " + e.getMessage());
+                        deleteBinaryFile(binaryFileId);
                         return finalResult;
                     }
-                } else {
-                    finalResult.setStatus("判题错误");
-                    logger.error("判题过程中出错: ");
-                    finalResult.getFiles().setStderr("Failed to execute test case");
                 }
             }
 
             // 4. Delete compiled binary
             deleteBinaryFile(binaryFileId);
-            finalResult.setPassCount(finalResult.getPassCount()+1);
+            finalResult.setPassCount(testCases.size());
+            logger.info("评测完成: 全部 {} 个测试用例通过", testCases.size());
             return finalResult;
 
         } catch (Exception e) {
@@ -260,16 +286,34 @@ public class CppJudgeStrategy implements JudgeStrategy {
     """, escapedCode);
     }
 
-    private String buildRunPayload(String input, String fileId, Long cpuLimit, Long memoryLimit) {
-        input = input.replace("\\", "\\\\")
+    /**
+     * 构建批量运行请求的 JSON payload
+     * go-judge 支持在一个请求中包含多个 cmd，会并行执行
+     */
+    private String buildBatchRunPayload(List<String[]> testCases, String fileId, Long cpuLimit, Long memoryLimit) {
+        StringBuilder cmds = new StringBuilder();
+        for (int i = 0; i < testCases.size(); i++) {
+            if (i > 0) {
+                cmds.append(",");
+            }
+            String input = testCases.get(i)[0];
+            cmds.append(buildSingleCmd(input, fileId, cpuLimit, memoryLimit));
+        }
+        return "{\"cmd\": [" + cmds + "]}";
+    }
+
+    /**
+     * 构建单个测试用例的 cmd 对象
+     */
+    private String buildSingleCmd(String input, String fileId, Long cpuLimit, Long memoryLimit) {
+        String escapedInput = input.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\r", "\\r")
                 .replace("\n", "\\n")
                 .replace("\t", "\\t");
 
         return String.format("""
-        {
-            "cmd": [{
+            {
                 "args": ["a"],
                 "env": ["PATH=/usr/bin:/bin"],
                 "files": [{
@@ -289,9 +333,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
                         "fileId": "%s"
                     }
                 }
-            }]
-        }
-        """, input, cpuLimit, memoryLimit, fileId);
+            }""", escapedInput, cpuLimit, memoryLimit, fileId);
     }
 
     private void deleteBinaryFile(String fileId) {

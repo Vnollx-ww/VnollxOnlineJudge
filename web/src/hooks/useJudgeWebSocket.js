@@ -4,6 +4,8 @@ import { getUserInfo } from '../utils/auth';
 export const useJudgeWebSocket = (onMessage) => {
   const wsRef = useRef(null);
   const onMessageRef = useRef(onMessage);
+  const reconnectTimerRef = useRef(null);
+  const isUnmountedRef = useRef(false);
   const { id } = getUserInfo();
 
   // Keep the latest onMessage handler in a ref
@@ -14,50 +16,75 @@ export const useJudgeWebSocket = (onMessage) => {
   useEffect(() => {
     if (!id) return;
 
-    // 建立 WebSocket 连接
-    // 通过当前域名连接，由 Nginx 代理到后端
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/judge?uid=${id}`;
-    
-    // 防止重复连接
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
+    // 用局部变量控制当前 effect 的生命周期
+    let isCancelled = false;
+    let currentWs = null;
+    let reconnectTimer = null;
 
-    const ws = new WebSocket(wsUrl);
+    const connect = () => {
+      if (isCancelled) return;
 
-    ws.onopen = () => {
-      // WebSocket 连接成功
-    };
+      // 建立 WebSocket 连接
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/judge?uid=${id}`;
+      
+      const ws = new WebSocket(wsUrl);
+      currentWs = ws;
+      wsRef.current = ws;
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (onMessageRef.current) {
-          onMessageRef.current(data);
+      ws.onopen = () => {
+        if (!isCancelled) {
+          console.log('WebSocket 连接成功');
         }
-      } catch (err) {
-        console.error('WebSocket message parse error:', err);
-      }
+      };
+
+      ws.onmessage = (event) => {
+        if (isCancelled) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (onMessageRef.current) {
+            onMessageRef.current(data);
+          }
+        } catch (err) {
+          console.error('WebSocket message parse error:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        if (isCancelled) return;
+        console.log('WebSocket 连接关闭');
+        wsRef.current = null;
+        // 断线重连：3秒后重试
+        reconnectTimer = setTimeout(() => {
+          console.log('WebSocket 尝试重连...');
+          connect();
+        }, 3000);
+      };
+
+      ws.onerror = () => {
+        if (!isCancelled) {
+          ws.close();
+        }
+      };
     };
 
-    ws.onclose = () => {
-      // WebSocket 连接关闭
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    wsRef.current = ws;
+    connect();
 
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      isCancelled = true;
+      // 清除重连定时器
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
       }
+      // 关闭连接
+      if (currentWs) {
+        if (currentWs.readyState === WebSocket.CONNECTING || currentWs.readyState === WebSocket.OPEN) {
+          currentWs.close();
+        }
+      }
+      wsRef.current = null;
     };
-  }, [id]); // 只在用户ID变化时重新连接
+  }, [id]);
 
   return wsRef.current;
 };

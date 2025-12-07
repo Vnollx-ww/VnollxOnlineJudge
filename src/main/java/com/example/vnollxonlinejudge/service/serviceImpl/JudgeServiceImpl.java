@@ -78,6 +78,7 @@ public class JudgeServiceImpl implements JudgeService {
         try {
             int priority = 1;
             judgeProducer.sendJudge(priority, judgeInfo);
+            logger.info("消息发送到MQ成功: snowflakeId={}, uid={}, pid={}", snowflakeId, uid, req.getPid());
         } catch (Exception e) {
             logger.error("发送提交记录消息到MQ失败： judgeInfo={}, error=", judgeInfo, e);
             // 可以在这里接入监控告警，让开发者知道MQ出了问题

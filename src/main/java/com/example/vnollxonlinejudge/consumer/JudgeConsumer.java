@@ -69,6 +69,7 @@ public class JudgeConsumer {
                 errorInfo = result.getFiles().getStderr();
             }
             sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), errorInfo);
+            logger.info("评测完成: snowflakeId={}", judgeInfo.getSnowflakeId());
 
         } catch (IOException e) {
             logger.error("消息反序列化失败：",e);

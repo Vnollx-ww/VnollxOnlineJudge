@@ -107,7 +107,8 @@ const ProblemDetail = () => {
     const userInfo = getUserInfo();
 
     const handleWebSocketMessage = useCallback((msg) => {
-        if (msg && msg.snowflakeId === currentSnowflakeId) {
+        // 使用字符串比较，避免类型不匹配
+        if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
             const status = msg.status || '未知状态';
             let type = 'info';
             if (status === '答案正确') type = 'success';

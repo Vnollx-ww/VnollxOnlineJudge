@@ -24,10 +24,11 @@ public class JudgeWebSocketHandler extends TextWebSocketHandler {
     private static final Map<Long, List<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+    public void afterConnectionEstablished(@NotNull WebSocketSession session) throws Exception {
         Long uid = getUidFromSession(session);
         if (uid != null) {
             userSessions.computeIfAbsent(uid, k -> new CopyOnWriteArrayList<>()).add(session);
+            //logger.info("WebSocket 连接建立: uid={}, 当前连接数={}", uid, userSessions.get(uid).size());
         } else {
             session.close(CloseStatus.BAD_DATA);
         }
@@ -40,27 +41,32 @@ public class JudgeWebSocketHandler extends TextWebSocketHandler {
             List<WebSocketSession> sessions = userSessions.get(uid);
             if (sessions != null) {
                 sessions.remove(session);
+                int remaining = sessions.size();
                 if (sessions.isEmpty()) {
                     userSessions.remove(uid);
                 }
+                //logger.info("WebSocket 连接关闭: uid={}, 剩余连接数={}, 关闭原因={}", uid, remaining, status);
             }
         }
     }
 
     public void sendMessageToUser(Long uid, String message) {
         List<WebSocketSession> sessions = userSessions.get(uid);
-        if (sessions != null) {
+        if (sessions != null && !sessions.isEmpty()) {
+            int sentCount = 0;
             for (WebSocketSession session : sessions) {
                 if (session.isOpen()) {
                     try {
                         session.sendMessage(new TextMessage(message));
+                        sentCount++;
                     } catch (IOException e) {
-                        logger.error(e.getMessage());
+                        logger.error("发送消息失败: {}", e.getMessage());
                     }
                 }
             }
+            logger.info("WebSocket 消息已发送: uid={}, 发送到 {} 个连接", uid, sentCount);
         } else {
-            System.out.println("No active WebSocket session for user " + uid);
+            logger.warn("WebSocket 发送失败: uid={} 无活跃连接", uid);
         }
     }
 

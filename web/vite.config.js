@@ -45,18 +45,18 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      // WebSocket 代理 - 必须单独配置，不能走 bypass
+      '/ws': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        ws: true,
+      },
       // 将所有API请求转发到后端8080端口
       '/': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        ws: true, // 开启 WebSocket 代理
         bypass(req) {
           const path = req.url?.split('?')[0] || ''; // 去掉查询参数
-          
-          // WebSocket 连接必须通过代理，不拦截
-          if (path.startsWith('/ws/')) {
-            return null; // 强制代理
-          }
           
           // 静态资源扩展名列表
           const staticExtensions = ['.html', '.js', '.css', '.json', '.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.map'];

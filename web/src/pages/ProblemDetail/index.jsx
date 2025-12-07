@@ -104,7 +104,9 @@ const ProblemDetail = () => {
   const userInfo = getUserInfo();
 
   const handleWebSocketMessage = useCallback((msg) => {
-    if (msg && msg.snowflakeId === currentSnowflakeId) {
+    console.log('ProblemDetail 收到 WebSocket:', msg, 'currentSnowflakeId:', currentSnowflakeId);
+    // 使用字符串比较，避免类型不匹配
+    if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
       const status = msg.status || '未知状态';
       let type = 'info';
       if (status === '答案正确') type = 'success';
@@ -274,6 +276,7 @@ const ProblemDetail = () => {
   };
 
   const handleSubmitCode = async () => {
+    console.log('handleSubmitCode 被调用');
     if (!code.trim()) {
       message.warning('请先输入代码');
       return;
@@ -296,6 +299,7 @@ const ProblemDetail = () => {
       if (data.code === 200) {
         // 保存 snowflakeId 以便 WebSocket 过滤消息
         if (data.data.snowflakeId) {
+            console.log('提交成功，设置 snowflakeId:', data.data.snowflakeId);
             setCurrentSnowflakeId(data.data.snowflakeId);
         }
         

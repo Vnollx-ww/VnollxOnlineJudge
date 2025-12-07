@@ -50,9 +50,13 @@ const Submissions = () => {
       return;
     }
     
+    console.log('收到 WebSocket 消息:', msg);
+    
     setSubmissions((prev) => {
       return prev.map((item) => {
-        if (item.snowflakeId === msg.snowflakeId) {
+        // 使用字符串比较，避免类型不匹配问题
+        if (String(item.snowflakeId) === String(msg.snowflakeId)) {
+          console.log('匹配到提交记录，更新状态:', msg.status);
           return {
             ...item,
             status: msg.status,
