@@ -233,6 +233,11 @@
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.genai</groupId>
+            <artifactId>google-genai</artifactId>
+            <version>0.7.0</version>
+        </dependency>
 </dependencies>
 <build>
     <plugins>
