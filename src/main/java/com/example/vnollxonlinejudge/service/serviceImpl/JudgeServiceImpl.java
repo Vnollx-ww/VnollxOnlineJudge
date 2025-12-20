@@ -74,7 +74,7 @@ public class JudgeServiceImpl implements JudgeService {
                 .snowflakeId(snowflakeId)
                 .build();
 
-        submissionService.processSubmission(submission);
+        submissionService.addSubmission(submission);
         try {
             int priority = 1;
             judgeProducer.sendJudge(priority, judgeInfo);
