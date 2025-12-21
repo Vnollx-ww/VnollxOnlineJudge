@@ -323,7 +323,7 @@ const Submissions = () => {
         <div className="filter-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <Space.Compact style={{ width: 'auto' }}>
             <Input
-              placeholder="题目ID"
+              placeholder="题目标题或题目ID"
               value={problemId}
               onChange={(e) => setProblemId(e.target.value)}
               style={{ width: 150 }}

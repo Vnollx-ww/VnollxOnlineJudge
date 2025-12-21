@@ -69,46 +69,31 @@
   color: #1e293b;
 }
 
-.problem-item {
-  border-bottom: 1px solid #e2e8f0;
-  padding: 12px 0 !important;
-  transition: all 0.3s ease;
-}
-
-.problem-item:hover {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding-left: 8px !important;
-}
-
-.problem-link {
+.problems-grid {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  color: #4a5568;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.problem-tag-link {
   text-decoration: none;
-  transition: all 0.3s ease;
 }
 
-.problem-link:hover {
-  color: #1a73e8;
-}
-
-.problem-id {
+.problem-tag {
+  cursor: pointer;
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.arrow-icon {
-  margin-left: auto;
-  color: #cbd5e1;
-  transition: all 0.3s ease;
-}
-
-.problem-link:hover .arrow-icon {
-  color: #1a73e8;
-  transform: translateX(4px);
+.problem-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
 }
 
 .empty-state {

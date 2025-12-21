@@ -214,9 +214,14 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         if (StringUtils.isNotBlank(query.getKeyword())) {
             String keyword = query.getKeyword();
-            wrapper.and(w -> w.like("user_name", keyword)
-                    .or()
-                    .like("problem_name", keyword));
+            wrapper.and(w -> {
+                if (keyword.matches("^-?\\d+$")) {
+                    w.eq("pid", Long.parseLong(keyword)).or();
+                }
+                w.like("user_name", keyword)
+                        .or()
+                        .like("problem_name", keyword);
+            });
         }
         return wrapper;
     }
