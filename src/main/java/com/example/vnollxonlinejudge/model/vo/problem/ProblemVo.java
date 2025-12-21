@@ -22,6 +22,7 @@ public class ProblemVo {
     private Integer passCount;
     private Boolean open;
     private List<String> tags;
+    private Boolean isSolved;
     public ProblemVo(){}
     public ProblemVo(Problem problem) {
         this.id = problem.getId();

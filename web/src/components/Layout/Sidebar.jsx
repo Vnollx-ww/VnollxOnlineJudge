@@ -120,6 +120,11 @@ const Sidebar = ({ user, notificationCount, loadUserInfo, loadNotificationCount,
       label: '比赛',
     },
     {
+      key: '/practices',
+      icon: <BookOutlined />,
+      label: '练习',
+    },
+    {
       key: '/about',
       icon: <InfoCircleOutlined />,
       label: '关于',

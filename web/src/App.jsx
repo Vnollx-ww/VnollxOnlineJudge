@@ -9,6 +9,8 @@ import Submissions from './pages/Submissions';
 import Ranklist from './pages/Ranklist';
 import Competitions from './pages/Competitions';
 import CompetitionDetail from './pages/CompetitionDetail';
+import Practices from './pages/Practices';
+import PracticeDetail from './pages/PracticeDetail';
 import CompetitionRanklist from './pages/CompetitionRanklist';
 import CompetitionSubmissions from './pages/CompetitionSubmissions';
 import Notifications from './pages/Notifications';
@@ -124,6 +126,22 @@ function App() {
             element={
               <AppLayout>
                 <CompetitionDetail />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/practices"
+            element={
+              <AppLayout>
+                <Practices />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/practice/:id"
+            element={
+              <AppLayout>
+                <PracticeDetail />
               </AppLayout>
             }
           />

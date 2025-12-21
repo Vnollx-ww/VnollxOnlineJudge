@@ -8,11 +8,13 @@ import {
   TrophyOutlined,
   SafetyOutlined,
   HomeOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
 import AdminSolves from './AdminSolves';
 import AdminCompetitions from './AdminCompetitions';
+import AdminPractices from './AdminPractices';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import './Admin.css';
@@ -139,6 +141,11 @@ const Admin = () => {
       icon: <TrophyOutlined />,
       label: '比赛管理',
     },
+    {
+      key: '/admin/practices',
+      icon: <BookOutlined />,
+      label: '练习管理',
+    },
   ];
 
   const handleMenuClick = ({ key }) => {
@@ -210,6 +217,7 @@ const Admin = () => {
             <Route path="problems" element={<AdminProblems />} />
             <Route path="solves" element={<AdminSolves />} />
             <Route path="competitions" element={<AdminCompetitions />} />
+            <Route path="practices" element={<AdminPractices />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>
         </Content>
