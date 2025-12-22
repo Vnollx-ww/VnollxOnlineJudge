@@ -5,12 +5,10 @@ import {
   Typography,
   Avatar,
   Statistic,
-  Row,
-  Col,
-  List,
   Tag,
   message,
   Spin,
+  Tooltip,
 } from 'antd';
 import {
   UserOutlined,
@@ -150,23 +148,17 @@ const UserProfile = () => {
             <Text type="secondary">暂无已解决问题</Text>
           </div>
         ) : (
-          <List
-            dataSource={solvedProblems}
-            renderItem={(problem) => (
-              <List.Item className="problem-item">
-                <Link
-                  to={`/problem/${problem.problemId}`}
-                  className="problem-link"
-                >
-                  <Tag color="blue" className="problem-id">
-                    #{problem.problemId}
+          <div className="problems-grid">
+            {solvedProblems.map((problem) => (
+              <Tooltip key={problem.problemId} title={problem.problemName || '查看题目'}>
+                <Link to={`/problem/${problem.problemId}`} className="problem-tag-link">
+                  <Tag color="blue" className="problem-tag">
+                    <CheckCircleOutlined /> #{problem.problemId}
                   </Tag>
-                  <Text>查看题目详情</Text>
-                  <RightOutlined className="arrow-icon" />
                 </Link>
-              </List.Item>
-            )}
-          />
+              </Tooltip>
+            ))}
+          </div>
         )}
       </Card>
     </div>

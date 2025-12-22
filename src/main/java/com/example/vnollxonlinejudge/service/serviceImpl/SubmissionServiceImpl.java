@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.convert.SubmissionConvert;
+import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.model.query.SubmissionQuery;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
@@ -74,15 +75,25 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
-    public void processSubmission(Submission submission) {
-        //初始化所有键和信息！！！
-        Long pid=submission.getPid();
-        Long uid=submission.getUid();
-        Long cid=submission.getCid();
-        String userName=submission.getUserName();
-        String code=submission.getCode();
+    public void addSubmission(Submission submission) {
         String option=submission.getLanguage();
-        String createTime=submission.getCreateTime();
+        String language = switch (option) {
+            case "java" -> "Java";
+            case "python" -> "Python";
+            default -> "C++";
+        };
+        submission.setLanguage(language);
+        this.save(submission);
+    }
+
+    @Override
+    public void processSubmission(JudgeInfo judgeinfo,String result) {
+        //初始化所有键和信息！！！
+        Long pid=judgeinfo.getPid();
+        Long uid=judgeinfo.getUid();
+        Long cid=judgeinfo.getCid();
+        String userName=judgeinfo.getUname();
+        String createTime=judgeinfo.getCreateTime();
         ProblemVo problem;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
         if (cid != 0) {
@@ -115,7 +126,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         //获取题目信息！！！！
         boolean ok=problemService.isSolved(pid,uid,cid);
         //提交后对题目提交数，用户提交数进行处理！！！！
-        if (submission.getStatus().equals("答案正确")) { //如果问题通过
+        if (result.equals("答案正确")) { //如果问题通过
             if (!ok) { //是否首次通过
                 List<String> tagList=problemTagService.getTagNames(problem.getId());
                 userTagService.updateTagPassStatus(uid,tagList,1L);
@@ -141,28 +152,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,userName);//是比赛，而且之前也没通过，那就需要罚时了
             }
         }
-
-        //提交记录写入缓存，缓存定期同步数据库！！！！
-        String language = switch (option) {
-            case "java" -> "Java";
-            case "python" -> "Python";
-            default -> "C++";
-        };
-        submission.setLanguage(language);
-        this.save(submission);
-        /*redisService.cacheSubmission(
-                userName, problem.getTitle(), code, submission.getStatus(),
-                createTime, language, uid, pid,
-                submission.getTime(), submission.getMemory(),cid
-        );*/
     }
-
-    @Override
-    @Transactional
-    public void batchInsert(List<Submission> submissions) {
-        saveBatch(submissions);
-    }
-
     @Override
     public void deleteSubmissionsByPid(Long pid) {
         QueryWrapper<Submission>wrapper=new QueryWrapper<>();
@@ -224,9 +214,14 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         if (StringUtils.isNotBlank(query.getKeyword())) {
             String keyword = query.getKeyword();
-            wrapper.and(w -> w.like("user_name", keyword)
-                    .or()
-                    .like("problem_name", keyword));
+            wrapper.and(w -> {
+                if (keyword.matches("^-?\\d+$")) {
+                    w.eq("pid", Long.parseLong(keyword)).or();
+                }
+                w.like("user_name", keyword)
+                        .or()
+                        .like("problem_name", keyword);
+            });
         }
         return wrapper;
     }

@@ -54,6 +54,33 @@ create index idx_create_time
 create index notification_uid_is_read_index
     on notification (uid, is_read);
 
+create table practice
+(
+    id          bigint auto_increment comment '练习ID'
+        primary key,
+    title       varchar(255)         not null comment '练习标题',
+    description text                 null comment '练习描述',
+    create_time varchar(50)          null comment '创建时间',
+    is_public   tinyint(1) default 1 null comment '是否公开 1-公开 0-私有'
+)
+    comment '练习表';
+
+create table practice_problem
+(
+    id            bigint auto_increment comment '关联ID'
+        primary key,
+    practice_id   bigint        not null comment '练习ID',
+    problem_id    bigint        not null comment '题目ID',
+    problem_order int default 0 null comment '题目顺序'
+)
+    comment '练习题目关联表';
+
+create index idx_practice_id
+    on practice_problem (practice_id);
+
+create index idx_problem_id
+    on practice_problem (problem_id);
+
 create table problem
 (
     id             bigint auto_increment
@@ -72,7 +99,8 @@ create table problem
     submit_count   int        default 0 null,
     pass_count     int        default 0 null,
     open           tinyint(1) default 0 null,
-    version        int        default 1 null
+    version        int        default 1 null,
+    snake_id       bigint               null
 );
 
 create table competition_problem
@@ -125,8 +153,12 @@ create table submission
     problem_name varchar(255)     null,
     code         text             null,
     cid          bigint default 0 null,
-    memory       int              not null
+    memory       int              not null,
+    snowflake_id bigint           null
 );
+
+create index submission_snowflake_id_index
+    on submission (snowflake_id);
 
 create table tag
 (

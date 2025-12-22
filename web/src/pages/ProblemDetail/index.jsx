@@ -444,21 +444,6 @@ const ProblemDetail = () => {
           <Title level={2}>
             #{problem.id} - {problem.title}
           </Title>
-          <div className="problem-meta">
-            <Tag color={getDifficultyColor(problem.difficulty)}>
-              {problem.difficulty}
-            </Tag>
-            <span>提交: {problem.submitCount}</span>
-            <span>通过: {problem.passCount}</span>
-            <span>
-              通过率:{' '}
-              {problem.submitCount > 0
-                ? Math.round((problem.passCount / problem.submitCount) * 10000) /
-                  100
-                : 0}
-              %
-            </span>
-          </div>
           <Space size="middle">
             <Button
               icon={<BookOutlined />}
@@ -493,6 +478,10 @@ const ProblemDetail = () => {
           </div>
 
           <div className="problem-tags">
+            <Text strong>难度：</Text>
+            <Tag color={getDifficultyColor(problem.difficulty)} style={{ marginRight: 24 }}>
+              {problem.difficulty}
+            </Tag>
             <Text strong>标签：</Text>
             {tags.length ? (
               <Space size={[8, 8]} wrap>

@@ -51,7 +51,7 @@ public class ProblemController {
     }
     @GetMapping("/list")
     public Result<List<ProblemVo>> getProblemList(@RequestParam(required = false) String keyword, @RequestParam String offset, @RequestParam String size){
-        if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
+        if(keyword != null && !keyword.isEmpty() && keyword.matches("^-?\\d+$")){
             return Result.Success(
                     problemService.getProblemList(
                             keyword,Long.parseLong(keyword),
@@ -68,7 +68,7 @@ public class ProblemController {
     }
     @GetMapping("/count")
     public Result<Long> getCount(@RequestParam(required = false) String keyword){
-        if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
+        if(keyword != null && !keyword.isEmpty() &&  keyword.matches("^-?\\d+$")){
             return Result.Success(
                     problemService.getCount(keyword,Long.parseLong(keyword),false)
                     ,"获取关键字题目总数成功");

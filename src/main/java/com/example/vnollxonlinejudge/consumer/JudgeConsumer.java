@@ -62,7 +62,7 @@ public class JudgeConsumer {
                     judgeInfo.getMemory()
             );
             submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),result.getStatus(), result.getRunTime(),result.getMemory());
-            
+            submissionService.processSubmission(judgeInfo,result.getStatus());
             // 获取错误信息（如果有）
             String errorInfo = null;
             if (result.getFiles() != null && result.getFiles().getStderr() != null) {

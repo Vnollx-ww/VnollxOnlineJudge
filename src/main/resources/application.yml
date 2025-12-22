@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   application:
     name: VnollxOnlineJudge
   thymeleaf:
@@ -75,9 +79,4 @@ management:
 openai:
   model: "qwen3-max"
   temperature: 0.7
-  timeout: 60
-
-# 日志配置（可选）
-logging:
-  level:
-    dev.langchain4j: DEBUG
+  timeout: 60000

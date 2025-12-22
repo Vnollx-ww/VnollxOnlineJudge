@@ -2,8 +2,6 @@ package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.service.TestCaseCacheService;
-import io.minio.GetObjectArgs;
-import io.minio.MinioClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,17 +10,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 @Component
 public class PythonJudgeStrategy implements JudgeStrategy {
@@ -30,89 +19,86 @@ public class PythonJudgeStrategy implements JudgeStrategy {
     private final RestTemplate restTemplate;
     private final String RUN_URL;
     private static final Logger logger = LoggerFactory.getLogger(PythonJudgeStrategy.class);
-    private static final int BATCH_SIZE = 20; // 每批最多处理的测试用例数
 
     @Autowired
     public PythonJudgeStrategy(
             TestCaseCacheService testCaseCacheService,
             String goJudgeEndpoint,
             RestTemplate restTemplate) {
-        this.restTemplate=restTemplate;
+        this.restTemplate = restTemplate;
         this.testCaseCacheService = testCaseCacheService;
         this.RUN_URL = goJudgeEndpoint + "/run";
     }
 
-
     @Override
     public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
-        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit,null,null);
-        result.setRunTime(result.getTime() / 1000000);
-        result.setMemory(result.getMemory()/ 1048576);
-        // 状态码转换
-        switch (result.getStatus()) {
-            case "Accepted" -> result.setStatus("答案正确");
-            case "Time Limit Exceeded" -> result.setStatus("时间超出限制");
-            case "Memory Limit Exceeded" -> result.setStatus("内存超出限制");
-            case "Runtime Error" -> result.setStatus("运行时错误");
-        }
-
-        return result;
+        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit, null, null);
+        // 转换单位及状态码
+        return processFinalResult(result);
     }
 
     @Override
     public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
-        RunResult result = judgeCode(code, null, timeLimit, memoryLimit,inputExample,outputExample);
-        result.setRunTime(result.getTime() / 1000000);
-        result.setMemory(result.getMemory()/1048576);
+        RunResult result = judgeCode(code, null, timeLimit, memoryLimit, inputExample, outputExample);
+        return processFinalResult(result);
+    }
+
+    /**
+     * 提取结果处理逻辑，减少代码重复
+     */
+    private RunResult processFinalResult(RunResult result) {
+        result.setRunTime(result.getTime() / 1000000); // ns -> ms
+        result.setMemory(result.getMemory() / 1048576); // byte -> MB
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus("答案正确");
             case "Time Limit Exceeded" -> result.setStatus("时间超出限制");
             case "Memory Limit Exceeded" -> result.setStatus("内存超出限制");
             case "Runtime Error" -> result.setStatus("运行时错误");
+            case "Wrong Answer" -> result.setStatus("答案错误");
         }
-
         return result;
     }
 
     private RunResult judgeCode(
             String submittedCode, String zipFilePath,
             Long timeLimitMs, Long memoryLimitMB,
-            String inputExample,String outExample
+            String inputExample, String outExample
     ) {
         try {
-            List<String[]> testCases =new ArrayList<>();
-
-            if (inputExample!=null&&outExample!=null){
-                testCases.add(new String[]{inputExample,outExample});
-            }else{
-                //从缓存或MinIO获取测试用例
-                testCases =testCaseCacheService.getTestCases(zipFilePath);
+            List<String[]> testCases = new ArrayList<>();
+            if (inputExample != null && outExample != null) {
+                testCases.add(new String[]{inputExample, outExample});
+            } else {
+                testCases = testCaseCacheService.getTestCases(zipFilePath);
             }
 
-            // 批量执行测试用例
+            if (testCases.isEmpty()) {
+                return standardError("判题错误", "无法获取测试用例");
+            }
+
+            // 初始化最终结果对象
             RunResult finalResult = new RunResult();
             finalResult.setStatus("Accepted");
             finalResult.setFiles(new RunResult.Files());
-            finalResult.getFiles().setStdout("");
-            finalResult.getFiles().setStderr("");
-            finalResult.setRunTime(0L);
             finalResult.setTime(0L);
             finalResult.setMemory(0L);
             finalResult.setTestCount(testCases.size());
             finalResult.setPassCount(0);
+
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // 分批处理测试用例
-            for (int batchStart = 0; batchStart < testCases.size(); batchStart += BATCH_SIZE) {
-                int batchEnd = Math.min(batchStart + BATCH_SIZE, testCases.size());
-                List<String[]> batch = testCases.subList(batchStart, batchEnd);
+            // --- 核心修改：逐一执行测试用例 ---
+            for (int i = 0; i < testCases.size(); i++) {
+                String[] testCase = testCases.get(i);
+                String input = testCase[0];
+                String expectedOutput = testCase[1].trim();
 
-                // 构建批量请求
-                String jsonPayload = buildBatchRunPayload(submittedCode, batch, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
+                // 构造单次运行请求
+                String jsonPayload = buildSingleRunPayload(submittedCode, input, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
                 HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
 
-                // 一次请求执行整批测试用例
+                // 发送请求给 go-judge
                 ResponseEntity<List<RunResult>> response = restTemplate.exchange(
                         RUN_URL,
                         HttpMethod.POST,
@@ -120,102 +106,82 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                         new ParameterizedTypeReference<List<RunResult>>() {}
                 );
 
-                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                    finalResult.setStatus("判题错误");
-                    logger.error("批量判题请求失败");
-                    finalResult.getFiles().setStderr("Failed to execute batch test cases");
+                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null || response.getBody().isEmpty()) {
+                    return standardError("判题错误", "执行第 " + (i + 1) + " 个测试用例请求失败");
+                }
+
+                // 获取当前用例的运行结果
+                RunResult currentResult = response.getBody().get(0);
+
+                // 更新最大资源消耗
+                finalResult.setTime(Math.max(finalResult.getTime(), currentResult.getTime()));
+                finalResult.setMemory(Math.max(finalResult.getMemory(), currentResult.getMemory()));
+
+                // 1. 检查运行状态（是否超时、内存溢出等）
+                if (!"Accepted".equals(currentResult.getStatus())) {
+                    finalResult.setStatus(currentResult.getStatus());
+                    finalResult.setExitStatus(currentResult.getExitStatus());
+                    if (currentResult.getFiles() != null) {
+                        finalResult.getFiles().setStderr(currentResult.getFiles().getStderr());
+                    }
                     return finalResult;
                 }
 
-                List<RunResult> results = response.getBody();
-
-                // 处理批量返回的结果
-                for (int i = 0; i < results.size(); i++) {
-                    RunResult result = results.get(i);
-                    String[] testCase = batch.get(i);
-
-                    // 更新最大时间和内存
-                    finalResult.setTime(Math.max(finalResult.getTime(), result.getTime()));
-                    finalResult.setMemory(Math.max(finalResult.getMemory(), result.getMemory()));
-                    finalResult.setRunTime(Math.max(finalResult.getRunTime(), result.getRunTime()));
-
-                    // 检查运行状态
-                    if (!"Accepted".equals(result.getStatus())) {
-                        finalResult.setStatus(result.getStatus());
-                        finalResult.setExitStatus(result.getExitStatus());
-                        if (result.getFiles() != null) {
-                            finalResult.getFiles().setStderr(result.getFiles().getStderr());
-                        }
-                        return finalResult;
-                    }
-
-                    // 检验输出结果
-                    try {
-                        String expectedOutput = testCase[1].trim();
-                        String actualOutput = result.getFiles().getStdout().trim();
-
-                        if (!expectedOutput.equals(actualOutput)) {
-                            String errorMessage = String.format(
-                                    "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
-                                    truncateString(testCase[0], 100),
-                                    truncateString(expectedOutput, 200),
-                                    truncateString(actualOutput, 200)
-                            );
-                            finalResult.setStatus("答案错误");
-                            finalResult.getFiles().setStderr(errorMessage);
-                            return finalResult;
-                        }
-                    } catch (Exception e) {
-                        finalResult.setStatus("答案错误");
-                        finalResult.getFiles().setStderr("输出比较异常: " + e.getMessage());
-                        return finalResult;
-                    }
+                // 2. 检验输出结果（答案比对）
+                String actualOutput = currentResult.getFiles().getStdout() != null ? currentResult.getFiles().getStdout().trim() : "";
+                if (!expectedOutput.equals(actualOutput)) {
+                    finalResult.setStatus("Wrong Answer"); // 状态标记，后续由 processFinalResult 翻译
+                    finalResult.getFiles().setStderr(String.format(
+                            "测试用例 %d 失败%n输入: %s%n期待输出: %s%n实际输出: %s",
+                            i + 1,
+                            truncateString(input, 100),
+                            truncateString(expectedOutput, 200),
+                            truncateString(actualOutput, 200)
+                    ));
+                    return finalResult;
                 }
+
+                // 记录通过数量
+                finalResult.setPassCount(i + 1);
             }
 
-            finalResult.setPassCount(testCases.size());
             return finalResult;
 
         } catch (Exception e) {
-            RunResult result = new RunResult();
-            result.setStatus("判题错误");
             logger.error("判题过程中出错: ", e);
-            result.setExitStatus(1);
-            result.setFiles(new RunResult.Files());
-            result.getFiles().setStderr("判题系统错误: " + e.getMessage());
-            return result;
+            return standardError("判题错误", "发生异常: " + e.getMessage());
         }
+    }
+
+    /**
+     * 辅助方法：构建错误返回结果
+     */
+    private RunResult standardError(String status, String stderr) {
+        RunResult result = new RunResult();
+        result.setStatus(status);
+        result.setFiles(new RunResult.Files());
+        result.getFiles().setStderr(stderr);
+        result.setExitStatus(1);
+        return result;
     }
 
     private String truncateString(String str, int maxLength) {
         if (str == null) return "null";
         if (str.length() <= maxLength) return str;
-        return str.substring(0, maxLength) + "...(截断，总长度:" + str.length() + ")";
+        return str.substring(0, maxLength) + "...(截断)";
     }
 
     /**
-     * 构建批量运行请求的 JSON payload
-     * go-judge 支持在一个请求中包含多个 cmd，会并行执行
+     * 构建单个运行请求的 JSON payload (包裹在 cmd 数组中)
      */
-    private String buildBatchRunPayload(String code, List<String[]> testCases, Long cpuLimit, Long memoryLimit) {
+    private String buildSingleRunPayload(String code, String input, Long cpuLimit, Long memoryLimit) {
         String escapedCode = escapeString(code);
-        StringBuilder cmds = new StringBuilder();
-        for (int i = 0; i < testCases.size(); i++) {
-            if (i > 0) {
-                cmds.append(",");
-            }
-            String input = testCases.get(i)[0];
-            cmds.append(buildSingleCmd(escapedCode, input, cpuLimit, memoryLimit));
-        }
-        return "{\"cmd\": [" + cmds + "]}";
+        String singleCmd = buildSingleCmd(escapedCode, input, cpuLimit, memoryLimit);
+        return "{\"cmd\": [" + singleCmd + "]}";
     }
 
-    /**
-     * 构建单个测试用例的 cmd 对象
-     */
     private String buildSingleCmd(String escapedCode, String input, Long cpuLimit, Long memoryLimit) {
         String escapedInput = escapeString(input);
-
         return String.format("""
             {
                 "args": ["/usr/bin/python3", "main.py"],
@@ -241,10 +207,8 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             }""", escapedInput, cpuLimit, memoryLimit, escapedCode);
     }
 
-    /**
-     * 转义特殊字符
-     */
     private String escapeString(String str) {
+        if (str == null) return "";
         return str.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\r", "\\r")

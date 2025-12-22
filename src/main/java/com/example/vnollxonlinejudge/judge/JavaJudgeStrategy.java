@@ -290,31 +290,36 @@ public class JavaJudgeStrategy implements JudgeStrategy {
     /**
      * 构建单个测试用例的 cmd 对象
      */
+    /**
+     * 构建单个测试用例的 cmd 对象
+     */
     private String buildSingleCmd(String input, String fileId, Long cpuLimit, Long memoryLimit) {
         String escapedInput = escapeString(input);
 
         return String.format("""
-            {
-                "args": ["/usr/bin/java", "Main"],
-                "env": ["PATH=/usr/bin:/bin"],
-                "files": [{
-                    "content": "%s"
-                }, {
-                    "name": "stdout",
-                    "max": 10240
-                }, {
-                    "name": "stderr",
-                    "max": 10240
-                }],
-                "cpuLimit": %d,
-                "memoryLimit": %d,
-                "procLimit": 50,
-                "copyIn": {
-                    "Main.class": {
-                        "fileId": "%s"
-                    }
+        {
+            // 【重要修改】在运行 Java 时添加 -Djava.security.policy= 参数，
+            // 尝试禁用或绕过默认的安全策略文件加载，以解决 java.security file 错误。
+            "args": ["/usr/bin/java", "-Djava.security.policy=", "Main"],
+            "env": ["PATH=/usr/bin:/bin"],
+            "files": [{
+                "content": "%s"
+            }, {
+                "name": "stdout",
+                "max": 10240
+            }, {
+                "name": "stderr",
+                "max": 10240
+            }],
+            "cpuLimit": %d,
+            "memoryLimit": %d,
+            "procLimit": 50,
+            "copyIn": {
+                "Main.class": {
+                    "fileId": "%s"
                 }
-            }""", escapedInput, cpuLimit, memoryLimit, fileId);
+            }
+        }""", escapedInput, cpuLimit, memoryLimit, fileId);
     }
 
     /**

@@ -81,6 +81,7 @@ export default defineConfig({
             '/submissions',
             '/ranklist',
             '/competitions',
+            '/practices',
             '/notifications',
             '/settings',
             '/about',
@@ -89,6 +90,7 @@ export default defineConfig({
             '/admin/problems',
             '/admin/solves',
             '/admin/competitions',
+            '/admin/practices',
           ];
           
           // 检查是否是前端路由（精确匹配或匹配动态路由模式）
@@ -141,7 +143,20 @@ export default defineConfig({
             }
 
 
-            // /notification/:id (通知详情) - 仅数字ID才视为前端路由
+            // /practice/:id (练习详情) - 仅数字ID且为HTML请求才视为前端路由
+          if (path.startsWith('/practice/')) {
+            const parts = path.split('/');
+            // 只有 /practice/数字 格式且是浏览器导航请求才跳过代理
+            if (parts.length === 3 && parts[2] && /^\d+$/.test(parts[2])) {
+              const accept = req.headers?.accept || '';
+              if (accept.includes('text/html')) {
+                return path; // 前端路由（浏览器导航）
+              }
+            }
+            // 其他 /practice/* 请求均视为 API，继续代理
+          }
+
+          // /notification/:id (通知详情) - 仅数字ID才视为前端路由
           if (path.startsWith('/notification/')) {
             const parts = path.split('/');
             if (parts.length === 3 && parts[2] && /^\d+$/.test(parts[2])) {
