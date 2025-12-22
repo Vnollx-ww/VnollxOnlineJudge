@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     Card,
@@ -15,7 +16,7 @@ import {
     Avatar,
     Popconfirm,
 } from 'antd';
-import { ArrowLeftOutlined, CodeOutlined, CommentOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CodeOutlined, CommentOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -106,6 +107,7 @@ const ProblemDetail = () => {
     const [isCompetitionEnd, setIsCompetitionEnd] = useState(false); // 是否已结束
     const [competitionStatusLoading, setCompetitionStatusLoading] = useState(true);
     const [currentSnowflakeId, setCurrentSnowflakeId] = useState(null);
+    const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
 
     const userInfo = getUserInfo();
 
@@ -609,7 +611,7 @@ const ProblemDetail = () => {
                     }
                 >
                     <div className="editor-toolbar">
-                        <Space size="middle" wrap>
+                        <Space size="small" wrap>
                             <Select
                                 value={language}
                                 onChange={setLanguage}
@@ -621,16 +623,22 @@ const ProblemDetail = () => {
                                     </Option>
                                 ))}
                             </Select>
+                            <Button
+                                type="link"
+                                onClick={() => {
+                                    const template =
+                                        languageOptions.find((item) => item.value === language)?.template || '';
+                                    setCode(template);
+                                }}
+                            >
+                                重置模板
+                            </Button>
                         </Space>
                         <Button
-                            type="link"
-                            onClick={() => {
-                                const template =
-                                    languageOptions.find((item) => item.value === language)?.template || '';
-                                setCode(template);
-                            }}
+                            icon={isEditorFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                            onClick={() => setIsEditorFullscreen(!isEditorFullscreen)}
                         >
-                            重置模板
+                            {isEditorFullscreen ? '退出全屏' : '全屏编辑'}
                         </Button>
                     </div>
                     {language === 'java' && (
@@ -641,13 +649,49 @@ const ProblemDetail = () => {
                             style={{ marginTop: 12, marginBottom: 12 }}
                         />
                     )}
-                    <CodeEditor
-                        value={code}
-                        onChange={setCode}
-                        language={language}
-                        height={420}
-                        storageKey={codeStorageKey}
-                    />
+                    {isEditorFullscreen && createPortal(
+                        <div
+                          style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            width: '100vw',
+                            height: '100vh',
+                            zIndex: 99999,
+                            background: '#ffffff',
+                          }}
+                        >
+                          <Button
+                            icon={<FullscreenExitOutlined />}
+                            onClick={() => setIsEditorFullscreen(false)}
+                            style={{
+                              position: 'absolute',
+                              bottom: 10,
+                              right: 20,
+                              zIndex: 100000,
+                            }}
+                          >
+                            退出全屏
+                          </Button>
+                          <CodeEditor
+                            value={code}
+                            onChange={setCode}
+                            language={language}
+                            height="100vh"
+                            storageKey={codeStorageKey}
+                          />
+                        </div>,
+                        document.body
+                    )}
+                    {!isEditorFullscreen && (
+                        <CodeEditor
+                          value={code}
+                          onChange={setCode}
+                          language={language}
+                          height={420}
+                          storageKey={codeStorageKey}
+                        />
+                    )}
                     <div className="editor-actions">
                         <Space>
                             <Button

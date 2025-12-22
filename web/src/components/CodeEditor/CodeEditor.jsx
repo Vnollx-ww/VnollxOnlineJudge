@@ -251,7 +251,7 @@ const CodeEditor = ({
         const editor = monaco.editor.create(containerRef.current, {
           value: value || '',
           language: monacoLanguage,
-          theme: 'vs-dark',
+          theme: 'vs',
           readOnly,
           ...defaultOptions,
           ...options,
@@ -315,16 +315,16 @@ const CodeEditor = ({
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(30, 30, 30, 0.9)',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10
         }}>
-          <div style={{ textAlign: 'center', color: 'white' }}>
+          <div style={{ textAlign: 'center', color: '#333' }}>
             <Spin size="large" />
             <div style={{ marginTop: 8 }}>⏳ 正在加载原生 Monaco Editor...</div>
-            <div style={{ fontSize: '12px', color: '#ccc', marginTop: '8px' }}>
+            <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
               检查控制台查看详细加载状态
             </div>
           </div>

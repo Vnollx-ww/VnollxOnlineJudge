@@ -12,11 +12,11 @@ import {
   Card,
   Space,
   Typography,
-  message,
+  App,
   Pagination,
   Switch,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, CopyOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
@@ -27,6 +27,7 @@ const { Option } = Select;
 
 const Submissions = () => {
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,6 +39,16 @@ const Submissions = () => {
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [currentCode, setCurrentCode] = useState('');
   const [currentLang, setCurrentLang] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // 监听浏览器全屏状态变化（用户按ESC退出时同步状态）
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
   
   // 使用 ref 保存最新的 currentPage，避免闭包问题
   const currentPageRef = useRef(currentPage);
@@ -398,11 +409,46 @@ const Submissions = () => {
         <Modal
             title="代码查看"
             open={codeModalVisible}
-            onCancel={() => setCodeModalVisible(false)}
+            onCancel={() => {
+                setCodeModalVisible(false);
+                setIsFullscreen(false);
+            }}
             footer={null}
-            width="80%"
+            width={isFullscreen ? '100vw' : '80%'}
+            style={isFullscreen ? { top: 0, maxWidth: '100vw', paddingBottom: 0 } : undefined}
+            styles={isFullscreen ? { body: { height: 'calc(100vh - 55px)', overflow: 'hidden' } } : undefined}
         >
-            <div style={{ maxHeight: '70vh', overflow: 'auto' }}>
+            <div style={{ marginBottom: 12 }}>
+                <Space>
+                    <Button
+                        icon={<CopyOutlined />}
+                        onClick={() => {
+                            navigator.clipboard.writeText(currentCode).then(() => {
+                                message.success('代码已复制到剪贴板');
+                            }).catch(() => {
+                                message.error('复制失败');
+                            });
+                        }}
+                    >
+                        复制代码
+                    </Button>
+                    <Button
+                        icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                        onClick={() => {
+                            if (!document.fullscreenElement) {
+                                document.documentElement.requestFullscreen();
+                                setIsFullscreen(true);
+                            } else {
+                                document.exitFullscreen();
+                                setIsFullscreen(false);
+                            }
+                        }}
+                    >
+                        {isFullscreen ? '退出全屏' : '全屏查看'}
+                    </Button>
+                </Space>
+            </div>
+            <div style={{ maxHeight: isFullscreen ? 'calc(100vh - 120px)' : '70vh', overflow: 'auto' }}>
                 <SyntaxHighlighter
                     language={currentLang.toLowerCase() === 'c++' ? 'cpp' : currentLang.toLowerCase()}
                     style={vscDarkPlus}
