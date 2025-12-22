@@ -7,9 +7,7 @@
     "dev": "vite",
     "build": "vite build", 
     "lint": "eslint .",
-    "preview": "vite preview",
-    "copy-monaco": "node scripts/copy-monaco.js",
-    "postinstall": "npm run copy-monaco"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
