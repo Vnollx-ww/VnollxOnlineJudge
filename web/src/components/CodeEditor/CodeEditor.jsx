@@ -73,11 +73,44 @@ const ensureProviders = (monaco) => {
     'typedef', 'typename', 'union', 'unsigned', 'using', 'virtual', 'void', 'volatile', 'while',
   ];
 
+  const cppStdlib = [
+    'cin', 'cout', 'cerr', 'endl', 'string', 'vector', 'map', 'set', 'unordered_map', 'unordered_set',
+    'pair', 'queue', 'priority_queue', 'stack', 'deque', 'list', 'array', 'bitset',
+    'sort', 'reverse', 'find', 'lower_bound', 'upper_bound', 'binary_search',
+    'min', 'max', 'swap', 'abs', 'pow', 'sqrt', 'ceil', 'floor', 'round',
+    'push_back', 'pop_back', 'push', 'pop', 'front', 'back', 'begin', 'end', 'size', 'empty', 'clear',
+    'first', 'second', 'insert', 'erase', 'count', 'memset', 'memcpy',
+    'getline', 'stoi', 'stoll', 'to_string', 'substr', 'length',
+    'INT_MAX', 'INT_MIN', 'LLONG_MAX', 'LLONG_MIN',
+    'make_pair', 'make_tuple', 'tie', 'get',
+    'greater', 'less', 'plus', 'minus',
+    'accumulate', 'fill', 'copy', 'unique', 'next_permutation',
+    'gcd', '__gcd', 'lcm',
+  ];
+
   const pythonKeywords = [
     'and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else',
     'except', 'False', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
     'lambda', 'None', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'True', 'try',
     'while', 'with', 'yield',
+  ];
+
+  const pythonStdlib = [
+    'print', 'input', 'int', 'str', 'float', 'list', 'dict', 'set', 'tuple', 'bool',
+    'len', 'range', 'enumerate', 'zip', 'map', 'filter', 'sorted', 'reversed',
+    'sum', 'min', 'max', 'abs', 'round', 'pow', 'divmod',
+    'open', 'read', 'write', 'readline', 'readlines', 'close',
+    'append', 'extend', 'pop', 'remove', 'insert', 'index', 'count', 'sort', 'reverse', 'clear',
+    'keys', 'values', 'items', 'get', 'update', 'setdefault',
+    'add', 'discard', 'union', 'intersection', 'difference',
+    'split', 'join', 'strip', 'lstrip', 'rstrip', 'replace', 'find', 'startswith', 'endswith', 'lower', 'upper',
+    'format', 'isdigit', 'isalpha', 'isalnum',
+    'collections', 'deque', 'Counter', 'defaultdict', 'OrderedDict',
+    'heapq', 'heappush', 'heappop', 'heapify',
+    'bisect', 'bisect_left', 'bisect_right',
+    'itertools', 'permutations', 'combinations', 'product',
+    'math', 'sqrt', 'ceil', 'floor', 'log', 'log2', 'log10', 'gcd',
+    'sys', 'stdin', 'stdout', 'setrecursionlimit',
   ];
 
   const javaKeywords = [
@@ -89,40 +122,305 @@ const ensureProviders = (monaco) => {
     'this', 'throw', 'throws', 'transient', 'try', 'void', 'volatile', 'while',
   ];
 
+  const javaStdlib = [
+    'String', 'Integer', 'Long', 'Double', 'Float', 'Boolean', 'Character',
+    'System', 'out', 'in', 'println', 'print', 'printf',
+    'Scanner', 'nextInt', 'nextLong', 'nextDouble', 'nextLine', 'next', 'hasNext', 'hasNextInt',
+    'BufferedReader', 'InputStreamReader', 'PrintWriter', 'BufferedWriter',
+    'ArrayList', 'LinkedList', 'HashMap', 'HashSet', 'TreeMap', 'TreeSet', 'PriorityQueue',
+    'Queue', 'Stack', 'Deque', 'ArrayDeque', 'LinkedHashMap', 'LinkedHashSet',
+    'Arrays', 'sort', 'binarySearch', 'fill', 'copyOf', 'asList', 'toString',
+    'Collections', 'reverse', 'shuffle', 'max', 'min', 'swap',
+    'Math', 'abs', 'pow', 'sqrt', 'ceil', 'floor', 'round', 'random',
+    'add', 'remove', 'get', 'set', 'size', 'isEmpty', 'clear', 'contains', 'indexOf',
+    'put', 'containsKey', 'containsValue', 'keySet', 'values', 'entrySet',
+    'poll', 'peek', 'offer', 'push', 'pop',
+    'substring', 'charAt', 'length', 'equals', 'compareTo', 'split', 'trim', 'toLowerCase', 'toUpperCase',
+    'StringBuilder', 'append', 'reverse', 'toString', 'delete', 'insert',
+    'parseInt', 'parseLong', 'parseDouble', 'valueOf',
+    'MAX_VALUE', 'MIN_VALUE',
+  ];
+
   const snippetItems = (lang) => {
     if (lang === 'cpp') {
       return [
+        {
+          label: 'cin >>',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'cin >> ${1:var};',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '标准输入',
+        },
+        {
+          label: 'cout <<',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'cout << ${1:var} << endl;',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '标准输出',
+        },
+        {
+          label: 'cin >> a >> b',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'cin >> ${1:a} >> ${2:b};',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '多变量输入',
+        },
+        {
+          label: 'cout << a << " " << b',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'cout << ${1:a} << " " << ${2:b} << endl;',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '多变量输出',
+        },
         {
           label: 'for (i..n)',
           kind: CompletionItemKind.Snippet,
           insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t$0\n}',
           insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'for循环',
+        },
+        {
+          label: 'for (auto x : arr)',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for (auto ${1:x} : ${2:arr}) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '范围for循环',
+        },
+        {
+          label: 'while (cin >>)',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'while (cin >> ${1:n}) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '循环读入',
         },
         {
           label: 'ios::sync_with_stdio(false)',
           kind: CompletionItemKind.Snippet,
           insertText: 'ios::sync_with_stdio(false);\ncin.tie(nullptr);',
+          detail: '快速IO',
+        },
+        {
+          label: 'vector<int>',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'vector<${1:int}> ${2:arr}(${3:n});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '创建vector',
+        },
+        {
+          label: '#include<bits/stdc++.h>',
+          kind: CompletionItemKind.Snippet,
+          insertText: '#include<bits/stdc++.h>\nusing namespace std;\n\nint main() {\n\t$0\n\treturn 0;\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'C++模板',
         },
       ];
     }
     if (lang === 'python') {
       return [
         {
-          label: 'if __name__ == "__main__"',
+          label: 'print()',
           kind: CompletionItemKind.Snippet,
-          insertText: 'if __name__ == "__main__":\n\t$0',
+          insertText: 'print(${1:var})',
           insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '输出',
+        },
+        {
+          label: 'input()',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'input(${1:prompt})',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '输入',
+        },
+        {
+          label: 'n = int(input())',
+          kind: CompletionItemKind.Snippet,
+          insertText: '${1:n} = int(input())',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '读取整数',
+        },
+        {
+          label: 'a, b = map(int, input().split())',
+          kind: CompletionItemKind.Snippet,
+          insertText: '${1:a}, ${2:b} = map(int, input().split())',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '读取多个整数',
+        },
+        {
+          label: 'arr = list(map(int, input().split()))',
+          kind: CompletionItemKind.Snippet,
+          insertText: '${1:arr} = list(map(int, input().split()))',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '读取整数列表',
         },
         {
           label: 'for i in range(n)',
           kind: CompletionItemKind.Snippet,
           insertText: 'for ${1:i} in range(${2:n}):\n\t$0',
           insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'for循环',
+        },
+        {
+          label: 'for i, x in enumerate(arr)',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for ${1:i}, ${2:x} in enumerate(${3:arr}):\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '带索引遍历',
+        },
+        {
+          label: 'while True',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'while True:\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '无限循环',
+        },
+        {
+          label: 'def func():',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'def ${1:func}(${2:args}):\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '定义函数',
+        },
+        {
+          label: 'if __name__ == "__main__"',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'if __name__ == "__main__":\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '主函数入口',
+        },
+        {
+          label: 'from collections import',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'from collections import ${1:deque, Counter, defaultdict}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '导入collections',
+        },
+        {
+          label: 'import sys; input = sys.stdin.readline',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'import sys\ninput = sys.stdin.readline',
+          detail: '快速输入',
+        },
+        {
+          label: 'sys.setrecursionlimit',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'import sys\nsys.setrecursionlimit(${1:100000})',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '设置递归深度',
         },
       ];
     }
     if (lang === 'java') {
       return [
+        {
+          label: 'System.out.println',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'System.out.println(${1:var});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '输出并换行',
+        },
+        {
+          label: 'System.out.print',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'System.out.print(${1:var});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '输出不换行',
+        },
+        {
+          label: 'Scanner sc = new Scanner',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'Scanner ${1:sc} = new Scanner(System.in);',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '创建Scanner',
+        },
+        {
+          label: 'int n = sc.nextInt()',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'int ${1:n} = ${2:sc}.nextInt();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '读取整数',
+        },
+        {
+          label: 'for (int i = 0; i < n; i++)',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'for循环',
+        },
+        {
+          label: 'for (int x : arr)',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for (${1:int} ${2:x} : ${3:arr}) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '增强for循环',
+        },
+        {
+          label: 'while (sc.hasNext())',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'while (${1:sc}.hasNext()) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '循环读入',
+        },
+        {
+          label: 'ArrayList<Integer>',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'ArrayList<${1:Integer}> ${2:list} = new ArrayList<>();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '创建ArrayList',
+        },
+        {
+          label: 'HashMap<K, V>',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'HashMap<${1:String}, ${2:Integer}> ${3:map} = new HashMap<>();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '创建HashMap',
+        },
+        {
+          label: 'PriorityQueue',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'PriorityQueue<${1:Integer}> ${2:pq} = new PriorityQueue<>();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '创建优先队列',
+        },
+        {
+          label: 'Arrays.sort',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'Arrays.sort(${1:arr});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '数组排序',
+        },
+        {
+          label: 'Collections.sort',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'Collections.sort(${1:list});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '集合排序',
+        },
+        {
+          label: 'StringBuilder',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'StringBuilder ${1:sb} = new StringBuilder();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '创建StringBuilder',
+        },
+        {
+          label: 'public static void main',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'public static void main(String[] args) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'main方法',
+        },
+        {
+          label: 'Java ACM模板',
+          kind: CompletionItemKind.Snippet,
+          insertText: 
+            'import java.util.*;\nimport java.io.*;\n\npublic class Main {\n' +
+            '    public static void main(String[] args) {\n' +
+            '        Scanner sc = new Scanner(System.in);\n' +
+            '        $0\n' +
+            '    }\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'Java完整模板',
+        },
         {
           label: 'FastScanner',
           kind: CompletionItemKind.Snippet,
@@ -154,19 +452,21 @@ const ensureProviders = (monaco) => {
             '    long nextLong() throws IOException { return Long.parseLong(next()); }\n' +
             '}\n',
           insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '快速输入类',
         },
       ];
     }
     return [];
   };
 
-  const registerFor = (lang, keywords) => {
+  const registerFor = (lang, keywords, stdlib = []) => {
     monaco.languages.registerCompletionItemProvider(lang, {
-      triggerCharacters: ['.', '_', ':', '>', '<'],
+      triggerCharacters: ['.', ':'],
       provideCompletionItems: () => {
         return {
           suggestions: [
             ...mkKeywordItems(keywords, CompletionItemKind.Keyword),
+            ...mkKeywordItems(stdlib, CompletionItemKind.Function),
             ...snippetItems(lang),
           ],
         };
@@ -174,9 +474,9 @@ const ensureProviders = (monaco) => {
     });
   };
 
-  registerFor('cpp', cppKeywords);
-  registerFor('python', pythonKeywords);
-  registerFor('java', javaKeywords);
+  registerFor('cpp', cppKeywords, cppStdlib);
+  registerFor('python', pythonKeywords, pythonStdlib);
+  registerFor('java', javaKeywords, javaStdlib);
 
   providersInstalled = true;
 };
@@ -197,6 +497,13 @@ const defaultOptions = {
   bracketPairColorization: { enabled: true },
   suggestOnTriggerCharacters: true,
   quickSuggestions: { other: true, comments: false, strings: true },
+  fixedOverflowWidgets: true,
+  suggest: {
+    insertMode: 'insert',
+    snippetsPreventQuickSuggestions: false,
+    showStatusBar: true,
+    preview: true,
+  },
 };
 
 const CodeEditor = ({
@@ -228,6 +535,7 @@ const CodeEditor = ({
   // 初始化 Monaco Editor
   useEffect(() => {
     let disposed = false;
+    let handleClickOutside = null;
 
     const initEditor = async () => {
       try {
@@ -266,6 +574,14 @@ const CodeEditor = ({
           }
         });
 
+        // 点击编辑器外部时失去焦点
+        handleClickOutside = (e) => {
+          if (containerRef.current && !containerRef.current.contains(e.target)) {
+            editor.trigger('keyboard', 'hideSuggestWidget', {});
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+
         setIsLoading(false);
       } catch (error) {
         setIsLoading(false);
@@ -278,6 +594,9 @@ const CodeEditor = ({
     return () => {
       disposed = true;
       clearTimeout(timer);
+      if (handleClickOutside) {
+        document.removeEventListener('mousedown', handleClickOutside);
+      }
       if (editorRef.current) {
         editorRef.current.dispose();
         editorRef.current = null;
