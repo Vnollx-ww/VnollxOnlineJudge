@@ -170,6 +170,7 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
     /**
      * 手动清理缓存中的指定项
      */
+    @Override
     public void evictFromCache(String zipFilePath) {
         testCaseCache.invalidate(zipFilePath);
         logger.info("已从缓存中移除测试用例: {}", zipFilePath);

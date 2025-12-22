@@ -12,10 +12,13 @@ import {
 import { ArrowLeftOutlined, EyeOutlined, SendOutlined } from '@ant-design/icons';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
+import katex from 'katex';
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import './SolutionPages.css';
-import 'highlight.js/styles/github-dark.css';
+import 'highlight.js/styles/github.css';
+import 'katex/dist/katex.min.css';
 
 const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -23,7 +26,33 @@ const { TextArea } = Input;
 marked.setOptions({
   gfm: true,
   breaks: true,
+  highlight(code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+    return hljs.highlight(code, { language }).value;
+  },
 });
+
+// 渲染 LaTeX 公式
+const renderLatex = (text) => {
+  if (!text) return text;
+  // 处理块级公式 $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  // 处理行内公式 $...$
+  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  return text;
+};
 
 const SolutionPublishPage = () => {
   const { problemId } = useParams();
@@ -104,8 +133,9 @@ const SolutionPublishPage = () => {
   };
 
   const previewContent = useMemo(() => {
-    const html = content.trim() ? marked.parse(content) : '<p>暂无内容</p>';
-    return DOMPurify.sanitize(html);
+    if (!content.trim()) return '<p>暂无内容</p>';
+    const withLatex = renderLatex(content);
+    return DOMPurify.sanitize(marked.parse(withLatex));
   }, [content]);
 
   return (

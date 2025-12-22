@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -17,6 +17,7 @@ import {
   Popconfirm,
   Row,
   Col,
+  Tabs,
 } from 'antd';
 import {
   PlusOutlined,
@@ -24,13 +25,107 @@ import {
   EditOutlined,
   DeleteOutlined,
   UploadOutlined,
+  EyeOutlined,
+  EditFilled,
 } from '@ant-design/icons';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
 import './AdminProblems.css';
 
-const { Title, Text, TextArea } = Typography;
+// 配置 marked
+marked.setOptions({
+  gfm: true,
+  breaks: true,
+  highlight(code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+    return hljs.highlight(code, { language }).value;
+  },
+});
+
+// 渲染 LaTeX 公式
+const renderLatex = (text) => {
+  if (!text) return text;
+  // 处理块级公式 $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  // 处理行内公式 $...$
+  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  return text;
+};
+
+const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
+
+// Markdown 编辑器组件，支持编辑和预览切换
+const MarkdownEditor = ({ value, onChange, rows = 4, placeholder }) => {
+  const [activeTab, setActiveTab] = useState('edit');
+  
+  const renderMarkdown = useCallback((content) => {
+    if (!content || !content.trim()) return '<span style="color: #999;">暂无内容</span>';
+    // 先处理 LaTeX 公式，再解析 Markdown
+    const withLatex = renderLatex(content);
+    return DOMPurify.sanitize(marked.parse(withLatex));
+  }, []);
+
+  return (
+    <div className="markdown-editor">
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        size="small"
+        items={[
+          {
+            key: 'edit',
+            label: <span><EditFilled /> 编辑</span>,
+            children: (
+              <Input.TextArea
+                value={value}
+                onChange={onChange}
+                rows={rows}
+                placeholder={placeholder || '支持 Markdown 格式'}
+              />
+            ),
+          },
+          {
+            key: 'preview',
+            label: <span><EyeOutlined /> 预览</span>,
+            children: (
+              <div
+                className="markdown-preview markdown-body"
+                style={{
+                  minHeight: rows * 24,
+                  padding: '8px 12px',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 6,
+                  backgroundColor: '#fafafa',
+                  overflow: 'auto',
+                }}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(value) }}
+              />
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
+};
 
 const AdminProblems = () => {
   const [problems, setProblems] = useState([]);
@@ -424,10 +519,10 @@ const AdminProblems = () => {
           {/* 第三行：题目描述 */}
           <Form.Item
             name="description"
-            label="题目描述"
+            label="题目描述（支持 Markdown）"
             rules={[{ required: true, message: '请输入题目描述' }]}
           >
-            <Input.TextArea rows={4} />
+            <MarkdownEditor rows={6} placeholder="请输入题目描述，支持 Markdown 格式" />
           </Form.Item>
 
           {/* 第四行：两列布局 - 基本信息 */}
@@ -476,19 +571,19 @@ const AdminProblems = () => {
             <Col span={12}>
               <Form.Item
                 name="inputFormat"
-                label="输入格式"
+                label="输入格式（支持 Markdown）"
                 rules={[{ required: true, message: '请输入输入格式' }]}
               >
-                <Input.TextArea rows={3} />
+                <MarkdownEditor rows={4} placeholder="请输入输入格式说明" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
                 name="outputFormat"
-                label="输出格式"
+                label="输出格式（支持 Markdown）"
                 rules={[{ required: true, message: '请输入输出格式' }]}
               >
-                <Input.TextArea rows={3} />
+                <MarkdownEditor rows={4} placeholder="请输入输出格式说明" />
               </Form.Item>
             </Col>
           </Row>
@@ -508,8 +603,8 @@ const AdminProblems = () => {
           </Row>
 
           {/* 第七行：提示 */}
-          <Form.Item name="hint" label="提示">
-            <Input.TextArea rows={2} />
+          <Form.Item name="hint" label="提示（支持 Markdown）">
+            <MarkdownEditor rows={4} placeholder="请输入提示信息，如数据范围、注意事项等" />
           </Form.Item>
 
           {/* 第八行：两列布局 - 文件上传和公开设置 */}

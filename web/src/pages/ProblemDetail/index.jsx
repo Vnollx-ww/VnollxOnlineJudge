@@ -21,6 +21,8 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
@@ -141,10 +143,33 @@ const ProblemDetail = () => {
 
   useJudgeWebSocket(handleWebSocketMessage);
 
+  // 渲染 LaTeX 公式
+  const renderLatex = useCallback((text) => {
+    // 处理块级公式 $$...$$
+    text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+      try {
+        return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
+      } catch (e) {
+        return match;
+      }
+    });
+    // 处理行内公式 $...$（排除 $$ 的情况）
+    text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+      try {
+        return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
+      } catch (e) {
+        return match;
+      }
+    });
+    return text;
+  }, []);
+
   const renderMarkdown = useCallback((content, fallback = '暂无内容') => {
     const raw = content && content.trim() ? content : fallback;
-    return DOMPurify.sanitize(marked.parse(raw));
-  }, []);
+    // 先处理 LaTeX 公式，再解析 Markdown
+    const withLatex = renderLatex(raw);
+    return DOMPurify.sanitize(marked.parse(withLatex));
+  }, [renderLatex]);
 
   useEffect(() => {
     if (!isAuthenticated()) {

@@ -44,6 +44,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     private final OssService ossService;
     private final SubmissionService submissionService;
     private final TagService tagService;
+    private final TestCaseCacheService testCaseCacheService;
     private final static SnowflakeIdGenerator gen = new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
     public ProblemServiceImpl(
@@ -52,7 +53,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             @Lazy RedisService redisService,
             OssService ossService,
             @Lazy SubmissionService submissionService,
-            TagService tagService
+            TagService tagService,
+            TestCaseCacheService testCaseCacheService
     ) {
         this.problemTagService=problemTagService;
         this.userSolvedProblemService=userSolvedProblemService;
@@ -60,6 +62,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         this.ossService=ossService;
         this.submissionService=submissionService;
         this.tagService=tagService;
+        this.testCaseCacheService=testCaseCacheService;
     }
 
     @Override
@@ -143,6 +146,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         try {
             if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
                 ossService.uploadFile(dto.getId() + ".zip", dto.getTestCaseFile());
+                // 清除测试用例缓存，确保下次评测使用最新的测试用例
+                testCaseCacheService.evictFromCache(dto.getId() + ".zip");
             }
         } catch (IOException e) {
             throw new BusinessException("文件上传失败，服务器异常");

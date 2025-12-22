@@ -5,11 +5,13 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
+import katex from 'katex';
 import dayjs from 'dayjs';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import './SolutionPages.css';
 import 'highlight.js/styles/github.css';
+import 'katex/dist/katex.min.css';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -21,6 +23,28 @@ marked.setOptions({
     return hljs.highlight(code, { language }).value;
   },
 });
+
+// 渲染 LaTeX 公式
+const renderLatex = (text) => {
+  if (!text) return text;
+  // 处理块级公式 $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  // 处理行内公式 $...$
+  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  return text;
+};
 
 const SolutionDetailPage = () => {
   const { solveId, problemId } = useParams();
@@ -66,7 +90,8 @@ const SolutionDetailPage = () => {
 
   const renderedContent = useMemo(() => {
     if (!solution?.content) return '<p>暂无内容</p>';
-    return DOMPurify.sanitize(marked.parse(solution.content));
+    const withLatex = renderLatex(solution.content);
+    return DOMPurify.sanitize(marked.parse(withLatex));
   }, [solution?.content]);
 
   if (!pid || !solveId) {
