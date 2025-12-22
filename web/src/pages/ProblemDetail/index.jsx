@@ -15,8 +15,9 @@ import {
   Avatar,
   Popconfirm,
   App,
+  Modal,
 } from 'antd';
-import { ArrowLeftOutlined, CodeOutlined, CommentOutlined, BookOutlined, EditOutlined, FullscreenOutlined, FullscreenExitOutlined, CopyOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CodeOutlined, CommentOutlined, BookOutlined, EditOutlined, FullscreenOutlined, FullscreenExitOutlined, CopyOutlined, RobotOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -107,6 +108,10 @@ const ProblemDetail = () => {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  const [aiAnalysisVisible, setAiAnalysisVisible] = useState(false);
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState('');
+  const [aiModalVisible, setAiModalVisible] = useState(false);
 
   // 监听浏览器全屏状态变化（用户按ESC退出时同步状态）
   useEffect(() => {
@@ -321,6 +326,90 @@ const ProblemDetail = () => {
       });
     } finally {
       setCodeLoading((prev) => ({ ...prev, test: false }));
+    }
+  };
+
+  const handleAiAnalysis = async () => {
+    if (!code.trim()) {
+      message.warning('请先输入代码');
+      return;
+    }
+    setAiAnalysisVisible(true);
+    setAiAnalysisLoading(true);
+    setAiAnalysisResult('');
+    
+    try {
+      const prompt = `请分析以下代码，结合题目信息给出改进建议：
+
+【题目】${problem.title}
+【题目描述】${problem.description || '无'}
+【输入格式】${problem.inputFormat || '无'}
+【输出格式】${problem.outputFormat || '无'}
+【时间限制】${problem.timeLimit}ms
+【内存限制】${problem.memoryLimit}MB
+
+【用户代码】(${language})
+\`\`\`${language}
+${code}
+\`\`\`
+
+请从以下方面分析：
+1. 代码正确性：是否能正确解决题目
+2. 算法复杂度：时间和空间复杂度是否满足限制
+3. 代码风格：是否有改进空间
+4. 潜在问题：边界条件、溢出等
+5. 优化建议：如果有更优解法，请给出思路`;
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch('/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Accept': 'text/event-stream',
+          'Content-Type': 'text/plain',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: prompt,
+      });
+      
+      if (!response.ok || !response.body) {
+        throw new Error('AI服务请求失败');
+      }
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let accumulatedText = '';
+      
+      const pump = async () => {
+        const { done, value } = await reader.read();
+        if (done) {
+          setAiAnalysisLoading(false);
+          return;
+        }
+        
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split(/\n\n/);
+        buffer = parts.pop() || '';
+        
+        for (const chunk of parts) {
+          const lines = chunk.split(/\n/).map((l) => l.replace(/^data:\s?/, '')).filter(l => l.trim());
+          const data = lines.join('\n');
+          const cleanedData = data.replace(/\[DONE\]/g, '').replace(/"{1,10}/g, '');
+          
+          if (cleanedData) {
+            accumulatedText += cleanedData;
+            setAiAnalysisResult(accumulatedText);
+          }
+        }
+        
+        return pump();
+      };
+      
+      await pump();
+    } catch (error) {
+      console.error('AI分析失败:', error);
+      setAiAnalysisResult('AI分析失败，请稍后重试: ' + (error.message || '未知错误'));
+      setAiAnalysisLoading(false);
     }
   };
 
@@ -755,6 +844,13 @@ const ProblemDetail = () => {
           )}
           <div className="editor-actions">
             <Space>
+              <Button
+                icon={<RobotOutlined />}
+                onClick={handleAiAnalysis}
+                loading={aiAnalysisLoading}
+              >
+                AI分析
+              </Button>
               <Button 
                 loading={codeLoading.test} 
                 onClick={handleTestCode}
@@ -772,6 +868,79 @@ const ProblemDetail = () => {
               </Button>
             </Space>
           </div>
+          {aiAnalysisVisible && (
+            <div className="ai-analysis-panel" style={{
+              marginTop: 16,
+              padding: 16,
+              background: '#f5f5f5',
+              borderRadius: 8,
+              border: '1px solid #e8e8e8',
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: 12,
+              }}>
+                <Space>
+                  <RobotOutlined style={{ color: '#1a73e8', fontSize: 18 }} />
+                  <Text strong style={{ fontSize: 16 }}>AI 智能分析</Text>
+                  {aiAnalysisLoading && <Spin size="small" />}
+                </Space>
+                <Space>
+                  {aiAnalysisResult && !aiAnalysisLoading && (
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => setAiModalVisible(true)}
+                    >
+                      查看详情
+                    </Button>
+                  )}
+                  <Button
+                    type="text"
+                    icon={<CloseOutlined />}
+                    onClick={() => setAiAnalysisVisible(false)}
+                  />
+                </Space>
+              </div>
+              <div style={{
+                background: '#fff',
+                borderRadius: 6,
+                padding: 16,
+                maxHeight: 400,
+                overflow: 'auto',
+                border: '1px solid #e8e8e8',
+              }}>
+                {aiAnalysisResult ? (
+                  <div 
+                    className="markdown-body"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(aiAnalysisResult) }}
+                  />
+                ) : (
+                  <Text type="secondary">正在分析中，请稍候...</Text>
+                )}
+              </div>
+            </div>
+          )}
+          <Modal
+            title={
+              <Space>
+                <RobotOutlined style={{ color: '#1a73e8' }} />
+                <span>AI 智能分析详情</span>
+              </Space>
+            }
+            open={aiModalVisible}
+            onCancel={() => setAiModalVisible(false)}
+            footer={null}
+            width={800}
+            styles={{ body: { maxHeight: '70vh', overflow: 'auto' } }}
+          >
+            <div 
+              className="markdown-body"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(aiAnalysisResult) }}
+            />
+          </Modal>
           {(testResult || submitResult) && (
             <div className="editor-result">
               {testResult ? (

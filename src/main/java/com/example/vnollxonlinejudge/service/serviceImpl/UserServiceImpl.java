@@ -341,4 +341,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.select("id").ne("id",uid);
         return this.listObjs(queryWrapper);
     }
+
+    @Override
+    public List<User> getUserByName(String name) {
+        QueryWrapper<User> queryWrapper=new QueryWrapper<>();
+        queryWrapper.like("name",name);
+        return this.list();
+    }
 }

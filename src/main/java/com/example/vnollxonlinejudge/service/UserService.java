@@ -26,4 +26,5 @@ public interface UserService {
     Long getCount();
     List<UserVo> getAllUser();
     List<Integer> getUserIdList(Long uid);
+    List<User> getUserByName(String name);
 }

@@ -24,9 +24,20 @@ public class AiController {
         this.aiService=aiService;
     }
 
-    // 流式响应接口
+    // 流式响应接口 (GET - 适用于短消息)
     @GetMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> streamChat(@RequestParam String message) {
+        Long userId = UserContextHolder.getCurrentUserId();
+
+        return aiService.chat(userId, message)
+                .doOnNext(token -> logger.trace("发送token - 用户: {}, token: {}", userId, token))
+                .doOnError(error -> logger.error("AI服务错误 - 用户: {}, 错误: {}", userId, error.getMessage(), error))
+                .onErrorReturn("【系统】AI服务暂时不可用，请稍后重试");
+    }
+
+    // 流式响应接口 (POST - 适用于大消息体，如代码分析)
+    @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamChatPost(@RequestBody String message) {
         Long userId = UserContextHolder.getCurrentUserId();
 
         return aiService.chat(userId, message)

@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.service.ai;
 
 import com.alibaba.fastjson2.JSON;
+import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.query.SubmissionQuery;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
@@ -139,13 +140,40 @@ public class OjTools {
         }
     }
 
+    @Tool("根据用户名查询用户ID和基本信息，支持模糊匹配")
+    public String getUserIdByName(@P("用户名") String username) {
+        try {
+            logger.info("AI调用工具: getUserIdByName, username={}", username);
+            List<User> users = userService.getUserByName(username);
+            if (users == null || users.isEmpty()) {
+                return "{\"error\": \"未找到用户名包含 " + username + " 的用户\"}";
+            }
+            List<Map<String, Object>> userList = new java.util.ArrayList<>();
+            for (User user : users) {
+                Map<String, Object> userInfo = new HashMap<>();
+                userInfo.put("userId", user.getId());
+                userInfo.put("name", user.getName());
+                userInfo.put("passCount", user.getPassCount());
+                userInfo.put("submitCount", user.getSubmitCount());
+                userList.add(userInfo);
+            }
+            Map<String, Object> result = new HashMap<>();
+            result.put("total", userList.size());
+            result.put("users", userList);
+            return JSON.toJSONString(result);
+        } catch (Exception e) {
+            logger.error("getUserIdByName 失败: {}", e.getMessage());
+            return "{\"error\": \"根据用户名查询用户失败: " + e.getMessage() + "\"}";
+        }
+    }
+
     // ==================== 题目相关 ====================
 
     @Tool("根据题目名称查询题目详情，包括题目描述、输入输出格式、样例等")
     public String getProblemByName(@P("题目名称") String name) {
         try {
             logger.info("AI调用工具: getProblemByName, name={}", name);
-            ProblemVo problem = problemService.getProblemInfo(null, null, name);
+            ProblemVo problem = problemService.getProblemInfo(null, 0L, name);
             return JSON.toJSONString(problem);
         } catch (Exception e) {
             logger.error("getProblemByName 失败: {}", e.getMessage());
@@ -157,7 +185,7 @@ public class OjTools {
     public String getProblemById(@P("题目ID") Long pid) {
         try {
             logger.info("AI调用工具: getProblemById, pid={}", pid);
-            ProblemVo problem = problemService.getProblemInfo(pid, null, null);
+            ProblemVo problem = problemService.getProblemInfo(pid, 0L, null);
             return JSON.toJSONString(problem);
         } catch (Exception e) {
             logger.error("getProblemById 失败: {}", e.getMessage());
