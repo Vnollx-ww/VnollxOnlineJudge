@@ -9,12 +9,14 @@ import {
   SafetyOutlined,
   HomeOutlined,
   BookOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
 import AdminSolves from './AdminSolves';
 import AdminCompetitions from './AdminCompetitions';
 import AdminPractices from './AdminPractices';
+import AdminSettings from './AdminSettings';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import './Admin.css';
@@ -146,6 +148,11 @@ const Admin = () => {
       icon: <BookOutlined />,
       label: '练习管理',
     },
+    {
+      key: '/admin/settings',
+      icon: <SettingOutlined />,
+      label: '系统设置',
+    },
   ];
 
   const handleMenuClick = ({ key }) => {
@@ -218,6 +225,7 @@ const Admin = () => {
             <Route path="solves" element={<AdminSolves />} />
             <Route path="competitions" element={<AdminCompetitions />} />
             <Route path="practices" element={<AdminPractices />} />
+            <Route path="settings" element={<AdminSettings />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>
         </Content>
