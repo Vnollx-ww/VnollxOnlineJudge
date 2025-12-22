@@ -234,8 +234,8 @@ const AdminProblems = () => {
       
       formData.append('title', values.title);
       formData.append('description', values.description);
-      formData.append('timeLimit', values.timeLimit.toString());
-      formData.append('memoryLimit', values.memoryLimit.toString());
+      formData.append('timeLimit', String(Number(values.timeLimit)));
+      formData.append('memoryLimit', String(Number(values.memoryLimit)));
       formData.append('difficulty', values.difficulty);
       formData.append('inputFormat', values.inputFormat);
       formData.append('outputFormat', values.outputFormat);
@@ -545,10 +545,10 @@ const AdminProblems = () => {
                 label="内存限制 (MB)"
                 rules={[
                   { required: true, message: '请输入内存限制' },
-                  { type: 'number', min: 1, max: 512, message: '内存限制必须在1-512MB之间' },
+                  { type: 'number', min: 1, message: '内存限制必须大于0' },
                 ]}
               >
-                <InputNumber style={{ width: '100%' }} min={1} max={512} />
+                <InputNumber style={{ width: '100%' }} min={1} />
               </Form.Item>
             </Col>
             <Col span={8}>
