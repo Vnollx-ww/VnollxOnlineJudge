@@ -117,7 +117,7 @@ const AdminSettings = () => {
                 )}
               </Space>
             }
-            style={{ marginBottom: 24 }}
+            style={{ marginBottom: 24, height: 400 }}
           >
             {configInfo && (
               <Descriptions column={1} bordered size="small">
@@ -141,30 +141,6 @@ const AdminSettings = () => {
               </Button>
             </div>
           </Card>
-
-          <Card
-            title={
-              <Space>
-                <KeyOutlined style={{ color: '#52c41a' }} />
-                <span>更新 API Key</span>
-              </Space>
-            }
-          >
-            <Form form={apiKeyForm} onFinish={handleUpdateApiKey} layout="vertical">
-              <Form.Item
-                name="apiKey"
-                label="新的 API Key"
-                rules={[{ required: true, message: '请输入 API Key' }]}
-              >
-                <Input.Password placeholder="输入新的 API Key" size="large" />
-              </Form.Item>
-              <Form.Item style={{ marginBottom: 0 }}>
-                <Button type="primary" htmlType="submit" loading={saving} block>
-                  更新 API Key
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
         </Col>
 
         <Col xs={24} lg={12}>
@@ -175,6 +151,7 @@ const AdminSettings = () => {
                 <span>模型配置</span>
               </Space>
             }
+            style={{ marginBottom: 24, height: 400 }}
           >
             <Form
               form={modelForm}
@@ -205,6 +182,34 @@ const AdminSettings = () => {
               <Form.Item style={{ marginBottom: 0 }}>
                 <Button type="primary" htmlType="submit" loading={saving} block>
                   更新模型配置
+                </Button>
+              </Form.Item>
+            </Form>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col span={24}>
+          <Card
+            title={
+              <Space>
+                <KeyOutlined style={{ color: '#52c41a' }} />
+                <span>更新 API Key</span>
+              </Space>
+            }
+          >
+            <Form form={apiKeyForm} onFinish={handleUpdateApiKey} layout="inline" style={{ width: '100%' }}>
+              <Form.Item
+                name="apiKey"
+                rules={[{ required: true, message: '请输入 API Key' }]}
+                style={{ flex: 1, marginRight: 16 }}
+              >
+                <Input.Password placeholder="输入新的 API Key" size="large" />
+              </Form.Item>
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button type="primary" htmlType="submit" loading={saving} size="large">
+                  更新 API Key
                 </Button>
               </Form.Item>
             </Form>
