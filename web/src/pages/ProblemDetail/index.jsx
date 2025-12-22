@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Card,
   Typography,
@@ -86,6 +86,7 @@ public class Main {
 const ProblemDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState([]);
@@ -433,10 +434,16 @@ const ProblemDetail = () => {
     <div className="problem-detail-container">
       <Button
         icon={<ArrowLeftOutlined />}
-        onClick={() => navigate('/problems')}
+        onClick={() => {
+          if (location.state?.from === 'practice' && location.state?.practiceId) {
+            navigate(`/practice/${location.state.practiceId}`);
+          } else {
+            navigate('/problems');
+          }
+        }}
         style={{ marginBottom: 16 }}
       >
-        返回题目列表
+        {location.state?.from === 'practice' ? '返回练习' : '返回题目列表'}
       </Button>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card className="problem-card">
@@ -617,7 +624,7 @@ const ProblemDetail = () => {
                 <Alert
                   type={testResult.type}
                   message={`测试结果：${testResult.message}`}
-                  description={testResult.detail}
+                  description={<div style={{ whiteSpace: 'pre-wrap' }}>{testResult.detail}</div>}
                   showIcon
                   closable
                   onClose={() => setTestResult(null)}

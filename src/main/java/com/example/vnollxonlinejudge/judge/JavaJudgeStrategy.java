@@ -202,7 +202,7 @@ public class JavaJudgeStrategy implements JudgeStrategy {
     private String truncateString(String str, int maxLength) {
         if (str == null) return "null";
         if (str.length() <= maxLength) return str;
-        return str.substring(0, maxLength) + "...(截断，总长度:" + str.length() + ")";
+        return str.substring(0, maxLength) + "...";
     }
 
     private String compileCode(String code) {

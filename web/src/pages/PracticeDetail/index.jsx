@@ -84,7 +84,7 @@ const PracticeDetail = () => {
   };
 
   const handleProblemClick = (problemId) => {
-    navigate(`/problem/${problemId}`);
+    navigate(`/problem/${problemId}`, { state: { from: 'practice', practiceId: id } });
   };
 
   const columns = [
