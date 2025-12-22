@@ -26,6 +26,7 @@ import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
+import CodeEditor from '../../components/CodeEditor/CodeEditor';
 import './CompetitionProblemDetail.css';
 
 const { Title, Text } = Typography;
@@ -189,8 +190,16 @@ const ProblemDetail = () => {
         const template =
             languageOptions.find((item) => item.value === language)?.template ||
             languageOptions[0].template;
+
+        // 简化逻辑：切换语言时总是显示模板，让用户明确知道切换成功了
         setCode(template);
     }, [language]);
+
+    const codeStorageKey = useMemo(() => {
+        const pid = problem?.id ?? id;
+        if (!pid || !cid) return undefined;
+        return `oj:code:competition:${cid}:problem:${pid}:${language}`;
+    }, [problem?.id, id, cid, language]);
     useEffect(() => {
         loadCompetitionStatus();
     }, [cid]);
@@ -632,11 +641,12 @@ const ProblemDetail = () => {
                             style={{ marginTop: 12, marginBottom: 12 }}
                         />
                     )}
-                    <TextArea
-                        rows={18}
+                    <CodeEditor
                         value={code}
-                        onChange={(e) => setCode(e.target.value)}
-                        className="code-textarea"
+                        onChange={setCode}
+                        language={language}
+                        height={420}
+                        storageKey={codeStorageKey}
                     />
                     <div className="editor-actions">
                         <Space>

@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build", 
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "copy-monaco": "node scripts/copy-monaco.js",
+    "postinstall": "npm run copy-monaco"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

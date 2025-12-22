@@ -1,0 +1,11 @@
+.vnollx-code-editor {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+}
+
+.vnollx-code-editor .monaco-editor,
+.vnollx-code-editor .monaco-editor-background,
+.vnollx-code-editor .monaco-editor .inputarea.ime-input {
+  background: #0f172a !important;
+}
