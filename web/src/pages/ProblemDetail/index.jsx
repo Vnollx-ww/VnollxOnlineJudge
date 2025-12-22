@@ -589,6 +589,14 @@ const ProblemDetail = () => {
               重置模板
             </Button>
           </div>
+          {language === 'java' && (
+            <Alert
+              message="暂不支持用Java提交，请等待"
+              type="info"
+              showIcon
+              style={{ marginTop: 12, marginBottom: 12 }}
+            />
+          )}
           <TextArea
             rows={18}
             value={code}
@@ -597,13 +605,18 @@ const ProblemDetail = () => {
           />
           <div className="editor-actions">
             <Space>
-              <Button loading={codeLoading.test} onClick={handleTestCode}>
+              <Button 
+                loading={codeLoading.test} 
+                onClick={handleTestCode}
+                disabled={language === 'java'}
+              >
                 测试样例
               </Button>
               <Button
                 type="primary"
                 loading={codeLoading.submit}
                 onClick={handleSubmitCode}
+                disabled={language === 'java'}
               >
                 提交评测
               </Button>

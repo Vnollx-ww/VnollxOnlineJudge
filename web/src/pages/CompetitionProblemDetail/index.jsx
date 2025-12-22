@@ -599,6 +599,14 @@ const ProblemDetail = () => {
                             重置模板
                         </Button>
                     </div>
+                    {language === 'java' && (
+                        <Alert
+                            message="暂不支持用Java提交，请等待"
+                            type="info"
+                            showIcon
+                            style={{ marginTop: 12, marginBottom: 12 }}
+                        />
+                    )}
                     <TextArea
                         rows={18}
                         value={code}
@@ -611,7 +619,7 @@ const ProblemDetail = () => {
                                 type="primary"
                                 loading={codeLoading.test}
                                 onClick={handleTestCode}
-                                disabled={isCompetitionEnd}
+                                disabled={isCompetitionEnd || language === 'java'}
                             >
                                 {isCompetitionEnd ? "比赛已结束，不能测试" : "测试样例"}
                             </Button>
@@ -619,7 +627,7 @@ const ProblemDetail = () => {
                                 type="primary"
                                 loading={codeLoading.submit}
                                 onClick={handleSubmitCode}
-                                disabled={isCompetitionEnd}
+                                disabled={isCompetitionEnd || language === 'java'}
                             >
                                 {isCompetitionEnd ? "比赛已结束，不能提交" : "提交评测"}
                             </Button>
