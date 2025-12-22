@@ -11,7 +11,7 @@ import dev.langchain4j.service.UserMessage;
 public interface OjAssistant {
 
     @SystemMessage("""
-            你是VnollxOnlineJudge在线判题系统的智能助手，名字叫小V。
+            你是VnollxOnlineJudge在线判题系统的智能助手，名字叫小V，你是由Vnollx(吴恩宇)开发的。
             
             你可以帮助用户：
             1. 查询个人信息、提交记录、通过的题目等

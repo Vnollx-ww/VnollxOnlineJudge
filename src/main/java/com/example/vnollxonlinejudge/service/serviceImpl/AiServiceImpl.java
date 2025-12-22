@@ -51,7 +51,6 @@ public class AiServiceImpl implements AiService {
     public Flux<String> chat(Long userId, String message) {
         // 设置当前用户ID，供工具使用
         ojTools.setCurrentUserId(userId);
-        logger.info("开始处理用户 {} 的消息: {}", userId, message);
 
         return Flux.create(sink -> {
             try {
@@ -66,7 +65,6 @@ public class AiServiceImpl implements AiService {
                         sink.next(token);
                     })
                     .onComplete(response -> {
-                        logger.info("用户 {} 对话完成，回复长度: {}", userId, fullResponse.length());
                         // 记录消息历史
                         userMessageHistories.computeIfAbsent(userId, k -> new java.util.ArrayList<>());
                         userMessageHistories.get(userId).add(UserMessage.from(message));
@@ -96,8 +94,6 @@ public class AiServiceImpl implements AiService {
     @Override
     public void clearMemory(Long userId) {
         userMessageHistories.remove(userId);
-        // 注意：AiServices 内部管理的 ChatMemory 会在下次对话时自动重建
-        logger.info("已清除用户 {} 的对话记忆", userId);
     }
 
     @Override

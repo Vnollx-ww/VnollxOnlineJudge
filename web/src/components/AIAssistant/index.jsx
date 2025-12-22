@@ -1,19 +1,45 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { FloatButton, Drawer, Input, Button, Space, message as antMessage, Modal } from 'antd';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { FloatButton, Drawer, Input, Button, Space, message as antMessage, Modal, Avatar } from 'antd';
 import {
   RobotOutlined,
   SendOutlined,
   ClearOutlined,
   CloseOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import './AIAssistant.css';
 
 const { TextArea } = Input;
+
+// 渲染 LaTeX 公式
+const renderLatex = (text) => {
+  if (!text) return text;
+  // 处理块级公式 $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  // 处理行内公式 $...$（排除 $$ 的情况）
+  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  return text;
+};
 
 const AIAssistant = () => {
   const [open, setOpen] = useState(false);
@@ -165,8 +191,8 @@ const AIAssistant = () => {
         buffer = parts.pop() || '';
 
         for (const chunk of parts) {
-          const lines = chunk.split(/\n/).map((l) => l.replace(/^data:\s?/, ''));
-          const data = lines.join('\n');
+          const lines = chunk.split(/\n/).map((l) => l.replace(/^data:\s?/, '')).filter(l => l.trim());
+          const data = lines.join('');
           const cleanedData = data.replace(/\[DONE\]/g, '').replace(/"{1,10}/g, '');
 
           if (cleanedData) {
@@ -253,7 +279,7 @@ const AIAssistant = () => {
       <FloatButton
         icon={<RobotOutlined />}
         type="primary"
-        style={{ right: 24, bottom: 90 }}
+        style={{ right: 40, bottom: 90 }}
         onClick={() => setOpen(true)}
         tooltip="AI 助手"
       />
@@ -267,7 +293,7 @@ const AIAssistant = () => {
         placement="right"
         onClose={() => setOpen(false)}
         open={open}
-        width={400}
+        width={480}
         extra={
           <Space>
             <Button
@@ -286,10 +312,18 @@ const AIAssistant = () => {
           <div className="ai-messages">
             {messages.map((msg, index) => (
               <div key={index} className={`ai-message ai-message-${msg.role}`}>
+                {msg.role === 'bot' && (
+                  <Avatar
+                    className="ai-avatar"
+                    style={{ backgroundColor: '#1a73e8' }}
+                    icon={<RobotOutlined />}
+                  />
+                )}
                 <div className="ai-message-bubble">
                   {msg.role === 'bot' ? (
                     <ReactMarkdown
                       className="ai-markdown"
+                      rehypePlugins={[rehypeRaw]}
                       components={{
                         code({ node, inline, className, children, ...props }) {
                           const match = /language-(\w+)/.exec(className || '');
@@ -310,16 +344,28 @@ const AIAssistant = () => {
                         },
                       }}
                     >
-                      {msg.content}
+                      {renderLatex(msg.content)}
                     </ReactMarkdown>
                   ) : (
                     <span>{msg.content}</span>
                   )}
                 </div>
+                {msg.role === 'user' && (
+                  <Avatar
+                    className="ai-avatar"
+                    style={{ backgroundColor: '#10b981' }}
+                    icon={<UserOutlined />}
+                  />
+                )}
               </div>
             ))}
             {thinking && (
               <div className="ai-message ai-message-bot">
+                <Avatar
+                  className="ai-avatar"
+                  style={{ backgroundColor: '#1a73e8' }}
+                  icon={<RobotOutlined />}
+                />
                 <div className="ai-thinking">
                   <span>AI思考中</span>
                   <div className="ai-thinking-dots">
