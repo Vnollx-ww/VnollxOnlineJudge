@@ -19,9 +19,49 @@ import {
   ClockCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import './SolutionPages.css';
+
+// 渲染 LaTeX 公式
+const renderLatex = (text) => {
+  if (!text) return text;
+  // 处理块级公式 $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  // 处理行内公式 $...$
+  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    try {
+      return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
+    } catch (e) {
+      return match;
+    }
+  });
+  return text;
+};
+
+// 将 markdown 转换为纯文本预览
+const getPreviewText = (content) => {
+  if (!content) return '';
+  // 将 LaTeX 公式转换为纯文本（去掉 $ 符号，保留公式内容，不渲染成 KaTeX HTML）
+  let text = content;
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => formula.trim());
+  text = text.replace(/\$([^\$\n]+?)\$/g, (_, formula) => formula.trim());
+  // 转换 markdown 为 HTML，再提取纯文本
+  const html = marked.parse(text);
+  const div = document.createElement('div');
+  div.innerHTML = DOMPurify.sanitize(html);
+  return div.textContent || div.innerText || '';
+};
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -188,7 +228,7 @@ const SolutionListPage = () => {
                     {item.title}
                   </Title>
                   <Paragraph className="solution-card-content" ellipsis={{ rows: 3 }}>
-                    {item.content}
+                    {getPreviewText(item.content)}
                   </Paragraph>
                   <Space align="center" style={{ justifyContent: 'space-between', width: '100%' }}>
                     <Space size="middle">

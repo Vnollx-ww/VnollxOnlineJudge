@@ -75,22 +75,24 @@
 }
 
 .markdown-body pre {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #e2e8f0;
+  color: #0f172a;
   padding: 16px;
   border-radius: 12px;
   overflow-x: auto;
+  border: 1px solid #cbd5e1;
 }
 
 .problem-pre {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #e2e8f0;
+  color: #0f172a;
   padding: 16px;
   border-radius: 12px;
   font-size: 15px;
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-x: auto;
+  border: 1px solid #cbd5e1;
 }
 
 .samples-grid {
@@ -105,6 +107,17 @@
   border-radius: 14px;
   padding: 16px;
   background: rgba(15, 23, 42, 0.02);
+}
+
+.sample-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sample-header h5 {
+  margin: 0;
 }
 
 .editor-card {

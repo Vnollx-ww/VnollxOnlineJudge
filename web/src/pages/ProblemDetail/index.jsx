@@ -6,7 +6,6 @@ import {
   Typography,
   Tag,
   Button,
-  message,
   Spin,
   Space,
   Divider,
@@ -15,8 +14,9 @@ import {
   Input,
   Avatar,
   Popconfirm,
+  App,
 } from 'antd';
-import { ArrowLeftOutlined, CodeOutlined, CommentOutlined, BookOutlined, EditOutlined, FullscreenOutlined, FullscreenExitOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CodeOutlined, CommentOutlined, BookOutlined, EditOutlined, FullscreenOutlined, FullscreenExitOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -91,6 +91,7 @@ const ProblemDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { message } = App.useApp();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState([]);
@@ -106,6 +107,17 @@ const ProblemDetail = () => {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+
+  // 监听浏览器全屏状态变化（用户按ESC退出时同步状态）
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsEditorFullscreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const userInfo = getUserInfo();
 
@@ -567,11 +579,63 @@ const ProblemDetail = () => {
 
           <div className="samples-grid">
             <div className="sample-card">
-              <Title level={5}>输入样例</Title>
+              <div className="sample-header">
+                <Title level={5}>输入样例</Title>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    const text = problem.inputExample;
+                    if (text) {
+                      navigator.clipboard.writeText(text).then(() => {
+                        message.success('已复制输入样例');
+                      }).catch(() => {
+                        // 备用方案
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        message.success('已复制输入样例');
+                      });
+                    }
+                  }}
+                >
+                  复制
+                </Button>
+              </div>
               <pre className="problem-pre">{problem.inputExample || '暂无输入样例'}</pre>
             </div>
             <div className="sample-card">
-              <Title level={5}>输出样例</Title>
+              <div className="sample-header">
+                <Title level={5}>输出样例</Title>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    const text = problem.outputExample;
+                    if (text) {
+                      navigator.clipboard.writeText(text).then(() => {
+                        message.success('已复制输出样例');
+                      }).catch(() => {
+                        // 备用方案
+                        const textarea = document.createElement('textarea');
+                        textarea.value = text;
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textarea);
+                        message.success('已复制输出样例');
+                      });
+                    }
+                  }}
+                >
+                  复制
+                </Button>
+              </div>
               <pre className="problem-pre">{problem.outputExample || '暂无输出样例'}</pre>
             </div>
           </div>
@@ -622,7 +686,15 @@ const ProblemDetail = () => {
             </Space>
             <Button
               icon={isEditorFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-              onClick={() => setIsEditorFullscreen(!isEditorFullscreen)}
+              onClick={() => {
+                if (!isEditorFullscreen) {
+                  document.documentElement.requestFullscreen();
+                  setIsEditorFullscreen(true);
+                } else {
+                  document.exitFullscreen();
+                  setIsEditorFullscreen(false);
+                }
+              }}
             >
               {isEditorFullscreen ? '退出全屏' : '全屏编辑'}
             </Button>
@@ -649,7 +721,10 @@ const ProblemDetail = () => {
             >
               <Button
                 icon={<FullscreenExitOutlined />}
-                onClick={() => setIsEditorFullscreen(false)}
+                onClick={() => {
+                  document.exitFullscreen();
+                  setIsEditorFullscreen(false);
+                }}
                 style={{
                   position: 'absolute',
                   bottom: 10,

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Card, Button, Space, Typography, message, Skeleton, Result } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Card, Button, Space, Typography, Skeleton, Result, App } from 'antd';
+import { ArrowLeftOutlined, CopyOutlined } from '@ant-design/icons';
+import { createRoot } from 'react-dom/client';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
@@ -50,8 +51,10 @@ const SolutionDetailPage = () => {
   const { solveId, problemId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { message } = App.useApp();
   const pid = problemId;
   const titleFromState = location.state?.title;
+  const contentRef = useRef(null);
 
   const [solution, setSolution] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -93,6 +96,35 @@ const SolutionDetailPage = () => {
     const withLatex = renderLatex(solution.content);
     return DOMPurify.sanitize(marked.parse(withLatex));
   }, [solution?.content]);
+
+  // 为代码块添加复制按钮
+  useEffect(() => {
+    if (!contentRef.current || loading) return;
+    const codeBlocks = contentRef.current.querySelectorAll('pre');
+    codeBlocks.forEach((pre) => {
+      // 避免重复添加
+      if (pre.querySelector('.code-copy-btn')) return;
+      pre.style.position = 'relative';
+      const btn = document.createElement('button');
+      btn.className = 'code-copy-btn';
+      btn.innerHTML = '复制';
+      btn.onclick = () => {
+        const code = pre.querySelector('code')?.textContent || pre.textContent;
+        navigator.clipboard.writeText(code).then(() => {
+          message.success('已复制代码');
+        }).catch(() => {
+          const textarea = document.createElement('textarea');
+          textarea.value = code;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+          message.success('已复制代码');
+        });
+      };
+      pre.appendChild(btn);
+    });
+  }, [renderedContent, loading, message]);
 
   if (!pid || !solveId) {
     return (
@@ -153,7 +185,7 @@ const SolutionDetailPage = () => {
                   value={dayjs(solution?.createTime).format('YYYY-MM-DD HH:mm')}
                 />
               </div>
-              <div className="markdown-body" dangerouslySetInnerHTML={{ __html: renderedContent }} />
+              <div className="markdown-body" ref={contentRef} dangerouslySetInnerHTML={{ __html: renderedContent }} />
             </Space>
           </Card>
         </div>

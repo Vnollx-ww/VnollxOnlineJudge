@@ -130,11 +130,12 @@
 /* Markdown 预览 */
 .solution-preview {
   min-height: 200px;
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #f8fafc;
+  color: #1f2937;
   border-radius: 12px;
   padding: 16px;
   overflow: auto;
+  border: 1px solid #e2e8f0;
 }
 
 .solution-preview .markdown-body {
@@ -142,7 +143,7 @@
 }
 
 .solution-preview .markdown-body pre {
-  background: rgba(15, 23, 42, 0.7);
+  background: #f1f5f9;
 }
 
 /* Markdown 内容样式 */
@@ -157,18 +158,42 @@
 }
 
 .markdown-body code {
-  background: rgba(15, 23, 42, 0.08);
-  padding: 2px 6px;
+  background: #e2e8f0;
+  color: #0f172a;
+  padding: 3px 8px;
   border-radius: 6px;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .markdown-body pre {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #e2e8f0;
+  color: #0f172a;
   padding: 16px;
   border-radius: 12px;
   overflow-x: auto;
+  border: 1px solid #cbd5e1;
+  position: relative;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.code-copy-btn:hover {
+  background: #f1f5f9;
+  color: #1a73e8;
+  border-color: #1a73e8;
 }
 
 /* 响应式 */
