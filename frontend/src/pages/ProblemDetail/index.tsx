@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Button,
   Spin,
@@ -141,6 +141,7 @@ const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { } = App.useApp();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,6 +161,8 @@ const ProblemDetail: React.FC = () => {
   const [aiAnalysisVisible, setAiAnalysisVisible] = useState(false);
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState('');
+  const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
+  const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   const userInfo = getUserInfo();
 
@@ -256,6 +259,30 @@ const ProblemDetail: React.FC = () => {
       loadComments(problem.id);
     }
   }, [problem?.id]);
+
+  // 处理 URL 中的 commentId 参数，滚动到目标评论并高亮
+  useEffect(() => {
+    const commentId = searchParams.get('commentId');
+    if (commentId && comments.length > 0 && !commentLoading) {
+      const targetId = Number(commentId);
+      setHighlightedCommentId(targetId);
+      
+      // 延迟执行滚动，确保 DOM 已渲染
+      setTimeout(() => {
+        const targetElement = commentRefs.current[targetId];
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+
+      // 5秒后取消高亮
+      const timer = setTimeout(() => {
+        setHighlightedCommentId(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, comments, commentLoading]);
 
   useEffect(() => {
     const template = languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
@@ -571,7 +598,19 @@ ${code}
 
   const renderComments = (items: Comment[] = []): React.ReactNode =>
     items.map((item) => (
-      <div key={item.id} className="py-4 last:border-0" style={{ borderBottom: '1px solid var(--gemini-border-light)' }}>
+      <div 
+        key={item.id} 
+        ref={(el) => { commentRefs.current[item.id] = el; }}
+        className={`py-4 last:border-0 transition-all duration-300 ${highlightedCommentId === item.id ? 'rounded-lg' : ''}`}
+        style={{ 
+          borderBottom: '1px solid var(--gemini-border-light)',
+          ...(highlightedCommentId === item.id ? {
+            backgroundColor: 'rgba(26, 115, 232, 0.15)',
+            border: '2px solid var(--gemini-accent)',
+            boxShadow: '0 0 12px rgba(26, 115, 232, 0.3)',
+          } : {})
+        }}
+      >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <Avatar style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}>

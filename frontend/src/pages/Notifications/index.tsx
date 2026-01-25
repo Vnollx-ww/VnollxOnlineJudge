@@ -6,7 +6,6 @@ import {
   DeleteOutlined,
   EyeOutlined,
   ReloadOutlined,
-  SearchOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -36,6 +35,7 @@ interface Notification {
   description?: string;
   is_read: boolean;
   createTime: string;
+  commentId?: number;
 }
 
 const Notifications: React.FC = () => {
@@ -117,17 +117,27 @@ const Notifications: React.FC = () => {
     loadNotificationsRef.current?.(1);
   }, [navigate, messageApi]);
 
-  const handleSearch = () => loadNotifications(1);
+  // 防抖定时器
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleReset = () => {
-    setKeyword('');
-    setStatus(undefined);
-    loadNotifications(1, { keyword: '', status: undefined });
+  // 关键字变化时自动搜索（防抖）
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setKeyword(value);
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      loadNotifications(1, { keyword: value });
+    }, 500);
   };
 
   const handleStatusChange = (value: string) => {
-    setStatus(value);
-    loadNotifications(1, { status: value });
+    // 如果选择"全部"，则清除状态筛选
+    const newStatus = value === 'all' ? undefined : value;
+    setStatus(newStatus);
+    loadNotifications(1, { status: newStatus });
   };
 
   const handlePageChange = (page: number) => loadNotifications(page);
@@ -178,6 +188,33 @@ const Notifications: React.FC = () => {
     </Tag>
   );
 
+  // 从通知描述中提取题目ID，格式如："xxx 在问题 #2 中回复了你：..."
+  const extractProblemId = (description?: string): string | null => {
+    const match = description?.match(/在问题 #(\d+) 中回复了你/);
+    return match ? match[1] : null;
+  };
+
+  const handleViewNotification = async (item: Notification) => {
+    const problemId = extractProblemId(item.description);
+    // 如果是回复通知且能提取到 problemId 和有 commentId，跳转到题目页面并定位到评论
+    if (item.title === '回复通知' && problemId && item.commentId) {
+      // 标记为已读
+      if (!item.is_read) {
+        try {
+          await api.put(`/notification/read/${item.id}`);
+          dispatchNotificationUpdate();
+        } catch (error) {
+          console.error('标记已读失败:', error);
+        }
+      }
+      // 跳转到题目页面，带上 commentId 参数
+      navigate(`/problem/${problemId}?commentId=${item.commentId}`);
+    } else {
+      // 其他通知跳转到详情页
+      navigate(`/notification/${item.id}`);
+    }
+  };
+
   const renderActions = (item: Notification) => [
     !item.is_read && (
       <Button
@@ -192,10 +229,10 @@ const Notifications: React.FC = () => {
     <Button
       type="link"
       icon={<EyeOutlined />}
-      onClick={() => navigate(`/notification/${item.id}`)}
+      onClick={() => handleViewNotification(item)}
       key="view"
     >
-      查看详情
+      {item.title === '回复通知' && extractProblemId(item.description) ? '查看评论' : '查看详情'}
     </Button>,
     <Button
       type="link"
@@ -244,36 +281,20 @@ const Notifications: React.FC = () => {
             <Input
               placeholder="搜索通知标题或内容"
               value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onPressEnter={handleSearch}
+              onChange={handleKeywordChange}
               allowClear
               className="!w-64 !rounded-full"
             />
             <Select
               placeholder="阅读状态"
-              value={status}
+              value={status ?? 'all'}
               onChange={handleStatusChange}
-              allowClear
               className="!w-32"
             >
+              <Option value="all">全部</Option>
               <Option value="false">未读</Option>
               <Option value="true">已读</Option>
             </Select>
-            <Space>
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={handleSearch}
-                style={{ 
-                  backgroundColor: 'var(--gemini-accent)',
-                  color: 'var(--gemini-accent-text)',
-                  border: 'none'
-                }}
-              >
-                搜索
-              </Button>
-              <Button onClick={handleReset}>重置</Button>
-            </Space>
           </div>
 
           {/* List - Gemini 风格 */}
