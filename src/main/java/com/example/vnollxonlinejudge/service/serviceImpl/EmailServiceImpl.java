@@ -164,7 +164,7 @@ public class EmailServiceImpl implements EmailService {
         html.append("  </div>");
         
         html.append("  <div class=\"footer\">");
-        html.append("    <p class=\"footer-text\">© 2026 Vnollx OJ · 极简编程评测平台</p>");
+        html.append("    <p class=\"footer-text\">© 2026 Vnollx OJ · 编程评测平台</p>");
         html.append("    <p class=\"footer-text\">此为系统自动发送邮件，请勿直接回复</p>");
         html.append("  </div>");
         html.append("</div>");
