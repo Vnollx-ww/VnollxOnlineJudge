@@ -108,7 +108,7 @@ const Competitions: React.FC = () => {
 
   const handleJoin = (id: number, status: string) => {
     if (status === '暂未开始') {
-      toast.warning('比赛暂未开始，无法进入');
+      toast('比赛暂未开始，无法进入', { icon: '⚠️' });
       return;
     }
     navigate(`/competition/${id}`);

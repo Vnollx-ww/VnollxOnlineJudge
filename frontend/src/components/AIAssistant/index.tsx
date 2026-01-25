@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FloatButton, Drawer, Input, Button, Space, message as antMessage, Modal, Avatar } from 'antd';
+import { FloatButton, Drawer, Input, Button, message as antMessage, Modal, Avatar } from 'antd';
 import { Bot, Send, Trash2, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';

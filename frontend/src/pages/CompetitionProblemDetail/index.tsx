@@ -27,7 +27,6 @@ import {
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -133,7 +132,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const navigate = useNavigate();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tags, setTags] = useState<string[]>([]);
+  const [_tags, _setTags] = useState<string[]>([]);
   const [language, setLanguage] = useState(languageOptions[0].value);
   const [code, setCode] = useState(languageOptions[0].template);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
@@ -305,11 +304,11 @@ const CompetitionProblemDetail: React.FC = () => {
 
   const handleTestCode = async () => {
     if (!code.trim()) {
-      toast.warning('请先输入代码');
+      toast('请先输入代码', { icon: '⚠️' });
       return;
     }
     if (!problem?.inputExample || !problem?.outputExample) {
-      toast.warning('该题目没有提供样例，无法测试');
+      toast('该题目没有提供样例，无法测试', { icon: '⚠️' });
       return;
     }
     setCodeLoading((prev) => ({ ...prev, test: true }));
@@ -346,7 +345,7 @@ const CompetitionProblemDetail: React.FC = () => {
 
   const handleSubmitCode = async () => {
     if (!code.trim()) {
-      toast.warning('请先输入代码');
+      toast('请先输入代码', { icon: '⚠️' });
       return;
     }
     setCodeLoading((prev) => ({ ...prev, submit: true }));
@@ -389,7 +388,7 @@ const CompetitionProblemDetail: React.FC = () => {
 
   const handleSubmitComment = async () => {
     if (!commentContent.trim()) {
-      toast.warning('请输入评论内容');
+      toast('请输入评论内容', { icon: '⚠️' });
       return;
     }
     if (!userInfo?.id) {

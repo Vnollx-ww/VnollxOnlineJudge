@@ -19,7 +19,6 @@ import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Upload as UploadIcon, Eye, Edit3 } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';

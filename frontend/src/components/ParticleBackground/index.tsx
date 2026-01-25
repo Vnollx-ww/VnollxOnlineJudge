@@ -1,4 +1,5 @@
-import { useEffect, useRef, CSSProperties } from 'react';
+import { useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 
 interface ParticleBackgroundProps {
   style?: CSSProperties;

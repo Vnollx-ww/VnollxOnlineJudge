@@ -142,7 +142,7 @@ const AdminPractices: React.FC = () => {
 
   const handleBatchAddProblems = async () => {
     if (selectedProblems.length === 0) {
-      toast.warning('请至少选择一个题目');
+      toast('请至少选择一个题目', { icon: '⚠️' });
       return;
     }
 

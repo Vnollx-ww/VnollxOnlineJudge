@@ -141,7 +141,7 @@ const ProblemDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { message } = App.useApp();
+  const { } = App.useApp();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
