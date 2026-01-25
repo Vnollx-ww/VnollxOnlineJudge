@@ -3,6 +3,7 @@ import { Layout, Modal, Typography } from 'antd';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import AIAssistant from '../AIAssistant';
+import ParticleBackground from '../ParticleBackground';
 import api from '../../utils/api';
 import { isAuthenticated, setUserInfo } from '../../utils/auth';
 import type { User, ApiResponse } from '../../types';
@@ -79,8 +80,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <Layout 
       className={`min-h-screen ${layoutMode === 'left' ? 'flex-row' : 'flex-col'}`}
-      style={{ backgroundColor: 'var(--gemini-bg)' }}
+      style={{ backgroundColor: 'transparent' }}
     >
+      {/* 粒子背景 */}
+      <ParticleBackground />
+      
       {/* 导航 */}
       {layoutMode === 'left' ? (
         <Sidebar
