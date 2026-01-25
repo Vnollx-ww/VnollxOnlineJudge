@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Layout, Modal, Typography } from 'antd';
+import toast from 'react-hot-toast';
+import { MessageCircle, Bell } from 'lucide-react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import AIAssistant from '../AIAssistant';
 import ParticleBackground from '../ParticleBackground';
 import api from '../../utils/api';
 import { isAuthenticated, setUserInfo } from '../../utils/auth';
+import { useNotificationWebSocket, type NotificationMessage } from '../../hooks/useNotificationWebSocket';
 import type { User, ApiResponse } from '../../types';
 
 const { Content, Footer } = Layout;
@@ -24,6 +27,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   });
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const loadUserInfo = useCallback(async () => {
     try {
@@ -52,24 +56,110 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   }, []);
 
+  const loadUnreadMessageCount = useCallback(async () => {
+    try {
+      const data = await api.get('/friend/unread') as ApiResponse<number>;
+      if (data.code === 200) {
+        setUnreadMessageCount(data.data || 0);
+      }
+    } catch (error) {
+      console.error('获取未读消息数量失败:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated()) {
       loadUserInfo();
       loadNotificationCount();
+      loadUnreadMessageCount();
     }
-  }, [loadUserInfo, loadNotificationCount]);
+  }, [loadUserInfo, loadNotificationCount, loadUnreadMessageCount]);
 
   useEffect(() => {
-    const handler = () => {
+    const notificationHandler = () => {
       if (isAuthenticated()) {
         loadNotificationCount();
       }
     };
-    window.addEventListener('notification-updated', handler);
-    return () => {
-      window.removeEventListener('notification-updated', handler);
+    const messageHandler = () => {
+      if (isAuthenticated()) {
+        loadUnreadMessageCount();
+      }
     };
-  }, [loadNotificationCount]);
+    window.addEventListener('notification-updated', notificationHandler);
+    window.addEventListener('message-updated', messageHandler);
+    return () => {
+      window.removeEventListener('notification-updated', notificationHandler);
+      window.removeEventListener('message-updated', messageHandler);
+    };
+  }, [loadNotificationCount, loadUnreadMessageCount]);
+
+  // WebSocket 通知处理
+  const handleNotificationMessage = useCallback((notification: NotificationMessage) => {
+    console.log('[AppLayout] 收到新通知:', notification);
+    
+    // 更新未读计数
+    setNotificationCount(prev => prev + 1);
+
+    // 显示 Toast 通知
+    toast.custom(
+      (t) => (
+        <div
+          className={`${
+            t.visible ? 'animate-enter' : 'animate-leave'
+          } max-w-md w-full bg-white shadow-lg rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden`}
+          style={{
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+          }}
+        >
+          <div className="flex-1 w-0 p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-0.5">
+                <div 
+                  className="h-10 w-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--gemini-accent, #d3e3fd)' }}
+                >
+                  {notification.title === '回复通知' ? (
+                    <MessageCircle className="h-5 w-5" style={{ color: 'var(--gemini-accent-text, #041e49)' }} />
+                  ) : (
+                    <Bell className="h-5 w-5" style={{ color: 'var(--gemini-accent-text, #041e49)' }} />
+                  )}
+                </div>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-semibold text-gray-900">
+                  {notification.title}
+                </p>
+                {notification.description && (
+                  <p className="mt-1 text-sm text-gray-500 line-clamp-2">
+                    {notification.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex border-l border-gray-200">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                window.location.href = '/notifications';
+              }}
+              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-blue-600 hover:text-blue-500 focus:outline-none"
+            >
+              查看
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        duration: 5000,
+        position: 'top-right',
+      }
+    );
+  }, []);
+
+  // 启用 WebSocket 通知连接
+  useNotificationWebSocket(handleNotificationMessage);
 
   const toggleLayoutMode = () => {
     const newMode = layoutMode === 'top' ? 'left' : 'top';
@@ -90,6 +180,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Sidebar
           user={user}
           notificationCount={notificationCount}
+          unreadMessageCount={unreadMessageCount}
           loadUserInfo={loadUserInfo}
           loadNotificationCount={loadNotificationCount}
           layoutMode={layoutMode}

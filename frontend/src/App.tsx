@@ -16,6 +16,7 @@ import {
   CompetitionProblemDetail,
   Practices,
   PracticeDetail,
+  Friends,
   Admin,
   Login,
   Register,
@@ -241,6 +242,9 @@ function App() {
                     {/* 练习相关 */}
                     <Route path="/practices" element={<Practices />} />
                     <Route path="/practice/:id" element={<PracticeDetail />} />
+
+                    {/* 好友相关 */}
+                    <Route path="/friends" element={<Friends />} />
 
                     {/* 题解相关 */}
                     <Route

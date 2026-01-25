@@ -5,6 +5,7 @@ import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface UserService {
@@ -27,4 +28,7 @@ public interface UserService {
     List<UserVo> getAllUser();
     List<Integer> getUserIdList(Long uid);
     List<User> getUserByName(String name);
+    List<User> searchByName(String keyword, int pageNum, int pageSize);
+    List<User> getUsersByIds(Collection<Long> ids);
+    User getUserEntityById(Long id);
 }

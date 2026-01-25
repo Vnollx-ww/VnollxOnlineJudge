@@ -50,6 +50,12 @@ export default defineConfig({
   
   server: {
     port: 3000,
+    hmr: {
+      // 让 HMR WebSocket 直接连接，不经过代理
+      protocol: 'ws',
+      host: 'localhost',
+      port: 3000,
+    },
     proxy: {
       // WebSocket 代理
       '/ws': {
@@ -87,6 +93,7 @@ export default defineConfig({
             '/ranklist',
             '/competitions',
             '/practices',
+            '/friends',
             '/notifications',
             '/settings',
             '/about',

@@ -27,6 +27,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -346,6 +348,28 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public List<User> getUserByName(String name) {
         QueryWrapper<User> queryWrapper=new QueryWrapper<>();
         queryWrapper.like("name",name);
-        return this.list();
+        return this.list(queryWrapper);
+    }
+
+    @Override
+    public List<User> searchByName(String keyword, int pageNum, int pageSize) {
+        Page<User> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.like("name", keyword)
+               .select("id", "name", "avatar", "signature");
+        return this.page(page, wrapper).getRecords();
+    }
+
+    @Override
+    public List<User> getUsersByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return this.baseMapper.selectBatchIds(ids);
+    }
+
+    @Override
+    public User getUserEntityById(Long id) {
+        return this.baseMapper.selectById(id);
     }
 }

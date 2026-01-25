@@ -11,6 +11,7 @@ import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
 import com.example.vnollxonlinejudge.model.entity.Notification;
 import com.example.vnollxonlinejudge.service.*;
+import com.example.vnollxonlinejudge.websocket.NotificationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +24,12 @@ import java.util.stream.Collectors;
 @Service
 public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Notification> implements NotificationService {
     private final UserService userService;
+    private final NotificationWebSocketHandler notificationWebSocketHandler;
+    
     @Autowired
-    public NotificationServiceImpl(UserService userService) {
-        this.userService=userService;
+    public NotificationServiceImpl(UserService userService, NotificationWebSocketHandler notificationWebSocketHandler) {
+        this.userService = userService;
+        this.notificationWebSocketHandler = notificationWebSocketHandler;
     }
 
     @Override
@@ -41,8 +45,14 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                             .build())
                     .collect(Collectors.toList());
             this.saveBatch(notificationList);
+            // 通过 WebSocket 推送通知给每个用户
+            for (Notification n : notificationList) {
+                notificationWebSocketHandler.sendNotificationToUser(n.getUid(), new NotificationVo(n));
+            }
         } else {
             this.save(notification);
+            // 通过 WebSocket 推送通知
+            notificationWebSocketHandler.sendNotificationToUser(notification.getUid(), new NotificationVo(notification));
         }
     }
 

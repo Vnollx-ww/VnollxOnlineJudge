@@ -275,7 +275,7 @@ const AIAssistant: React.FC = () => {
       <FloatButton
         icon={<Bot className="w-5 h-5" />}
         type="primary"
-        className="!w-12 !h-12 !right-10 !bottom-24"
+        className="!w-12 !h-12 !right-10 !bottom-12"
         onClick={() => setOpen(true)}
         tooltip="AI 助手"
       />

@@ -13,6 +13,7 @@ import {
   Info,
   ArrowLeftRight,
   Zap,
+  Users,
 } from 'lucide-react';
 import { isAuthenticated, removeToken } from '@/utils/auth';
 import type { User as UserType } from '@/types';
@@ -20,6 +21,7 @@ import type { User as UserType } from '@/types';
 interface SidebarProps {
   user: UserType | null;
   notificationCount: number;
+  unreadMessageCount: number;
   loadUserInfo: () => Promise<void>;
   loadNotificationCount: () => Promise<void>;
   layoutMode: 'top' | 'left';
@@ -29,6 +31,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   user,
   notificationCount,
+  unreadMessageCount,
   toggleLayoutMode,
 }) => {
   const navigate = useNavigate();
@@ -106,6 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { key: '/ranklist', icon: Trophy, label: '排行榜' },
     { key: '/competitions', icon: Trophy, label: '比赛' },
     { key: '/practices', icon: BookOpen, label: '练习' },
+    { key: '/friends', icon: Users, label: '好友' },
     { key: '/about', icon: Info, label: '关于' },
   ];
 
@@ -181,7 +185,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 }
               }}
             >
-              <Icon className="w-5 h-5" />
+              {item.key === '/friends' && unreadMessageCount > 0 ? (
+                <Badge count={unreadMessageCount} size="small" offset={[-2, 2]}>
+                  <Icon className="w-5 h-5" style={{ color: isActive ? 'var(--gemini-accent-text)' : 'var(--gemini-text-secondary)' }} />
+                </Badge>
+              ) : (
+                <Icon className="w-5 h-5" />
+              )}
               <span>{item.label}</span>
             </button>
           );

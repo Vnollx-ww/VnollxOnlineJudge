@@ -13,6 +13,7 @@ import {
   Info,
   ArrowLeftRight,
   Zap,
+  Users,
 } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, removeToken } from '../../utils/auth';
@@ -28,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
   const location = useLocation();
   const [user, setUser] = useState<UserType | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [modal, contextHolder] = Modal.useModal();
   const [messageApi, messageContextHolder] = message.useMessage();
 
@@ -56,12 +58,24 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
     }
   }, []);
 
+  const loadUnreadMessageCount = useCallback(async () => {
+    try {
+      const data = await api.get('/friend/unread') as ApiResponse<number>;
+      if (data.code === 200) {
+        setUnreadMessageCount(data.data || 0);
+      }
+    } catch (error) {
+      console.error('获取未读消息数量失败:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated()) {
       loadUserInfo();
       loadNotificationCount();
+      loadUnreadMessageCount();
     }
-  }, [loadUserInfo, loadNotificationCount]);
+  }, [loadUserInfo, loadNotificationCount, loadUnreadMessageCount]);
 
   useEffect(() => {
     const handleNotificationUpdate = () => {
@@ -70,11 +84,18 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
       }
     };
     
+    const handleMessageUpdate = () => {
+      if (isAuthenticated()) {
+        loadUnreadMessageCount();
+      }
+    };
+    
     const handleStorageChange = () => {
       // 监听 storage 事件，当登录成功时重新加载用户信息
       if (isAuthenticated()) {
         loadUserInfo();
         loadNotificationCount();
+        loadUnreadMessageCount();
       } else {
         setUser(null);
         setNotificationCount(0);
@@ -82,13 +103,15 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
     };
     
     window.addEventListener('notification-updated', handleNotificationUpdate);
+    window.addEventListener('message-updated', handleMessageUpdate);
     window.addEventListener('storage', handleStorageChange);
     
     return () => {
       window.removeEventListener('notification-updated', handleNotificationUpdate);
+      window.removeEventListener('message-updated', handleMessageUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [loadUserInfo, loadNotificationCount]);
+  }, [loadUserInfo, loadNotificationCount, loadUnreadMessageCount]);
 
   const handleGuardedNavigate = useCallback(
     (path: string, requireAuth = false) => {
@@ -166,6 +189,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
     { key: '/ranklist', icon: <Trophy className="w-4 h-4" />, label: '排行榜' },
     { key: '/competitions', icon: <Trophy className="w-4 h-4" />, label: '比赛' },
     { key: '/practices', icon: <BookOpen className="w-4 h-4" />, label: '练习' },
+    { key: '/friends', icon: <Users className="w-4 h-4" />, label: '好友' },
     { key: '/about', icon: <Info className="w-4 h-4" />, label: '关于' },
   ];
 
@@ -229,7 +253,13 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
                 }
               }}
             >
-              {item.icon}
+              {item.key === '/friends' && unreadMessageCount > 0 ? (
+                <Badge count={unreadMessageCount} size="small" offset={[-2, 2]}>
+                  {item.icon}
+                </Badge>
+              ) : (
+                item.icon
+              )}
               <span>{item.label}</span>
             </button>
           ))}
