@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  Card,
   Typography,
   Table,
   Tag,
@@ -182,10 +181,6 @@ const CompetitionSubmissions: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-    loadSubmissions(1);
-  };
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '-';
@@ -389,16 +384,13 @@ const CompetitionSubmissions: React.FC = () => {
                   <Option value="Java">Java</Option>
                   <Option value="C++">C++</Option>
                 </Select>
-                <Button 
-                  type="primary" 
-                  onClick={handleSearch}
-                  style={{ 
-                    backgroundColor: 'var(--gemini-accent)',
-                    color: 'var(--gemini-accent-text)',
-                    border: 'none'
+                <Button
+                  onClick={() => {
+                    setStatus(null);
+                    setLanguage(null);
                   }}
                 >
-                  搜索
+                  重置
                 </Button>
               </Space>
             </div>

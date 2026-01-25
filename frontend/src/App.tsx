@@ -248,11 +248,11 @@ function App() {
                       element={<SolutionListPage />}
                     />
                     <Route
-                      path="/solution/:solutionId"
+                      path="/problem/:problemId/solutions/:solveId"
                       element={<SolutionDetailPage />}
                     />
                     <Route
-                      path="/problem/:problemId/solution/publish"
+                      path="/problem/:problemId/solutions/publish"
                       element={<SolutionPublishPage />}
                     />
                     <Route path="/solutions" element={<Solutions />} />

@@ -16,5 +16,5 @@ public interface SubmissionService {
     List<SubmissionVo> getSubmissionList(SubmissionQuery submissionQuery);
     Long getCount(SubmissionQuery submissionQuery);
     void deleteSubmissionsByCid(Long cid);
-    void updateSubmissionJudgeStatusBySnowflake(Long snowflakeId,String judgeStatus,Long time,Long memory);
+    void updateSubmissionJudgeStatusBySnowflake(Long snowflakeId,String judgeStatus,Long time,Long memory,String errorInfo);
 }

@@ -19,7 +19,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [termsVisible, setTermsVisible] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'top' | 'left'>(() => {
-    return (localStorage.getItem('layoutMode') as 'top' | 'left') || 'top';
+    return (localStorage.getItem('layoutMode') as 'top' | 'left') || 'left';
   });
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);

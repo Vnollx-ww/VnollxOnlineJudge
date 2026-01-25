@@ -45,4 +45,7 @@ public class Submission {
     private Long pid;
     @Column(name="snow_flake_id")
     private Long snowflakeId;
+
+    @Column(name = "error_info", columnDefinition = "TEXT")
+    private String errorInfo;
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
-  Card,
   Button,
   Typography,
   Input,
@@ -65,7 +64,7 @@ const SolutionPublishPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      toast.warning('请先登录后再发布题解');
+      toast.error('请先登录后再发布题解');
       navigate('/');
       return;
     }
@@ -98,11 +97,11 @@ const SolutionPublishPage: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      toast.warning('请输入题解标题');
+      toast.error('请输入题解标题');
       return;
     }
     if (!content.trim()) {
-      toast.warning('请输入题解内容');
+      toast.error('请输入题解内容');
       return;
     }
     setSubmitting(true);

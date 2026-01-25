@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Table, Input, Select, Button, Tag, Pagination, Switch } from 'antd';
+import { Modal, Table, Input, Button, Tag, Pagination, Switch, Select } from 'antd';
 import toast from 'react-hot-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Search, Copy, Maximize2, Minimize2 } from 'lucide-react';
+import { Copy, Maximize2, Minimize2 } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
@@ -22,6 +22,7 @@ interface Submission {
   memory: number | null;
   createTime: string;
   code?: string;
+  errorInfo?: string;
 }
 
 const Submissions: React.FC = () => {
@@ -37,6 +38,8 @@ const Submissions: React.FC = () => {
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [currentCode, setCurrentCode] = useState('');
   const [currentLang, setCurrentLang] = useState('');
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
+  const [currentErrorInfo, setCurrentErrorInfo] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const pageSize = 15;
@@ -89,7 +92,7 @@ const Submissions: React.FC = () => {
     }
     setCurrentPage(1);
     loadSubmissions(1);
-  }, [onlyMine]);
+  }, [onlyMine, problemId, status, language]);
 
   const loadSubmissions = async (page: number) => {
     setLoading(true);
@@ -144,10 +147,6 @@ const Submissions: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-    loadSubmissions(1);
-  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -236,14 +235,23 @@ const Submissions: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       width: 150,
-      render: (status: string) => {
+      render: (status: string, record: Submission) => {
         const style = getStatusStyle(status);
+        const hasError = status === '编译错误' && record.errorInfo;
         return (
           <span 
-            className="inline-flex px-3 py-1 rounded-full text-sm font-medium"
+            className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${hasError ? 'cursor-pointer hover:opacity-80' : ''}`}
             style={{ backgroundColor: style.bg, color: style.color }}
+            onClick={() => {
+              if (hasError) {
+                setCurrentErrorInfo(record.errorInfo || '');
+                setErrorModalVisible(true);
+              }
+            }}
+            title={hasError ? '点击查看错误详情' : undefined}
           >
             {status}
+            {hasError && <span className="ml-1">🔍</span>}
           </span>
         );
       },
@@ -322,16 +330,18 @@ const Submissions: React.FC = () => {
               <Select.Option value="Java">Java</Select.Option>
               <Select.Option value="C++">C++</Select.Option>
             </Select>
-            <Button 
-              type="primary" 
-              icon={<Search className="w-4 h-4" />} 
-              onClick={handleSearch}
-              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-            >
-              搜索
-            </Button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => {
+                setProblemId('');
+                setStatus(undefined);
+                setLanguage(undefined);
+                setOnlyMine(false);
+              }}
+            >
+              重置
+            </Button>
             <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>仅看自己</span>
             <Switch checked={onlyMine} onChange={setOnlyMine} />
           </div>
@@ -407,6 +417,28 @@ const Submissions: React.FC = () => {
           >
             {currentCode}
           </SyntaxHighlighter>
+        </div>
+      </Modal>
+
+      {/* 编译错误详情模态框 */}
+      <Modal
+        title="编译错误详情"
+        open={errorModalVisible}
+        onCancel={() => setErrorModalVisible(false)}
+        footer={null}
+        width="60%"
+      >
+        <div className="max-h-[70vh] overflow-auto">
+          <pre 
+            className="p-4 rounded-xl text-sm font-mono whitespace-pre-wrap"
+            style={{ 
+              backgroundColor: 'var(--gemini-error-bg)', 
+              color: 'var(--gemini-error)',
+              border: '1px solid var(--gemini-error)'
+            }}
+          >
+            {currentErrorInfo || '无错误信息'}
+          </pre>
         </div>
       </Modal>
     </div>

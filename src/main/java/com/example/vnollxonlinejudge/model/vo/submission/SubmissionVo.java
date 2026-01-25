@@ -17,6 +17,7 @@ public class SubmissionVo {
     private Long memory;
     private Long uid;
     private Long pid;
+    private String errorInfo;
     public SubmissionVo(){
     }
     public SubmissionVo(Submission submission){
@@ -32,5 +33,6 @@ public class SubmissionVo {
         this.memory=submission.getMemory();
         this.uid=submission.getUid();
         this.pid=submission.getPid();
+        this.errorInfo=submission.getErrorInfo();
     }
 }

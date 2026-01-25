@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
-  Card,
   Button,
   Space,
   Typography,
@@ -110,7 +109,7 @@ const SolutionListPage: React.FC = () => {
 
   const handlePublish = () => {
     if (!isAuthenticated()) {
-      toast.warning('请先登录后再发布题解');
+      toast.error('请先登录后再发布题解');
       return;
     }
     navigate(`/problem/${pid}/solutions/publish`, {

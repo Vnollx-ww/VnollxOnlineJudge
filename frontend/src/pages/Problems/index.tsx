@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Input, Select, Button, Pagination } from 'antd';
+import { Table, Input, Pagination, Select, Button } from 'antd';
 import toast from 'react-hot-toast';
-import { Search } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
@@ -38,8 +37,12 @@ const Problems: React.FC = () => {
       return;
     }
     loadTags();
-    loadProblems(1);
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadProblems(1);
+  }, [searchKeyword, selectedTag]);
 
   const loadTags = async () => {
     try {
@@ -82,10 +85,6 @@ const Problems: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
-    setCurrentPage(1);
-    loadProblems(1);
-  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -232,7 +231,6 @@ const Problems: React.FC = () => {
             placeholder="输入题目编号或名称和标签"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            onPressEnter={handleSearch}
             className="flex-1"
             size="large"
           />
@@ -252,17 +250,13 @@ const Problems: React.FC = () => {
             ))}
           </Select>
           <Button
-            type="primary"
-            icon={<Search className="w-4 h-4" />}
-            onClick={handleSearch}
-            size="large"
-            style={{ 
-              backgroundColor: 'var(--gemini-accent)',
-              color: 'var(--gemini-accent-text)',
-              border: 'none'
+            onClick={() => {
+              setSearchKeyword('');
+              setSelectedTag('');
             }}
+            size="large"
           >
-            搜索
+            重置
           </Button>
         </div>
 

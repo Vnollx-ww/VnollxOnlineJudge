@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Card, Button, Space, Typography, Skeleton, Result } from 'antd';
+import { Button, Space, Typography, Skeleton, Result } from 'antd';
 import toast from 'react-hot-toast';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { marked } from 'marked';
@@ -68,7 +68,7 @@ const SolutionDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      toast.warning('请先登录后查看题解');
+      toast.error('请先登录后查看题解');
       navigate('/');
       return;
     }
@@ -136,7 +136,7 @@ const SolutionDetailPage: React.FC = () => {
       };
       pre.appendChild(btn);
     });
-  }, [renderedContent, loading, message]);
+  }, [renderedContent, loading]);
 
   if (!pid || !solveId) {
     return (

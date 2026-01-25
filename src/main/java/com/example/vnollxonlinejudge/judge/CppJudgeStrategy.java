@@ -34,6 +34,9 @@ public class CppJudgeStrategy implements JudgeStrategy {
     private static final String ACCEPTED="答案正确";
     private static final int BATCH_SIZE = 20; // 每批最多处理的测试用例数
 
+    // 用于在编译失败时保存错误信息
+    private String lastCompileError = null;
+
     @Autowired
     public CppJudgeStrategy(
             TestCaseCacheService testCaseCacheService,
@@ -81,9 +84,10 @@ public class CppJudgeStrategy implements JudgeStrategy {
             String inputExample,String outExample
     ) {
         // 1. 编译代码
+        lastCompileError = null;
         String binaryFileId = compileCode(submittedCode);
         if (binaryFileId == null) {
-            return standardError(COMPILE_ERROR,COMPILE_ERROR);
+            return standardError(COMPILE_ERROR, lastCompileError != null ? lastCompileError : COMPILE_ERROR);
         }
         else if (binaryFileId.equals("超出内存限制")){
             return standardError("超出内存限制","超出内存限制");
@@ -238,7 +242,8 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 } else if ("Memory Limit Exceeded".equals(result.getStatus())) {
                     return MEMORY_LIMIT_EXCEED;
                 } else {
-                    logger.error("编译失败: " + result.getFiles().getStderr());
+                    lastCompileError = result.getFiles().getStderr();
+                    logger.error("编译失败: " + lastCompileError);
                 }
             } else {
                 logger.error("编译请求响应异常: " + response.getStatusCode());

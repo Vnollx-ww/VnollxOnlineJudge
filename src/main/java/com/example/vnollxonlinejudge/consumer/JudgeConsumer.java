@@ -51,7 +51,7 @@ public class JudgeConsumer {
             logger.info("Processing submission: snowflakeId={}, uid={}", judgeInfo.getSnowflakeId(), judgeInfo.getUid());
 
             JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
-            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null);
+            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null,null);
             sendUpdate(judgeInfo, "评测中", null, null, null);
 
 
@@ -61,13 +61,13 @@ public class JudgeConsumer {
                     judgeInfo.getTime(),
                     judgeInfo.getMemory()
             );
-            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),result.getStatus(), result.getRunTime(),result.getMemory());
-            submissionService.processSubmission(judgeInfo,result.getStatus());
             // 获取错误信息（如果有）
             String errorInfo = null;
             if (result.getFiles() != null && result.getFiles().getStderr() != null) {
                 errorInfo = result.getFiles().getStderr();
             }
+            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),result.getStatus(), result.getRunTime(),result.getMemory(),errorInfo);
+            submissionService.processSubmission(judgeInfo,result.getStatus());
             sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), errorInfo);
             logger.info("评测完成: snowflakeId={}", judgeInfo.getSnowflakeId());
 
