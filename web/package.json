@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build", 
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -23,9 +23,10 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^9.0.1",
-    "rehype-raw": "^7.0.0",
     "react-router-dom": "^6.26.0",
     "react-syntax-highlighter": "^15.5.0",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
     "three": "^0.181.2"
   },
   "devDependencies": {

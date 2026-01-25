@@ -1,0 +1,935 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   Google Gemini 风格设计系统
+   Material Design 3 inspired
+======================================== */
+
+/* CSS 变量定义 */
+:root {
+  /* 背景色 */
+  --gemini-bg: #f0f4f9;
+  --gemini-bg-alt: #f8fafe;
+  --gemini-surface: #ffffff;
+  --gemini-surface-active: #eef4ff;
+  --gemini-surface-hover: #e8eaed;
+  
+  /* 文字色 */
+  --gemini-text-primary: #1f1f1f;
+  --gemini-text-secondary: #444746;
+  --gemini-text-tertiary: #5f6368;
+  --gemini-text-disabled: #9aa0a6;
+  
+  /* 强调色 */
+  --gemini-accent: #d3e3fd;
+  --gemini-accent-hover: #c2d9fc;
+  --gemini-accent-text: #041e49;
+  --gemini-accent-strong: #1a73e8;
+  
+  /* 状态色 */
+  --gemini-success: #34a853;
+  --gemini-success-bg: #e6f4ea;
+  --gemini-warning: #f9ab00;
+  --gemini-warning-bg: #fef7e0;
+  --gemini-error: #d93025;
+  --gemini-error-bg: #fce8e6;
+  --gemini-info: #1a73e8;
+  --gemini-info-bg: #e8f0fe;
+  
+  /* 边框色 */
+  --gemini-border: rgba(0, 0, 0, 0.08);
+  --gemini-border-light: rgba(0, 0, 0, 0.04);
+  
+  /* 阴影 */
+  --shadow-gemini: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --shadow-gemini-hover: 0 2px 6px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+  --shadow-gemini-float: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-input: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ========== 基础样式 ========== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--gemini-bg);
+  color: var(--gemini-text-primary);
+  font-family: "Google Sans", Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+  letter-spacing: -0.01em;
+}
+
+/* 自定义滚动条 - Gemini 风格 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(154, 160, 166, 0.4);
+  border-radius: 9999px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(68, 71, 70, 0.5);
+}
+
+/* 选中文字样式 */
+::selection {
+  background-color: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+}
+
+/* ========== 组件样式 ========== */
+
+/* 卡片 */
+.gemini-card {
+  background-color: var(--gemini-surface);
+  border-radius: 24px;
+  padding: 1.5rem;
+  transition: all 0.2s ease-out;
+}
+
+.gemini-card-elevated {
+  background-color: var(--gemini-surface);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-gemini);
+  transition: all 0.2s ease-out;
+}
+
+.gemini-card-elevated:hover {
+  box-shadow: var(--shadow-gemini-hover);
+  transform: translateY(-2px);
+}
+
+.gemini-card-interactive {
+  background-color: var(--gemini-surface);
+  border-radius: 24px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+}
+
+.gemini-card-interactive:hover {
+  background-color: var(--gemini-surface-hover);
+}
+
+/* 按钮基础 */
+.gemini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  border-radius: 9999px;
+  padding: 0.625rem 1.5rem;
+  transition: all 0.15s ease-out;
+  border: none;
+  cursor: pointer;
+}
+
+.gemini-btn:focus {
+  outline: none;
+}
+
+.gemini-btn:focus-visible {
+  ring: 2px;
+  ring-color: var(--gemini-accent-strong);
+  ring-offset: 2px;
+}
+
+.gemini-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 填充按钮 */
+.gemini-btn-filled {
+  background-color: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+}
+
+.gemini-btn-filled:hover {
+  background-color: var(--gemini-accent-hover);
+  box-shadow: var(--shadow-input);
+}
+
+.gemini-btn-filled:active {
+  transform: scale(0.98);
+}
+
+/* 强调填充按钮 */
+.gemini-btn-primary {
+  background-color: var(--gemini-accent-strong);
+  color: white;
+}
+
+.gemini-btn-primary:hover {
+  background-color: #1557b0;
+  box-shadow: var(--shadow-gemini);
+}
+
+.gemini-btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* 轮廓按钮 */
+.gemini-btn-outlined {
+  background-color: transparent;
+  color: var(--gemini-accent-strong);
+  border: 1px solid var(--gemini-border);
+}
+
+.gemini-btn-outlined:hover {
+  background-color: rgba(211, 227, 253, 0.3);
+}
+
+.gemini-btn-outlined:active {
+  transform: scale(0.98);
+}
+
+/* 文字按钮 */
+.gemini-btn-text {
+  background-color: transparent;
+  color: var(--gemini-accent-strong);
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.gemini-btn-text:hover {
+  background-color: var(--gemini-surface-hover);
+}
+
+.gemini-btn-text:active {
+  transform: scale(0.98);
+}
+
+/* 图标按钮 */
+.gemini-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  color: var(--gemini-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gemini-btn-icon:hover {
+  background-color: var(--gemini-surface-hover);
+}
+
+.gemini-btn-icon:active {
+  transform: scale(0.95);
+}
+
+/* 输入框 */
+.gemini-input {
+  width: 100%;
+  background-color: var(--gemini-bg);
+  border-radius: 12px;
+  padding: 0.75rem 1.25rem;
+  color: var(--gemini-text-primary);
+  border: none;
+  outline: none;
+  box-shadow: var(--shadow-input);
+  transition: all 0.2s;
+}
+
+.gemini-input::placeholder {
+  color: var(--gemini-text-disabled);
+}
+
+.gemini-input:focus {
+  box-shadow: var(--shadow-gemini);
+  background-color: var(--gemini-surface);
+}
+
+.gemini-input-box {
+  width: 100%;
+  background-color: var(--gemini-bg);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--gemini-text-primary);
+  border: none;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.gemini-input-box::placeholder {
+  color: var(--gemini-text-disabled);
+}
+
+.gemini-input-box:focus {
+  background-color: var(--gemini-surface);
+  box-shadow: var(--shadow-input);
+}
+
+/* 搜索栏 */
+.gemini-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: var(--gemini-bg);
+  border-radius: 24px;
+  padding: 0.625rem 1.25rem;
+  box-shadow: var(--shadow-input);
+  transition: all 0.2s;
+}
+
+.gemini-search:hover {
+  box-shadow: var(--shadow-gemini);
+}
+
+.gemini-search:focus-within {
+  box-shadow: var(--shadow-gemini);
+  background-color: var(--gemini-surface);
+}
+
+.gemini-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--gemini-text-primary);
+}
+
+.gemini-search input::placeholder {
+  color: var(--gemini-text-disabled);
+}
+
+/* 标签/芯片 */
+.gemini-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--gemini-bg);
+  color: var(--gemini-text-secondary);
+  transition: all 0.15s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gemini-chip:hover {
+  background-color: var(--gemini-surface-hover);
+}
+
+.gemini-chip-active {
+  background-color: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+}
+
+.gemini-chip-active:hover {
+  background-color: var(--gemini-accent-hover);
+}
+
+.gemini-chip-info {
+  background-color: var(--gemini-info-bg);
+  color: var(--gemini-info);
+}
+
+.gemini-chip-success {
+  background-color: var(--gemini-success-bg);
+  color: var(--gemini-success);
+}
+
+.gemini-chip-warning {
+  background-color: var(--gemini-warning-bg);
+  color: var(--gemini-warning);
+}
+
+.gemini-chip-error {
+  background-color: var(--gemini-error-bg);
+  color: var(--gemini-error);
+}
+
+/* 导航项 */
+.gemini-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gemini-text-secondary);
+  transition: all 0.15s;
+  cursor: pointer;
+  user-select: none;
+}
+
+.gemini-nav-item:hover {
+  background-color: var(--gemini-surface-hover);
+  color: var(--gemini-text-primary);
+}
+
+.gemini-nav-item-active {
+  background-color: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+}
+
+.gemini-nav-item-active:hover {
+  background-color: var(--gemini-accent-hover);
+}
+
+/* 表格 */
+.gemini-table {
+  width: 100%;
+}
+
+.gemini-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gemini-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  background: transparent;
+}
+
+.gemini-table td {
+  padding: 1rem;
+  color: var(--gemini-text-primary);
+  border-bottom: 1px solid var(--gemini-border-light);
+}
+
+.gemini-table tr {
+  transition: background-color 0.15s;
+}
+
+.gemini-table tbody tr:hover {
+  background-color: var(--gemini-surface-hover);
+}
+
+/* 分隔线 */
+.gemini-divider {
+  height: 1px;
+  background-color: var(--gemini-border-light);
+  margin: 1rem 0;
+}
+
+/* 头像 */
+.gemini-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+  font-weight: 500;
+}
+
+.gemini-avatar-sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.875rem;
+}
+
+.gemini-avatar-md {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1rem;
+}
+
+.gemini-avatar-lg {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.125rem;
+}
+
+/* 徽章 */
+.gemini-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: var(--gemini-error);
+  color: white;
+}
+
+/* 工具提示 */
+.gemini-tooltip {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background-color: var(--gemini-text-primary);
+  color: white;
+  font-size: 0.875rem;
+  box-shadow: var(--shadow-gemini-float);
+}
+
+/* 文字截断 */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* ========================================
+   Ant Design 覆盖样式 - Gemini 风格适配
+======================================== */
+
+/* 按钮 */
+.ant-btn {
+  border-radius: 9999px !important;
+  font-weight: 500 !important;
+  border-color: transparent !important;
+}
+
+.ant-btn-default {
+  background-color: var(--gemini-bg) !important;
+  color: var(--gemini-text-primary) !important;
+}
+
+.ant-btn-default:hover {
+  background-color: var(--gemini-surface-hover) !important;
+  color: inherit !important;
+}
+
+.ant-btn-primary {
+  background-color: var(--gemini-accent) !important;
+  color: var(--gemini-accent-text) !important;
+  box-shadow: none !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--gemini-accent-hover) !important;
+}
+
+/* 输入框 */
+.ant-input,
+.ant-input-affix-wrapper {
+  border-radius: 12px !important;
+  border: none !important;
+  background-color: var(--gemini-bg) !important;
+  box-shadow: var(--shadow-input) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:focus,
+.ant-input-affix-wrapper-focused {
+  background-color: var(--gemini-surface) !important;
+  box-shadow: var(--shadow-gemini) !important;
+}
+
+.ant-input-affix-wrapper > input.ant-input {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 文本域 */
+.ant-input-textarea .ant-input {
+  border-radius: 12px !important;
+}
+
+/* Select */
+.ant-select-selector {
+  border-radius: 12px !important;
+  border: none !important;
+  background-color: var(--gemini-bg) !important;
+  box-shadow: var(--shadow-input) !important;
+}
+
+.ant-select-focused .ant-select-selector {
+  background-color: var(--gemini-surface) !important;
+  box-shadow: var(--shadow-gemini) !important;
+}
+
+.ant-select-dropdown {
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-gemini-float) !important;
+  padding: 0.5rem !important;
+}
+
+.ant-select-item {
+  border-radius: 12px !important;
+}
+
+.ant-select-item-option-active {
+  background-color: var(--gemini-surface-hover) !important;
+}
+
+.ant-select-item-option-selected {
+  background-color: var(--gemini-accent) !important;
+  color: var(--gemini-accent-text) !important;
+}
+
+/* 表格 */
+.ant-table {
+  background: transparent !important;
+}
+
+.ant-table-wrapper .ant-table-container {
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background-color: var(--gemini-surface) !important;
+}
+
+.ant-table-thead > tr > th {
+  background: transparent !important;
+  color: var(--gemini-text-secondary) !important;
+  font-weight: 500 !important;
+  border-bottom: 1px solid var(--gemini-border-light) !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid var(--gemini-border-light) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: var(--gemini-surface-hover) !important;
+}
+
+.ant-table-tbody > tr:last-child > td {
+  border-bottom: none !important;
+}
+
+/* 卡片 */
+.ant-card {
+  border-radius: 24px !important;
+  border: none !important;
+  box-shadow: var(--shadow-gemini) !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--gemini-border-light) !important;
+}
+
+/* 模态框 */
+.ant-modal-content {
+  border-radius: 24px !important;
+}
+
+.ant-modal-header {
+  border-bottom: 1px solid var(--gemini-border-light) !important;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid var(--gemini-border-light) !important;
+}
+
+/* 分页 */
+.ant-pagination-item {
+  border-radius: 9999px !important;
+  border: none !important;
+}
+
+.ant-pagination-item:hover {
+  background-color: var(--gemini-surface-hover) !important;
+}
+
+.ant-pagination-item-active {
+  background-color: var(--gemini-accent) !important;
+}
+
+.ant-pagination-item-active a {
+  color: var(--gemini-accent-text) !important;
+}
+
+.ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination-next .ant-pagination-item-link {
+  border-radius: 9999px !important;
+  border: none !important;
+}
+
+/* 标签 */
+.ant-tag {
+  border-radius: 9999px !important;
+  border: none !important;
+  padding: 2px 12px !important;
+}
+
+/* 消息提示 */
+.ant-message-notice-content {
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-gemini-float) !important;
+}
+
+/* 工具提示 */
+.ant-tooltip-inner {
+  border-radius: 12px !important;
+  background-color: var(--gemini-text-primary) !important;
+}
+
+/* 下拉菜单 */
+.ant-dropdown-menu {
+  border-radius: 16px !important;
+  box-shadow: var(--shadow-gemini-float) !important;
+  padding: 0.5rem !important;
+}
+
+.ant-dropdown-menu-item {
+  border-radius: 12px !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: var(--gemini-surface-hover) !important;
+}
+
+/* 面包屑 */
+.ant-breadcrumb a {
+  color: var(--gemini-text-secondary) !important;
+}
+
+.ant-breadcrumb a:hover {
+  color: var(--gemini-accent-strong) !important;
+}
+
+/* Switch */
+.ant-switch {
+  background-color: var(--gemini-text-disabled) !important;
+}
+
+.ant-switch-checked {
+  background-color: var(--gemini-accent-strong) !important;
+}
+
+/* Checkbox */
+.ant-checkbox-checked .ant-checkbox-inner {
+  background-color: var(--gemini-accent-strong) !important;
+  border-color: var(--gemini-accent-strong) !important;
+}
+
+/* Radio */
+.ant-radio-checked .ant-radio-inner {
+  border-color: var(--gemini-accent-strong) !important;
+}
+
+.ant-radio-checked .ant-radio-inner::after {
+  background-color: var(--gemini-accent-strong) !important;
+}
+
+/* 进度条 */
+.ant-progress-bg {
+  background-color: var(--gemini-accent-strong) !important;
+}
+
+/* Tabs */
+.ant-tabs-tab {
+  border-radius: 9999px !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.ant-tabs-tab:hover {
+  background-color: var(--gemini-surface-hover) !important;
+}
+
+.ant-tabs-tab-active {
+  background-color: var(--gemini-accent) !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--gemini-accent-text) !important;
+}
+
+.ant-tabs-ink-bar {
+  display: none !important;
+}
+
+/* Spin */
+.ant-spin-dot-item {
+  background-color: var(--gemini-accent-strong) !important;
+}
+
+/* Form */
+.ant-form-item-label > label {
+  color: var(--gemini-text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+/* Monaco Editor 容器样式 */
+.monaco-editor-container {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow-gemini);
+}
+
+/* ========================================
+   Markdown 渲染样式
+======================================== */
+
+/* 标题样式 */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: var(--gemini-text-primary);
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.prose h1 { font-size: 1.875rem; }
+.prose h2 { font-size: 1.5rem; }
+.prose h3 { font-size: 1.25rem; }
+.prose h4 { font-size: 1.125rem; }
+
+/* 行内代码 */
+.prose code:not(pre code) {
+  background-color: var(--gemini-surface-hover);
+  color: var(--gemini-error);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
+  font-size: 0.875em;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-weight: 500;
+}
+
+/* 代码块 */
+.prose pre {
+  background-color: #f6f8fa;
+  border: 1px solid var(--gemini-border);
+  border-radius: 12px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+  box-shadow: var(--shadow-input);
+}
+
+.prose pre code {
+  background-color: transparent;
+  color: var(--gemini-text-primary);
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  display: block;
+  white-space: pre;
+}
+
+/* 列表 */
+.prose ul, .prose ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
+  color: var(--gemini-text-primary);
+}
+
+.prose li {
+  margin: 0.5em 0;
+  line-height: 1.6;
+}
+
+/* 段落 */
+.prose p {
+  margin: 1em 0;
+  line-height: 1.7;
+  color: var(--gemini-text-primary);
+}
+
+/* 链接 */
+.prose a {
+  color: var(--gemini-accent-strong);
+  text-decoration: underline;
+  transition: opacity 0.2s;
+}
+
+.prose a:hover {
+  opacity: 0.8;
+}
+
+/* 引用块 */
+.prose blockquote {
+  border-left: 4px solid var(--gemini-accent);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: var(--gemini-text-secondary);
+  font-style: italic;
+}
+
+/* 水平线 */
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--gemini-border);
+  margin: 2rem 0;
+}
+
+/* 表格 */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.prose th, .prose td {
+  border: 1px solid var(--gemini-border);
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
+.prose th {
+  background-color: var(--gemini-bg);
+  color: var(--gemini-text-primary);
+  font-weight: 600;
+}
+
+.prose td {
+  color: var(--gemini-text-primary);
+}
