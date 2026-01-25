@@ -79,7 +79,7 @@ const About: React.FC = () => {
           技术栈
         </h2>
         <div className="flex flex-wrap justify-center gap-3">
-          {['React', 'TypeScript', 'Tailwind CSS', 'Ant Design', 'Spring Boot', 'MySQL', 'Redis', 'Docker'].map((tech) => (
+          {['React', 'TypeScript', 'Tailwind CSS', 'Ant Design', 'Spring Boot', 'MySQL', 'Redis', 'RabbitMQ','Go-Judge','Minio','Docker'].map((tech) => (
             <span
               key={tech}
               className="px-4 py-2 rounded-full text-sm font-medium transition-colors cursor-default"
