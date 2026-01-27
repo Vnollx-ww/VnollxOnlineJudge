@@ -31,6 +31,17 @@ public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     
     /**
+     * 处理限流异常
+     */
+    @ExceptionHandler(RateLimitException.class)
+    public Result<Void> handleRateLimitException(RateLimitException e, HttpServletRequest request) {
+        String userInfo = UserContextHolder.getUserSummary();
+        logger.warn("触发限流 - 用户: {}, 请求: {} {}, 提示: {}", 
+                   userInfo, request.getMethod(), request.getRequestURI(), e.getMessage());
+        return Result.LogicError(e.getMessage());
+    }
+
+    /**
      * 处理权限不足异常
      */
     @ExceptionHandler(PermissionDeniedException.class)
