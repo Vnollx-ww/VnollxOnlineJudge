@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.dto.comment.PublishCommentDTO;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.comment.CommentInfoVO;
@@ -24,6 +26,7 @@ public class CommentController {
         this.commentService = commentService;
     }
     @PostMapping("/publish")
+    @RequirePermission(PermissionCode.COMMENT_CREATE)
     public Result<Void> publishComment(@RequestBody PublishCommentDTO dto) {
         Long uid=UserContextHolder.getCurrentUserId();
         commentService.publishComment(dto,uid);
@@ -34,6 +37,7 @@ public class CommentController {
         return Result.Success(commentService.getCommentList(pid));
     }
     @DeleteMapping("/delete")
+    @RequirePermission(PermissionCode.COMMENT_DELETE)
     public Result<Void> deleteComment(@RequestParam Long commentId) {
         commentService.deleteComment(commentId);
         return Result.Success("删除评论成功");

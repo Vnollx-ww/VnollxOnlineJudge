@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveUserDTO;
@@ -35,6 +37,7 @@ public class AdminUserController {
         return identity;
     }
     @GetMapping("/list")
+    @RequirePermission(PermissionCode.USER_VIEW)
     public Result<List<UserVo>> getUserList(@RequestParam int pageNum, @RequestParam int pageSize,
                                             @RequestParam(required = false) String keyword) {
         Long userId = UserContextHolder.getCurrentUserId();
@@ -49,6 +52,7 @@ public class AdminUserController {
      * 获取用户总数（用于分页）
      */
     @GetMapping("/count")
+    @RequirePermission(PermissionCode.USER_VIEW)
     public Result<Long> getUserCount(@RequestParam(required = false) String keyword,
                                      HttpServletRequest request) {
         String identity = (String) request.getAttribute("identity");
@@ -60,6 +64,7 @@ public class AdminUserController {
      * 创建用户
      */
     @PostMapping("/add")
+    @RequirePermission(PermissionCode.USER_CREATE)
     public Result<Void> createUser(@Valid @RequestBody AdminSaveUserDTO request) {
         userService.addUserByAdmin(request.getName(), request.getEmail(), request.getIdentity());
         return Result.Success("添加用户成功");
@@ -69,6 +74,7 @@ public class AdminUserController {
      * 更新用户信息
      */
     @PutMapping("/update")
+    @RequirePermission(PermissionCode.USER_UPDATE)
     public Result<Void> updateUser(@Valid @RequestBody AdminSaveUserDTO request,HttpServletRequest req) {
         // 确保路径参数和请求体中的ID一致
 
@@ -86,6 +92,7 @@ public class AdminUserController {
      * 删除用户
      */
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(PermissionCode.USER_DELETE)
     public Result<Void> deleteUser(@PathVariable @NotNull @Min(1) Long id,HttpServletRequest req) {
         userService.deleteUserByAdmin(id,getCurrentIdentity(req));
         return Result.Success("删除用户成功");

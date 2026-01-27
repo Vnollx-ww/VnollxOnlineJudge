@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
 import com.example.vnollxonlinejudge.model.vo.judge.JudgeResultVO;
@@ -20,6 +22,7 @@ public class JudgeController {
         this.judgeService = judgeService;
     }
     @PostMapping("/submit")
+    @RequirePermission(PermissionCode.SUBMISSION_SUBMIT)
     public Result<JudgeResultVO> judgeSubmit(
             @RequestBody SubmitCodeDTO req
     ){
@@ -28,6 +31,7 @@ public class JudgeController {
         return Result.Success(result,result.getStatus());
     }
     @PostMapping("/test")
+    @RequirePermission(PermissionCode.SUBMISSION_SUBMIT)
     public Result<JudgeResultVO> test(
             @RequestBody TestCodeDTO req
     ){

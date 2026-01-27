@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
@@ -26,6 +28,7 @@ public class AdminProblemController {
         this.problemService = problemService;
     }
     @PostMapping(value ="/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequirePermission(PermissionCode.PROBLEM_CREATE)
     public Result<Void> createProblem(
             @Valid @ModelAttribute AdminSaveProblemDTO dto
     ) {
@@ -33,11 +36,13 @@ public class AdminProblemController {
         return Result.Success("创建题目成功");
     }
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(PermissionCode.PROBLEM_DELETE)
     public Result<Void> deleteProblem(@PathVariable @NotNull @Min(1) Long id){
         problemService.deleteProblemByAdmin(id);
         return Result.Success("删除题目成功");
     }
     @PutMapping("/update")
+    @RequirePermission(PermissionCode.PROBLEM_UPDATE)
     public Result<Void> updateProblem(
             @Valid @ModelAttribute AdminSaveProblemDTO dto
     ){
@@ -45,6 +50,7 @@ public class AdminProblemController {
         return Result.Success("更新题目信息成功");
     }
     @GetMapping("/count")
+    @RequirePermission(PermissionCode.PROBLEM_VIEW)
     public Result<Long> getProblemCount(@RequestParam(required = false) String keyword){
         if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
             return Result.Success(
@@ -57,6 +63,7 @@ public class AdminProblemController {
         }
     }
     @GetMapping("/list")
+    @RequirePermission(PermissionCode.PROBLEM_VIEW)
     public Result<List<ProblemVo>> getProblemList(@RequestParam(required = false) String keyword, @RequestParam String offset, @RequestParam String size){
         if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
             return Result.Success(

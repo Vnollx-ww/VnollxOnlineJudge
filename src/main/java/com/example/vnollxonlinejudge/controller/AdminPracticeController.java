@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAddPracticeProblemDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSavePracticeDTO;
 import com.example.vnollxonlinejudge.model.entity.PracticeProblem;
@@ -39,12 +41,14 @@ public class AdminPracticeController {
     }
     
     @PostMapping("/create")
+    @RequirePermission(PermissionCode.PRACTICE_CREATE)
     public Result<Void> createPractice(@RequestBody AdminSavePracticeDTO req) {
         practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic());
         return Result.Success("创建练习成功");
     }
     
     @GetMapping("/list")
+    @RequirePermission(PermissionCode.PRACTICE_VIEW)
     public Result<List<PracticeVo>> getPracticeList(
             @RequestParam String pageNum,
             @RequestParam String pageSize,
@@ -57,17 +61,20 @@ public class AdminPracticeController {
     }
     
     @GetMapping("/count")
+    @RequirePermission(PermissionCode.PRACTICE_VIEW)
     public Result<Long> getCount(@RequestParam(required = false) String keyword) {
         return Result.Success(practiceService.getCount(keyword), "获取练习总数成功");
     }
     
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(PermissionCode.PRACTICE_DELETE)
     public Result<Void> deletePractice(@Valid @PathVariable Long id) {
         practiceService.deletePractice(id);
         return Result.Success("删除练习成功");
     }
     
     @PutMapping("/update")
+    @RequirePermission(PermissionCode.PRACTICE_UPDATE)
     public Result<Void> updatePractice(@RequestBody AdminSavePracticeDTO req) {
         practiceService.updatePractice(req.getId(), req.getTitle(), req.getDescription(), req.getIsPublic());
         return Result.Success("修改练习信息成功");
@@ -80,6 +87,7 @@ public class AdminPracticeController {
     }
     
     @PostMapping("/add/problems")
+    @RequirePermission(PermissionCode.PRACTICE_UPDATE)
     public Result<Void> addProblems(@RequestBody AdminAddPracticeProblemDTO req) {
         Long practiceId = Long.parseLong(req.getPracticeId());
         List<Long> problemIds = req.getProblemIds().stream()
@@ -90,12 +98,14 @@ public class AdminPracticeController {
     }
     
     @DeleteMapping("/{practiceId}/problems/{problemId}")
+    @RequirePermission(PermissionCode.PRACTICE_UPDATE)
     public Result<Void> deleteProblemFromPractice(@PathVariable Long practiceId, @PathVariable Long problemId) {
         practiceProblemService.deleteProblem(practiceId, problemId);
         return Result.Success("从练习中删除题目成功");
     }
     
     @GetMapping("/{practiceId}/problems")
+    @RequirePermission(PermissionCode.PRACTICE_VIEW)
     public Result<List<ProblemBasicVo>> getPracticeProblems(@PathVariable Long practiceId) {
         List<PracticeProblem> practiceProblems = practiceProblemService.getProblemList(practiceId);
         List<ProblemBasicVo> problems = practiceProblems.stream()

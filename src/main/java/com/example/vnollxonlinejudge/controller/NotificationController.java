@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.notification.NotificationVo;
@@ -25,6 +27,7 @@ public class NotificationController {
     }
 
     @GetMapping("/list")
+    @RequirePermission(PermissionCode.NOTIFICATION_VIEW)
     public Result<List<NotificationVo>> getNotificationList(
             @RequestParam String pageNum, @RequestParam String pageSize,
             @RequestParam(required = false)String keyword, 
@@ -39,6 +42,7 @@ public class NotificationController {
         );
     }
     @GetMapping("/count")
+    @RequirePermission(PermissionCode.NOTIFICATION_VIEW)
     public Result<Long> getNotificationCount(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String keyword
@@ -47,6 +51,7 @@ public class NotificationController {
         return Result.Success(notificationService.getNotificationCount(userId,status,keyword),"获取未读通知数量成功");
     }
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(PermissionCode.NOTIFICATION_VIEW)
     public Result<Void> deleteNotification(
            @PathVariable String id
     ){
@@ -54,6 +59,7 @@ public class NotificationController {
         return Result.Success("删除通知成功");
     }
     @GetMapping("/info")
+    @RequirePermission(PermissionCode.NOTIFICATION_VIEW)
     public Result<NotificationVo> getNotificationInfo(
             @RequestParam String nid
     ){
@@ -61,6 +67,7 @@ public class NotificationController {
     }
 
     @PutMapping("/read/{id}")
+    @RequirePermission(PermissionCode.NOTIFICATION_VIEW)
     public Result<Void> markAsRead(@PathVariable String id){
         notificationService.markAsRead(Long.parseLong(id));
         return Result.Success("标记已读成功");

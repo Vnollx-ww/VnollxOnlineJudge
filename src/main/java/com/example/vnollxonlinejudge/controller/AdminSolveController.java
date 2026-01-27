@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.exception.PermissionDeniedException;
 import com.example.vnollxonlinejudge.model.dto.solve.CreateSolveDTO;
 import com.example.vnollxonlinejudge.model.entity.Solve;
@@ -41,26 +43,26 @@ public class AdminSolveController {
     }
     
     @GetMapping("/list")
+    @RequirePermission(PermissionCode.SOLVE_VIEW)
     public Result<List<SolveVo>> getAllSolvesForAdmin(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer status) {
-        checkAdminPermission();
         List<SolveVo> solves = solveService.getAllSolvesForAdmin(page, size, keyword, status);
         return Result.Success(solves, "获取题解列表成功");
     }
     
     @GetMapping("/{id}")
+    @RequirePermission(PermissionCode.SOLVE_VIEW)
     public Result<SolveVo> getSolveById(@PathVariable Long id) {
-        checkAdminPermission();
         SolveVo solve = solveService.getSolve(id);
         return Result.Success(solve, "获取题解详情成功");
     }
     
     @PostMapping
+    @RequirePermission(PermissionCode.SOLVE_CREATE)
     public Result<Void> createSolve(@RequestBody CreateSolveDTO req) {
-        checkAdminPermission();
         solveService.createSolveForAdmin(
                 req.getContent(),
                 req.getName(),
@@ -72,8 +74,8 @@ public class AdminSolveController {
     }
     
     @PutMapping("/{id}")
+    @RequirePermission(PermissionCode.SOLVE_UPDATE)
     public Result<Void> updateSolve(@PathVariable Long id, @RequestBody CreateSolveDTO req) {
-        checkAdminPermission();
         solveService.updateSolve(
                 id,
                 req.getContent(),
@@ -86,25 +88,25 @@ public class AdminSolveController {
     }
     
     @PutMapping("/{id}/status")
+    @RequirePermission(PermissionCode.SOLVE_AUDIT)
     public Result<Void> updateSolveStatus(@PathVariable Long id, @RequestParam Integer status) {
-        checkAdminPermission();
         solveService.updateSolveStatus(id, status);
         String message = status == 1 ? "题解审核通过" : status == 2 ? "题解审核不通过" : "题解状态更新";
         return Result.Success(message);
     }
     
     @DeleteMapping("/{id}")
+    @RequirePermission(PermissionCode.SOLVE_DELETE)
     public Result<Void> deleteSolve(@PathVariable Long id) {
-        checkAdminPermission();
         solveService.deleteSolve(id);
         return Result.Success("删除题解成功");
     }
     
     @GetMapping("/count")
+    @RequirePermission(PermissionCode.SOLVE_VIEW)
     public Result<Long> getSolveCount(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer status) {
-        checkAdminPermission();
         Long count = solveService.getSolveCount(keyword, status);
         return Result.Success(count, "获取题解数量成功");
     }

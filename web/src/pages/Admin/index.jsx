@@ -10,6 +10,7 @@ import {
   HomeOutlined,
   BookOutlined,
   SettingOutlined,
+  KeyOutlined,
 } from '@ant-design/icons';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
@@ -17,6 +18,7 @@ import AdminSolves from './AdminSolves';
 import AdminCompetitions from './AdminCompetitions';
 import AdminPractices from './AdminPractices';
 import AdminSettings from './AdminSettings';
+import AdminPermissions from './AdminPermissions';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import './Admin.css';
@@ -149,6 +151,11 @@ const Admin = () => {
       label: '练习管理',
     },
     {
+      key: '/admin/permissions',
+      icon: <KeyOutlined />,
+      label: '权限管理',
+    },
+    {
       key: '/admin/settings',
       icon: <SettingOutlined />,
       label: '系统设置',
@@ -225,6 +232,7 @@ const Admin = () => {
             <Route path="solves" element={<AdminSolves />} />
             <Route path="competitions" element={<AdminCompetitions />} />
             <Route path="practices" element={<AdminPractices />} />
+            <Route path="permissions" element={<AdminPermissions />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>

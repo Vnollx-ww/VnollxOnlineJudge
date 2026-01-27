@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.entity.Notification;
 import com.example.vnollxonlinejudge.model.result.Result;
@@ -28,11 +30,13 @@ public class AdminNotificationController {
     }
 
     @PutMapping("/update/{id}")
+    @RequirePermission(PermissionCode.NOTIFICATION_CREATE)
     public Result<Void> updateNotification(@RequestBody AdminSaveNotificationDTO req, @Valid @PathVariable Long id){
         notificationService.updateNotification(id,req.getTitle(),req.getDescription());
         return Result.Success("修改通知成功");
     }
     @PostMapping("/send")
+    @RequirePermission(PermissionCode.NOTIFICATION_CREATE)
     public Result<Void> sendNotification(@RequestBody AdminSaveNotificationDTO req) {
         Long userId = UserContextHolder.getCurrentUserId();
 

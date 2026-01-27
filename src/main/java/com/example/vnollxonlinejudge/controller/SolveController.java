@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.dto.solve.CreateSolveDTO;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
@@ -30,6 +32,7 @@ public class SolveController {
         this.solveService = solveService;
     }
     @PostMapping("/create")
+    @RequirePermission(PermissionCode.SOLVE_CREATE)
     public Result<Void> createSolve(@RequestBody CreateSolveDTO req){
         Long userId=UserContextHolder.getCurrentUserId();
         solveService.createSolve(

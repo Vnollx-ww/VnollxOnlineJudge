@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.service.AiService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
@@ -26,6 +28,7 @@ public class AiController {
 
     // 流式响应接口 (GET - 适用于短消息)
     @GetMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequirePermission(PermissionCode.AI_CHAT)
     public Flux<String> streamChat(@RequestParam String message) {
         Long userId = UserContextHolder.getCurrentUserId();
 
@@ -37,6 +40,7 @@ public class AiController {
 
     // 流式响应接口 (POST - 适用于大消息体，如代码分析)
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RequirePermission(PermissionCode.AI_CHAT)
     public Flux<String> streamChatPost(@RequestBody String message) {
         Long userId = UserContextHolder.getCurrentUserId();
 
@@ -47,12 +51,14 @@ public class AiController {
     }
 
     @PostMapping("/clear")
+    @RequirePermission(PermissionCode.AI_CHAT)
     public Result<Void> clearMemory() {
         Long userId= UserContextHolder.getCurrentUserId();
         aiService.clearMemory(userId);
         return Result.Success();
     }
     @GetMapping("/history")
+    @RequirePermission(PermissionCode.AI_CHAT)
     public Result<List<String>> getMessageHistoryList(){
         Long userId= UserContextHolder.getCurrentUserId();
         return Result.Success(aiService.getMessageHistoryList(userId));

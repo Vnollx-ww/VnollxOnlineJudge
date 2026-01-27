@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.friend.FriendVo;
 import com.example.vnollxonlinejudge.model.vo.friend.PrivateMessageVo;
@@ -16,6 +18,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/friend")
 @Validated
+@RequirePermission(PermissionCode.FRIEND_USE)
 public class FriendController {
     
     private final FriendService friendService;

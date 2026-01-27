@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.dto.tag.CreateTagDTO;
 import com.example.vnollxonlinejudge.service.TagService;
@@ -18,11 +20,13 @@ public class AdminTagController {
         this.tagService = tagService;
     }
     @PostMapping("/create")
+    @RequirePermission(PermissionCode.TAG_CREATE)
     public Result<Void> createTag(@RequestBody CreateTagDTO req){
         tagService.createTag(req.getName());
         return Result.Success("标签创建成功");
     }
     @DeleteMapping("/delete/{id}")
+    @RequirePermission(PermissionCode.TAG_DELETE)
     public Result<Void> deleteTag(@Valid @PathVariable Long id){
         tagService.deleteTag(id);
         return Result.Success("删除标签成功");

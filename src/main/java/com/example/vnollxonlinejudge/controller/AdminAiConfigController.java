@@ -1,5 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
+import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.config.DynamicAiConfig;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.service.serviceImpl.AiServiceImpl;
@@ -29,6 +31,7 @@ public class AdminAiConfigController {
      * 获取当前AI配置信息
      */
     @GetMapping("/info")
+    @RequirePermission(PermissionCode.AI_CONFIG_VIEW)
     public Result<DynamicAiConfig.AiConfigInfo> getConfigInfo() {
         return Result.Success(dynamicAiConfig.getConfigInfo());
     }
@@ -37,6 +40,7 @@ public class AdminAiConfigController {
      * 更新API Key
      */
     @PostMapping("/api-key")
+    @RequirePermission(PermissionCode.AI_CONFIG_UPDATE)
     public Result<String> updateApiKey(@RequestBody Map<String, String> request) {
         String apiKey = request.get("apiKey");
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -58,6 +62,7 @@ public class AdminAiConfigController {
      * 更新模型配置
      */
     @PostMapping("/model")
+    @RequirePermission(PermissionCode.AI_CONFIG_UPDATE)
     public Result<String> updateModelConfig(@RequestBody Map<String, Object> request) {
         try {
             String model = (String) request.get("model");
@@ -80,6 +85,7 @@ public class AdminAiConfigController {
      * 测试AI连接
      */
     @PostMapping("/test")
+    @RequirePermission(PermissionCode.AI_CONFIG_VIEW)
     public Result<String> testConnection() {
         if (!dynamicAiConfig.isConfigured()) {
             return Result.LogicError("AI未配置，请先设置 API Key");
