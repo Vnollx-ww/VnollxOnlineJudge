@@ -21,10 +21,12 @@ import java.util.List;
 public class XssFilter implements Filter {
     private static final Logger logger = LoggerFactory.getLogger(XssFilter.class);
 
-    // 排除的路径（如文件上传等需要原始内容的接口）
+    // 排除的路径（如文件上传、代码提交等需要原始内容的接口）
     private static final List<String> EXCLUDED_PATHS = Arrays.asList(
             "/admin/upload",
-            "/problem/upload"
+            "/problem/upload",
+            "/judge/submit",
+            "/judge/test"
     );
 
     // 排除的Content-Type
