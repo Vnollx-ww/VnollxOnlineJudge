@@ -118,7 +118,7 @@ const Notifications: React.FC = () => {
   }, [navigate, messageApi]);
 
   // 防抖定时器
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 关键字变化时自动搜索（防抖）
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
