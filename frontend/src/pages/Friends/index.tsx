@@ -18,6 +18,7 @@ interface Friend {
   unreadCount: number;
   lastMessage: string | null;
   lastMessageTime: string | null;
+  isOnline: boolean;
 }
 
 interface UserSearch {
@@ -150,7 +151,12 @@ const Friends: React.FC = () => {
       if (data.code === 200) {
         setMessages(prev => [...prev, data.data]);
         setNewMessage('');
-        loadFriends();
+        // 本地更新好友列表的最后消息，避免重新请求
+        setFriends(prev => prev.map(f => 
+          f.userId === selectedFriend.userId 
+            ? { ...f, lastMessage: newMessage, lastMessageTime: data.data.createTime }
+            : f
+        ));
       }
     } catch (error: any) {
       toast.error(error.response?.data?.msg || '发送失败');
@@ -341,6 +347,28 @@ const Friends: React.FC = () => {
     }
   };
 
+  // 格式化消息时间（显示完整日期和时间）
+  const formatMessageTime = (timeStr: string) => {
+    const date = new Date(timeStr);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+    
+    const time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    
+    if (isToday) {
+      return time;
+    } else if (isYesterday) {
+      return `昨天 ${time}`;
+    } else if (date.getFullYear() === now.getFullYear()) {
+      return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`;
+    } else {
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${time}`;
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-120px)] flex rounded-3xl overflow-hidden" style={{ backgroundColor: 'var(--gemini-surface)' }}>
       {contextHolder}
@@ -442,13 +470,24 @@ const Friends: React.FC = () => {
                             }}
                           >
                             <Badge count={friend.unreadCount} size="small">
-                              <Avatar 
-                                size={44} 
-                                src={friend.userAvatar}
-                                style={{ backgroundColor: 'var(--gemini-accent-strong)' }}
-                              >
-                                {friend.userName?.charAt(0)?.toUpperCase()}
-                              </Avatar>
+                              <div className="relative">
+                                <Avatar 
+                                  size={44} 
+                                  src={friend.userAvatar}
+                                  style={{ backgroundColor: 'var(--gemini-accent-strong)' }}
+                                >
+                                  {friend.userName?.charAt(0)?.toUpperCase()}
+                                </Avatar>
+                                <span 
+                                  className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                                  style={{ 
+                                    backgroundColor: friend.isOnline ? '#22c55e' : '#9ca3af',
+                                    borderColor: selectedFriend?.userId === friend.userId 
+                                      ? 'var(--gemini-accent)' 
+                                      : 'var(--gemini-surface)'
+                                  }}
+                                />
+                              </div>
                             </Badge>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between">
@@ -626,10 +665,7 @@ const Friends: React.FC = () => {
                             color: msg.isMine ? 'rgba(255,255,255,0.7)' : 'var(--gemini-text-disabled)' 
                           }}
                         >
-                          {new Date(msg.createTime).toLocaleTimeString('zh-CN', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
+                          {formatMessageTime(msg.createTime)}
                         </div>
                       </div>
                     </div>

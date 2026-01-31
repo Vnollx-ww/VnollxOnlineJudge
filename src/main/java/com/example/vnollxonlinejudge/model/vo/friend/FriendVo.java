@@ -22,4 +22,5 @@ public class FriendVo {
     private Integer unreadCount;
     private String lastMessage;
     private LocalDateTime lastMessageTime;
+    private Boolean isOnline;
 }

@@ -235,6 +235,7 @@ public class FriendServiceImpl extends ServiceImpl<FriendMapper, Friend> impleme
                 .unreadCount(unreadCount.intValue())
                 .lastMessage(lastMsg != null ? lastMsg.getContent() : null)
                 .lastMessageTime(lastMsg != null ? lastMsg.getCreateTime() : f.getCreateTime())
+                .isOnline(messageWebSocketHandler.isUserOnline(friendUserId))
                 .build());
         }
         
