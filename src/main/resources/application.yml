@@ -70,10 +70,44 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,metrics,prometheus,loggers,env
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
+      show-components: always
+    prometheus:
+      enabled: true
+    metrics:
+      enabled: true
+    loggers:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+
+# Resilience4j 熔断配置
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 3
+    instances:
+      judgeService:
+        baseConfig: default
+        slidingWindowSize: 20
+        failureRateThreshold: 60
+      aiService:
+        baseConfig: default
+        failureRateThreshold: 40
+        waitDurationInOpenState: 120s
 
 # AI 配置
 openai:
