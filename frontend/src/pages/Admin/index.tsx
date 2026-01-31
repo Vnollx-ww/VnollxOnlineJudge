@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import { Layout, Menu, Avatar, Spin, Button } from 'antd';
 import toast from 'react-hot-toast';
@@ -20,8 +20,11 @@ import AdminCompetitions from './AdminCompetitions';
 import AdminPractices from './AdminPractices';
 import AdminSettings from './AdminSettings';
 import AdminPermissions from './AdminPermissions';
+import AdminRoles from './AdminRoles';
 import api from '../../utils/api';
-import { isAuthenticated, getUserInfo } from '../../utils/auth';
+import { isAuthenticated } from '../../utils/auth';
+import { usePermission } from '../../contexts/PermissionContext';
+import { PermissionCode } from '../../constants/permissions';
 import type { ApiResponse } from '../../types';
 
 const { Sider, Header, Content } = Layout;
@@ -32,10 +35,14 @@ const Admin: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [checking, setChecking] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
+  const { hasAnyPermission, loading: permissionLoading } = usePermission();
 
   useEffect(() => {
-    checkAdminPermission();
-  }, []);
+    // 等待权限加载完成后再检查
+    if (!permissionLoading) {
+      checkAdminPermission();
+    }
+  }, [permissionLoading]);
 
   useEffect(() => {
     if (hasPermission && location.pathname) {
@@ -49,6 +56,17 @@ const Admin: React.FC = () => {
     }
   }, [location.pathname, hasPermission]);
 
+  const adminPermissions = [
+    PermissionCode.USER_MANAGE,
+    PermissionCode.PROBLEM_MANAGE,
+    PermissionCode.COMPETITION_MANAGE,
+    PermissionCode.PRACTICE_MANAGE,
+    PermissionCode.SOLVE_AUDIT,
+    PermissionCode.ROLE_VIEW,
+    PermissionCode.PERMISSION_ASSIGN,
+    PermissionCode.SYSTEM_SETTINGS,
+  ];
+
   const checkAdminPermission = async () => {
     const token = localStorage.getItem('token');
     if (!token || !isAuthenticated()) {
@@ -59,40 +77,20 @@ const Admin: React.FC = () => {
     }
 
     try {
-      const userInfo = getUserInfo();
-      if (userInfo.identity === 'ADMIN' || userInfo.identity === 'SUPER_ADMIN') {
-        try {
-          const verifyData = await api.get('/user/profile') as ApiResponse;
-          if (verifyData.code === 200) {
-            setHasPermission(true);
-            setChecking(false);
-            return;
-          }
-        } catch (verifyError: unknown) {
-          const err = verifyError as { response?: { status: number } };
-          if (err.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('id');
-            localStorage.removeItem('name');
-            localStorage.removeItem('identity');
-            toast.error('登录已过期，请重新登录');
-            navigate('/');
-            setChecking(false);
-            return;
-          }
-        }
+      const verifyData = await api.get('/user/profile') as ApiResponse;
+      if (verifyData.code !== 200) {
+        toast.error('登录已过期，请重新登录');
+        navigate('/');
+        setChecking(false);
+        return;
       }
 
-      const data = await api.get('/user/profile') as ApiResponse<{ identity: string }>;
-      if (data.code === 200) {
-        const identity = data.data.identity;
-        if (identity === 'ADMIN' || identity === 'SUPER_ADMIN') {
-          localStorage.setItem('identity', identity);
-          setHasPermission(true);
-        } else {
-          toast.error('权限不足，需要管理员权限');
-          navigate('/');
-        }
+      // 使用权限守卫检查是否有任一管理权限
+      if (hasAnyPermission(...adminPermissions)) {
+        setHasPermission(true);
+      } else {
+        toast.error('权限不足，需要管理员权限');
+        navigate('/');
       }
     } catch (error: unknown) {
       const err = error as { response?: { status: number } };
@@ -109,15 +107,20 @@ const Admin: React.FC = () => {
     }
   };
 
-  const menuItems = [
-    { key: '/admin/users', icon: <Users className="w-4 h-4" />, label: '用户管理' },
-    { key: '/admin/problems', icon: <HelpCircle className="w-4 h-4" />, label: '题目管理' },
-    { key: '/admin/solves', icon: <Lightbulb className="w-4 h-4" />, label: '题解管理' },
-    { key: '/admin/competitions', icon: <Trophy className="w-4 h-4" />, label: '比赛管理' },
-    { key: '/admin/practices', icon: <BookOpen className="w-4 h-4" />, label: '练习管理' },
-    { key: '/admin/permissions', icon: <Key className="w-4 h-4" />, label: '权限管理' },
-    { key: '/admin/settings', icon: <Settings className="w-4 h-4" />, label: '系统设置' },
+  const allMenuItems = [
+    { key: '/admin/users', icon: <Users className="w-4 h-4" />, label: '用户管理', permissions: [PermissionCode.USER_VIEW, PermissionCode.USER_MANAGE] },
+    { key: '/admin/problems', icon: <HelpCircle className="w-4 h-4" />, label: '题目管理', permissions: [PermissionCode.PROBLEM_VIEW, PermissionCode.PROBLEM_MANAGE] },
+    { key: '/admin/solves', icon: <Lightbulb className="w-4 h-4" />, label: '题解管理', permissions: [PermissionCode.SOLVE_VIEW, PermissionCode.SOLVE_AUDIT] },
+    { key: '/admin/competitions', icon: <Trophy className="w-4 h-4" />, label: '比赛管理', permissions: [PermissionCode.COMPETITION_VIEW, PermissionCode.COMPETITION_MANAGE] },
+    { key: '/admin/practices', icon: <BookOpen className="w-4 h-4" />, label: '练习管理', permissions: [PermissionCode.PRACTICE_VIEW, PermissionCode.PRACTICE_MANAGE] },
+    { key: '/admin/roles', icon: <Shield className="w-4 h-4" />, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
+    { key: '/admin/permissions', icon: <Key className="w-4 h-4" />, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
+    { key: '/admin/settings', icon: <Settings className="w-4 h-4" />, label: '系统设置', permissions: [PermissionCode.SYSTEM_SETTINGS] },
   ];
+  
+  const menuItems = useMemo(() => {
+    return allMenuItems.filter(item => hasAnyPermission(...item.permissions));
+  }, [hasAnyPermission]);
 
   const handleMenuClick = ({ key }: { key: string }) => {
     navigate(key);
@@ -215,6 +218,7 @@ const Admin: React.FC = () => {
             <Route path="solves" element={<AdminSolves />} />
             <Route path="competitions" element={<AdminCompetitions />} />
             <Route path="practices" element={<AdminPractices />} />
+            <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="*" element={<AdminUsers />} />

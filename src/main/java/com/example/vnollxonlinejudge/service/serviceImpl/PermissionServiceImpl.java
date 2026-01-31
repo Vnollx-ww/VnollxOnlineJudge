@@ -6,6 +6,7 @@ import com.example.vnollxonlinejudge.mapper.PermissionMapper;
 import com.example.vnollxonlinejudge.mapper.RoleMapper;
 import com.example.vnollxonlinejudge.mapper.RolePermissionMapper;
 import com.example.vnollxonlinejudge.mapper.UserRoleMapper;
+import com.example.vnollxonlinejudge.model.base.RedisKeyType;
 import com.example.vnollxonlinejudge.model.entity.Permission;
 import com.example.vnollxonlinejudge.model.entity.Role;
 import com.example.vnollxonlinejudge.model.entity.RolePermission;
@@ -238,8 +239,9 @@ public class PermissionServiceImpl implements PermissionService {
                 .build();
         userRoleMapper.insert(userRole);
         
-        // 清除缓存
+        // 清除缓存并强制用户重新登录
         clearUserPermissionCache(userId);
+        invalidateUserToken(userId);
     }
     
     @Override
@@ -253,8 +255,9 @@ public class PermissionServiceImpl implements PermissionService {
         wrapper.eq(UserRole::getUserId, userId).eq(UserRole::getRoleId, roleId);
         userRoleMapper.delete(wrapper);
         
-        // 清除缓存
+        // 清除缓存并强制用户重新登录
         clearUserPermissionCache(userId);
+        invalidateUserToken(userId);
     }
     
     @Override
@@ -278,8 +281,9 @@ public class PermissionServiceImpl implements PermissionService {
                 .build();
         rolePermissionMapper.insert(rolePermission);
         
-        // 清除所有权限缓存（因为角色可能被多个用户使用）
+        // 清除所有权限缓存并强制该角色的所有用户重新登录
         clearAllPermissionCache();
+        invalidateUsersWithRole(roleId);
     }
     
     @Override
@@ -294,6 +298,43 @@ public class PermissionServiceImpl implements PermissionService {
         rolePermissionMapper.delete(wrapper);
         
         clearAllPermissionCache();
+        invalidateUsersWithRole(roleId);
+    }
+    
+    /**
+     * 强制用户token失效，需要重新登录
+     */
+    private void invalidateUserToken(Long userId) {
+        if (userId == null) {
+            return;
+        }
+        try {
+            String logoutKey = RedisKeyType.LOGOUT.generateKey(userId);
+            stringRedisTemplate.opsForValue().set(logoutKey, "permission_changed", CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS);
+            logger.info("用户权限变更，强制重新登录: userId={}", userId);
+        } catch (Exception e) {
+            logger.error("设置用户登出标记失败: userId={}", userId, e);
+        }
+    }
+    
+    /**
+     * 强制某角色的所有用户token失效
+     */
+    private void invalidateUsersWithRole(Long roleId) {
+        if (roleId == null) {
+            return;
+        }
+        try {
+            List<Long> userIds = userRoleMapper.selectUserIdsByRoleId(roleId);
+            if (userIds != null) {
+                for (Long userId : userIds) {
+                    invalidateUserToken(userId);
+                }
+            }
+            logger.info("角色权限变更，强制{}个用户重新登录: roleId={}", userIds != null ? userIds.size() : 0, roleId);
+        } catch (Exception e) {
+            logger.error("获取角色用户列表失败: roleId={}", roleId, e);
+        }
     }
     
     @Override
@@ -316,5 +357,37 @@ public class PermissionServiceImpl implements PermissionService {
             return Collections.emptyList();
         }
         return permissionMapper.selectByModule(module);
+    }
+    
+    @Override
+    @Transactional
+    public void syncUserRoleByIdentity(Long userId, String identityCode) {
+        if (userId == null || identityCode == null || identityCode.isEmpty()) {
+            return;
+        }
+        
+        // 查找对应身份的角色
+        Role role = roleMapper.selectByCode(identityCode);
+        if (role == null) {
+            logger.warn("未找到对应身份的角色: identityCode={}", identityCode);
+            return;
+        }
+        
+        // 清除用户现有的所有角色
+        userRoleMapper.deleteByUserId(userId);
+        
+        // 分配新角色
+        UserRole userRole = UserRole.builder()
+                .userId(userId)
+                .roleId(role.getId())
+                .createTime(LocalDateTime.now())
+                .build();
+        userRoleMapper.insert(userRole);
+        
+        // 清除缓存并强制重新登录
+        clearUserPermissionCache(userId);
+        invalidateUserToken(userId);
+        
+        logger.info("用户角色同步成功: userId={}, roleCode={}", userId, identityCode);
     }
 }

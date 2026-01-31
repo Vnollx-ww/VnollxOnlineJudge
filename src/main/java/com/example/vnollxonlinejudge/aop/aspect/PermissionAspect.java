@@ -1,4 +1,4 @@
-package com.example.vnollxonlinejudge.aspect;
+package com.example.vnollxonlinejudge.aop.aspect;
 
 import com.example.vnollxonlinejudge.annotation.RequirePermission;
 import com.example.vnollxonlinejudge.annotation.RequireRole;

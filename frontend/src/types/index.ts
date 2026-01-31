@@ -2,7 +2,7 @@
 export interface User {
   id: number;
   name: string;
-  identity: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+  identity: 'USER' | 'VIP' | 'ADMIN' | 'SUPER_ADMIN';
   email?: string;
   avatar?: string;
   signature?: string;

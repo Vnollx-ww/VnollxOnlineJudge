@@ -16,6 +16,8 @@ import {
   Users,
 } from 'lucide-react';
 import { isAuthenticated, removeToken } from '@/utils/auth';
+import { usePermission } from '@/contexts/PermissionContext';
+import { PermissionCode } from '@/constants/permissions';
 import type { User as UserType } from '@/types';
 
 interface SidebarProps {
@@ -36,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasAnyPermission } = usePermission();
   const [modal, contextHolder] = Modal.useModal();
   const [messageApi, messageContextHolder] = message.useMessage();
 
@@ -81,7 +84,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       icon: <Settings className="w-4 h-4" />,
       label: <Link to="/settings">我的设置</Link>,
     },
-    ...(user?.identity === 'ADMIN' || user?.identity === 'SUPER_ADMIN'
+    ...(hasAnyPermission(
+        PermissionCode.USER_MANAGE,
+        PermissionCode.PROBLEM_MANAGE,
+        PermissionCode.COMPETITION_MANAGE,
+        PermissionCode.PRACTICE_MANAGE,
+        PermissionCode.SOLVE_AUDIT,
+        PermissionCode.ROLE_VIEW,
+        PermissionCode.PERMISSION_ASSIGN,
+        PermissionCode.SYSTEM_SETTINGS
+      )
       ? [
           {
             key: 'admin',

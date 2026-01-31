@@ -23,6 +23,8 @@ import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 marked.setOptions({
@@ -328,14 +330,18 @@ const AdminProblems: React.FC = () => {
       width: 150,
       render: (_: unknown, record: Problem) => (
         <div className="flex gap-2">
-          <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => showModal(record)}>
-            编辑
-          </Button>
-          <Popconfirm title="确定要删除这道题目吗？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-              删除
+          <PermissionGuard permission={PermissionCode.PROBLEM_UPDATE}>
+            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => showModal(record)}>
+              编辑
             </Button>
-          </Popconfirm>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.PROBLEM_DELETE}>
+            <Popconfirm title="确定要删除这道题目吗？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -349,18 +355,20 @@ const AdminProblems: React.FC = () => {
           <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>题目列表</h2>
           <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有题目</p>
         </div>
-        <Button 
-          type="primary" 
-          icon={<Plus className="w-4 h-4" />} 
-          onClick={() => showModal(null)}
-          style={{ 
-            backgroundColor: 'var(--gemini-accent)',
-            color: 'var(--gemini-accent-text)',
-            border: 'none'
-          }}
-        >
-          新建题目
-        </Button>
+        <PermissionGuard permission={PermissionCode.PROBLEM_CREATE}>
+          <Button 
+            type="primary" 
+            icon={<Plus className="w-4 h-4" />} 
+            onClick={() => showModal(null)}
+            style={{ 
+              backgroundColor: 'var(--gemini-accent)',
+              color: 'var(--gemini-accent-text)',
+              border: 'none'
+            }}
+          >
+            新建题目
+          </Button>
+        </PermissionGuard>
       </div>
 
       {/* Toolbar */}

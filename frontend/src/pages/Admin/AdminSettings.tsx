@@ -3,6 +3,8 @@ import { Form, Input, Button, Spin, InputNumber, Tag, Descriptions, Row, Col } f
 import toast from 'react-hot-toast';
 import { Settings as SettingsIcon, Key, Bot, CheckCircle, XCircle, Plug } from 'lucide-react';
 import api from '@/utils/api';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 interface ConfigInfo {
@@ -196,19 +198,21 @@ const AdminSettings: React.FC = () => {
                 <Input placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
               </Form.Item>
               <Form.Item className="mb-0">
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
-                  loading={saving} 
-                  block
-                  style={{ 
-                    backgroundColor: 'var(--gemini-accent)',
-                    color: 'var(--gemini-accent-text)',
-                    border: 'none'
-                  }}
-                >
-                  更新模型配置
-                </Button>
+                <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    loading={saving} 
+                    block
+                    style={{ 
+                      backgroundColor: 'var(--gemini-accent)',
+                      color: 'var(--gemini-accent-text)',
+                      border: 'none'
+                    }}
+                  >
+                    更新模型配置
+                  </Button>
+                </PermissionGuard>
               </Form.Item>
             </Form>
           </div>
@@ -231,19 +235,21 @@ const AdminSettings: React.FC = () => {
             <Input.Password placeholder="输入新的 API Key" size="large" />
           </Form.Item>
           <Form.Item className="mb-0">
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              loading={saving} 
-              size="large"
-              style={{ 
-                backgroundColor: 'var(--gemini-accent)',
-                color: 'var(--gemini-accent-text)',
-                border: 'none'
-              }}
-            >
-              更新 API Key
-            </Button>
+            <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={saving} 
+                size="large"
+                style={{ 
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                  border: 'none'
+                }}
+              >
+                更新 API Key
+              </Button>
+            </PermissionGuard>
           </Form.Item>
         </Form>
       </div>

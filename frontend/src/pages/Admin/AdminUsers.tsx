@@ -3,6 +3,8 @@ import { Table, Button, Input, Modal, Form, Select, Tag, Popconfirm } from 'antd
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 interface User {
@@ -109,7 +111,8 @@ const AdminUsers: React.FC = () => {
 
   const getIdentityTag = (identity: string) => {
     const map: Record<string, { text: string; color: string }> = {
-      USER: { text: '用户', color: 'blue' },
+      USER: { text: '普通用户', color: 'blue' },
+      VIP: { text: 'VIP用户', color: 'purple' },
       ADMIN: { text: '管理员', color: 'orange' },
       SUPER_ADMIN: { text: '超级管理员', color: 'red' },
     };
@@ -134,14 +137,18 @@ const AdminUsers: React.FC = () => {
       key: 'action',
       render: (_: unknown, record: User) => (
         <div className="flex gap-2">
-          <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Popconfirm title="确定要删除这个用户吗？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-              删除
+          <PermissionGuard permission={PermissionCode.USER_UPDATE}>
+            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
+              编辑
             </Button>
-          </Popconfirm>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.USER_DELETE}>
+            <Popconfirm title="确定要删除这个用户吗？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -155,18 +162,20 @@ const AdminUsers: React.FC = () => {
           <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>用户列表</h2>
           <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有用户</p>
         </div>
-        <Button 
-          type="primary" 
-          icon={<Plus className="w-4 h-4" />} 
-          onClick={handleAdd}
-          style={{ 
-            backgroundColor: 'var(--gemini-accent)',
-            color: 'var(--gemini-accent-text)',
-            border: 'none'
-          }}
-        >
-          新建用户
-        </Button>
+        <PermissionGuard permission={PermissionCode.USER_CREATE}>
+          <Button 
+            type="primary" 
+            icon={<Plus className="w-4 h-4" />} 
+            onClick={handleAdd}
+            style={{ 
+              backgroundColor: 'var(--gemini-accent)',
+              color: 'var(--gemini-accent-text)',
+              border: 'none'
+            }}
+          >
+            新建用户
+          </Button>
+        </PermissionGuard>
       </div>
 
       {/* Toolbar */}
@@ -228,6 +237,7 @@ const AdminUsers: React.FC = () => {
           <Form.Item name="identity" label="身份" rules={[{ required: true, message: '请选择身份' }]}>
             <Select>
               <Select.Option value="USER">普通用户</Select.Option>
+              <Select.Option value="VIP">VIP用户</Select.Option>
               <Select.Option value="ADMIN">管理员</Select.Option>
               <Select.Option value="SUPER_ADMIN">超级管理员</Select.Option>
             </Select>

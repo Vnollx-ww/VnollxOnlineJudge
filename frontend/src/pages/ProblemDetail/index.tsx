@@ -38,7 +38,8 @@ import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
-import { CodeEditor } from '@/components';
+import { CodeEditor, PermissionGuard } from '@/components';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse, JudgeMessage } from '@/types';
 
 const { TextArea } = Input;
@@ -896,9 +897,11 @@ ${code}
 
         {/* 操作按钮 */}
         <div className="flex items-center gap-3 mt-4">
-          <Button icon={<Bot className="w-4 h-4" />} onClick={handleOpenAiAnalysis}>
-            AI分析
-          </Button>
+          <PermissionGuard permission={PermissionCode.AI_CHAT}>
+            <Button icon={<Bot className="w-4 h-4" />} onClick={handleOpenAiAnalysis}>
+              AI分析
+            </Button>
+          </PermissionGuard>
           <Button loading={codeLoading.test} onClick={handleTestCode} disabled={language === 'java'}>
             测试样例
           </Button>

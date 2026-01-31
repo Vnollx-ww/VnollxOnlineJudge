@@ -90,4 +90,9 @@ public interface PermissionService {
      * 根据模块获取权限
      */
     List<Permission> getPermissionsByModule(String module);
+    
+    /**
+     * 根据用户身份同步角色（清除旧角色，分配新角色）
+     */
+    void syncUserRoleByIdentity(Long userId, String identityCode);
 }

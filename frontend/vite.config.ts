@@ -103,6 +103,8 @@ export default defineConfig({
             '/admin/solves',
             '/admin/competitions',
             '/admin/practices',
+            '/admin/roles',
+            '/admin/permissions',
             '/admin/settings',
             '/solutions',
             '/vnollx',

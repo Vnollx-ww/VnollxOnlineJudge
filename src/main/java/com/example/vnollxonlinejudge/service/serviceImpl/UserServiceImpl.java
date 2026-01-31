@@ -13,6 +13,7 @@ import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.UserMapper;
 import com.example.vnollxonlinejudge.service.OssService;
+import com.example.vnollxonlinejudge.service.PermissionService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import com.example.vnollxonlinejudge.utils.JwtToken;
@@ -54,13 +55,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final UserSolvedProblemService userSolvedProblemService;
     private final RedisService redisService;
     private final OssService ossService;
+    private final PermissionService permissionService;
     @Autowired
     public UserServiceImpl(UserSolvedProblemService userSolvedProblemService,
                            RedisService redisService,
-                           OssService ossService) {
+                           OssService ossService,
+                           PermissionService permissionService) {
         this.userSolvedProblemService = userSolvedProblemService;
         this.redisService = redisService;
         this.ossService = ossService;
+        this.permissionService = permissionService;
     }
 
     public void validateUserExists(User user) {
@@ -162,9 +166,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
 
-        // 如果是管理员，只查询普通用户
+        // 根据当前用户身份过滤可见用户
         if (IDENTITY_ADMIN.equals(identity)) {
-            queryWrapper.eq("identity", IDENTITY_USER);
+            // 管理员只能看到普通用户和VIP用户
+            queryWrapper.in("identity", IDENTITY_USER, "VIP");
+        } else if (IDENTITY_SUPER_ADMIN.equals(identity)) {
+            // 超级管理员可以看到除超级管理员外的所有用户
+            queryWrapper.ne("identity", IDENTITY_SUPER_ADMIN);
         }
 
         // 关键字查询
@@ -293,24 +301,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setName(name);
         user.setIdentity(identity);
         updateById(user);
-        String key=RedisKeyType.LOGOUT.generateKey(uid);
-        redisService.setKey(key,"",86400L);
+        
+        // 同步用户角色（根据身份分配对应角色，会自动使token失效）
+        permissionService.syncUserRoleByIdentity(uid, identity);
     }
 
     @Override
-    public Long getCountByAdmin(String keyword,String identity) {
-        if (!StringUtils.isNotBlank(keyword)){
-            return this.count();
-        }
-
+    public Long getCountByAdmin(String keyword, String identity) {
         if (identity == null) {
             throw new BusinessException("您无权限");
         }
 
         QueryWrapper<User> wrapper=new QueryWrapper<>();
-        // 如果是管理员，只查询普通用户
+        
+        // 根据当前用户身份过滤可见用户
         if (IDENTITY_ADMIN.equals(identity)) {
-            wrapper.eq("identity", IDENTITY_USER);
+            // 管理员只能看到普通用户和VIP用户
+            wrapper.in("identity", IDENTITY_USER, "VIP");
+        } else if (IDENTITY_SUPER_ADMIN.equals(identity)) {
+            // 超级管理员可以看到除超级管理员外的所有用户
+            wrapper.ne("identity", IDENTITY_SUPER_ADMIN);
         }
 
         if (StringUtils.isNotBlank(keyword)) {

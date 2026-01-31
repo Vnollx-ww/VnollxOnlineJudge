@@ -15,6 +15,9 @@ public interface UserRoleMapper extends BaseMapper<UserRole> {
     @Select("SELECT role_id FROM user_role WHERE user_id = #{userId}")
     List<Long> selectRoleIdsByUserId(@Param("userId") Long userId);
     
+    @Select("SELECT user_id FROM user_role WHERE role_id = #{roleId}")
+    List<Long> selectUserIdsByRoleId(@Param("roleId") Long roleId);
+    
     @Delete("DELETE FROM user_role WHERE user_id = #{userId}")
     int deleteByUserId(@Param("userId") Long userId);
     

@@ -3,6 +3,7 @@ import { ConfigProvider, App as AntApp } from "antd";
 import { Toaster } from 'react-hot-toast';
 import zhCN from "antd/locale/zh_CN";
 import { AppLayout } from "./components/Layout";
+import { PermissionProvider } from "./contexts/PermissionContext";
 import {
   Home,
   Problems,
@@ -141,6 +142,7 @@ function App() {
   return (
     <ConfigProvider theme={theme} locale={zhCN}>
       <AntApp>
+        <PermissionProvider>
         <Toaster
           position="top-center"
           reverseOrder={false}
@@ -280,6 +282,7 @@ function App() {
             />
           </Routes>
         </Router>
+        </PermissionProvider>
       </AntApp>
     </ConfigProvider>
   );

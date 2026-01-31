@@ -19,3 +19,5 @@ export { default as CodeWindow } from './CodeWindow';
 // Count Up Animation
 export { default as CountUp } from './CountUp';
 
+// Permission Guard
+export { default as PermissionGuard } from './PermissionGuard';

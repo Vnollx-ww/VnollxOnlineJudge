@@ -9,6 +9,8 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
 import { isAuthenticated } from '@/utils/auth';
+import { usePermission } from '@/contexts/PermissionContext';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 const { TextArea } = Input;
@@ -50,6 +52,7 @@ const AIAssistant: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messageApi, contextHolder] = antMessage.useMessage();
   const [modal, modalContextHolder] = Modal.useModal();
+  const { hasPermission } = usePermission();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -271,14 +274,16 @@ const AIAssistant: React.FC = () => {
       {contextHolder}
       {modalContextHolder}
       
-      {/* 悬浮按钮 */}
-      <FloatButton
-        icon={<Bot className="w-5 h-5" />}
-        type="primary"
-        className="!w-12 !h-12 !right-10 !bottom-12"
-        onClick={() => setOpen(true)}
-        tooltip="AI 助手"
-      />
+      {/* 悬浮按钮 - 需要AI使用权限 */}
+      {hasPermission(PermissionCode.AI_CHAT) && (
+        <FloatButton
+          icon={<Bot className="w-5 h-5" />}
+          type="primary"
+          className="!w-12 !h-12 !right-10 !bottom-12"
+          onClick={() => setOpen(true)}
+          tooltip="AI 助手"
+        />
+      )}
 
       {/* 聊天抽屉 */}
       <Drawer

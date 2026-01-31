@@ -3,6 +3,8 @@ import { Table, Button, Input, Select, Tag, Popconfirm } from 'antd';
 import toast from 'react-hot-toast';
 import { RefreshCw, Check, X, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 interface Solve {
@@ -100,21 +102,27 @@ const AdminSolves: React.FC = () => {
       width: 250,
       render: (_: unknown, record: Solve) => (
         <div className="flex gap-2">
-          <Popconfirm title="确认审核通过该题解？" onConfirm={() => handleAudit(record.id, 1)}>
-            <Button type="primary" size="small" icon={<Check className="w-3 h-3" />} disabled={record.status === 1}>
-              通过
-            </Button>
-          </Popconfirm>
-          <Popconfirm title="确认审核不通过该题解？" onConfirm={() => handleAudit(record.id, 2)}>
-            <Button danger size="small" icon={<X className="w-3 h-3" />} disabled={record.status === 2}>
-              不通过
-            </Button>
-          </Popconfirm>
-          <Popconfirm title="确定要删除这个题解吗？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
-              删除
-            </Button>
-          </Popconfirm>
+          <PermissionGuard permission={PermissionCode.SOLVE_AUDIT}>
+            <Popconfirm title="确认审核通过该题解？" onConfirm={() => handleAudit(record.id, 1)}>
+              <Button type="primary" size="small" icon={<Check className="w-3 h-3" />} disabled={record.status === 1}>
+                通过
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.SOLVE_AUDIT}>
+            <Popconfirm title="确认审核不通过该题解？" onConfirm={() => handleAudit(record.id, 2)}>
+              <Button danger size="small" icon={<X className="w-3 h-3" />} disabled={record.status === 2}>
+                不通过
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.SOLVE_DELETE}>
+            <Popconfirm title="确定要删除这个题解吗？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
         </div>
       ),
     },

@@ -17,6 +17,8 @@ import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
 import dayjs from 'dayjs';
 import api from '@/utils/api';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 interface Competition {
@@ -246,17 +248,23 @@ const AdminCompetitions: React.FC = () => {
       width: 280,
       render: (_: unknown, record: Competition) => (
         <div className="flex gap-2">
-          <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
-            编辑
-          </Button>
-          <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(record)}>
-            管理题目
-          </Button>
-          <Popconfirm title="确定要删除这个比赛吗？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-              删除
+          <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
+            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
+              编辑
             </Button>
-          </Popconfirm>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
+            <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(record)}>
+              管理题目
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.COMPETITION_DELETE}>
+            <Popconfirm title="确定要删除这个比赛吗？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                删除
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
         </div>
       ),
     },
@@ -270,18 +278,20 @@ const AdminCompetitions: React.FC = () => {
           <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>比赛列表</h2>
           <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有比赛</p>
         </div>
-        <Button 
-          type="primary" 
-          icon={<Plus className="w-4 h-4" />} 
-          onClick={handleAdd}
-          style={{ 
-            backgroundColor: 'var(--gemini-accent)',
-            color: 'var(--gemini-accent-text)',
-            border: 'none'
-          }}
-        >
-          新建比赛
-        </Button>
+        <PermissionGuard permission={PermissionCode.COMPETITION_CREATE}>
+          <Button 
+            type="primary" 
+            icon={<Plus className="w-4 h-4" />} 
+            onClick={handleAdd}
+            style={{ 
+              backgroundColor: 'var(--gemini-accent)',
+              color: 'var(--gemini-accent-text)',
+              border: 'none'
+            }}
+          >
+            新建比赛
+          </Button>
+        </PermissionGuard>
       </div>
 
       {/* Toolbar */}

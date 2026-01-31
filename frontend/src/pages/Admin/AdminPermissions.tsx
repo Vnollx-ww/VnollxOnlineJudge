@@ -3,6 +3,8 @@ import { Table, Button, Modal, Select, Tag, Tabs, Spin, Descriptions, Divider, E
 import toast from 'react-hot-toast';
 import { RefreshCw, Users, Shield, Key, Plus, Trash2, RotateCw } from 'lucide-react';
 import api from '@/utils/api';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
 interface Role {
@@ -231,6 +233,7 @@ const AdminPermissions: React.FC = () => {
     const colorMap: Record<string, string> = {
       SUPER_ADMIN: 'red',
       ADMIN: 'orange',
+      VIP: 'purple',
       USER: 'blue',
       GUEST: 'default',
     };
@@ -267,9 +270,11 @@ const AdminPermissions: React.FC = () => {
       title: '操作',
       key: 'action',
       render: (_: unknown, record: Permission) => (
-        <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(record.id)}>
-          移除
-        </Button>
+        <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+          <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(record.id)}>
+            移除
+          </Button>
+        </PermissionGuard>
       ),
     },
   ];
@@ -296,14 +301,16 @@ const AdminPermissions: React.FC = () => {
                 <h3 className="text-base font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
                   {getRoleTag(selectedRole.code)} {selectedRole.name} 的权限
                 </h3>
-                <Button
-                  type="primary"
-                  icon={<Plus className="w-4 h-4" />}
-                  onClick={() => setAssignPermissionModalVisible(true)}
-                  style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-                >
-                  添加权限
-                </Button>
+                <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+                  <Button
+                    type="primary"
+                    icon={<Plus className="w-4 h-4" />}
+                    onClick={() => setAssignPermissionModalVisible(true)}
+                    style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+                  >
+                    添加权限
+                  </Button>
+                </PermissionGuard>
               </div>
               <Spin spinning={rolePermissionsLoading}>
                 <Table columns={rolePermissionColumns} dataSource={rolePermissions} rowKey="id" pagination={false} size="small" />
@@ -351,7 +358,7 @@ const AdminPermissions: React.FC = () => {
                 <Descriptions.Item label="用户名">{selectedUser.name}</Descriptions.Item>
                 <Descriptions.Item label="邮箱">{selectedUser.email}</Descriptions.Item>
                 <Descriptions.Item label="原身份">
-                  <Tag color={selectedUser.identity === 'SUPER_ADMIN' ? 'red' : selectedUser.identity === 'ADMIN' ? 'orange' : 'blue'}>
+                  <Tag color={selectedUser.identity === 'SUPER_ADMIN' ? 'red' : selectedUser.identity === 'ADMIN' ? 'orange' : selectedUser.identity === 'VIP' ? 'purple' : 'blue'}>
                     {selectedUser.identity}
                   </Tag>
                 </Descriptions.Item>
@@ -362,14 +369,16 @@ const AdminPermissions: React.FC = () => {
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-base font-medium" style={{ color: 'var(--gemini-text-primary)' }}>用户角色</h4>
                 <div className="flex gap-2">
-                  <Button
-                    type="primary"
-                    icon={<Plus className="w-4 h-4" />}
-                    onClick={() => setAssignRoleModalVisible(true)}
-                    style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-                  >
-                    分配角色
-                  </Button>
+                  <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+                    <Button
+                      type="primary"
+                      icon={<Plus className="w-4 h-4" />}
+                      onClick={() => setAssignRoleModalVisible(true)}
+                      style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+                    >
+                      分配角色
+                    </Button>
+                  </PermissionGuard>
                   <Button icon={<RotateCw className="w-4 h-4" />} onClick={() => handleRefreshCache(selectedUser.id)}>
                     刷新缓存
                   </Button>
@@ -382,7 +391,7 @@ const AdminPermissions: React.FC = () => {
                     {userRoles.map((role: Role) => (
                       <Tag
                         key={role.id}
-                        color={role.code === 'SUPER_ADMIN' ? 'red' : role.code === 'ADMIN' ? 'orange' : 'blue'}
+                        color={role.code === 'SUPER_ADMIN' ? 'red' : role.code === 'ADMIN' ? 'orange' : role.code === 'VIP' ? 'purple' : 'blue'}
                         closable
                         onClose={() => handleRemoveRoleFromUser(role.id)}
                       >

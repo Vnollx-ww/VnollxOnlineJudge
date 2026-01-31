@@ -22,6 +22,8 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
+import PermissionGuard from '@/components/PermissionGuard';
+import { PermissionCode } from '@/constants/permissions';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -188,18 +190,20 @@ const SolutionListPage: React.FC = () => {
                 <div className="text-xl font-bold" style={{ color: 'var(--gemini-success)' }}>{solutions.length}</div>
               </div>
             </div>
-            <Button 
-              type="primary" 
-              icon={<EditOutlined />} 
-              onClick={handlePublish}
-              style={{ 
-                backgroundColor: 'var(--gemini-accent)',
-                color: 'var(--gemini-accent-text)',
-                border: 'none'
-              }}
-            >
-              发布题解
-            </Button>
+            <PermissionGuard permission={PermissionCode.SOLVE_CREATE}>
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />} 
+                onClick={handlePublish}
+                style={{ 
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                  border: 'none'
+                }}
+              >
+                发布题解
+              </Button>
+            </PermissionGuard>
           </Space>
         </div>
 
