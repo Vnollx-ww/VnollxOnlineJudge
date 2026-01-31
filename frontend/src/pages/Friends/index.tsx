@@ -5,6 +5,7 @@ import EmojiPicker from 'emoji-picker-react';
 import toast from 'react-hot-toast';
 import api from '@/utils/api';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
+import { useMessageWebSocket } from '@/contexts/MessageWebSocketContext';
 import type { ApiResponse } from '@/types';
 
 interface Friend {
@@ -55,8 +56,9 @@ const Friends: React.FC = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('friends');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const { subscribe } = useMessageWebSocket();
+  const chatCacheRef = useRef<Map<number, PrivateMessage[]>>(new Map());
   const [modal, contextHolder] = Modal.useModal();
 
   const { id: currentUserId } = getUserInfo();
@@ -118,13 +120,30 @@ const Friends: React.FC = () => {
 
   // 加载聊天记录
   const loadChatHistory = useCallback(async (friendId: number) => {
+    // 检查缓存
+    const cached = chatCacheRef.current.get(friendId);
+    if (cached) {
+      setMessages(cached);
+      // 后台标记已读
+      api.post(`/friend/read/${friendId}`).then(() => {
+        window.dispatchEvent(new CustomEvent('message-updated'));
+        setFriends(prev => prev.map(f => 
+          f.userId === friendId ? { ...f, unreadCount: 0 } : f
+        ));
+      });
+      return;
+    }
+    
     setChatLoading(true);
     try {
       const data = await api.get(`/friend/chat/${friendId}`, {
         params: { pageNum: 1, pageSize: 50 }
       }) as ApiResponse<PrivateMessage[]>;
       if (data.code === 200) {
-        setMessages(data.data || []);
+        const msgs = data.data || [];
+        setMessages(msgs);
+        // 存入缓存
+        chatCacheRef.current.set(friendId, msgs);
       }
       // 标记已读
       await api.post(`/friend/read/${friendId}`);
@@ -149,12 +168,18 @@ const Friends: React.FC = () => {
         content: newMessage
       }) as ApiResponse<PrivateMessage>;
       if (data.code === 200) {
-        setMessages(prev => [...prev, data.data]);
+        const newMsg = data.data;
+        setMessages(prev => [...prev, newMsg]);
         setNewMessage('');
+        // 更新缓存
+        const cached = chatCacheRef.current.get(selectedFriend.userId);
+        if (cached) {
+          chatCacheRef.current.set(selectedFriend.userId, [...cached, newMsg]);
+        }
         // 本地更新好友列表的最后消息，避免重新请求
         setFriends(prev => prev.map(f => 
           f.userId === selectedFriend.userId 
-            ? { ...f, lastMessage: newMessage, lastMessageTime: data.data.createTime }
+            ? { ...f, lastMessage: newMessage, lastMessageTime: newMsg.createTime }
             : f
         ));
       }
@@ -231,72 +256,68 @@ const Friends: React.FC = () => {
     setShowEmojiPicker(false);
   };
 
-  // WebSocket 连接
+  // 订阅全局WebSocket消息
   useEffect(() => {
-    if (!currentUserId || !isAuthenticated()) return;
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/message?uid=${currentUserId}`;
-    
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'pong') return;
-        
-        // 好友请求通知
-        if (msg.type === 'friend_request') {
-          toast.success(`${msg.requesterName} 向你发送了好友请求`);
-          loadPendingRequests();
-          return;
+    const unsubscribe = subscribe((msg) => {
+      // 好友请求通知
+      if (msg.type === 'friend_request') {
+        toast.success(`${msg.requesterName} 向你发送了好友请求`);
+        loadPendingRequests();
+        return;
+      }
+      
+      // 好友请求被接受通知
+      if (msg.type === 'friend_accepted') {
+        toast.success(`${msg.accepterName} 已同意你的好友请求`);
+        loadFriends();
+        return;
+      }
+      
+      // 好友在线状态变化
+      if (msg.type === 'online_status') {
+        setFriends(prev => prev.map(f => 
+          f.userId === msg.userId 
+            ? { ...f, isOnline: msg.isOnline }
+            : f
+        ));
+        return;
+      }
+      
+      // 如果是当前聊天对象发来的消息，直接显示并标记已读
+      if (selectedFriend && msg.senderId === selectedFriend.userId) {
+        const newMsg = { ...msg, isMine: false };
+        setMessages(prev => [...prev, newMsg]);
+        // 更新缓存
+        const cached = chatCacheRef.current.get(msg.senderId);
+        if (cached) {
+          chatCacheRef.current.set(msg.senderId, [...cached, newMsg]);
         }
-        
-        // 好友请求被接受通知
-        if (msg.type === 'friend_accepted') {
-          toast.success(`${msg.accepterName} 已同意你的好友请求`);
-          loadFriends();
-          return;
-        }
-        
-        // 如果是当前聊天对象发来的消息，直接显示并标记已读
-        if (selectedFriend && msg.senderId === selectedFriend.userId) {
-          setMessages(prev => [...prev, { ...msg, isMine: false }]);
-          api.post(`/friend/read/${msg.senderId}`).then(() => {
-            window.dispatchEvent(new CustomEvent('message-updated'));
-          });
-          // 本地更新好友列表的最后消息
-          setFriends(prev => prev.map(f => 
-            f.userId === msg.senderId 
-              ? { ...f, lastMessage: msg.content, lastMessageTime: msg.createTime }
-              : f
-          ));
-        } else if (msg.senderId) {
-          // 不是当前聊天对象的消息，更新未读数和侧边栏
-          setFriends(prev => prev.map(f => 
-            f.userId === msg.senderId 
-              ? { ...f, unreadCount: (f.unreadCount || 0) + 1, lastMessage: msg.content, lastMessageTime: msg.createTime }
-              : f
-          ));
+        api.post(`/friend/read/${msg.senderId}`).then(() => {
           window.dispatchEvent(new CustomEvent('message-updated'));
+        });
+        // 本地更新好友列表的最后消息
+        setFriends(prev => prev.map(f => 
+          f.userId === msg.senderId 
+            ? { ...f, lastMessage: msg.content, lastMessageTime: msg.createTime }
+            : f
+        ));
+      } else if (msg.senderId) {
+        // 不是当前聊天对象的消息，更新缓存、未读数和侧边栏
+        const cached = chatCacheRef.current.get(msg.senderId);
+        if (cached) {
+          chatCacheRef.current.set(msg.senderId, [...cached, { ...msg, isMine: false }]);
         }
-      } catch (err) {
-        console.error('解析消息失败:', err);
+        setFriends(prev => prev.map(f => 
+          f.userId === msg.senderId 
+            ? { ...f, unreadCount: (f.unreadCount || 0) + 1, lastMessage: msg.content, lastMessageTime: msg.createTime }
+            : f
+        ));
+        window.dispatchEvent(new CustomEvent('message-updated'));
       }
-    };
+    });
 
-    const heartbeat = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'ping' }));
-      }
-    }, 30000);
-
-    return () => {
-      clearInterval(heartbeat);
-      ws.close();
-    };
-  }, [currentUserId, selectedFriend, loadFriends, loadPendingRequests]);
+    return unsubscribe;
+  }, [subscribe, selectedFriend, loadFriends, loadPendingRequests]);
 
   // 初始加载
   useEffect(() => {
