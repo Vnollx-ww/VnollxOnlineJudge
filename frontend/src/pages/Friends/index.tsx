@@ -4,7 +4,7 @@ import { Search, Send, UserPlus, Check, X, Trash2, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import toast from 'react-hot-toast';
 import api from '@/utils/api';
-import { getUserInfo, isAuthenticated } from '@/utils/auth';
+import { isAuthenticated } from '@/utils/auth';
 import { useMessageWebSocket } from '@/contexts/MessageWebSocketContext';
 import type { ApiResponse } from '@/types';
 
@@ -60,8 +60,6 @@ const Friends: React.FC = () => {
   const { subscribe } = useMessageWebSocket();
   const chatCacheRef = useRef<Map<number, PrivateMessage[]>>(new Map());
   const [modal, contextHolder] = Modal.useModal();
-
-  const { id: currentUserId } = getUserInfo();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -285,7 +283,17 @@ const Friends: React.FC = () => {
       
       // 如果是当前聊天对象发来的消息，直接显示并标记已读
       if (selectedFriend && msg.senderId === selectedFriend.userId) {
-        const newMsg = { ...msg, isMine: false };
+        const newMsg: PrivateMessage = {
+          id: msg.id || Date.now(),
+          senderId: msg.senderId,
+          senderName: msg.senderName || '',
+          senderAvatar: msg.senderAvatar || null,
+          receiverId: msg.receiverId || 0,
+          content: msg.content || '',
+          isRead: msg.isRead || false,
+          createTime: msg.createTime || new Date().toISOString(),
+          isMine: false
+        };
         setMessages(prev => [...prev, newMsg]);
         // 更新缓存
         const cached = chatCacheRef.current.get(msg.senderId);
@@ -305,7 +313,18 @@ const Friends: React.FC = () => {
         // 不是当前聊天对象的消息，更新缓存、未读数和侧边栏
         const cached = chatCacheRef.current.get(msg.senderId);
         if (cached) {
-          chatCacheRef.current.set(msg.senderId, [...cached, { ...msg, isMine: false }]);
+          const cachedMsg: PrivateMessage = {
+            id: msg.id || Date.now(),
+            senderId: msg.senderId,
+            senderName: msg.senderName || '',
+            senderAvatar: msg.senderAvatar || null,
+            receiverId: msg.receiverId || 0,
+            content: msg.content || '',
+            isRead: msg.isRead || false,
+            createTime: msg.createTime || new Date().toISOString(),
+            isMine: false
+          };
+          chatCacheRef.current.set(msg.senderId, [...cached, cachedMsg]);
         }
         setFriends(prev => prev.map(f => 
           f.userId === msg.senderId 
