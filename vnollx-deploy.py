@@ -4,9 +4,9 @@ import os
 load_dotenv() # 加载同目录下的 .env 文件
 
 # 从环境变量读取，读不到则使用默认值
-DOCKERHUB_USER = os.getenv("DOCKERHUB_USER", "vnollx")
-REMOTE_IP = os.getenv("REMOTE_IP", "111.230.105.54")
-REMOTE_USER = os.getenv("REMOTE_USER", "root")
+DOCKERHUB_USER = os.getenv("DOCKERHUB_USER")
+REMOTE_IP = os.getenv("REMOTE_IP")
+REMOTE_USER = os.getenv("REMOTE_USER")
 # 自动定位 Ed25519 密钥路径 (Windows 通常在 C:\Users\用户名\.ssh\id_ed25519)
 SSH_KEY_PATH = os.path.expanduser("~/.ssh/id_ed25519")
 
