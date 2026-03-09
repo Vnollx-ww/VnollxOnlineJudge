@@ -198,6 +198,7 @@ const AdminRoles: React.FC = () => {
     const colorMap: Record<string, string> = {
       SUPER_ADMIN: 'red',
       ADMIN: 'orange',
+      TEACHER: 'green',
       VIP: 'purple',
       USER: 'blue',
       GUEST: 'default',

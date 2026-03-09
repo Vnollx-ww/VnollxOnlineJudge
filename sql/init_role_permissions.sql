@@ -15,6 +15,7 @@
 INSERT INTO role (code, name, description, status, create_time, update_time) VALUES
 ('SUPER_ADMIN', '超级管理员', '拥有系统所有权限，可管理所有用户和AI系统配置', 1, NOW(), NOW()),
 ('ADMIN', '管理员', '可管理VIP和普通用户，不能查看AI配置', 1, NOW(), NOW()),
+('TEACHER', '教师', '教师角色，可管理题目/比赛/练习、查看学生提交与数据统计', 1, NOW(), NOW()),
 ('VIP', 'VIP用户', '高级用户，可使用AI功能', 1, NOW(), NOW()),
 ('USER', '普通用户', '普通用户，基础功能权限', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE
@@ -112,7 +113,7 @@ ON DUPLICATE KEY UPDATE
 
 -- 清空现有角色权限关联（可选）
 DELETE FROM role_permission WHERE role_id IN (
-    SELECT id FROM role WHERE code IN ('SUPER_ADMIN', 'ADMIN', 'VIP', 'USER')
+    SELECT id FROM role WHERE code IN ('SUPER_ADMIN', 'ADMIN', 'TEACHER', 'VIP', 'USER')
 );
 
 -- -----------------------------------------------------
@@ -163,7 +164,29 @@ AND p.code IN (
     'ai:chat',
 
     -- 角色查看（不能分配权限）
-    'role:view'
+    'role:view',
+
+    -- 系统监控（数据统计）
+    'system:monitor'
+);
+
+-- -----------------------------------------------------
+-- 教师：题目/比赛/练习管理、查看提交、题解审核、数据统计等
+-- -----------------------------------------------------
+INSERT INTO role_permission (role_id, permission_id, create_time)
+SELECT r.id, p.id, NOW()
+FROM role r, permission p
+WHERE r.code = 'TEACHER'
+AND p.code IN (
+    'problem:view', 'problem:create', 'problem:update', 'problem:delete', 'problem:manage',
+    'competition:view', 'competition:create', 'competition:update', 'competition:delete', 'competition:manage',
+    'practice:view', 'practice:create', 'practice:update', 'practice:delete', 'practice:manage',
+    'submission:view', 'submission:view_all', 'submission:submit', 'submission:rejudge',
+    'solve:view', 'solve:create', 'solve:update', 'solve:delete', 'solve:audit',
+    'tag:view', 'tag:create', 'tag:update', 'tag:delete',
+    'notification:view', 'notification:create', 'notification:delete',
+    'friend:use', 'comment:create', 'comment:delete',
+    'system:monitor', 'role:view', 'ai:chat'
 );
 
 -- -----------------------------------------------------
@@ -250,7 +273,7 @@ INSERT INTO user_role (user_id, role_id, create_time)
 SELECT u.id, r.id, NOW()
 FROM user u
 JOIN role r ON u.identity = r.code
-WHERE u.identity IN ('SUPER_ADMIN', 'ADMIN', 'VIP', 'USER')
+WHERE u.identity IN ('SUPER_ADMIN', 'ADMIN', 'TEACHER', 'VIP', 'USER')
 ON DUPLICATE KEY UPDATE create_time = NOW();
 
 -- =====================================================

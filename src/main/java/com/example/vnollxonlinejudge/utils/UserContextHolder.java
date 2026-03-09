@@ -76,7 +76,7 @@ public class UserContextHolder {
      */
     public static boolean isAdmin() {
         String identity = getCurrentUserIdentity();
-        return "ADMIN".equals(identity) || "SUPER_ADMIN".equals(identity);
+        return "ADMIN".equals(identity) || "SUPER_ADMIN".equals(identity) || "TEACHER".equals(identity);
     }
     
     /**

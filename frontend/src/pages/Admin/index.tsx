@@ -12,6 +12,7 @@ import {
   BookOpen,
   Settings,
   Key,
+  BarChart3,
 } from 'lucide-react';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
@@ -21,6 +22,7 @@ import AdminPractices from './AdminPractices';
 import AdminSettings from './AdminSettings';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
+import AdminStatistics from './AdminStatistics';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -65,6 +67,7 @@ const Admin: React.FC = () => {
     PermissionCode.ROLE_VIEW,
     PermissionCode.PERMISSION_ASSIGN,
     PermissionCode.SYSTEM_SETTINGS,
+    PermissionCode.SYSTEM_MONITOR,
   ];
 
   const checkAdminPermission = async () => {
@@ -113,6 +116,7 @@ const Admin: React.FC = () => {
     { key: '/admin/solves', icon: <Lightbulb className="w-4 h-4" />, label: '题解管理', permissions: [PermissionCode.SOLVE_VIEW, PermissionCode.SOLVE_AUDIT] },
     { key: '/admin/competitions', icon: <Trophy className="w-4 h-4" />, label: '比赛管理', permissions: [PermissionCode.COMPETITION_VIEW, PermissionCode.COMPETITION_MANAGE] },
     { key: '/admin/practices', icon: <BookOpen className="w-4 h-4" />, label: '练习管理', permissions: [PermissionCode.PRACTICE_VIEW, PermissionCode.PRACTICE_MANAGE] },
+    { key: '/admin/statistics', icon: <BarChart3 className="w-4 h-4" />, label: '数据统计', permissions: [PermissionCode.SYSTEM_MONITOR] },
     { key: '/admin/roles', icon: <Shield className="w-4 h-4" />, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
     { key: '/admin/permissions', icon: <Key className="w-4 h-4" />, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
     { key: '/admin/settings', icon: <Settings className="w-4 h-4" />, label: '系统设置', permissions: [PermissionCode.SYSTEM_SETTINGS] },
@@ -218,6 +222,7 @@ const Admin: React.FC = () => {
             <Route path="solves" element={<AdminSolves />} />
             <Route path="competitions" element={<AdminCompetitions />} />
             <Route path="practices" element={<AdminPractices />} />
+            <Route path="statistics" element={<AdminStatistics />} />
             <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />
             <Route path="settings" element={<AdminSettings />} />

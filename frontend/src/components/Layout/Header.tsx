@@ -155,12 +155,12 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
       icon: <Settings className="w-4 h-4" />,
       label: <Link to="/settings">我的设置</Link>,
     },
-    ...(user?.identity === 'ADMIN' || user?.identity === 'SUPER_ADMIN'
+    ...(user?.identity === 'ADMIN' || user?.identity === 'SUPER_ADMIN' || user?.identity === 'TEACHER'
       ? [
           {
             key: 'admin',
             icon: <Settings className="w-4 h-4" />,
-            label: <Link to="/admin">管理员界面</Link>,
+            label: <Link to="/admin">后台界面</Link>,
           },
         ]
       : []),
