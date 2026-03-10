@@ -12,6 +12,7 @@ interface RankUser {
   name: string;
   passCount: number;
   submitCount: number;
+  avatar?: string;
 }
 
 const Ranklist: React.FC = () => {
@@ -99,7 +100,10 @@ const Ranklist: React.FC = () => {
       key: 'user',
       render: (_: unknown, record: RankUser) => (
         <div className="flex items-center gap-3">
-          <Avatar style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}>
+          <Avatar 
+            src={record.avatar}
+            style={{ background: record.avatar ? 'transparent' : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}
+          >
             {record.name?.charAt(0)?.toUpperCase() || 'U'}
           </Avatar>
           <span 

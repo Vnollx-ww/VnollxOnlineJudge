@@ -237,9 +237,10 @@ const Sidebar: React.FC<SidebarProps> = ({
               >
                 <Avatar
                   size={36}
+                  src={user.avatar}
                   className="flex-shrink-0"
                   style={{ 
-                    background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
+                    background: user.avatar ? 'transparent' : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
                     color: '#fff'
                   }}
                 >

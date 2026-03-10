@@ -5,6 +5,8 @@ import com.example.vnollxonlinejudge.model.dto.user.*;
 import com.example.vnollxonlinejudge.model.entity.UserTag;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
+import com.example.vnollxonlinejudge.model.vo.statistics.LearningAnalyticsVO;
+import com.example.vnollxonlinejudge.service.StatisticsService;
 import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.service.UserTagService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
@@ -22,12 +24,13 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
     private final UserTagService userTagService;
+    private final StatisticsService statisticsService;
     
     @Autowired
-    public UserController(UserService userService,UserTagService userTagService) {
-
+    public UserController(UserService userService, UserTagService userTagService, StatisticsService statisticsService) {
         this.userService = userService;
         this.userTagService = userTagService;
+        this.statisticsService = statisticsService;
     }
     @PostMapping("/login")
     public Result<String> login(@RequestBody LoginDTO request){
@@ -88,5 +91,21 @@ public class UserController {
     public Result<List<UserTag>> getUserTagPassStatusList() {
         Long userId = UserContextHolder.getCurrentUserId();
         return Result.Success(userTagService.getUserTagPassStatusList(userId));
+    }
+
+    /**
+     * 用户学习数据统计（普通用户可访问，只能查看自己的数据）
+     * @param days 近期天数，默认 30
+     */
+    @GetMapping("/learning-stats")
+    public Result<LearningAnalyticsVO> getLearningStats(@RequestParam(defaultValue = "30") int days) {
+        Long userId = UserContextHolder.getCurrentUserId();
+        if (userId == null) {
+            return Result.LogicError("请先登录");
+        }
+        if (days <= 0 || days > 365) {
+            days = 30;
+        }
+        return Result.Success(statisticsService.getLearningAnalytics(userId, days), "获取成功");
     }
 }

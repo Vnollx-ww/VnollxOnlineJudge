@@ -339,7 +339,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public List<UserVo> getAllUser() {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.select("id", "name", "submit_count", "pass_count","last_login_time");
+        wrapper.select("id", "name", "submit_count", "pass_count","last_login_time", "avatar");
 
         return this.baseMapper.selectList(wrapper)
                 .stream()

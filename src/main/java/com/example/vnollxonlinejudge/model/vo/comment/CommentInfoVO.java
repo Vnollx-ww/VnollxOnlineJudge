@@ -14,6 +14,7 @@ public class CommentInfoVO {
     private Long id;
     private String content;
     private String username;
+    private String userAvatar; // 用户头像
     private String createTime;
     private Long userId;
     private Long parentId;

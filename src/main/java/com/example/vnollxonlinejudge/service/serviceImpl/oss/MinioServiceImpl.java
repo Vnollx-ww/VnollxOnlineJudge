@@ -23,7 +23,7 @@ import java.util.Base64;
 @Service
 @Primary
 public class MinioServiceImpl implements OssService {
-    private static final String endpoint="http://106.54.223.38:9000";
+    private static final String endpoint="http://111.230.105.54:9000";
     private static final Logger logger = LoggerFactory.getLogger(MinioServiceImpl.class);
     @Autowired
     public MinioServiceImpl(MinioClient minioClient){
@@ -72,20 +72,20 @@ public class MinioServiceImpl implements OssService {
             String lastFix=FileOperation.getFileExtension(avatar);
             String fileUrl= FileOperation.encryptFileName(String.valueOf(uid))+"."+lastFix;
             minioClient.putObject(PutObjectArgs.builder()
-                    .bucket("user")
+                    .bucket("avatar")
                     .object(fileUrl)
                     .stream(avatar.getInputStream(), avatar.getSize(), -1)
                     .contentType(avatar.getContentType())
                     .build());
-            return generatePublicUrl(fileUrl);
+            return generateAvatarUrl(fileUrl);
         } catch (Exception e) {
-            logger.error("文件上传失败: "+e.getMessage());
-            throw new IOException("文件上传失败: " + e.getMessage(), e);
+            logger.error("头像上传失败: "+e.getMessage());
+            throw new IOException("头像上传失败: " + e.getMessage(), e);
         }
     }
 
 
-    private static String generatePublicUrl(String encryptedFileName) {
-        return  endpoint+ "/" + "user" + "/" + encryptedFileName;
+    private static String generateAvatarUrl(String encryptedFileName) {
+        return  endpoint+ "/" + "avatar" + "/" + encryptedFileName;
     }
 }

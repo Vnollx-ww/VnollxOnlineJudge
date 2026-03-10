@@ -323,7 +323,8 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
                 >
                   <Avatar
                     size={32}
-                    style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}
+                    src={user.avatar}
+                    style={{ background: user.avatar ? 'transparent' : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}
                   >
                     {user.name?.charAt(0)?.toUpperCase() || 'U'}
                   </Avatar>

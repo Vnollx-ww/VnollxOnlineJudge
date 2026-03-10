@@ -28,11 +28,8 @@ import {
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
@@ -70,6 +67,7 @@ interface Comment {
   id: number;
   userId: number;
   username: string;
+  userAvatar?: string;
   content: string;
   createTime: string;
   subcommentList?: Comment[];
@@ -164,8 +162,18 @@ const ProblemDetail: React.FC = () => {
   const [aiAnalysisResult, setAiAnalysisResult] = useState('');
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const aiAnalysisRef = useRef<HTMLDivElement>(null);
 
   const userInfo = getUserInfo();
+
+  // 为 AI 弹窗内容高亮代码块
+  useEffect(() => {
+    if (aiAnalysisRef.current && aiAnalysisResult) {
+      aiAnalysisRef.current.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block as HTMLElement);
+      });
+    }
+  }, [aiAnalysisResult]);
 
   // 监听浏览器全屏状态变化
   useEffect(() => {
@@ -243,6 +251,14 @@ const ProblemDetail: React.FC = () => {
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'style'],
       ALLOW_DATA_ATTR: false,
     });
+  }, [renderLatex]);
+
+  // 渲染 AI 结果为 HTML
+  const renderAiContent = useCallback((content: string) => {
+    if (!content) return '';
+    const withLatex = renderLatex(content);
+    const html = marked.parse(withLatex) as string;
+    return DOMPurify.sanitize(html);
   }, [renderLatex]);
 
   useEffect(() => {
@@ -564,7 +580,7 @@ ${code}
         for (const chunk of parts) {
           const lines = chunk.split(/\n/).map((l) => l.replace(/^data:\s?/, '')).filter(l => l.trim());
           const data = lines.join('\n');
-          const cleanedData = data.replace(/\[DONE\]/g, '').replace(/"{1,10}/g, '');
+          const cleanedData = data.replace(/\[DONE\]/g, '').replace(/^"+|"+$/g, '');
           
           if (cleanedData) {
             accumulatedText += cleanedData;
@@ -614,7 +630,10 @@ ${code}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <Avatar style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}>
+            <Avatar 
+              src={item.userAvatar}
+              style={{ background: item.userAvatar ? 'transparent' : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}
+            >
               {item.username?.charAt(0)?.toUpperCase() || 'U'}
             </Avatar>
             <div>
@@ -896,7 +915,7 @@ ${code}
         )}
 
         {/* 操作按钮 */}
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex flex-wrap items-center gap-3 mt-4">
           <PermissionGuard permission={PermissionCode.AI_CHAT}>
             <Button icon={<Bot className="w-4 h-4" />} onClick={handleOpenAiAnalysis}>
               AI分析
@@ -1046,31 +1065,11 @@ ${code}
               <span className="mt-2 text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>分析内容将实时显示</span>
             </div>
           ) : aiAnalysisResult ? (
-            <ReactMarkdown
-              className="prose prose-sm max-w-none text-acg-primary prose-pre:bg-gray-900 prose-pre:rounded-xl prose-code:text-acg-accent"
-              rehypePlugins={[rehypeRaw]}
-              components={{
-                code({ inline, className, children, ...props }: any) {
-                  const match = /language-(\w+)/.exec(className || '');
-                  return !inline && match ? (
-                    <SyntaxHighlighter
-                      style={vscDarkPlus}
-                      language={match[1]}
-                      PreTag="div"
-                      {...props}
-                    >
-                      {String(children).replace(/\n$/, '')}
-                    </SyntaxHighlighter>
-                  ) : (
-                    <code className={`${className} bg-acg-btn/50 px-1.5 py-0.5 rounded`} {...props}>
-                      {children}
-                    </code>
-                  );
-                },
-              }}
-            >
-              {renderLatex(aiAnalysisResult)}
-            </ReactMarkdown>
+            <div
+              ref={aiAnalysisRef}
+              className="prose prose-blue max-w-none"
+              dangerouslySetInnerHTML={{ __html: renderAiContent(aiAnalysisResult) }}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center py-12">
               <Bot className="w-12 h-12 mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
@@ -1080,6 +1079,7 @@ ${code}
           )}
         </div>
       </Modal>
+
     </div>
   );
 };

@@ -7,7 +7,10 @@ import {
   Avatar,
   Typography,
   Space,
+  Upload,
 } from 'antd';
+import type { UploadProps } from 'antd';
+import { CameraOutlined } from '@ant-design/icons';
 import toast from 'react-hot-toast';
 import {
   UserOutlined,
@@ -25,6 +28,7 @@ interface User {
   name: string;
   email: string;
   signature?: string;
+  avatar?: string;
 }
 
 const Settings: React.FC = () => {
@@ -36,6 +40,7 @@ const Settings: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState('profile');
   const [codeLoading, setCodeLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [avatarLoading, setAvatarLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -166,6 +171,36 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleAvatarUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setAvatarLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file as File);
+      formData.append('email', user!.email);
+      formData.append('name', user!.name);
+      formData.append('option', 'avatar');
+      formData.append('signature', user!.signature || '');
+      formData.append('verifyCode', '');
+
+      const data = await api.put('/user/update/profile', formData);
+      if (data.code === 200) {
+        toast.success('头像更新成功');
+        // 重新加载用户信息获取新头像URL
+        await loadUserInfo();
+        onSuccess?.(data);
+      } else {
+        toast.error(data.msg || '头像上传失败');
+        onError?.(new Error(data.msg || '头像上传失败'));
+      }
+    } catch (err) {
+      toast.error('网络请求失败，请重试');
+      onError?.(err as Error);
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
   const menuItems = [
     { key: 'profile', icon: <UserOutlined />, label: '个人资料' },
     { key: 'email', icon: <MailOutlined />, label: '修改邮箱' },
@@ -209,17 +244,38 @@ const Settings: React.FC = () => {
                 <Title level={3} className="!mb-8" style={{ color: 'var(--gemini-text-primary)' }}>个人资料</Title>
                 <Form form={form} layout="vertical" onFinish={handleProfileSubmit}>
                   <div className="flex flex-col items-center mb-8">
-                    <Avatar
-                      size={120}
-                      style={{ 
-                        background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
-                        fontSize: '3rem'
-                      }}
+                    <Upload
+                      name="avatar"
+                      showUploadList={false}
+                      customRequest={handleAvatarUpload}
+                      accept="image/*"
+                      disabled={avatarLoading}
                     >
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </Avatar>
+                      <div className="relative cursor-pointer group">
+                        <Avatar
+                          size={120}
+                          src={user?.avatar}
+                          style={{ 
+                            background: user?.avatar ? 'transparent' : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
+                            fontSize: '3rem'
+                          }}
+                        >
+                          {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </Avatar>
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <CameraOutlined style={{ fontSize: 24, color: '#fff' }} />
+                        </div>
+                        {avatarLoading && (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+                            <span className="text-white text-sm">上传中...</span>
+                          </div>
+                        )}
+                      </div>
+                    </Upload>
                     <Text className="mt-3" style={{ color: 'var(--gemini-text-tertiary)' }}>
-                      头像将显示用户名的首字母
+                      点击头像上传新图片
                     </Text>
                   </div>
                   <Form.Item

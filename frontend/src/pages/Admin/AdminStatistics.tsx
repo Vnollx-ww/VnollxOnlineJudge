@@ -147,6 +147,14 @@ const AdminStatistics: React.FC = () => {
     loadPracticeOptions();
   }, []);
 
+  useEffect(() => {
+    loadLearningAnalytics();
+  }, [learningDays, learningUid]);
+
+  useEffect(() => {
+    loadTeachingProgress();
+  }, [teachingPracticeId]);
+
   const loadUserOptions = async () => {
     setLoadingUserOptions(true);
     try {

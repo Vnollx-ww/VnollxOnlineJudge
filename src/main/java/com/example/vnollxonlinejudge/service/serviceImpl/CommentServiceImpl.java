@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.convert.CommentConvert;
 import com.example.vnollxonlinejudge.mapper.CommentMapper;
+import com.example.vnollxonlinejudge.mapper.UserMapper;
 import com.example.vnollxonlinejudge.model.dto.comment.PublishCommentDTO;
 import com.example.vnollxonlinejudge.model.entity.Comment;
 import com.example.vnollxonlinejudge.model.entity.Notification;
+import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.vo.comment.CommentInfoVO;
 import com.example.vnollxonlinejudge.producer.NotificationProducer;
 import com.example.vnollxonlinejudge.service.CommentService;
@@ -26,13 +28,16 @@ import java.util.*;
 public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> implements CommentService {
     private final NotificationProducer notificationProducer;
     private final CommentConvert commentConvert;
+    private final UserMapper userMapper;
     @Autowired
     public CommentServiceImpl(
             NotificationProducer notificationProducer,
-            CommentConvert commentConvert
+            CommentConvert commentConvert,
+            UserMapper userMapper
     ) {
         this.notificationProducer=notificationProducer;
         this.commentConvert=commentConvert;
+        this.userMapper=userMapper;
     }
 
     @Override
@@ -86,9 +91,25 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         Map<Long, CommentInfoVO> voMap = new HashMap<>();
         List<CommentInfoVO> result = new ArrayList<>();
 
+        // 收集所有用户ID，批量查询用户头像
+        Set<Long> userIds = new HashSet<>();
+        for (Comment comment : allComments) {
+            userIds.add(comment.getUserId());
+        }
+        
+        // 批量查询用户头像
+        Map<Long, String> userAvatarMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            List<User> users = userMapper.selectBatchIds(userIds);
+            for (User user : users) {
+                userAvatarMap.put(user.getId(), user.getAvatar());
+            }
+        }
+        
         // 第一遍：创建所有VO对象
         for (Comment comment : allComments) {
             CommentInfoVO vo = new CommentInfoVO(comment);
+            vo.setUserAvatar(userAvatarMap.get(comment.getUserId()));
             voMap.put(comment.getId(), vo);
         }
 
