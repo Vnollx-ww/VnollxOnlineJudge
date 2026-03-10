@@ -679,7 +679,7 @@ const Friends: React.FC = () => {
                     key={msg.id}
                     className={`flex ${msg.isMine ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`flex items-end gap-2 max-w-[70%] ${msg.isMine ? 'flex-row-reverse' : ''}`}>
+                    <div className={`flex items-center gap-2 max-w-[70%] ${msg.isMine ? 'flex-row-reverse' : ''}`}>
                       {!msg.isMine && (
                         <Avatar 
                           size={32} 
@@ -689,21 +689,21 @@ const Friends: React.FC = () => {
                           {msg.senderName?.charAt(0)?.toUpperCase()}
                         </Avatar>
                       )}
-                      <div
-                        className={`px-4 py-2 rounded-2xl ${
-                          msg.isMine ? 'rounded-br-sm' : 'rounded-bl-sm'
-                        }`}
-                        style={{
-                          backgroundColor: msg.isMine ? 'var(--gemini-accent)' : 'var(--gemini-bg)',
-                          color: msg.isMine ? 'var(--gemini-accent-text)' : 'var(--gemini-text-primary)'
-                        }}
-                      >
-                        <div className="break-words whitespace-pre-wrap">{msg.content}</div>
-                        <div 
-                          className="text-xs mt-1 text-right"
-                          style={{ 
-                            color: msg.isMine ? 'rgba(255,255,255,0.7)' : 'var(--gemini-text-disabled)' 
+                      <div>
+                        <div
+                          className={`px-4 py-2 rounded-2xl ${
+                            msg.isMine ? 'rounded-br-sm' : 'rounded-bl-sm'
+                          }`}
+                          style={{
+                            backgroundColor: msg.isMine ? 'var(--gemini-accent)' : 'var(--gemini-bg)',
+                            color: msg.isMine ? 'var(--gemini-accent-text)' : 'var(--gemini-text-primary)'
                           }}
+                        >
+                          <span className="break-words whitespace-pre-wrap">{msg.content}</span>
+                        </div>
+                        <div 
+                          className={`text-xs mt-1 ${msg.isMine ? 'text-right' : 'text-left'}`}
+                          style={{ color: 'var(--gemini-text-disabled)' }}
                         >
                           {formatMessageTime(msg.createTime)}
                         </div>
