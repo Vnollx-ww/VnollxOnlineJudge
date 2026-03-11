@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/problem")
+@RequestMapping("/api/v1/admin/problem")
 @Validated
 public class AdminProblemController {
     private final ProblemService problemService;

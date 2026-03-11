@@ -16,7 +16,7 @@ import org.springframework.web.servlet.ModelAndView;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/solve")
+@RequestMapping("/api/v1/admin/solve")
 public class AdminSolveController {
     
     private final SolveService solveService;

@@ -132,7 +132,8 @@ const CompetitionProblemDetail: React.FC = () => {
   const navigate = useNavigate();
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [_tags, _setTags] = useState<string[]>([]);
+  const [, /* tags */ setTags] = useState<string[]>([]);
+  void setTags; // Reserved for future use
   const [language, setLanguage] = useState(languageOptions[0].value);
   const [code, setCode] = useState(languageOptions[0].template);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
@@ -194,7 +195,7 @@ const CompetitionProblemDetail: React.FC = () => {
         return match;
       }
     });
-    text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    text = text.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
       try {
         return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
       } catch {

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Input, Pagination, Select, Button, Spin, Tag } from 'antd';
 import toast from 'react-hot-toast';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, CheckCircle, Circle } from 'lucide-react';
 import api from '../../utils/api';
-import { isAuthenticated } from '../../utils/auth';
+import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
 
 interface Problem {
@@ -40,6 +40,7 @@ const Problems: React.FC = () => {
   const [recommendProblems, setRecommendProblems] = useState<RecommendedProblem[]>([]);
   const [recommendLoading, setRecommendLoading] = useState(false);
   const [showRecommend, setShowRecommend] = useState(false);
+  const [solvedIds, setSolvedIds] = useState<Set<number>>(new Set());
 
   const pageSize = 15;
 
@@ -50,7 +51,23 @@ const Problems: React.FC = () => {
       return;
     }
     loadTags();
+    loadSolvedProblems();
   }, []);
+
+  const loadSolvedProblems = async () => {
+    try {
+      const userInfo = getUserInfo();
+      if (!userInfo?.id) return;
+      const res = await api.get('/user/solved-problems', { 
+        params: { uid: userInfo.id } 
+      }) as ApiResponse<{ problemId: number }[]>;
+      if (res.code === 200 && res.data) {
+        setSolvedIds(new Set(res.data.map(p => p.problemId)));
+      }
+    } catch (error) {
+      console.error('加载已解决题目失败:', error);
+    }
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -142,7 +159,11 @@ const Problems: React.FC = () => {
 
       // 按分数排序取前8个
       scored.sort((a, b) => b.score - a.score);
-      setRecommendProblems(scored.slice(0, 8).map(({ score, ...rest }) => rest));
+      setRecommendProblems(scored.slice(0, 8).map((item) => {
+        const { score: _unusedScore, ...rest } = item;
+        void _unusedScore;
+        return rest;
+      }));
     } catch (error) {
       toast.error('获取推荐失败');
       console.error(error);
@@ -170,6 +191,21 @@ const Problems: React.FC = () => {
   };
 
   const columns = [
+    {
+      title: '状态',
+      key: 'status',
+      width: 80,
+      align: 'center' as const,
+      render: (_: unknown, record: Problem) => (
+        <div className="flex items-center justify-center">
+          {solvedIds.has(record.id) ? (
+            <CheckCircle className="w-5 h-5" style={{ color: 'var(--gemini-success)' }} />
+          ) : (
+            <Circle className="w-5 h-5" style={{ color: 'var(--gemini-text-disabled)' }} />
+          )}
+        </div>
+      ),
+    },
     {
       title: '题号',
       dataIndex: 'id',

@@ -18,7 +18,7 @@ import java.util.Set;
  * 权限管理控制器
  */
 @RestController
-@RequestMapping("/admin/permission")
+@RequestMapping("/api/v1/admin/permission")
 @Validated
 public class AdminPermissionController {
     

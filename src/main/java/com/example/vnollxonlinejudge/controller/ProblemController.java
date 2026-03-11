@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
-@RequestMapping("/problem")
+@RequestMapping("/api/v1/problem")
 public class ProblemController {
     private static final Logger logger = LoggerFactory.getLogger(ProblemController.class);
     private final ProblemService problemService;

@@ -226,7 +226,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               className="flex flex-wrap items-center justify-center gap-4 text-sm"
               style={{ color: 'var(--gemini-text-secondary)' }}
             >
-              <span>© 2025 VnollxOnlineJudge</span>
+              <span>© 2026 VnollxOnlineJudge</span>
               <button
                 onClick={() => setPrivacyVisible(true)}
                 className="transition-colors duration-200 hover:opacity-80"

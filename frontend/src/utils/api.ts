@@ -1,7 +1,8 @@
 import axios from 'axios';
-import type { AxiosResponse, InternalAxiosRequestConfig, AxiosInstance } from 'axios';
+import type { AxiosResponse, InternalAxiosRequestConfig, AxiosInstance, AxiosRequestConfig } from 'axios';
 
 // API 响应类型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ApiResponse<T = any> {
   code: number;
   data: T;
@@ -10,7 +11,7 @@ export interface ApiResponse<T = any> {
 
 // 创建 axios 实例
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: '', // 使用相对路径，由后端代理
+  baseURL: '/api/v1', // API 统一前缀
   timeout: 30000,
 });
 
@@ -63,17 +64,20 @@ axiosInstance.interceptors.response.use(
 );
 
 // 封装请求方法，正确处理返回类型
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const api = {
-  get: <T = any>(url: string, config?: any): Promise<ApiResponse<T>> => {
+  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
     return axiosInstance.get(url, config) as Promise<ApiResponse<T>>;
   },
-  post: <T = any>(url: string, data?: any, config?: any): Promise<ApiResponse<T>> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
     return axiosInstance.post(url, data, config) as Promise<ApiResponse<T>>;
   },
-  put: <T = any>(url: string, data?: any, config?: any): Promise<ApiResponse<T>> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
     return axiosInstance.put(url, data, config) as Promise<ApiResponse<T>>;
   },
-  delete: <T = any>(url: string, config?: any): Promise<ApiResponse<T>> => {
+  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> => {
     return axiosInstance.delete(url, config) as Promise<ApiResponse<T>>;
   },
 };

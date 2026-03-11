@@ -141,12 +141,39 @@ const ProblemDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const { } = App.useApp();
+  const _app = App.useApp();
+  void _app;
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
   const [language, setLanguage] = useState(languageOptions[0].value);
   const [code, setCode] = useState(languageOptions[0].template);
+
+  // 生成代码缓存的key
+  const getCodeCacheKey = useCallback((problemId: string, lang: string) => {
+    return `problem_code_${problemId}_${lang}`;
+  }, []);
+
+  // 保存代码到LocalStorage
+  const saveCodeToCache = useCallback((problemId: string, lang: string, codeContent: string) => {
+    try {
+      const key = getCodeCacheKey(problemId, lang);
+      localStorage.setItem(key, codeContent);
+    } catch (e) {
+      console.warn('保存代码缓存失败:', e);
+    }
+  }, [getCodeCacheKey]);
+
+  // 从LocalStorage读取代码
+  const loadCodeFromCache = useCallback((problemId: string, lang: string): string | null => {
+    try {
+      const key = getCodeCacheKey(problemId, lang);
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('读取代码缓存失败:', e);
+      return null;
+    }
+  }, [getCodeCacheKey]);
   const [testResult, setTestResult] = useState<{ type: string; message: string; detail?: string } | null>(null);
   const [submitResult, setSubmitResult] = useState<{ type: string; message: string; detail?: string } | null>(null);
   const [codeLoading, setCodeLoading] = useState({ test: false, submit: false });
@@ -224,7 +251,7 @@ const ProblemDetail: React.FC = () => {
         return match;
       }
     });
-    text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+    text = text.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
       try {
         return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
       } catch {
@@ -301,10 +328,26 @@ const ProblemDetail: React.FC = () => {
     }
   }, [searchParams, comments, commentLoading]);
 
+  // 语言切换时，优先使用缓存的代码，否则使用模板
   useEffect(() => {
-    const template = languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
-    setCode(template);
-  }, [language]);
+    if (!id) return;
+    const cachedCode = loadCodeFromCache(id, language);
+    if (cachedCode) {
+      setCode(cachedCode);
+    } else {
+      const template = languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
+      setCode(template);
+    }
+  }, [language, id, loadCodeFromCache]);
+
+  // 代码变化时保存到缓存（防抖）
+  useEffect(() => {
+    if (!id || !code) return;
+    const timer = setTimeout(() => {
+      saveCodeToCache(id, language, code);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [code, id, language, saveCodeToCache]);
 
   const loadProblem = async () => {
     setLoading(true);
@@ -547,7 +590,7 @@ ${code}
 4. 优化建议：如果有更优解法，请给出思路`;
       
       const token = localStorage.getItem('token');
-      const response = await fetch('/ai/chat', {
+      const response = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: {
           'Accept': 'text/event-stream',

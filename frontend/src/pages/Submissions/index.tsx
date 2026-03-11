@@ -380,7 +380,16 @@ const Submissions: React.FC = () => {
               <Button
                   icon={<Copy className="w-4 h-4" />}
                   onClick={() => {
-                    navigator.clipboard.writeText(currentSubmission?.code || '').then(() => {
+                    const code = currentSubmission?.code || '';
+                    navigator.clipboard.writeText(code).then(() => {
+                      toast.success('代码已复制到剪贴板');
+                    }).catch(() => {
+                      const textarea = document.createElement('textarea');
+                      textarea.value = code;
+                      document.body.appendChild(textarea);
+                      textarea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textarea);
                       toast.success('代码已复制到剪贴板');
                     });
                   }}

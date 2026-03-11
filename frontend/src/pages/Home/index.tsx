@@ -32,6 +32,33 @@ const Home: React.FC = () => {
     competitionCount: 0,
   });
 
+  const loadStats = async () => {
+    try {
+      const [problemRes, userRes, submissionRes, competitionRes] =
+        await Promise.all([
+          api.get('/problem/count') as Promise<ApiResponse<number>>,
+          api.get('/user/count') as Promise<ApiResponse<number>>,
+          api.get('/submission/count') as Promise<ApiResponse<number>>,
+          api.get('/competition/count') as Promise<ApiResponse<number>>,
+        ]);
+
+      setStats({
+        problemCount: problemRes.code === 200 ? problemRes.data : 1000,
+        userCount: userRes.code === 200 ? userRes.data : 5000,
+        submissionCount: submissionRes.code === 200 ? submissionRes.data : 50000,
+        competitionCount: competitionRes.code === 200 ? competitionRes.data : 100,
+      });
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+      setStats({
+        problemCount: 1000,
+        userCount: 5000,
+        submissionCount: 50000,
+        competitionCount: 100,
+      });
+    }
+  };
+
   useEffect(() => {
     loadStats();
   }, []);
@@ -68,33 +95,6 @@ const Home: React.FC = () => {
       });
     } else {
       navigate('/register');
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      const [problemRes, userRes, submissionRes, competitionRes] =
-        await Promise.all([
-          api.get('/problem/count') as Promise<ApiResponse<number>>,
-          api.get('/user/count') as Promise<ApiResponse<number>>,
-          api.get('/submission/count') as Promise<ApiResponse<number>>,
-          api.get('/competition/count') as Promise<ApiResponse<number>>,
-        ]);
-
-      setStats({
-        problemCount: problemRes.code === 200 ? problemRes.data : 1000,
-        userCount: userRes.code === 200 ? userRes.data : 5000,
-        submissionCount: submissionRes.code === 200 ? submissionRes.data : 50000,
-        competitionCount: competitionRes.code === 200 ? competitionRes.data : 100,
-      });
-    } catch (error) {
-      console.error('加载统计数据失败:', error);
-      setStats({
-        problemCount: 1000,
-        userCount: 5000,
-        submissionCount: 50000,
-        competitionCount: 100,
-      });
     }
   };
 

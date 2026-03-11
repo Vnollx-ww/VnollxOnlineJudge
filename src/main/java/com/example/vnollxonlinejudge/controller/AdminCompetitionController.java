@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/competition")
+@RequestMapping("/api/v1/admin/competition")
 @Validated
 public class AdminCompetitionController {
     private final CompetitionService competitionService;

@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/admin/tag")
+@RequestMapping("/api/v1/admin/tag")
 public class AdminTagController {
     private final TagService tagService;
     

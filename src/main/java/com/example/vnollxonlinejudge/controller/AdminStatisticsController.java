@@ -18,7 +18,7 @@ import java.util.List;
  * 管理端 - 数据统计：常见错误模式、平台数据分析、学习数据分析、教学进度跟踪
  */
 @RestController
-@RequestMapping("/admin/statistics")
+@RequestMapping("/api/v1/admin/statistics")
 public class AdminStatisticsController {
 
     private final StatisticsService statisticsService;

@@ -63,104 +63,10 @@ export default defineConfig({
         changeOrigin: true,
         ws: true,
       },
-      // API 请求代理
-      '/': {
+      // API 请求代理 - 所有 /api/v1/ 开头的请求转发到后端
+      '/api/v1': {
         target: 'http://localhost:8080',
         changeOrigin: true,
-        bypass(req) {
-          const reqPath = req.url?.split('?')[0] || '';
-          
-          // 静态资源扩展名
-          const staticExtensions = ['.html', '.js', '.css', '.json', '.ico', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.map', '.mp4', '.webm', '.ogg', '.mp3', '.wav'];
-          
-          if (staticExtensions.some(ext => reqPath.endsWith(ext))) {
-            return reqPath;
-          }
-          
-          // Vite 开发服务器路径
-          if (reqPath.startsWith('/@') || reqPath.startsWith('/node_modules') || reqPath.startsWith('/src')) {
-            return reqPath;
-          }
-          
-          // 前端路由
-          const frontendRoutes = [
-            '/',
-            '/login',
-            '/register',
-            '/problems',
-            '/home',
-            '/submissions',
-            '/ranklist',
-            '/competitions',
-            '/practices',
-            '/friends',
-            '/notifications',
-            '/settings',
-            '/about',
-            '/admin',
-            '/admin/users',
-            '/admin/problems',
-            '/admin/solves',
-            '/admin/competitions',
-            '/admin/practices',
-            '/admin/roles',
-            '/admin/permissions',
-            '/admin/settings',
-            '/solutions',
-            '/vnollx',
-          ];
-          
-          if (frontendRoutes.includes(reqPath)) {
-            return reqPath;
-          }
-          
-          // 动态路由模式
-          if (reqPath.startsWith('/problem/')) {
-            const problemRoutePattern = /^\/problem\/(\d+)(?:\/solutions(?:\/(?:publish|\d+))?)?$/;
-            if (problemRoutePattern.test(reqPath)) {
-              return reqPath;
-            }
-          }
-
-          if (reqPath.startsWith('/competition/')) {
-            const parts = reqPath.split('/');
-            if (parts.length === 5 && /^\d+$/.test(parts[2]) && parts[3] === 'problem' && /^\d+$/.test(parts[4])) {
-              return reqPath;
-            }
-            if (parts.length === 3 && /^\d+$/.test(parts[2])) {
-              return reqPath;
-            }
-            if (parts.length === 4 && /^\d+$/.test(parts[2]) && (parts[3] === 'ranklist' || parts[3] === 'submissions')) {
-              return reqPath;
-            }
-          }
-
-          if (reqPath.startsWith('/practice/')) {
-            const parts = reqPath.split('/');
-            if (parts.length === 3 && parts[2] && /^\d+$/.test(parts[2])) {
-              const accept = req.headers?.accept || '';
-              if (accept.includes('text/html')) {
-                return reqPath;
-              }
-            }
-          }
-
-          if (reqPath.startsWith('/notification/')) {
-            const parts = reqPath.split('/');
-            if (parts.length === 3 && parts[2] && /^\d+$/.test(parts[2])) {
-              return reqPath;
-            }
-          }
-
-          if (reqPath.startsWith('/user/')) {
-            const parts = reqPath.split('/');
-            if (parts.length === 3 && parts[2] && !isNaN(Number(parts[2]))) {
-              return reqPath;
-            }
-          }
-          
-          return null;
-        },
       },
     },
   },

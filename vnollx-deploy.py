@@ -1,6 +1,7 @@
 import subprocess
 import paramiko
 import os
+from dotenv import load_dotenv
 load_dotenv() # 加载同目录下的 .env 文件
 
 # 从环境变量读取，读不到则使用默认值

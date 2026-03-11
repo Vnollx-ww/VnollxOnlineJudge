@@ -15,7 +15,7 @@ import java.util.Map;
  * AI配置管理接口（仅管理员可用）
  */
 @RestController
-@RequestMapping("/admin/ai-config")
+@RequestMapping("/api/v1/admin/ai-config")
 public class AdminAiConfigController {
     private static final Logger logger = LoggerFactory.getLogger(AdminAiConfigController.class);
 

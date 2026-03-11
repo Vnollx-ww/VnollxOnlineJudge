@@ -17,7 +17,7 @@ import org.springframework.web.servlet.ModelAndView;
 import java.util.List;
 
 @RestController
-@RequestMapping("/comment")
+@RequestMapping("/api/v1/comment")
 public class CommentController {
     private final CommentService commentService;
     

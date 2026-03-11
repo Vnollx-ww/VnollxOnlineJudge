@@ -10,7 +10,7 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import java.util.List;
 
 @RestController
-@RequestMapping("/submission")
+@RequestMapping("/api/v1/submission")
 public class SubmissionController {
     private final SubmissionService submissionService;
     

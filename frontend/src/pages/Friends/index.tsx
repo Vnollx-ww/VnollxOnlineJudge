@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { Input, Avatar, Badge, Empty, Spin, Modal, Tabs } from 'antd';
 import { Search, Send, UserPlus, Check, X, Trash2, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
@@ -53,21 +53,36 @@ const Friends: React.FC = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeTab, setActiveTab] = useState('friends');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialLoadRef = useRef(true);
+  const pendingScrollRestoreRef = useRef<number | null>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const { subscribe } = useMessageWebSocket();
+  const { subscribe, sendMessage: wsSendMessage } = useMessageWebSocket();
   const chatCacheRef = useRef<Map<number, PrivateMessage[]>>(new Map());
   const [modal, contextHolder] = Modal.useModal();
+  const [friendTyping, setFriendTyping] = useState<number | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingRef = useRef<number>(0);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  };
+  // 立即滚动到底部（无动画）
+  const scrollToBottomInstant = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  }, []);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // 平滑滚动到底部
+  const scrollToBottomSmooth = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, []);
 
   // 加载好友列表
   const loadFriends = useCallback(async () => {
@@ -116,12 +131,18 @@ const Friends: React.FC = () => {
     }
   }, []);
 
-  // 加载聊天记录
+  // 加载聊天记录（初次加载，从最新消息开始）
   const loadChatHistory = useCallback(async (friendId: number) => {
+    // 重置分页状态
+    setCurrentPage(1);
+    setHasMoreMessages(true);
+    isInitialLoadRef.current = true;
+    
     // 检查缓存
     const cached = chatCacheRef.current.get(friendId);
-    if (cached) {
+    if (cached && cached.length > 0) {
       setMessages(cached);
+      setHasMoreMessages(cached.length >= PAGE_SIZE);
       // 后台标记已读
       api.post(`/friend/read/${friendId}`).then(() => {
         window.dispatchEvent(new CustomEvent('message-updated'));
@@ -135,11 +156,13 @@ const Friends: React.FC = () => {
     setChatLoading(true);
     try {
       const data = await api.get(`/friend/chat/${friendId}`, {
-        params: { pageNum: 1, pageSize: 50 }
+        params: { pageNum: 1, pageSize: PAGE_SIZE }
       }) as ApiResponse<PrivateMessage[]>;
       if (data.code === 200) {
         const msgs = data.data || [];
+        // 消息按时间正序排列（旧的在前，新的在后）
         setMessages(msgs);
+        setHasMoreMessages(msgs.length >= PAGE_SIZE);
         // 存入缓存
         chatCacheRef.current.set(friendId, msgs);
       }
@@ -155,7 +178,87 @@ const Friends: React.FC = () => {
     } finally {
       setChatLoading(false);
     }
-  }, []);
+  }, [PAGE_SIZE]);
+
+  // 加载更多历史消息（向上滚动时触发）
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedFriend || loadingMore || !hasMoreMessages) return;
+    
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+    
+    try {
+      const data = await api.get(`/friend/chat/${selectedFriend.userId}`, {
+        params: { pageNum: nextPage, pageSize: PAGE_SIZE }
+      }) as ApiResponse<PrivateMessage[]>;
+      
+      if (data.code === 200) {
+        const olderMsgs = data.data || [];
+        if (olderMsgs.length > 0) {
+          // 保存当前滚动高度，用于 useLayoutEffect 恢复滚动位置
+          pendingScrollRestoreRef.current = messagesContainerRef.current?.scrollHeight || null;
+          
+          // 将旧消息添加到前面
+          setMessages(prev => [...olderMsgs, ...prev]);
+          setCurrentPage(nextPage);
+          
+          // 更新缓存
+          chatCacheRef.current.set(selectedFriend.userId, [...olderMsgs, ...(chatCacheRef.current.get(selectedFriend.userId) || [])]);
+        }
+        setHasMoreMessages(olderMsgs.length >= PAGE_SIZE);
+      }
+    } catch (error) {
+      console.error('加载更多消息失败:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [selectedFriend, loadingMore, hasMoreMessages, currentPage, PAGE_SIZE]);
+
+  // 监听滚动，触发加载更多（带节流，排除初始加载阶段）
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+    
+    const handleScroll = () => {
+      if (isInitialLoadRef.current || throttleTimer) return;
+      // 当滚动到顶部附近时加载更多
+      if (container.scrollTop < 50 && hasMoreMessages && !loadingMore && !chatLoading) {
+        loadMoreMessages();
+        throttleTimer = setTimeout(() => { throttleTimer = null; }, 300);
+      }
+    };
+    
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (throttleTimer) clearTimeout(throttleTimer);
+    };
+  }, [hasMoreMessages, loadingMore, chatLoading, loadMoreMessages]);
+
+  // 初次加载/切换聊天后，同步滚动到底部（useLayoutEffect 在 DOM 更新后立即执行，不会闪烁）
+  useLayoutEffect(() => {
+    if (isInitialLoadRef.current && messages.length > 0 && !chatLoading) {
+      isInitialLoadRef.current = false;
+      const container = messagesContainerRef.current;
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [messages, chatLoading]);
+
+  // 加载更多历史消息后，恢复滚动位置（保持用户视角不变）
+  useLayoutEffect(() => {
+    if (pendingScrollRestoreRef.current !== null) {
+      const container = messagesContainerRef.current;
+      if (container) {
+        const previousScrollHeight = pendingScrollRestoreRef.current;
+        container.scrollTop = container.scrollHeight - previousScrollHeight;
+      }
+      pendingScrollRestoreRef.current = null;
+    }
+  }, [messages]);
 
   // 发送消息
   const sendMessage = async () => {
@@ -169,6 +272,8 @@ const Friends: React.FC = () => {
         const newMsg = data.data;
         setMessages(prev => [...prev, newMsg]);
         setNewMessage('');
+        // 发送消息后平滑滚动到底部
+        setTimeout(scrollToBottomSmooth, 50);
         // 更新缓存
         const cached = chatCacheRef.current.get(selectedFriend.userId);
         if (cached) {
@@ -281,6 +386,28 @@ const Friends: React.FC = () => {
         return;
       }
       
+      // 对方正在输入
+      if (msg.type === 'typing') {
+        if (msg.isTyping && selectedFriend && msg.fromUid === selectedFriend.userId) {
+          setFriendTyping(msg.fromUid);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setFriendTyping(null), 3000);
+        } else if (!msg.isTyping) {
+          setFriendTyping(null);
+        }
+        return;
+      }
+      
+      // 对方已读我的消息
+      if (msg.type === 'message_read') {
+        if (selectedFriend && msg.fromUid === selectedFriend.userId) {
+          setMessages(prev => prev.map(m => 
+            m.isMine ? { ...m, isRead: true } : m
+          ));
+        }
+        return;
+      }
+      
       // 如果是当前聊天对象发来的消息，直接显示并标记已读
       if (selectedFriend && msg.senderId === selectedFriend.userId) {
         const newMsg: PrivateMessage = {
@@ -302,6 +429,9 @@ const Friends: React.FC = () => {
         }
         api.post(`/friend/read/${msg.senderId}`).then(() => {
           window.dispatchEvent(new CustomEvent('message-updated'));
+          // 通知对方消息已读
+          console.log('[WS] 发送 message_read:', { type: 'message_read', toUid: msg.senderId });
+          wsSendMessage({ type: 'message_read', toUid: msg.senderId });
         });
         // 本地更新好友列表的最后消息
         setFriends(prev => prev.map(f => 
@@ -666,7 +796,7 @@ const Friends: React.FC = () => {
             </div>
 
             {/* 聊天消息区域 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
               {chatLoading ? (
                 <div className="flex justify-center py-8"><Spin /></div>
               ) : messages.length === 0 ? (
@@ -674,22 +804,33 @@ const Friends: React.FC = () => {
                   <Empty description="暂无消息，发送第一条消息开始聊天吧" />
                 </div>
               ) : (
-                messages.map(msg => (
+                <>
+                  {/* 加载更多提示 - 仅在加载中显示 */}
+                  {loadingMore && (
+                    <div className="text-center py-2">
+                      <Spin size="small" />
+                    </div>
+                  )}
+                  {!hasMoreMessages && messages.length > 0 && (
+                    <div className="text-center py-2 text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>
+                      已加载全部消息
+                    </div>
+                  )}
+                  {messages.map(msg => (
                   <div
                     key={msg.id}
                     className={`flex ${msg.isMine ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`flex items-center gap-2 max-w-[70%] ${msg.isMine ? 'flex-row-reverse' : ''}`}>
-                      {!msg.isMine && (
-                        <Avatar 
-                          size={32} 
-                          src={msg.senderAvatar}
-                          style={{ backgroundColor: 'var(--gemini-accent)' }}
-                        >
-                          {msg.senderName?.charAt(0)?.toUpperCase()}
-                        </Avatar>
-                      )}
-                      <div>
+                    <div className={`flex items-start gap-2 max-w-[70%] ${msg.isMine ? 'flex-row-reverse' : ''}`}>
+                      <Avatar 
+                        size={32} 
+                        src={msg.senderAvatar}
+                        className="flex-shrink-0"
+                        style={{ backgroundColor: 'var(--gemini-accent)' }}
+                      >
+                        {msg.senderName?.charAt(0)?.toUpperCase()}
+                      </Avatar>
+                      <div className="min-w-0">
                         <div
                           className={`px-4 py-2 rounded-2xl ${
                             msg.isMine ? 'rounded-br-sm' : 'rounded-bl-sm'
@@ -702,18 +843,39 @@ const Friends: React.FC = () => {
                           <span className="break-words whitespace-pre-wrap">{msg.content}</span>
                         </div>
                         <div 
-                          className={`text-xs mt-1 ${msg.isMine ? 'text-right' : 'text-left'}`}
+                          className={`text-xs mt-1 flex items-center gap-2 ${msg.isMine ? 'justify-end' : 'justify-start'}`}
                           style={{ color: 'var(--gemini-text-disabled)' }}
                         >
-                          {formatMessageTime(msg.createTime)}
+                          {msg.isMine && (
+                            <span style={{ color: msg.isRead ? 'var(--gemini-success)' : 'var(--gemini-text-disabled)' }}>
+                              {msg.isRead ? '已读' : '未读'}
+                            </span>
+                          )}
+                          <span>{formatMessageTime(msg.createTime)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                ))
+                  ))}
+                </>
               )}
               <div ref={messagesEndRef} />
             </div>
+
+            {/* 正在输入提示 */}
+            {friendTyping === selectedFriend?.userId && (
+              <div 
+                className="px-4 py-2 text-sm flex items-center gap-2"
+                style={{ color: 'var(--gemini-text-secondary)' }}
+              >
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
+                </span>
+                <span>{selectedFriend?.userName} 正在输入...</span>
+              </div>
+            )}
 
             {/* 输入区域 */}
             <div 
@@ -741,7 +903,15 @@ const Friends: React.FC = () => {
                 <Input
                   placeholder="输入消息..."
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={(e) => {
+                    setNewMessage(e.target.value);
+                    // 发送正在输入状态（节流：500ms内只发一次）
+                    if (selectedFriend && Date.now() - lastTypingRef.current > 500) {
+                      lastTypingRef.current = Date.now();
+                      console.log('[WS] 发送 typing:', { type: 'typing', toUid: selectedFriend.userId, isTyping: true });
+                      wsSendMessage({ type: 'typing', toUid: selectedFriend.userId, isTyping: true });
+                    }
+                  }}
                   onPressEnter={sendMessage}
                   className="flex-1 rounded-full"
                   style={{ backgroundColor: 'var(--gemini-bg)' }}

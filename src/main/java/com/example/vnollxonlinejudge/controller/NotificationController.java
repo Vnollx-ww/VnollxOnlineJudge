@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/notification")
+@RequestMapping("/api/v1/notification")
 @Validated
 public class NotificationController {
     private final NotificationService notificationService;

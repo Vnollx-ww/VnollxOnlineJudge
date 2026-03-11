@@ -152,7 +152,7 @@ const AIAssistant: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `/ai/chat?message=${encodeURIComponent(userMessage)}`,
+        `/api/v1/ai/chat?message=${encodeURIComponent(userMessage)}`,
         {
           headers: {
             Accept: 'text/event-stream',
@@ -247,7 +247,7 @@ const AIAssistant: React.FC = () => {
       onOk: async () => {
         try {
           const token = localStorage.getItem('token');
-          await fetch('/ai/clear', {
+          await fetch('/api/v1/ai/clear', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

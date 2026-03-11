@@ -44,7 +44,7 @@ const renderLatex = (text: string) => {
       return match;
     }
   });
-  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+  text = text.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
     try {
       return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
     } catch {

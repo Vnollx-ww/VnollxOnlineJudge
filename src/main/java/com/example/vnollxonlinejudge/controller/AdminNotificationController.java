@@ -19,7 +19,7 @@ import java.util.List;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
-@RequestMapping("/admin/notification")
+@RequestMapping("/api/v1/admin/notification")
 @Validated
 public class AdminNotificationController {
     private final NotificationService notificationService;

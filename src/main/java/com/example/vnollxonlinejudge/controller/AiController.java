@@ -16,7 +16,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/ai")
+@RequestMapping("/api/v1/ai")
 public class AiController {
     private static final Logger logger = LoggerFactory.getLogger(AiController.class);
     private final AiService aiService;

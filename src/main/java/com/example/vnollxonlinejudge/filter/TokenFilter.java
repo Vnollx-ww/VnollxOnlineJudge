@@ -24,23 +24,23 @@ public class TokenFilter implements Filter {
     private static final String AUTH_HEADER = "Authorization";
     private static final String TOKEN_PREFIX = "Bearer ";
     private static final String[] EXCLUDED_PATHS = {
-            "/user/login",
-            "/user/register",
-            "/user/forget",
-            "/problem/\\d+",
-            "/problem/count",
-            "/user/count",
-            "/competition/count",
-            "/submission/count",
-            "/user/\\d+",
-            "/submission/\\d+",
-            "/solve/\\d+",
-            "/solve/list/\\d+",
-            "/competition/\\d+",
-            "/competition/problem/\\d+/\\d+",
-            "/competition/ranklist/\\d+",
-            "/competition/submission/\\d+",
-            "/solve/publish/\\d+"
+            "/api/v1/user/login",
+            "/api/v1/user/register",
+            "/api/v1/user/forget",
+            "/api/v1/problem/\\d+",
+            "/api/v1/problem/count",
+            "/api/v1/user/count",
+            "/api/v1/competition/count",
+            "/api/v1/submission/count",
+            "/api/v1/user/\\d+",
+            "/api/v1/submission/\\d+",
+            "/api/v1/solve/\\d+",
+            "/api/v1/solve/list/\\d+",
+            "/api/v1/competition/\\d+",
+            "/api/v1/competition/problem/\\d+/\\d+",
+            "/api/v1/competition/ranklist/\\d+",
+            "/api/v1/competition/submission/\\d+",
+            "/api/v1/solve/publish/\\d+"
     };
     private final RedisService redisService;
     @Autowired

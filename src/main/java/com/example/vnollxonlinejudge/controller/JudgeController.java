@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
-@RequestMapping("/judge")
+@RequestMapping("/api/v1/judge")
 public class JudgeController {
     private final JudgeService judgeService;
     

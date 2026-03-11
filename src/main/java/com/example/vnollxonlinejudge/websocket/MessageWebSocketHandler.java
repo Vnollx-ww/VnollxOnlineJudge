@@ -14,6 +14,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,8 +62,66 @@ public class MessageWebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(@NotNull WebSocketSession session, @NotNull TextMessage message) throws Exception {
         String payload = message.getPayload();
+        logger.info("[MessageWS] received: {}", payload);
+        
         if (payload.contains("\"type\":\"ping\"")) {
             session.sendMessage(new TextMessage("{\"type\":\"pong\"}"));
+            return;
+        }
+        
+        try {
+            Map<String, Object> data = objectMapper.readValue(payload, Map.class);
+            String type = (String) data.get("type");
+            logger.info("[MessageWS] type={}, data={}", type, data);
+            
+            if ("typing".equals(type)) {
+                Long fromUid = getUidFromSession(session);
+                Object toUidObj = data.get("toUid");
+                Long toUid = toUidObj instanceof Number ? ((Number) toUidObj).longValue() : Long.parseLong(toUidObj.toString());
+                logger.info("[MessageWS] typing: from={} to={}", fromUid, toUid);
+                
+                Map<String, Object> typingNotification = new HashMap<>();
+                typingNotification.put("type", "typing");
+                typingNotification.put("fromUid", fromUid);
+                typingNotification.put("isTyping", data.get("isTyping"));
+                
+                sendNotificationToUser(toUid, typingNotification);
+            } else if ("message_read".equals(type)) {
+                Long fromUid = getUidFromSession(session);
+                Object toUidObj = data.get("toUid");
+                Long toUid = toUidObj instanceof Number ? ((Number) toUidObj).longValue() : Long.parseLong(toUidObj.toString());
+                logger.info("[MessageWS] message_read: from={} to={}", fromUid, toUid);
+                
+                Map<String, Object> readNotification = new HashMap<>();
+                readNotification.put("type", "message_read");
+                readNotification.put("fromUid", fromUid);
+                
+                sendNotificationToUser(toUid, readNotification);
+            }
+        } catch (Exception e) {
+            logger.error("[MessageWS] handle error: {}", e.getMessage(), e);
+        }
+    }
+    
+    private void sendNotificationToUser(Long uid, Map<String, Object> notification) {
+        logger.info("[MessageWS] sendNotificationToUser: uid={}, online users={}", uid, userSessions.keySet());
+        List<WebSocketSession> sessions = userSessions.get(uid);
+        if (sessions != null && !sessions.isEmpty()) {
+            try {
+                String jsonMessage = objectMapper.writeValueAsString(notification);
+                logger.info("[MessageWS] sending to uid={}: {}", uid, jsonMessage);
+                for (WebSocketSession session : sessions) {
+                    if (session.isOpen()) {
+                        try {
+                            session.sendMessage(new TextMessage(jsonMessage));
+                        } catch (IOException e) {
+                            logger.error("[MessageWS] 发送通知失败: {}", e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("[MessageWS] 序列化通知失败: {}", e.getMessage());
+            }
         }
     }
 

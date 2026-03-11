@@ -46,7 +46,7 @@ const getPreviewText = (content: string) => {
   if (!content) return '';
   let text = content;
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => formula.trim());
-  text = text.replace(/\$([^\$\n]+?)\$/g, (_, formula) => formula.trim());
+  text = text.replace(/\$([^$\n]+?)\$/g, (_, formula) => formula.trim());
   const html = marked.parse(text) as string;
   const div = document.createElement('div');
   div.innerHTML = DOMPurify.sanitize(html);

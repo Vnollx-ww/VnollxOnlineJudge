@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/admin/practice")
+@RequestMapping("/api/v1/admin/practice")
 @Validated
 public class AdminPracticeController {
     

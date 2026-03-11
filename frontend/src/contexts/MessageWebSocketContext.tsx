@@ -53,6 +53,7 @@ export const MessageWebSocketProvider: React.FC<MessageWebSocketProviderProps> =
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
+        console.log('[MessageWS] 收到消息:', msg);
         if (msg.type === 'pong') return;
         
         // 如果是私信消息，触发全局事件更新未读数

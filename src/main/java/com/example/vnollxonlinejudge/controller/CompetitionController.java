@@ -16,7 +16,7 @@ import org.springframework.web.servlet.ModelAndView;
 import java.util.List;
 
 @RestController
-@RequestMapping("/competition")
+@RequestMapping("/api/v1/competition")
 public class CompetitionController {
     private final CompetitionService competitionService;
     private final ProblemService problemService;

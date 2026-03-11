@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/friend")
+@RequestMapping("/api/v1/friend")
 @Validated
 @RequirePermission(PermissionCode.FRIEND_USE)
 public class FriendController {

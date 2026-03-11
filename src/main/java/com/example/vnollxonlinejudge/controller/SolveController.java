@@ -18,7 +18,7 @@ import java.util.List;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 @RestController
-@RequestMapping("/solve")
+@RequestMapping("/api/v1/solve")
 public class SolveController {
     private final SolveService solveService;
     private final ProblemService problemService;

@@ -26,7 +26,7 @@ import katex from 'katex';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
-import { isAuthenticated, getUserInfo } from '../../utils/auth';
+import { isAuthenticated } from '../../utils/auth';
 import { usePermission } from '../../contexts/PermissionContext';
 import { PermissionCode } from '../../constants/permissions';
 import type { ApiResponse } from '../../types';
@@ -79,7 +79,7 @@ const renderLatex = (text: string) => {
       return match;
     }
   });
-  text = text.replace(/\$([^\$\n]+?)\$/g, (match, formula) => {
+  text = text.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
     try {
       return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
     } catch {
@@ -213,7 +213,7 @@ const UserProfile: React.FC = () => {
 请使用Markdown格式，结构清晰，语言鼓励性。`;
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/ai/chat', {
+      const response = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: {
           'Accept': 'text/event-stream',
@@ -275,7 +275,7 @@ const UserProfile: React.FC = () => {
 请使用Markdown格式，结构清晰，语言鼓励性。`;
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/ai/chat', {
+      const response = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: {
           'Accept': 'text/event-stream',
