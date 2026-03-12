@@ -27,11 +27,14 @@ public class XssFilter implements Filter {
             "/problem/upload",
             "/judge/submit",
             "/judge/test",
+            "/solve/create",
             "/api/v1/admin/upload",
+            "/api/v1/admin/solve",
             "/api/v1/problem/upload",
             "/api/v1/judge/submit",
             "/api/v1/judge/test",
-            "/api/v1/friend/message"
+            "/api/v1/friend/message",
+            "/api/v1/solve/create"
     );
 
     // 排除的Content-Type

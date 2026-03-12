@@ -27,7 +27,6 @@ import {
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
