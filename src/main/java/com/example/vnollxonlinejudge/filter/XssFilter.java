@@ -26,7 +26,11 @@ public class XssFilter implements Filter {
             "/admin/upload",
             "/problem/upload",
             "/judge/submit",
-            "/judge/test"
+            "/judge/test",
+            "/api/v1/admin/upload",
+            "/api/v1/problem/upload",
+            "/api/v1/judge/submit",
+            "/api/v1/judge/test"
     );
 
     // 排除的Content-Type
