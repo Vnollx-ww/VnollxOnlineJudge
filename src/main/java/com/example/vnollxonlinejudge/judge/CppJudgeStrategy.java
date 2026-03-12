@@ -254,13 +254,12 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
         return null;
     }
-
+    /**
+     * 构建编译请求的 JSON payload
+     */
     private String buildCompilePayload(String code) {
-        String escapedCode = code.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
+        // 使用 StringEscapeUtils 或手动替换，确保 JSON 转义安全
+        String escapedCode = escapeJsonRaw(code);
 
         return String.format("""
     {
@@ -271,10 +270,10 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 "content": ""
             }, {
                 "name": "stdout",
-                "max": 10240
+                "max": 10485760
             }, {
                 "name": "stderr",
-                "max": 10240
+                "max": 10485760
             }],
             "cpuLimit": 10000000000,
             "memoryLimit": 536870912,
@@ -293,9 +292,13 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
     /**
      * 构建批量运行请求的 JSON payload
-     * go-judge 支持在一个请求中包含多个 cmd，会并行执行
      */
     private String buildBatchRunPayload(List<String[]> testCases, String fileId, Long cpuLimit, Long memoryLimit) {
+        // 增加防御性编程：如果 fileId 看起来不对劲，直接抛异常，别发给 go-judge
+        if (fileId == null || fileId.length() < 2 || fileId.contains("限制")) {
+            throw new IllegalArgumentException("无效的 FileId: " + fileId);
+        }
+
         StringBuilder cmds = new StringBuilder();
         for (int i = 0; i < testCases.size(); i++) {
             if (i > 0) {
@@ -309,36 +312,49 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
     /**
      * 构建单个测试用例的 cmd 对象
+     * 已调大 stdout 限制，防止 Output Limit Exceeded
      */
     private String buildSingleCmd(String input, String fileId, Long cpuLimit, Long memoryLimit) {
-        String escapedInput = input.replace("\\", "\\\\")
+        String escapedInput = escapeJsonRaw(input);
+
+        // 重点：这里的 stdout max 从 10240 改成了 67108864 (64MB)
+        // 如果是十万个数据，输出量可能巨大，必须给足空间
+        long outputLimit = 64 * 1024 * 1024L;
+
+        return String.format("""
+        {
+            "args": ["a"],
+            "env": ["PATH=/usr/bin:/bin"],
+            "files": [{
+                "content": "%s"
+            }, {
+                "name": "stdout",
+                "max": %d
+            }, {
+                "name": "stderr",
+                "max": 1048576
+            }],
+            "cpuLimit": %d,
+            "memoryLimit": %d,
+            "procLimit": 50,
+            "copyIn": {
+                "a": {
+                    "fileId": "%s"
+                }
+            }
+        }""", escapedInput, outputLimit, cpuLimit, memoryLimit, fileId);
+    }
+
+    /**
+     * 辅助方法：处理特殊的转义，防止 JSON 报错
+     */
+    private String escapeJsonRaw(String str) {
+        if (str == null) return "";
+        return str.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\r", "\\r")
                 .replace("\n", "\\n")
                 .replace("\t", "\\t");
-
-        return String.format("""
-            {
-                "args": ["a"],
-                "env": ["PATH=/usr/bin:/bin"],
-                "files": [{
-                    "content": "%s"
-                }, {
-                    "name": "stdout",
-                    "max": 10240
-                }, {
-                    "name": "stderr",
-                    "max": 10240
-                }],
-                "cpuLimit": %d,
-                "memoryLimit": %d,
-                "procLimit": 50,
-                "copyIn": {
-                    "a": {
-                        "fileId": "%s"
-                    }
-                }
-            }""", escapedInput, cpuLimit, memoryLimit, fileId);
     }
 
     private void deleteBinaryFile(String fileId) {

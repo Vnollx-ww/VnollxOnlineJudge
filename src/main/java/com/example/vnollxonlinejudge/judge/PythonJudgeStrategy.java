@@ -182,29 +182,40 @@ public class PythonJudgeStrategy implements JudgeStrategy {
 
     private String buildSingleCmd(String escapedCode, String input, Long cpuLimit, Long memoryLimit) {
         String escapedInput = escapeString(input);
+
+        // 同样建议调大到 64MB，或者至少与 C++ 保持一致
+        long outputLimit = 64 * 1024 * 1024L;
+
         return String.format("""
-            {
-                "args": ["/usr/bin/python3", "main.py"],
-                "env": ["PATH=/usr/bin:/bin"],
-                "files": [{
+        {
+            "args": ["/usr/bin/python3", "main.py"],
+            "env": ["PATH=/usr/bin:/bin"],
+            "files": [{
+                "content": "%s"
+            }, {
+                "name": "stdout",
+                "max": %d
+            }, {
+                "name": "stderr",
+                "max": %d
+            }],
+            "cpuLimit": %d,
+            "memoryLimit": %d,
+            "procLimit": 50,
+            "copyIn": {
+                "main.py": {
                     "content": "%s"
-                }, {
-                    "name": "stdout",
-                    "max": 10240
-                }, {
-                    "name": "stderr",
-                    "max": 10240
-                }],
-                "cpuLimit": %d,
-                "memoryLimit": %d,
-                "procLimit": 50,
-                "copyIn": {
-                    "main.py": {
-                        "content": "%s"
-                    }
-                },
-                "copyOut": ["stdout", "stderr"]
-            }""", escapedInput, cpuLimit, memoryLimit, escapedCode);
+                }
+            },
+            "copyOut": ["stdout", "stderr"]
+        }""",
+                escapedInput,
+                outputLimit,
+                1048576L, // stderr 给 1MB 足够了
+                cpuLimit,
+                memoryLimit,
+                escapedCode
+        );
     }
 
     private String escapeString(String str) {

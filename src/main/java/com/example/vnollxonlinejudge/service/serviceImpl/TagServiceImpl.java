@@ -54,14 +54,26 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     @Override
     @Transactional
     public void addTags(List<String> tags) {
+        // 查询已存在的标签名
+        QueryWrapper<Tag> wrapper = new QueryWrapper<>();
+        wrapper.in("name", tags);
+        List<String> existingTagNames = this.list(wrapper).stream()
+                .map(Tag::getName)
+                .collect(Collectors.toList());
+        
+        // 过滤出不存在的标签并插入
         List<Tag> tagList = tags.stream()
+                .filter(name -> !existingTagNames.contains(name))
                 .map(s -> {
                     Tag tag = new Tag();
                     tag.setName(s);
                     return tag;
                 })
                 .toList();
-        this.saveBatch(tagList);
+        
+        if (!tagList.isEmpty()) {
+            this.saveBatch(tagList);
+        }
     }
 
     @Override
