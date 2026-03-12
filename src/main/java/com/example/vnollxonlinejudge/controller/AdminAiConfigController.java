@@ -69,9 +69,8 @@ public class AdminAiConfigController {
             Double temperature = request.get("temperature") != null 
                     ? ((Number) request.get("temperature")).doubleValue() 
                     : null;
-            String baseUrl = (String) request.get("baseUrl");
 
-            dynamicAiConfig.updateModelConfig(model, temperature, baseUrl);
+            dynamicAiConfig.updateModelConfig(model, temperature);
             aiService.rebuildAssistant();
             logger.info("管理员更新了模型配置");
             return Result.Success("模型配置更新成功");

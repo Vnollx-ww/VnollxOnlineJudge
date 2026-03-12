@@ -8,7 +8,7 @@ import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ public class AiServiceImpl implements AiService {
     private final OjTools ojTools;
     private final Map<Long, List<ChatMessage>> userMessageHistories;
     private final AtomicReference<OjAssistant> assistantRef = new AtomicReference<>();
-    private final AtomicReference<OpenAiStreamingChatModel> lastModelRef = new AtomicReference<>();
+    private final AtomicReference<StreamingChatLanguageModel> lastModelRef = new AtomicReference<>();
 
     public AiServiceImpl(DynamicAiConfig dynamicAiConfig, OjTools ojTools) {
         this.dynamicAiConfig = dynamicAiConfig;
@@ -52,7 +52,7 @@ public class AiServiceImpl implements AiService {
      */
     public synchronized void rebuildAssistant() {
         try {
-            OpenAiStreamingChatModel currentModel = dynamicAiConfig.getStreamingModel();
+            StreamingChatLanguageModel currentModel = dynamicAiConfig.getStreamingModel();
             OjAssistant newAssistant = AiServices.builder(OjAssistant.class)
                     .streamingChatLanguageModel(currentModel)
                     .chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(15))
@@ -69,7 +69,7 @@ public class AiServiceImpl implements AiService {
     private OjAssistant getAssistant() {
         // 检查模型是否更新，如果更新则重建助手
         if (dynamicAiConfig.isConfigured()) {
-            OpenAiStreamingChatModel currentModel = dynamicAiConfig.getStreamingModel();
+            StreamingChatLanguageModel currentModel = dynamicAiConfig.getStreamingModel();
             if (currentModel != lastModelRef.get()) {
                 rebuildAssistant();
             }
@@ -84,12 +84,10 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public Flux<String> chat(Long userId, String message) {
-        // 设置当前用户ID，供工具使用
         ojTools.setCurrentUserId(userId);
 
         return Flux.create(sink -> {
             try {
-                // 使用AI助手进行流式对话（自动处理工具调用）
                 TokenStream tokenStream = getAssistant().chat(userId, message);
                 
                 StringBuilder fullResponse = new StringBuilder();
@@ -100,7 +98,6 @@ public class AiServiceImpl implements AiService {
                         sink.next(token);
                     })
                     .onComplete(response -> {
-                        // 记录消息历史
                         userMessageHistories.computeIfAbsent(userId, k -> new java.util.ArrayList<>());
                         userMessageHistories.get(userId).add(UserMessage.from(message));
                         userMessageHistories.get(userId).add(AiMessage.from(fullResponse.toString()));

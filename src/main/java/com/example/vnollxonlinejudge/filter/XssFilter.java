@@ -30,7 +30,8 @@ public class XssFilter implements Filter {
             "/api/v1/admin/upload",
             "/api/v1/problem/upload",
             "/api/v1/judge/submit",
-            "/api/v1/judge/test"
+            "/api/v1/judge/test",
+            "/api/v1/friend/message"
     );
 
     // 排除的Content-Type

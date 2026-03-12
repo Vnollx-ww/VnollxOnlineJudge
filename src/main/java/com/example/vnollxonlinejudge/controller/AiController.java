@@ -26,28 +26,15 @@ public class AiController {
         this.aiService=aiService;
     }
 
-    // 流式响应接口 (GET - 适用于短消息)
-    @GetMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @RequirePermission(PermissionCode.AI_CHAT)
-    public Flux<String> streamChat(@RequestParam String message) {
-        Long userId = UserContextHolder.getCurrentUserId();
-
-        return aiService.chat(userId, message)
-                .doOnNext(token -> logger.trace("发送token - 用户: {}, token: {}", userId, token))
-                .doOnError(error -> logger.error("AI服务错误 - 用户: {}, 错误: {}", userId, error.getMessage(), error))
-                .onErrorReturn("【系统】AI服务暂时不可用，请稍后重试");
-    }
-
-    // 流式响应接口 (POST - 适用于大消息体，如代码分析)
+    // SSE 流式接口 - 供其他页面使用（UserProfile, ProblemDetail）
+    // AI 助手主界面使用 WebSocket (/ws/ai)
     @PostMapping(value = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RequirePermission(PermissionCode.AI_CHAT)
-    public Flux<String> streamChatPost(@RequestBody String message) {
+    public Flux<String> streamChat(@RequestBody String message) {
         Long userId = UserContextHolder.getCurrentUserId();
-
         return aiService.chat(userId, message)
-                .doOnNext(token -> logger.trace("发送token - 用户: {}, token: {}", userId, token))
-                .doOnError(error -> logger.error("AI服务错误 - 用户: {}, 错误: {}", userId, error.getMessage(), error))
-                .onErrorReturn("【系统】AI服务暂时不可用，请稍后重试");
+                .doOnError(error -> logger.error("AI服务错误: {}", error.getMessage()))
+                .onErrorReturn("【系统】AI服务暂时不可用");
     }
 
     @PostMapping("/clear")
@@ -57,6 +44,7 @@ public class AiController {
         aiService.clearMemory(userId);
         return Result.Success();
     }
+
     @GetMapping("/history")
     @RequirePermission(PermissionCode.AI_CHAT)
     public Result<List<String>> getMessageHistoryList(){

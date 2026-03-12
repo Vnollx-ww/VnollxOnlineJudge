@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.config;
 
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.mistralai.MistralAiStreamingChatModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DynamicAiConfig {
     private static final Logger logger = LoggerFactory.getLogger(DynamicAiConfig.class);
 
-    @Value("${openai.model:qwen-plus}")
+    @Value("${openai.model:mistral-small-latest}")
     private String model;
 
     @Value("${openai.temperature:0.7}")
@@ -27,21 +28,24 @@ public class DynamicAiConfig {
     @Value("${openai.timeout:60}")
     private int timeout;
 
-    @Value("${openai.baseUrl:https://dashscope.aliyuncs.com/compatible-mode/v1}")
-    private String baseUrl;
+    @Value("${openai.apiKey:648QnrLzTQCpJJMtjF41ETYj0OBkap96}")
+    private String defaultApiKey;
 
     private final AtomicReference<String> currentApiKey = new AtomicReference<>();
-    private final AtomicReference<OpenAiStreamingChatModel> currentModel = new AtomicReference<>();
+    private final AtomicReference<StreamingChatLanguageModel> currentModel = new AtomicReference<>();
 
     @PostConstruct
     public void init() {
-        // 初始化时从环境变量获取 API Key
+        // 优先使用环境变量，否则使用配置的默认值
         String envApiKey = System.getenv("API_KEY");
         if (envApiKey != null && !envApiKey.trim().isEmpty()) {
             updateApiKey(envApiKey);
             logger.info("AI配置初始化完成，使用环境变量中的API Key");
+        } else if (defaultApiKey != null && !defaultApiKey.trim().isEmpty()) {
+            updateApiKey(defaultApiKey);
+            logger.info("AI配置初始化完成，使用默认API Key (Mistral)");
         } else {
-            logger.warn("未检测到环境变量 API_KEY，请通过管理界面配置");
+            logger.warn("未检测到API Key配置，请通过管理界面配置");
         }
     }
 
@@ -57,12 +61,13 @@ public class DynamicAiConfig {
         logger.info("正在更新 API Key: {}", maskedKey);
 
         try {
-            OpenAiStreamingChatModel newModel = OpenAiStreamingChatModel.builder()
+            MistralAiStreamingChatModel newModel = MistralAiStreamingChatModel.builder()
                     .apiKey(newApiKey.trim())
-                    .baseUrl(baseUrl)
                     .modelName(model)
                     .temperature(temperature)
                     .timeout(Duration.ofSeconds(timeout))
+                    .logRequests(true)
+                    .logResponses(true)
                     .build();
 
             currentApiKey.set(newApiKey.trim());
@@ -78,15 +83,12 @@ public class DynamicAiConfig {
     /**
      * 更新模型配置
      */
-    public synchronized void updateModelConfig(String newModel, Double newTemperature, String newBaseUrl) {
+    public synchronized void updateModelConfig(String newModel, Double newTemperature) {
         if (newModel != null && !newModel.trim().isEmpty()) {
             this.model = newModel.trim();
         }
         if (newTemperature != null) {
             this.temperature = newTemperature;
-        }
-        if (newBaseUrl != null && !newBaseUrl.trim().isEmpty()) {
-            this.baseUrl = newBaseUrl.trim();
         }
 
         // 如果已有 API Key，则重建模型
@@ -99,8 +101,8 @@ public class DynamicAiConfig {
     /**
      * 获取当前的流式聊天模型
      */
-    public OpenAiStreamingChatModel getStreamingModel() {
-        OpenAiStreamingChatModel model = currentModel.get();
+    public StreamingChatLanguageModel getStreamingModel() {
+        StreamingChatLanguageModel model = currentModel.get();
         if (model == null) {
             throw new IllegalStateException("AI模型未初始化，请先配置 API Key");
         }
@@ -123,7 +125,6 @@ public class DynamicAiConfig {
                 apiKey != null ? maskApiKey(apiKey) : "未配置",
                 model,
                 temperature,
-                baseUrl,
                 isConfigured()
         );
     }
@@ -142,7 +143,6 @@ public class DynamicAiConfig {
             String apiKey,
             String model,
             double temperature,
-            String baseUrl,
             boolean configured
     ) {}
 }

@@ -3,6 +3,7 @@ import { FloatButton, Drawer, Input, Button, message as antMessage, Modal, Avata
 import { Bot, Send, Trash2, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import katex from 'katex';
@@ -21,9 +22,25 @@ interface Message {
   timestamp: number;
 }
 
+// 规范化 Markdown 格式（修复 AI 输出的格式问题）
+const normalizeMarkdown = (text: string): string => {
+  if (!text) return text;
+  // 修复标题格式：### 后面需要空格
+  text = text.replace(/^(#{1,6})([^\s#])/gm, '$1 $2');
+  // 修复列表格式：- 或 * 后面需要空格
+  text = text.replace(/^([-*])([^\s])/gm, '$1 $2');
+  // 修复数字列表格式：1. 后面需要空格
+  text = text.replace(/^(\d+\.)([^\s])/gm, '$1 $2');
+  // 修复代码块语言标识后缺少换行：```cpp#include → ```cpp\n#include
+  text = text.replace(/```(\w+)([^\n])/g, '```$1\n$2');
+  return text;
+};
+
 // 渲染 LaTeX 公式
 const renderLatex = (text: string): string => {
   if (!text) return text;
+  // 先规范化 Markdown 格式
+  text = normalizeMarkdown(text);
   // 处理块级公式 $$...$$
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
     try {
@@ -131,10 +148,20 @@ const AIAssistant: React.FC = () => {
     }
   }, [open, messages.length, loadHistory]);
 
-  // 流式接收消息
-  const streamChat = async (userMessage: string) => {
+  // WebSocket 引用
+  const wsRef = useRef<WebSocket | null>(null);
+  const accumulatedTextRef = useRef<string>('');
+
+  // WebSocket 发送消息
+  const sendChat = (userMessage: string) => {
     if (!isAuthenticated()) {
       messageApi.warning('请先登录后再使用AI助手');
+      return;
+    }
+
+    const uid = localStorage.getItem('userId');
+    if (!uid) {
+      messageApi.warning('请先登录');
       return;
     }
 
@@ -149,87 +176,82 @@ const AIAssistant: React.FC = () => {
     setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
 
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `/api/v1/ai/chat?message=${encodeURIComponent(userMessage)}`,
-        {
-          headers: {
-            Accept: 'text/event-stream',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        }
-      );
+    // 关闭旧连接
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
 
-      if (!response.ok || !response.body) {
-        throw new Error('网络错误');
-      }
+    // 创建 WebSocket 连接
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/ai?uid=${uid}`);
+    wsRef.current = ws;
+    accumulatedTextRef.current = '';
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-      let accumulatedText = '';
+    ws.onopen = () => {
+      // 发送聊天消息
+      ws.send(JSON.stringify({ type: 'chat', message: userMessage }));
+    };
 
-      const botMsg: Message = {
-        role: 'bot',
-        content: '',
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, botMsg]);
-      setThinking(false);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
 
-      const pump = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) {
+        if (data.type === 'start') {
+          // AI 开始响应，创建空的 bot 消息
+          setThinking(false);
+          setMessages((prev) => [
+            ...prev,
+            { role: 'bot', content: '', timestamp: Date.now() },
+          ]);
+        } else if (data.type === 'token') {
+          // 收到 token，累加到消息
+          accumulatedTextRef.current += data.content;
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            newMessages[newMessages.length - 1] = {
+              ...newMessages[newMessages.length - 1],
+              content: accumulatedTextRef.current,
+            };
+            return newMessages;
+          });
+        } else if (data.type === 'done') {
+          // 响应完成
           setLoading(false);
-          return;
+          ws.close();
+        } else if (data.type === 'error') {
+          // 错误
+          setThinking(false);
+          setLoading(false);
+          setMessages((prev) => [
+            ...prev,
+            { role: 'bot', content: `错误: ${data.message}`, timestamp: Date.now() },
+          ]);
+          ws.close();
         }
+      } catch (e) {
+        console.error('解析消息失败:', e);
+      }
+    };
 
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\n\n/);
-        buffer = parts.pop() || '';
-
-        for (const chunk of parts) {
-          const lines = chunk.split(/\n/).map((l) => l.replace(/^data:\s?/, '')).filter(l => l.trim());
-          const data = lines.join('');
-          const cleanedData = data.replace(/\[DONE\]/g, '').replace(/"{1,10}/g, '');
-
-          if (cleanedData) {
-            accumulatedText += cleanedData;
-            setMessages((prev) => {
-              const newMessages = [...prev];
-              newMessages[newMessages.length - 1] = {
-                ...newMessages[newMessages.length - 1],
-                content: accumulatedText,
-              };
-              return newMessages;
-            });
-          }
-        }
-
-        return pump();
-      };
-
-      await pump();
-    } catch (error) {
-      console.error('发送消息失败:', error);
+    ws.onerror = (error) => {
+      console.error('WebSocket 错误:', error);
       setThinking(false);
       setLoading(false);
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'bot',
-          content: '[系统] 服务异常，请稍后再试',
-          timestamp: Date.now(),
-        },
+        { role: 'bot', content: '连接错误，请重试', timestamp: Date.now() },
       ]);
-    }
+    };
+
+    ws.onclose = () => {
+      setLoading(false);
+    };
   };
 
   const handleSend = () => {
     const text = inputValue.trim();
     if (!text || loading) return;
-    streamChat(text);
+    sendChat(text);
   };
 
   const handleClear = () => {
@@ -341,6 +363,7 @@ const AIAssistant: React.FC = () => {
                   {msg.role === 'bot' ? (
                     <ReactMarkdown
                       className="prose prose-sm max-w-none text-acg-primary prose-pre:bg-gray-900 prose-pre:rounded-xl prose-code:text-acg-accent"
+                      remarkPlugins={[remarkGfm]}
                       rehypePlugins={[rehypeRaw]}
                       components={{
                         code({ inline, className, children, ...props }: any) {
@@ -382,7 +405,7 @@ const AIAssistant: React.FC = () => {
                 </Avatar>
                 <div className="bg-white shadow-sm rounded-2xl rounded-tl-md px-4 py-3">
                   <div className="flex items-center gap-2 text-acg-secondary text-sm">
-                    <span>AI思考中</span>
+                    <span>AI 分析中</span>
                     <div className="flex gap-1">
                       <span className="w-1.5 h-1.5 bg-acg-secondary rounded-full animate-bounce [animation-delay:0ms]" />
                       <span className="w-1.5 h-1.5 bg-acg-secondary rounded-full animate-bounce [animation-delay:150ms]" />

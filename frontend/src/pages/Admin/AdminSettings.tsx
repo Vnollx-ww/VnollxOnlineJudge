@@ -12,7 +12,6 @@ interface ConfigInfo {
   apiKey: string;
   model: string;
   temperature: number;
-  baseUrl: string;
 }
 
 const AdminSettings: React.FC = () => {
@@ -36,7 +35,6 @@ const AdminSettings: React.FC = () => {
         modelForm.setFieldsValue({
           model: data.data.model,
           temperature: data.data.temperature,
-          baseUrl: data.data.baseUrl,
         });
       }
     } catch {
@@ -64,7 +62,7 @@ const AdminSettings: React.FC = () => {
     }
   };
 
-  const handleUpdateModel = async (values: { model: string; temperature: number; baseUrl: string }) => {
+  const handleUpdateModel = async (values: { model: string; temperature: number }) => {
     try {
       setSaving(true);
       const data = await api.post('/admin/ai-config/model', values) as ApiResponse;
@@ -158,14 +156,6 @@ const AdminSettings: React.FC = () => {
                     {configInfo.temperature}
                   </code>
                 </Descriptions.Item>
-                <Descriptions.Item label="Base URL">
-                  <code 
-                    className="px-2 py-1 rounded-lg text-sm break-all"
-                    style={{ backgroundColor: 'var(--gemini-bg)' }}
-                  >
-                    {configInfo.baseUrl}
-                  </code>
-                </Descriptions.Item>
               </Descriptions>
             )}
 
@@ -188,14 +178,11 @@ const AdminSettings: React.FC = () => {
             </div>
 
             <Form form={modelForm} onFinish={handleUpdateModel} layout="vertical">
-              <Form.Item name="model" label="模型名称" tooltip="例如: qwen-plus, qwen-turbo, gpt-3.5-turbo">
-                <Input placeholder="qwen-plus" />
+              <Form.Item name="model" label="模型名称" tooltip="Mistral 模型: mistral-small-latest, mistral-medium-latest, mistral-large-latest">
+                <Input placeholder="mistral-small-latest" />
               </Form.Item>
-              <Form.Item name="temperature" label="Temperature" tooltip="控制输出的随机性，0-2之间，值越大越随机">
-                <InputNumber min={0} max={2} step={0.1} className="w-full" />
-              </Form.Item>
-              <Form.Item name="baseUrl" label="Base URL" tooltip="API 服务地址">
-                <Input placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
+              <Form.Item name="temperature" label="Temperature" tooltip="控制输出的随机性，0-1之间，值越大越随机">
+                <InputNumber min={0} max={1} step={0.1} className="w-full" />
               </Form.Item>
               <Form.Item className="mb-0">
                 <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>

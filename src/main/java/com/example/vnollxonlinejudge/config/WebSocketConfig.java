@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.config;
 
+import com.example.vnollxonlinejudge.websocket.AiWebSocketHandler;
 import com.example.vnollxonlinejudge.websocket.JudgeWebSocketHandler;
 import com.example.vnollxonlinejudge.websocket.MessageWebSocketHandler;
 import com.example.vnollxonlinejudge.websocket.NotificationWebSocketHandler;
@@ -18,14 +19,17 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final JudgeWebSocketHandler judgeWebSocketHandler;
     private final NotificationWebSocketHandler notificationWebSocketHandler;
     private final MessageWebSocketHandler messageWebSocketHandler;
+    private final AiWebSocketHandler aiWebSocketHandler;
 
     @Autowired
     public WebSocketConfig(JudgeWebSocketHandler judgeWebSocketHandler,
                           NotificationWebSocketHandler notificationWebSocketHandler,
-                          MessageWebSocketHandler messageWebSocketHandler) {
+                          MessageWebSocketHandler messageWebSocketHandler,
+                          AiWebSocketHandler aiWebSocketHandler) {
         this.judgeWebSocketHandler = judgeWebSocketHandler;
         this.notificationWebSocketHandler = notificationWebSocketHandler;
         this.messageWebSocketHandler = messageWebSocketHandler;
+        this.aiWebSocketHandler = aiWebSocketHandler;
     }
 
     @Override
@@ -35,6 +39,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry.addHandler(notificationWebSocketHandler, "/ws/notification")
                 .setAllowedOriginPatterns("*");
         registry.addHandler(messageWebSocketHandler, "/ws/message")
+                .setAllowedOriginPatterns("*");
+        registry.addHandler(aiWebSocketHandler, "/ws/ai")
                 .setAllowedOriginPatterns("*");
     }
 

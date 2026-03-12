@@ -381,17 +381,24 @@ const Submissions: React.FC = () => {
                   icon={<Copy className="w-4 h-4" />}
                   onClick={() => {
                     const code = currentSubmission?.code || '';
-                    navigator.clipboard.writeText(code).then(() => {
-                      toast.success('代码已复制到剪贴板');
-                    }).catch(() => {
+                    const fallbackCopy = () => {
                       const textarea = document.createElement('textarea');
                       textarea.value = code;
+                      textarea.style.position = 'fixed';
+                      textarea.style.opacity = '0';
                       document.body.appendChild(textarea);
                       textarea.select();
                       document.execCommand('copy');
                       document.body.removeChild(textarea);
                       toast.success('代码已复制到剪贴板');
-                    });
+                    };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                      navigator.clipboard.writeText(code).then(() => {
+                        toast.success('代码已复制到剪贴板');
+                      }).catch(fallbackCopy);
+                    } else {
+                      fallbackCopy();
+                    }
                   }}
               >
                 复制代码
