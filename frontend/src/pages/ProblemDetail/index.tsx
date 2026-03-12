@@ -10,7 +10,6 @@ import {
   Avatar,
   Popconfirm,
   App,
-  Modal,
   Tag,
 } from 'antd';
 import toast from 'react-hot-toast';
@@ -37,6 +36,7 @@ import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
 import { CodeEditor, PermissionGuard } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
+import SuccessCelebration from '@/components/SuccessCelebration';
 import type { ApiResponse, JudgeMessage } from '@/types';
 
 const { TextArea } = Input;
@@ -84,9 +84,7 @@ const languageOptions: LanguageOption[] = [
   {
     label: 'C++',
     value: 'cpp',
-    template: `#include <iostream>
-// 注意：本平台禁止使用 #include <bits/stdc++.h>
-// 请根据需要自行包含标准库头文件
+    template: `#include <bits/stdc++.h>
 using namespace std;
 
 int main() {
@@ -184,23 +182,11 @@ const ProblemDetail: React.FC = () => {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
-  const [aiAnalysisVisible, setAiAnalysisVisible] = useState(false);
-  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
-  const [aiAnalysisResult, setAiAnalysisResult] = useState('');
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  const aiAnalysisRef = useRef<HTMLDivElement>(null);
 
   const userInfo = getUserInfo();
-
-  // 为 AI 弹窗内容高亮代码块
-  useEffect(() => {
-    if (aiAnalysisRef.current && aiAnalysisResult) {
-      aiAnalysisRef.current.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block as HTMLElement);
-      });
-    }
-  }, [aiAnalysisResult]);
 
   // 监听浏览器全屏状态变化
   useEffect(() => {
@@ -212,6 +198,30 @@ const ProblemDetail: React.FC = () => {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  // 监听 AI 助手同步代码到编辑器的事件
+  useEffect(() => {
+    const handleSyncCode = (event: CustomEvent<{ code: string; language: string }>) => {
+      const { code, language: lang } = event.detail;
+      // 如果语言匹配或可以转换，则设置代码
+      const langMap: Record<string, string> = {
+        'cpp': 'cpp', 'c++': 'cpp', 'c': 'cpp',
+        'python': 'python', 'py': 'python', 'python3': 'python',
+        'java': 'java'
+      };
+      const mappedLang = langMap[lang.toLowerCase()] || language;
+      if (mappedLang !== language) {
+        setLanguage(mappedLang);
+      }
+      setCode(code);
+      toast.success('代码已同步到编辑器');
+    };
+
+    window.addEventListener('sync-code-to-editor', handleSyncCode as EventListener);
+    return () => {
+      window.removeEventListener('sync-code-to-editor', handleSyncCode as EventListener);
+    };
+  }, [language]);
 
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
     if (msg && currentSnowflakeId && String((msg as any).snowflakeId) === String(currentSnowflakeId)) {
@@ -233,6 +243,11 @@ const ProblemDetail: React.FC = () => {
       }
 
       setSubmitResult({ type, message: status, detail });
+
+      // 答案正确时触发庆祝动画
+      if (status === '答案正确') {
+        setShowCelebration(true);
+      }
 
       if (status !== '评测中') {
         window.dispatchEvent(new Event('notification-updated'));
@@ -278,14 +293,6 @@ const ProblemDetail: React.FC = () => {
       ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'style'],
       ALLOW_DATA_ATTR: false,
     });
-  }, [renderLatex]);
-
-  // 渲染 AI 结果为 HTML
-  const renderAiContent = useCallback((content: string) => {
-    if (!content) return '';
-    const withLatex = renderLatex(content);
-    const html = marked.parse(withLatex) as string;
-    return DOMPurify.sanitize(html);
   }, [renderLatex]);
 
   useEffect(() => {
@@ -548,28 +555,15 @@ const ProblemDetail: React.FC = () => {
     }
   };
 
-  // 打开 AI 分析弹窗（不清空历史）
+  // 打开 AI 助手并发送分析请求
   const handleOpenAiAnalysis = () => {
     if (!code.trim()) {
       toast('请先输入代码');
       return;
     }
-    setAiAnalysisVisible(true);
-  };
-
-  // 开始/重新分析
-  const handleStartAiAnalysis = async () => {
-    if (!code.trim()) {
-      toast('请先输入代码');
-      return;
-    }
     if (!problem) return;
-    
-    setAiAnalysisLoading(true);
-    setAiAnalysisResult(''); // 清空旧结果
-    
-    try {
-      const prompt = `请分析以下代码，结合题目信息给出改进建议：
+
+    const prompt = `请分析以下代码，结合题目信息给出改进建议：
 
 【题目】${problem.title}
 【题目描述】${problem.description || '无'}
@@ -588,58 +582,9 @@ ${code}
 2. 算法复杂度：时间和空间复杂度是否满足限制
 3. 潜在问题：边界条件、溢出等
 4. 优化建议：如果有更优解法，请给出思路`;
-      
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Accept': 'text/event-stream',
-          'Content-Type': 'text/plain',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: prompt,
-      });
-      
-      if (!response.ok || !response.body) {
-        throw new Error('AI服务请求失败');
-      }
-      
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-      let accumulatedText = '';
-      
-      const pump = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) {
-          setAiAnalysisLoading(false);
-          return;
-        }
-        
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\n\n/);
-        buffer = parts.pop() || '';
-        
-        for (const chunk of parts) {
-          const lines = chunk.split(/\n/).map((l) => l.replace(/^data:\s?/, '')).filter(l => l.trim());
-          const data = lines.join('\n');
-          const cleanedData = data.replace(/\[DONE\]/g, '').replace(/^"+|"+$/g, '');
-          
-          if (cleanedData) {
-            accumulatedText += cleanedData;
-            setAiAnalysisResult(accumulatedText);
-          }
-        }
-        
-        return pump();
-      };
-      
-      await pump();
-    } catch (error: any) {
-      console.error('AI分析失败:', error);
-      setAiAnalysisResult('AI分析失败，请稍后重试: ' + (error.message || '未知错误'));
-      setAiAnalysisLoading(false);
-    }
+
+    // 触发自定义事件，打开 AI 助手并发送消息
+    window.dispatchEvent(new CustomEvent('open-ai-assistant', { detail: { message: prompt } }));
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -1058,71 +1003,13 @@ ${code}
         )}
       </div>
 
-      {/* AI分析模态框 */}
-      <Modal
-        title={
-          <div className="flex items-center gap-2">
-            <Bot className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-            <span style={{ color: 'var(--gemini-text-primary)' }}>AI 智能分析</span>
-            {aiAnalysisLoading && <Spin size="small" className="ml-2" />}
-          </div>
-        }
-        open={aiAnalysisVisible}
-        onCancel={() => setAiAnalysisVisible(false)}
-        footer={null}
-        width={900}
-        styles={{
-          body: { 
-            maxHeight: '70vh',
-            overflowY: 'auto'
-          }
-        }}
-      >
-        {/* 操作按钮区域 */}
-        <div className="mb-4 flex justify-end">
-          <Button 
-            type="primary"
-            icon={<Bot className="w-4 h-4" />}
-            onClick={handleStartAiAnalysis}
-            loading={aiAnalysisLoading}
-            disabled={aiAnalysisLoading}
-            style={{ 
-              backgroundColor: 'var(--gemini-accent)', 
-              color: 'var(--gemini-accent-text)',
-              border: 'none'
-            }}
-          >
-            {aiAnalysisResult ? '重新分析' : '开始分析'}
-          </Button>
-        </div>
-
-        {/* 分析结果区域 */}
-        <div 
-          className="prose prose-sm max-w-none rounded-2xl p-4 min-h-[200px]"
-          style={{ backgroundColor: 'var(--gemini-bg)' }}
-        >
-          {aiAnalysisLoading && !aiAnalysisResult ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Spin size="large" />
-              <span className="mt-4" style={{ color: 'var(--gemini-text-secondary)' }}>AI正在分析您的代码，请稍候...</span>
-              <span className="mt-2 text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>分析内容将实时显示</span>
-            </div>
-          ) : aiAnalysisResult ? (
-            <div
-              ref={aiAnalysisRef}
-              className="prose prose-blue max-w-none"
-              dangerouslySetInnerHTML={{ __html: renderAiContent(aiAnalysisResult) }}
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Bot className="w-12 h-12 mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
-              <p className="mb-2" style={{ color: 'var(--gemini-text-disabled)' }}>暂无分析结果</p>
-              <p className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>点击上方"开始分析"按钮获取 AI 代码分析</p>
-            </div>
-          )}
-        </div>
-      </Modal>
-
+      {/* 答案正确庆祝动画 */}
+      <SuccessCelebration
+        visible={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        title="🎉 恭喜通过！"
+        subtitle="Accepted"
+      />
     </div>
   );
 };

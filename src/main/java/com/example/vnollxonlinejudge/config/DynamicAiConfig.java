@@ -19,16 +19,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DynamicAiConfig {
     private static final Logger logger = LoggerFactory.getLogger(DynamicAiConfig.class);
 
-    @Value("${openai.model:mistral-small-latest}")
+    @Value("${mistral.model:mistral-small-latest}")
     private String model;
 
-    @Value("${openai.temperature:0.7}")
+    @Value("${mistral.temperature:0.7}")
     private double temperature;
 
-    @Value("${openai.timeout:60}")
+    @Value("${mistral.timeout:60}")
     private int timeout;
 
-    @Value("${openai.apiKey:648QnrLzTQCpJJMtjF41ETYj0OBkap96}")
+    @Value("${mistral.apiKey:}")
     private String defaultApiKey;
 
     private final AtomicReference<String> currentApiKey = new AtomicReference<>();
@@ -37,7 +37,7 @@ public class DynamicAiConfig {
     @PostConstruct
     public void init() {
         // 优先使用环境变量，否则使用配置的默认值
-        String envApiKey = System.getenv("API_KEY");
+        String envApiKey = System.getenv("MISTRAL_API_KEY");
         if (envApiKey != null && !envApiKey.trim().isEmpty()) {
             updateApiKey(envApiKey);
             logger.info("AI配置初始化完成，使用环境变量中的API Key");

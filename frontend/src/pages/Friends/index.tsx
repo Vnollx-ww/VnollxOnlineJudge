@@ -71,13 +71,6 @@ const Friends: React.FC = () => {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef<number>(0);
 
-  // 立即滚动到底部（无动画）
-  const scrollToBottomInstant = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, []);
 
   // 平滑滚动到底部
   const scrollToBottomSmooth = useCallback(() => {
@@ -779,7 +772,7 @@ const Friends: React.FC = () => {
                 </Avatar>
                 <div>
                   <div className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-                    {selectedFriend.userName}
+                    {friendTyping === selectedFriend.userId ? '对方正在输入...' : selectedFriend.userName}
                   </div>
                   <div className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>
                     {selectedFriend.userSignature || '暂无签名'}
@@ -861,21 +854,6 @@ const Friends: React.FC = () => {
               )}
               <div ref={messagesEndRef} />
             </div>
-
-            {/* 正在输入提示 */}
-            {friendTyping === selectedFriend?.userId && (
-              <div 
-                className="px-4 py-2 text-sm flex items-center gap-2"
-                style={{ color: 'var(--gemini-text-secondary)' }}
-              >
-                <span className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
-                </span>
-                <span>{selectedFriend?.userName} 正在输入...</span>
-              </div>
-            )}
 
             {/* 输入区域 */}
             <div 

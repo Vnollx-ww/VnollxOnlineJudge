@@ -1,6 +1,8 @@
 package com.example.vnollxonlinejudge.websocket;
 
+import com.example.vnollxonlinejudge.model.vo.friend.FriendVo;
 import com.example.vnollxonlinejudge.model.vo.friend.PrivateMessageVo;
+import com.example.vnollxonlinejudge.service.FriendService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -27,18 +29,29 @@ public class MessageWebSocketHandler extends TextWebSocketHandler {
     private static final Map<Long, List<WebSocketSession>> userSessions = new ConcurrentHashMap<>();
     
     private final ObjectMapper objectMapper;
+    private FriendService friendService;
     
     @Autowired
     public MessageWebSocketHandler(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+    }
+    
+    @Autowired
+    public void setFriendService(FriendService friendService) {
+        this.friendService = friendService;
     }
 
     @Override
     public void afterConnectionEstablished(@NotNull WebSocketSession session) throws Exception {
         Long uid = getUidFromSession(session);
         if (uid != null) {
+            boolean wasOffline = !isUserOnline(uid);
             userSessions.computeIfAbsent(uid, k -> new CopyOnWriteArrayList<>()).add(session);
             logger.info("[MessageWS] 连接建立: uid={}, 当前连接数={}", uid, userSessions.get(uid).size());
+            // 如果用户从离线变为在线，通知所有好友
+            if (wasOffline) {
+                notifyFriendsOnlineStatus(uid, true);
+            }
         } else {
             session.close(CloseStatus.BAD_DATA);
         }
@@ -53,6 +66,8 @@ public class MessageWebSocketHandler extends TextWebSocketHandler {
                 sessions.remove(session);
                 if (sessions.isEmpty()) {
                     userSessions.remove(uid);
+                    // 用户完全离线，通知所有好友
+                    notifyFriendsOnlineStatus(uid, false);
                 }
                 logger.info("[MessageWS] 连接关闭: uid={}, 剩余连接数={}", uid, sessions.size());
             }
@@ -169,18 +184,54 @@ public class MessageWebSocketHandler extends TextWebSocketHandler {
 
     public boolean isUserOnline(Long uid) {
         List<WebSocketSession> sessions = userSessions.get(uid);
-        return sessions != null && !sessions.isEmpty();
+        boolean online = sessions != null && !sessions.isEmpty();
+        logger.info("[MessageWS] isUserOnline check: uid={}, online={}, allOnlineUsers={}", uid, online, userSessions.keySet());
+        return online;
+    }
+    
+    private void notifyFriendsOnlineStatus(Long uid, boolean isOnline) {
+        if (friendService == null) {
+            logger.warn("[MessageWS] friendService is null, cannot notify online status");
+            return;
+        }
+        try {
+            List<FriendVo> friends = friendService.getFriendList(uid);
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("type", "online_status");
+            notification.put("userId", uid);
+            notification.put("isOnline", isOnline);
+            
+            for (FriendVo friend : friends) {
+                sendNotificationToUser(friend.getUserId(), notification);
+            }
+            logger.info("[MessageWS] 已通知{}位好友用户{}的在线状态: {}", friends.size(), uid, isOnline);
+        } catch (Exception e) {
+            logger.error("[MessageWS] 通知好友在线状态失败: {}", e.getMessage(), e);
+        }
     }
 
     private Long getUidFromSession(WebSocketSession session) {
         try {
             URI uri = session.getUri();
-            if (uri != null && uri.getQuery() != null) {
+            if (uri != null) {
+                String path = uri.getPath();
                 String query = uri.getQuery();
-                for (String param : query.split("&")) {
-                    String[] pair = param.split("=");
-                    if (pair.length == 2 && "uid".equals(pair[0])) {
-                        return Long.parseLong(pair[1]);
+                
+                // 优先从路径解析: /ws/message/{uid}
+                if (path != null && path.startsWith("/ws/message/")) {
+                    String uidStr = path.substring("/ws/message/".length());
+                    if (!uidStr.isEmpty()) {
+                        return Long.parseLong(uidStr);
+                    }
+                }
+                
+                // 其次从查询参数解析: /ws/message?uid=xxx
+                if (query != null) {
+                    for (String param : query.split("&")) {
+                        String[] pair = param.split("=");
+                        if (pair.length == 2 && "uid".equals(pair[0])) {
+                            return Long.parseLong(pair[1]);
+                        }
                     }
                 }
             }

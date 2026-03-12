@@ -277,7 +277,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
                 "max": 10240
             }],
             "cpuLimit": 10000000000,
-            "memoryLimit": 104857600,
+            "memoryLimit": 536870912,
             "procLimit": 50,
             "copyIn": {
                 "a.cc": {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FloatButton, Drawer, Input, Button, message as antMessage, Modal, Avatar } from 'antd';
-import { Bot, Send, Trash2, User } from 'lucide-react';
+import { Bot, Send, Trash2, User, Copy, Check, Code2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -58,6 +58,67 @@ const renderLatex = (text: string): string => {
     }
   });
   return text;
+};
+
+// 去掉代码第一行（修复 AI 返回的代码块第一行多余内容）
+const removeFirstLine = (text: string): string => {
+  const lines = text.split('\n');
+  return lines.length > 1 ? lines.slice(1).join('\n') : text;
+};
+
+// 复制按钮组件
+const CopyButton: React.FC<{ text: string }> = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const cleanedText = removeFirstLine(text);
+    try {
+      await navigator.clipboard.writeText(cleanedText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = cleanedText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+      title="复制代码"
+    >
+      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+    </button>
+  );
+};
+
+// 同步到代码编辑器按钮组件
+const SyncToEditorButton: React.FC<{ code: string; language: string }> = ({ code, language }) => {
+  const handleSync = () => {
+    const cleanedCode = removeFirstLine(code);
+    // 触发自定义事件，将代码同步到题目详情页的代码编辑器
+    window.dispatchEvent(new CustomEvent('sync-code-to-editor', { 
+      detail: { code: cleanedCode, language } 
+    }));
+  };
+
+  return (
+    <button
+      onClick={handleSync}
+      className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
+      title="同步到代码编辑器"
+    >
+      <Code2 className="w-3.5 h-3.5" />
+    </button>
+  );
 };
 
 const AIAssistant: React.FC = () => {
@@ -148,6 +209,24 @@ const AIAssistant: React.FC = () => {
     }
   }, [open, messages.length, loadHistory]);
 
+  // 监听外部事件打开 AI 助手并发送消息
+  useEffect(() => {
+    const handleOpenAiAssistant = (event: CustomEvent<{ message: string }>) => {
+      setOpen(true);
+      // 延迟发送消息，确保抽屉打开且历史加载完成
+      setTimeout(() => {
+        if (event.detail?.message) {
+          sendChat(event.detail.message);
+        }
+      }, 300);
+    };
+
+    window.addEventListener('open-ai-assistant', handleOpenAiAssistant as EventListener);
+    return () => {
+      window.removeEventListener('open-ai-assistant', handleOpenAiAssistant as EventListener);
+    };
+  }, []);
+
   // WebSocket 引用
   const wsRef = useRef<WebSocket | null>(null);
   const accumulatedTextRef = useRef<string>('');
@@ -159,7 +238,7 @@ const AIAssistant: React.FC = () => {
       return;
     }
 
-    const uid = localStorage.getItem('userId');
+    const uid = localStorage.getItem('id');
     if (!uid) {
       messageApi.warning('请先登录');
       return;
@@ -318,7 +397,7 @@ const AIAssistant: React.FC = () => {
         placement="right"
         onClose={() => setOpen(false)}
         open={open}
-        width={420}
+        width={720}
         extra={
           <button
             onClick={handleClear}
@@ -343,13 +422,14 @@ const AIAssistant: React.FC = () => {
               >
                 <Avatar
                   size={36}
+                  src={msg.role === 'bot' ? 'http://111.230.105.54:9001/api/v1/buckets/avatar/objects/download?preview=true&prefix=%E4%B8%8B%E8%BD%BD%20(1).png' : undefined}
                   className={`flex-shrink-0 ${
                     msg.role === 'bot'
-                      ? 'bg-gradient-to-br from-acg-accent to-acg-primary'
+                      ? ''
                       : 'bg-gradient-to-br from-acg-success to-emerald-600'
                   }`}
                 >
-                  {msg.role === 'bot' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                  {msg.role === 'bot' ? null : <User className="w-4 h-4" />}
                 </Avatar>
                 <div
                   className={`
@@ -368,15 +448,22 @@ const AIAssistant: React.FC = () => {
                       components={{
                         code({ inline, className, children, ...props }: any) {
                           const match = /language-(\w+)/.exec(className || '');
+                          const codeString = String(children).replace(/\n$/, '');
                           return !inline && match ? (
-                            <SyntaxHighlighter
-                              style={vscDarkPlus}
-                              language={match[1]}
-                              PreTag="div"
-                              {...props}
-                            >
-                              {String(children).replace(/\n$/, '')}
-                            </SyntaxHighlighter>
+                            <div className="relative group">
+                              <div className="absolute right-2 top-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <CopyButton text={codeString} />
+                                <SyncToEditorButton code={codeString} language={match[1]} />
+                              </div>
+                              <SyntaxHighlighter
+                                style={vscDarkPlus}
+                                language={match[1]}
+                                PreTag="div"
+                                {...props}
+                              >
+                                {codeString}
+                              </SyntaxHighlighter>
+                            </div>
                           ) : (
                             <code className={`${className} bg-acg-btn/50 px-1.5 py-0.5 rounded`} {...props}>
                               {children}
@@ -399,10 +486,9 @@ const AIAssistant: React.FC = () => {
               <div className="flex gap-3 animate-fade-in">
                 <Avatar
                   size={36}
-                  className="flex-shrink-0 bg-gradient-to-br from-acg-accent to-acg-primary"
-                >
-                  <Bot className="w-4 h-4" />
-                </Avatar>
+                  src="http://111.230.105.54:9001/api/v1/buckets/avatar/objects/download?preview=true&prefix=%E4%B8%8B%E8%BD%BD%20(1).png"
+                  className="flex-shrink-0"
+                />
                 <div className="bg-white shadow-sm rounded-2xl rounded-tl-md px-4 py-3">
                   <div className="flex items-center gap-2 text-acg-secondary text-sm">
                     <span>AI 分析中</span>

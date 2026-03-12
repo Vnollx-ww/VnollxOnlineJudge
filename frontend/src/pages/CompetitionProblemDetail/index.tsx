@@ -34,6 +34,7 @@ import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import CodeEditor from '../../components/CodeEditor';
+import SuccessCelebration from '../../components/SuccessCelebration';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -75,9 +76,7 @@ const languageOptions = [
   {
     label: 'C++',
     value: 'cpp',
-    template: `#include <iostream>
-// 注意：本平台禁止使用 #include <bits/stdc++.h>
-// 请根据需要自行包含标准库头文件
+    template: `#include <bits/stdc++.h>
 using namespace std;
 
 int main() {
@@ -148,6 +147,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const [isCompetitionEnd, setIsCompetitionEnd] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -178,6 +178,11 @@ const CompetitionProblemDetail: React.FC = () => {
       }
 
       setSubmitResult({ type, message: status, detail });
+
+      // 答案正确时触发庆祝动画
+      if (status === '答案正确') {
+        setShowCelebration(true);
+      }
 
       if (status !== '评测中') {
         window.dispatchEvent(new Event('notification-updated'));
@@ -804,6 +809,14 @@ const CompetitionProblemDetail: React.FC = () => {
           )}
         </Space>
       </div>
+
+      {/* 答案正确庆祝动画 */}
+      <SuccessCelebration
+        visible={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        title="🎉 恭喜通过！"
+        subtitle="Accepted"
+      />
     </div>
   );
 };

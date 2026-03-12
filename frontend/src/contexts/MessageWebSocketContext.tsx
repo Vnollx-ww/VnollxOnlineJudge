@@ -37,7 +37,7 @@ export const MessageWebSocketProvider: React.FC<MessageWebSocketProviderProps> =
     if (!currentUserId) return;
 
     // 避免重复连接
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws/message?uid=${currentUserId}`;
@@ -108,17 +108,29 @@ export const MessageWebSocketProvider: React.FC<MessageWebSocketProviderProps> =
 
     // 监听登录状态变化
     const handleAuthChange = () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       if (isAuthenticated()) {
+        if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
+          wsRef.current.close();
+        }
+        wsRef.current = null;
         connect();
       } else {
         wsRef.current?.close();
+        wsRef.current = null;
+        setIsConnected(false);
       }
     };
 
     window.addEventListener('auth-changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
 
     return () => {
       window.removeEventListener('auth-changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
