@@ -16,7 +16,7 @@ import {
   Col,
 } from 'antd';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, Edit, Trash2, Upload as UploadIcon, Eye, Edit3 } from 'lucide-react';
+import { Plus, RefreshCw, Edit, Trash2, Upload as UploadIcon, Eye, Edit3, Wand2 } from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
@@ -144,6 +144,8 @@ const AdminProblems: React.FC = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [fileList, setFileList] = useState<any[]>([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiParsing, setAiParsing] = useState(false);
 
   useEffect(() => {
     loadProblems();
@@ -284,6 +286,101 @@ const AdminProblems: React.FC = () => {
     }
   };
 
+  // AI解析markdown题目描述
+  const handleAiParse = async () => {
+    if (!aiInput.trim()) {
+      toast.error('请先粘贴题目内容');
+      return;
+    }
+    setAiParsing(true);
+    try {
+      const prompt = `请解析以下题目描述，提取信息并返回JSON格式（不要返回其他内容，只返回纯JSON）：
+{
+  "title": "题目标题",
+  "description": "题目描述（保留原始markdown格式）",
+  "inputFormat": "输入格式说明",
+  "outputFormat": "输出格式说明",
+  "inputExample": "输入样例（纯文本）",
+  "outputExample": "输出样例（纯文本）",
+  "hint": "提示信息（如数据范围等，可为空）",
+  "difficulty": "简单/中等/困难",
+  "tags": ["标签1", "标签2"]
+}
+
+题目内容：
+${aiInput}`;
+
+      const response = await fetch('/api/v1/ai/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: prompt,
+      });
+
+      if (!response.ok) {
+        throw new Error('AI服务请求失败');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('无法读取响应');
+
+      let fullText = '';
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+      }
+
+      // 处理SSE格式：移除 "data:" 前缀并拼接
+      const lines = fullText.split('\n');
+      let content = '';
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const data = line.slice(5); // 移除 "data:" 前缀
+          if (data === '[DONE]') continue;
+          content += data;
+        }
+      }
+
+      // 提取JSON部分
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('AI返回格式错误，无法解析');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // 填充表单
+      form.setFieldsValue({
+        title: parsed.title || '',
+        description: parsed.description || '',
+        inputFormat: parsed.inputFormat || '',
+        outputFormat: parsed.outputFormat || '',
+        inputExample: parsed.inputExample || '',
+        outputExample: parsed.outputExample || '',
+        hint: parsed.hint || '',
+        difficulty: parsed.difficulty || '简单',
+      });
+
+      // 设置标签
+      if (parsed.tags && Array.isArray(parsed.tags)) {
+        setTags(parsed.tags.slice(0, 5));
+      }
+
+      toast.success('AI解析成功，已自动填充表单');
+      setAiInput('');
+    } catch (error: any) {
+      console.error('AI解析失败:', error);
+      toast.error(error.message || 'AI解析失败，请手动填写');
+    } finally {
+      setAiParsing(false);
+    }
+  };
+
   const addTag = () => {
     if (!tagInput.trim()) return;
     if (tags.length >= 5) {
@@ -421,6 +518,36 @@ const AdminProblems: React.FC = () => {
           onFinish={handleSubmit}
           initialValues={{ difficulty: '简单', open: true }}
         >
+          {/* AI识别区域 */}
+          <Form.Item label="AI智能识别">
+            <div className="flex gap-2">
+              <Input.TextArea
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                placeholder="粘贴题目的Markdown文本，AI将自动解析并填充到下方各字段..."
+                rows={4}
+                className="flex-1"
+              />
+              <Button
+                type="primary"
+                icon={<Wand2 className="w-4 h-4" />}
+                loading={aiParsing}
+                onClick={handleAiParse}
+                style={{
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                  border: 'none',
+                  height: 'auto',
+                }}
+              >
+                {aiParsing ? '解析中...' : 'AI识别'}
+              </Button>
+            </div>
+            <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
+              支持解析包含标题、描述、输入输出格式、样例等信息的Markdown文本
+            </p>
+          </Form.Item>
+
           <Form.Item name="title" label="题目标题" rules={[{ required: true, message: '请输入题目标题' }]}>
             <Input />
           </Form.Item>
