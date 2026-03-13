@@ -195,7 +195,6 @@ const ProblemDetail: React.FC = () => {
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   /** 调试输入：默认第一组样例输入，用户可修改 */
   const [customTestInput, setCustomTestInput] = useState('');
-
   const userInfo = getUserInfo();
 
   // 监听浏览器全屏状态变化
@@ -437,6 +436,20 @@ const ProblemDetail: React.FC = () => {
     return null;
   }, [problem?.examples]);
 
+  const normalizeTestText = useCallback((text?: string | null) => (text ?? '').replace(/\r\n/g, '\n').trim(), []);
+
+  const matchedExample = useMemo(() => {
+    if (!problem?.examples?.length) {
+      return null;
+    }
+    const normalizedInput = normalizeTestText(customTestInput);
+    return problem.examples.find((example) => normalizeTestText(example.input) === normalizedInput) ?? null;
+  }, [customTestInput, problem?.examples, normalizeTestText]);
+
+  const isCustomTest = useMemo(() => {
+    return problem?.examples?.length ? !matchedExample : false;
+  }, [matchedExample, problem?.examples?.length]);
+
   // 题目或第一组样例变化时，将调试输入重置为第一组输入
   useEffect(() => {
     if (firstExample?.input != null) {
@@ -463,17 +476,26 @@ const ProblemDetail: React.FC = () => {
         option: language,
         pid: String(problem!.id),
         inputExample: customTestInput,
-        outputExample: firstExample.output,
+        outputExample: matchedExample?.output ?? firstExample.output,
         time: String(problem!.timeLimit || 1000),
         memory: String(problem!.memoryLimit || 256),
+        customTest: isCustomTest,
       };
-      const data = await api.post('/judge/test', payload) as ApiResponse<{ status: string; errorInfo?: string }>;
+      const data = await api.post('/judge/test', payload) as ApiResponse<{ status?: string; errorInfo?: string; actualOutput?: string }>;
       if (data.code === 200) {
-        setTestResult({
-          type: data.data.status === '答案正确' ? 'success' : 'warning',
-          message: data.data.status || '测试完成',
-          detail: data.data.errorInfo,
-        });
+        if (isCustomTest) {
+          setTestResult({
+            type: 'info',
+            message: '自定义测试完成',
+            detail: `程序输出:\n${data.data.actualOutput || '无输出'}`,
+          });
+        } else {
+          setTestResult({
+            type: data.data.status === '答案正确' ? 'success' : 'warning',
+            message: data.data.status || '测试完成',
+            detail: data.data.errorInfo,
+          });
+        }
       } else {
         setTestResult({ type: 'error', message: (data as any).msg || '测试失败' });
       }
@@ -942,7 +964,7 @@ ${code}
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-                调试输入（测试样例将使用下方输入，期望输出以第一组样例为准）
+                调试输入（默认使用第一组样例；如果你修改了输入，测试结果只显示程序实际输出）
               </span>
               <Button
                 type="link"

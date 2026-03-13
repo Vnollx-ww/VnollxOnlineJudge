@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 @Component
 public class MistralStreamingChatModelAdapter implements StreamingChatModelAdapter {
-    private static final String ADAPTER_CODE = "mistral";
+    private static final String ADAPTER_CODE = StreamingChatModelAdapter.CODE_MISTRAL;
 
     @Override
     public String getAdapterCode() {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FloatButton, Drawer, Input, Button, message as antMessage, Modal, Avatar, Select } from 'antd';
-import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight } from 'lucide-react';
+import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -24,6 +24,13 @@ interface Message {
   modelLogoUrl?: string;
   /** 仅 bot 消息：思考过程内容（与最终答复区分展示） */
   thinkingContent?: string;
+}
+
+interface HistoryPageResponse {
+  items: Array<{ role: string; content: string; thinkingContent?: string; modelLogoUrl?: string; timestamp?: number }>;
+  nextCursor: number | null;
+  hasMore: boolean;
+  total: number;
 }
 
 interface AiModelOption {
@@ -106,18 +113,13 @@ const renderLatex = (text: string): string => {
   return text;
 };
 
-// 去掉代码第一行（修复 AI 返回的代码块第一行多余内容）
-const removeFirstLine = (text: string): string => {
-  const lines = text.split('\n');
-  return lines.length > 1 ? lines.slice(1).join('\n') : text;
-};
 
 // 复制按钮组件
 const CopyButton: React.FC<{ text: string }> = ({ text }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    const cleanedText = removeFirstLine(text);
+    const cleanedText = text;
     try {
       await navigator.clipboard.writeText(cleanedText);
       setCopied(true);
@@ -149,7 +151,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
 // 同步到代码编辑器按钮组件
 const SyncToEditorButton: React.FC<{ code: string; language: string }> = ({ code, language }) => {
   const handleSync = () => {
-    const cleanedCode = removeFirstLine(code);
+    const cleanedCode = code;
     // 触发自定义事件，将代码同步到题目详情页的代码编辑器
     window.dispatchEvent(new CustomEvent('sync-code-to-editor', { 
       detail: { code: cleanedCode, language } 
@@ -189,21 +191,57 @@ const AIAssistant: React.FC = () => {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   /** 由「AI分析」等外部事件带入的待发送消息，等模型列表加载后再发 */
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  /** 分页游标 */
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  /** 是否应该滚动到底部 */
+  const shouldScrollToBottomRef = useRef(true);
+  /** 首次打开后，历史消息落地时直接定位到底部，但不播放动画 */
+  const shouldJumpToBottomOnceRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [messageApi, contextHolder] = antMessage.useMessage();
   const [modal, modalContextHolder] = Modal.useModal();
   const { hasPermission } = usePermission();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length === 0) return;
+    // 首次打开：历史消息加载完后直接跳到底部（无动画），优先级最高
+    if (shouldJumpToBottomOnceRef.current) {
+      shouldJumpToBottomOnceRef.current = false;
+      requestAnimationFrame(() => scrollToBottom(false));
+      return;
+    }
+    // 上滑分页 / 历史加载时不滚动
+    if (!shouldScrollToBottomRef.current) return;
+    // 发新消息时平滑滚动
+    scrollToBottom(true);
   }, [messages, thinking]);
 
-  // 加载历史消息（接口返回结构化 { role, content, modelLogoUrl?, timestamp }）
+  // 解析历史消息列表
+  const parseHistoryItems = (data: HistoryPageResponse['items']): Message[] => {
+    return data
+      .filter((item) => {
+        const c = (item.content || '').trim();
+        return c && !c.startsWith('[系统]') && !c.includes('你是一个专业的编程助手');
+      })
+      .map((item) => ({
+        role: item.role === 'user' ? 'user' : 'bot',
+        content: (item.content || '').trim(),
+        timestamp: item.timestamp ?? Date.now(),
+        ...(item.role === 'bot' && item.modelLogoUrl != null ? { modelLogoUrl: item.modelLogoUrl } : {}),
+        ...(item.role === 'bot' && item.thinkingContent != null && item.thinkingContent.trim() !== '' ? { thinkingContent: item.thinkingContent.trim() } : {}),
+      })) as Message[];
+  };
+
+  // 加载历史消息（分页接口，首次加载10条）
   const loadHistory = useCallback(async () => {
+    shouldScrollToBottomRef.current = false;
     if (!isAuthenticated()) {
       setMessages([
         {
@@ -216,23 +254,18 @@ const AIAssistant: React.FC = () => {
     }
 
     try {
-      const response = await api.get('/ai/history') as ApiResponse<Array<{ role: string; content: string; thinkingContent?: string; modelLogoUrl?: string; timestamp?: number }>>;
-      if (response.code === 200 && response.data && response.data.length > 0) {
-        const list = response.data
-          .filter((item) => {
-            const c = (item.content || '').trim();
-            return c && !c.startsWith('[系统]') && !c.includes('你是一个专业的编程助手');
-          })
-          .map((item) => ({
-            role: item.role === 'user' ? 'user' : 'bot',
-            content: (item.content || '').trim(),
-            timestamp: item.timestamp ?? Date.now(),
-            ...(item.role === 'bot' && item.modelLogoUrl != null ? { modelLogoUrl: item.modelLogoUrl } : {}),
-            ...(item.role === 'bot' && item.thinkingContent != null && item.thinkingContent.trim() !== '' ? { thinkingContent: item.thinkingContent.trim() } : {}),
-          })) as Message[];
-        if (list.length > 0) {
-          setMessages(list);
-          return;
+      const response = await api.get('/ai/history/page?limit=10') as ApiResponse<HistoryPageResponse>;
+      if (response.code === 200 && response.data) {
+        const { items, nextCursor: cursor, hasMore: more } = response.data;
+        setNextCursor(cursor);
+        setHasMore(more);
+        
+        if (items && items.length > 0) {
+          const list = parseHistoryItems(items);
+          if (list.length > 0) {
+            setMessages(list);
+            return;
+          }
         }
       }
       setMessages([
@@ -253,6 +286,54 @@ const AIAssistant: React.FC = () => {
       ]);
     }
   }, []);
+
+  // 滚动加载更多历史消息（每次5条）
+  const loadMoreHistory = useCallback(async () => {
+    if (!hasMore || loadingMore || !nextCursor) return;
+    
+    setLoadingMore(true);
+    // 加载历史消息时不滚动到底部
+    shouldScrollToBottomRef.current = false;
+    
+    const container = messagesContainerRef.current;
+    const prevScrollHeight = container?.scrollHeight ?? 0;
+    
+    try {
+      const response = await api.get(`/ai/history/page?beforeId=${nextCursor}&limit=5`) as ApiResponse<HistoryPageResponse>;
+      if (response.code === 200 && response.data) {
+        const { items, nextCursor: cursor, hasMore: more } = response.data;
+        setNextCursor(cursor);
+        setHasMore(more);
+        
+        if (items && items.length > 0) {
+          const list = parseHistoryItems(items);
+          if (list.length > 0) {
+            // 在顶部插入历史消息
+            setMessages((prev) => [...list, ...prev]);
+            // 保持滚动位置
+            requestAnimationFrame(() => {
+              if (container) {
+                container.scrollTop = container.scrollHeight - prevScrollHeight;
+              }
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('加载更多历史消息失败:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMore, loadingMore, nextCursor]);
+
+  // 滚动事件处理：滚动到顶部时加载更多
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    if (container.scrollTop < 50 && hasMore && !loadingMore) {
+      loadMoreHistory();
+    }
+  }, [hasMore, loadingMore, loadMoreHistory]);
 
   // 缓存选中的模型到 localStorage
   useEffect(() => {
@@ -298,6 +379,9 @@ const AIAssistant: React.FC = () => {
 
   useEffect(() => {
     if (open) {
+      if (messages.length === 0) {
+        shouldJumpToBottomOnceRef.current = true;
+      }
       loadModels();
       loadUserProfile();
       if (messages.length === 0) loadHistory();
@@ -333,6 +417,7 @@ const AIAssistant: React.FC = () => {
   const wsRef = useRef<WebSocket | null>(null);
   const accumulatedTextRef = useRef<string>('');
   const accumulatedThinkingRef = useRef<string>('');
+  const botMessageCreatedRef = useRef<boolean>(false);
 
   // WebSocket 发送消息
   const sendChat = (userMessage: string) => {
@@ -349,6 +434,8 @@ const AIAssistant: React.FC = () => {
 
     setLoading(true);
     setThinking(true);
+    // 发送新消息时应该滚动到底部
+    shouldScrollToBottomRef.current = true;
 
     const userMsg: Message = {
       role: 'user',
@@ -369,6 +456,7 @@ const AIAssistant: React.FC = () => {
     wsRef.current = ws;
     accumulatedTextRef.current = '';
     accumulatedThinkingRef.current = '';
+    botMessageCreatedRef.current = false;
 
     ws.onopen = () => {
       // 发送聊天消息（携带选中的模型 ID）
@@ -382,37 +470,53 @@ const AIAssistant: React.FC = () => {
         const data = JSON.parse(event.data);
 
         if (data.type === 'start') {
-          // AI 开始响应，创建空的 bot 消息，并记录当前选中模型的 Logo
-          const modelLogo = models.find((m) => m.id === selectedModelId)?.logoUrl;
-          setThinking(false);
-          setMessages((prev) => [
-            ...prev,
-            { role: 'bot', content: '', thinkingContent: '', timestamp: Date.now(), modelLogoUrl: modelLogo },
-          ]);
+          // AI 开始响应，不在这里创建气泡，等有实际内容时再创建
         } else if (data.type === 'thinking_token') {
-          // 思考过程流式片段，与最终答复区分展示
+          // 思考过程流式片段
           accumulatedThinkingRef.current += data.content ?? '';
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const last = newMessages[newMessages.length - 1];
-            newMessages[newMessages.length - 1] = {
-              ...last,
-              thinkingContent: accumulatedThinkingRef.current,
-            };
-            return newMessages;
-          });
+          if (!botMessageCreatedRef.current) {
+            // 第一次收到内容，创建 bot 消息并关闭思考中状态
+            botMessageCreatedRef.current = true;
+            setThinking(false);
+            const modelLogo = models.find((m) => m.id === selectedModelId)?.logoUrl;
+            setMessages((prev) => [
+              ...prev,
+              { role: 'bot', content: '', thinkingContent: accumulatedThinkingRef.current, timestamp: Date.now(), modelLogoUrl: modelLogo },
+            ]);
+          } else {
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const last = newMessages[newMessages.length - 1];
+              newMessages[newMessages.length - 1] = {
+                ...last,
+                thinkingContent: accumulatedThinkingRef.current,
+              };
+              return newMessages;
+            });
+          }
         } else if (data.type === 'token') {
           // 最终答复流式片段
           accumulatedTextRef.current += data.content ?? '';
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const last = newMessages[newMessages.length - 1];
-            newMessages[newMessages.length - 1] = {
-              ...last,
-              content: accumulatedTextRef.current,
-            };
-            return newMessages;
-          });
+          if (!botMessageCreatedRef.current) {
+            // 第一次收到内容，创建 bot 消息并关闭思考中状态
+            botMessageCreatedRef.current = true;
+            setThinking(false);
+            const modelLogo = models.find((m) => m.id === selectedModelId)?.logoUrl;
+            setMessages((prev) => [
+              ...prev,
+              { role: 'bot', content: accumulatedTextRef.current, thinkingContent: '', timestamp: Date.now(), modelLogoUrl: modelLogo },
+            ]);
+          } else {
+            setMessages((prev) => {
+              const newMessages = [...prev];
+              const last = newMessages[newMessages.length - 1];
+              newMessages[newMessages.length - 1] = {
+                ...last,
+                content: accumulatedTextRef.current,
+              };
+              return newMessages;
+            });
+          }
         } else if (data.type === 'done') {
           // 响应完成
           setLoading(false);
@@ -511,55 +615,83 @@ const AIAssistant: React.FC = () => {
       {/* 聊天抽屉 */}
       <Drawer
         title={
-          <div className="flex items-center gap-2 text-acg-primary">
-            <Bot className="w-5 h-5" />
-            <span className="font-bold">AI 助手</span>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-2xl bg-blue-400 flex items-center justify-content shadow-lg shadow-blue-400/25">
+                <Sparkles className="w-5 h-5 text-white mx-auto" />
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-base">AI 智能助手</h3>
+              <p className="text-xs text-gray-400 font-normal">随时为您解答编程问题</p>
+            </div>
           </div>
         }
         placement="right"
         onClose={() => setOpen(false)}
         open={open}
-        width={720}
+        width={900}
         extra={
           <button
             onClick={handleClear}
-            className="p-2 rounded-lg text-acg-secondary hover:bg-acg-btn hover:text-acg-primary transition-all duration-200"
+            className="p-2.5 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
             title="清空记忆"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
           </button>
         }
         styles={{
+          header: { borderBottom: 'none', paddingBottom: 0 },
           body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' },
         }}
         className="ai-drawer"
       >
-        <div className="flex-1 flex flex-col h-full bg-acg-bg">
+        <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-slate-50 to-gray-100">
           {/* 消息列表 */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div 
+            ref={messagesContainerRef}
+            onScroll={handleScroll}
+            className="flex-1 overflow-y-auto p-5 space-y-5"
+          >
+            {/* 加载更多提示 */}
+            {loadingMore && (
+              <div className="flex items-center justify-center gap-2 text-gray-400 text-sm py-3">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>加载历史消息...</span>
+              </div>
+            )}
+            {hasMore && !loadingMore && (
+              <div className="text-center py-2">
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 bg-white/60 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  <ChevronRight className="w-3 h-3 -rotate-90" />
+                  滚动加载更多
+                </span>
+              </div>
+            )}
             {messages.map((msg, index) => (
               <div
                 key={index}
                 className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-fade-in`}
               >
                 <Avatar
-                  size={36}
+                  size={38}
                   src={msg.role === 'bot' ? (msg.modelLogoUrl || undefined) : (userAvatar || undefined)}
-                  className={`flex-shrink-0 ${
+                  className={`flex-shrink-0 shadow-md ${
                     msg.role === 'bot'
-                      ? ''
-                      : 'bg-gradient-to-br from-acg-success to-emerald-600'
+                      ? 'ring-2 ring-white'
+                      : 'ring-2 ring-white bg-blue-400'
                   }`}
                   style={msg.role === 'user' && userAvatar ? { background: 'transparent' } : undefined}
                 >
-                  {msg.role === 'bot' ? (msg.modelLogoUrl ? null : <Bot className="w-4 h-4 text-acg-primary" />) : <User className="w-4 h-4" />}
+                  {msg.role === 'bot' ? (msg.modelLogoUrl ? null : <Bot className="w-4 h-4 text-blue-500" />) : <User className="w-4 h-4 text-white" />}
                 </Avatar>
                 <div
                   className={`
-                    max-w-[80%] px-4 py-3 rounded-2xl
+                    max-w-[85%] px-4 py-3 rounded-2xl transition-all duration-200
                     ${msg.role === 'bot'
-                      ? 'bg-white shadow-sm rounded-tl-md'
-                      : 'bg-acg-btn rounded-tr-md'
+                      ? 'bg-white shadow-sm shadow-gray-200/50 rounded-tl-sm border border-gray-100/80'
+                      : 'bg-blue-400 text-white rounded-tr-sm shadow-lg shadow-blue-400/20'
                     }
                   `}
                 >
@@ -643,7 +775,7 @@ const AIAssistant: React.FC = () => {
                       )}
                     </div>
                   ) : (
-                    <span className="text-acg-primary text-sm">{msg.content}</span>
+                    <span className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</span>
                   )}
                 </div>
               </div>
@@ -653,19 +785,22 @@ const AIAssistant: React.FC = () => {
             {thinking && (
               <div className="flex gap-3 animate-fade-in">
                 <Avatar
-                  size={36}
+                  size={38}
                   src={models.find((m) => m.id === selectedModelId)?.logoUrl}
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 shadow-md ring-2 ring-white"
                 >
-                  {!models.find((m) => m.id === selectedModelId)?.logoUrl && <Bot className="w-4 h-4 text-acg-primary" />}
+                  {!models.find((m) => m.id === selectedModelId)?.logoUrl && <Bot className="w-4 h-4 text-blue-500" />}
                 </Avatar>
-                <div className="bg-white shadow-sm rounded-2xl rounded-tl-md px-4 py-3">
-                  <div className="flex items-center gap-2 text-acg-secondary text-sm">
-                    <span>AI正在思考中</span>
+                <div className="bg-white shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/80 px-4 py-3">
+                  <div className="flex items-center gap-3 text-gray-500 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+                      <span>正在思考中</span>
+                    </div>
                     <div className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-acg-secondary rounded-full animate-bounce [animation-delay:0ms]" />
-                      <span className="w-1.5 h-1.5 bg-acg-secondary rounded-full animate-bounce [animation-delay:150ms]" />
-                      <span className="w-1.5 h-1.5 bg-acg-secondary rounded-full animate-bounce [animation-delay:300ms]" />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:300ms]" />
                     </div>
                   </div>
                 </div>
@@ -674,9 +809,9 @@ const AIAssistant: React.FC = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* 输入区域：模型选择 + 输入框同一行，模型为上拉框 */}
-          <div className="p-4 bg-white border-t border-gray-100">
-            <div className="flex gap-2 items-end">
+          {/* 输入区域 */}
+          <div className="p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100/50">
+            <div className="flex gap-3 items-start">
               {models.length > 0 && (
                 <Select
                   value={selectedModelId ?? undefined}
@@ -687,32 +822,36 @@ const AIAssistant: React.FC = () => {
                   }))}
                   labelRender={({ value }) => {
                     const m = models.find((x) => x.id === value);
-                    if (!m) return <span className="text-gray-500">选择模型</span>;
+                    if (!m) return <span className="text-gray-400">选择模型</span>;
                     return (
                       <span className="flex items-center gap-2">
                         {m.logoUrl ? (
-                          <img src={m.logoUrl} alt="" className="w-5 h-5 rounded object-cover shrink-0" />
+                          <img src={m.logoUrl} alt="" className="w-5 h-5 rounded-lg object-cover shrink-0 ring-1 ring-gray-200" />
                         ) : (
-                          <Bot className="w-4 h-4 text-acg-primary shrink-0" />
+                          <div className="w-5 h-5 rounded-lg bg-blue-400 flex items-center justify-center shrink-0">
+                            <Bot className="w-3 h-3 text-white" />
+                          </div>
                         )}
-                        <span className="truncate">{m.name}</span>
+                        <span className="truncate text-gray-700">{m.name}</span>
                       </span>
                     );
                   }}
                   optionRender={(opt) => {
                     const m = models.find((x) => x.id === opt.value);
                     return (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center gap-2.5 py-0.5">
                         {m?.logoUrl ? (
-                          <img src={m.logoUrl} alt="" className="w-5 h-5 rounded object-cover shrink-0" />
+                          <img src={m.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover shrink-0 ring-1 ring-gray-200" />
                         ) : (
-                          <Bot className="w-4 h-4 text-acg-primary shrink-0" />
+                          <div className="w-6 h-6 rounded-lg bg-blue-400 flex items-center justify-center shrink-0">
+                            <Bot className="w-3.5 h-3.5 text-white" />
+                          </div>
                         )}
-                        <span>{opt.label}</span>
+                        <span className="text-gray-700">{opt.label}</span>
                       </span>
                     );
                   }}
-                  className="w-[180px] shrink-0"
+                  className="w-[160px] shrink-0 self-end"
                   placeholder="选择模型"
                   placement="topLeft"
                   getPopupContainer={(node) => node.parentElement ?? document.body}
@@ -727,18 +866,17 @@ const AIAssistant: React.FC = () => {
                     handleSend();
                   }
                 }}
-                placeholder="说点什么..."
+                placeholder="输入您的问题..."
                 autoSize={{ minRows: 1, maxRows: 4 }}
                 disabled={loading || !isAuthenticated()}
-                className="flex-1 min-w-0 rounded-xl border-gray-100 focus:border-acg-input-border"
+                className="flex-1 min-w-0 !rounded-2xl !border-gray-200 !bg-gray-50/50 focus:!border-blue-300 focus:!bg-white !shadow-sm hover:!border-gray-300 transition-all"
               />
               <Button
                 type="primary"
-                icon={<Send className="w-4 h-4" />}
+                icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 onClick={handleSend}
-                loading={loading}
-                disabled={!inputValue.trim() || !isAuthenticated()}
-                className="!min-w-[72px] !h-10 shrink-0 flex-none rounded-xl bg-acg-btn text-acg-primary border-none hover:bg-acg-btn-hover"
+                disabled={!inputValue.trim() || !isAuthenticated() || loading}
+                className="!h-10 !px-5 shrink-0 flex-none !rounded-2xl !bg-blue-500 !border-none hover:!bg-blue-600 !shadow-lg !shadow-blue-500/25 disabled:!opacity-50 disabled:!shadow-none transition-all duration-300"
               >
                 发送
               </Button>

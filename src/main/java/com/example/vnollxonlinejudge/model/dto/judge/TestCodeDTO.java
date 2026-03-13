@@ -11,4 +11,5 @@ public class TestCodeDTO {
     private String outputExample;
     private String time;
     private String memory;
+    private Boolean customTest;
 }

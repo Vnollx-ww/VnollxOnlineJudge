@@ -12,7 +12,7 @@ import java.time.Duration;
  */
 @Component
 public class OpenAiStreamingChatModelAdapter implements StreamingChatModelAdapter {
-    private static final String ADAPTER_CODE = "openai";
+    private static final String ADAPTER_CODE = StreamingChatModelAdapter.CODE_OPENAI;
 
     @Override
     public String getAdapterCode() {

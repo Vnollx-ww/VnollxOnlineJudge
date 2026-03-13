@@ -14,7 +14,7 @@ import java.time.Duration;
  */
 @Component
 public class DashScopeStreamingChatModelAdapter implements StreamingChatModelAdapter {
-    private static final String ADAPTER_CODE = "dashscope";
+    private static final String ADAPTER_CODE = StreamingChatModelAdapter.CODE_DASHSCOPE;
     private static final String DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 
     @Override

@@ -29,4 +29,36 @@ public class AiChatRecordServiceImpl implements AiChatRecordService {
                 .last("LIMIT " + Math.max(1, Math.min(limit, 200)));
         return aiChatRecordMapper.selectList(wrapper);
     }
+
+    @Override
+    public List<AiChatRecord> listByUserIdBeforeId(Long userId, Long beforeId, int limit) {
+        LambdaQueryWrapper<AiChatRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatRecord::getUserId, userId);
+        if (beforeId != null) {
+            wrapper.lt(AiChatRecord::getId, beforeId);
+        }
+        wrapper.orderByDesc(AiChatRecord::getId)
+                .last("LIMIT " + Math.max(1, Math.min(limit, 50)));
+        return aiChatRecordMapper.selectList(wrapper);
+    }
+
+    @Override
+    public long countByUserId(Long userId) {
+        LambdaQueryWrapper<AiChatRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatRecord::getUserId, userId);
+        return aiChatRecordMapper.selectCount(wrapper);
+    }
+
+    @Override
+    public List<AiChatRecord> listByUserIdAfterId(Long userId, Long afterId, int limit) {
+        LambdaQueryWrapper<AiChatRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatRecord::getUserId, userId)
+                .eq(AiChatRecord::getStatus, "success");
+        if (afterId != null) {
+            wrapper.gt(AiChatRecord::getId, afterId);
+        }
+        wrapper.orderByDesc(AiChatRecord::getId)
+                .last("LIMIT " + Math.max(1, Math.min(limit, 50)));
+        return aiChatRecordMapper.selectList(wrapper);
+    }
 }

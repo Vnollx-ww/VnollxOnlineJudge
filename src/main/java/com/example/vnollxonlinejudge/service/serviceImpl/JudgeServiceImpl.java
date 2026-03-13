@@ -93,6 +93,7 @@ public class JudgeServiceImpl implements JudgeService {
 
         tryLock(uid, Long.valueOf(req.getPid()));
         JudgeStrategy strategy = judgeStrategyFactory.getStrategy(req.getOption());
+        boolean customTest = Boolean.TRUE.equals(req.getCustomTest());
 
         RunResult result=strategy.testJudge(
                 req.getCode(),
@@ -102,11 +103,29 @@ public class JudgeServiceImpl implements JudgeService {
                 Long.parseLong(req.getMemory())
         );
         JudgeResultVO vo=new JudgeResultVO();
-        vo.setStatus(result.getStatus());
-        vo.setErrorInfo(result.getFiles().getStderr());
+        if (customTest) {
+            vo.setActualOutput(extractStdout(result));
+        } else {
+            vo.setStatus(result.getStatus());
+            vo.setErrorInfo(extractStderr(result));
+        }
         vo.setPassCount(result.getPassCount());
         vo.setTestCount(result.getTestCount());
         return vo;
+    }
+
+    private String extractStdout(RunResult result) {
+        if (result == null || result.getFiles() == null || result.getFiles().getStdout() == null) {
+            return "";
+        }
+        return result.getFiles().getStdout();
+    }
+
+    private String extractStderr(RunResult result) {
+        if (result == null || result.getFiles() == null) {
+            return null;
+        }
+        return result.getFiles().getStderr();
     }
 
     public void tryLock(Long uid,Long pid){

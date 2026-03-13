@@ -80,6 +80,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             RunResult finalResult = new RunResult();
             finalResult.setStatus("Accepted");
             finalResult.setFiles(new RunResult.Files());
+            finalResult.getFiles().setStdout("");
             finalResult.setTime(0L);
             finalResult.setMemory(0L);
             finalResult.setTestCount(testCases.size());
@@ -122,6 +123,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                     finalResult.setStatus(currentResult.getStatus());
                     finalResult.setExitStatus(currentResult.getExitStatus());
                     if (currentResult.getFiles() != null) {
+                        finalResult.getFiles().setStdout(currentResult.getFiles().getStdout());
                         finalResult.getFiles().setStderr(currentResult.getFiles().getStderr());
                     }
                     return finalResult;
@@ -131,6 +133,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                 try {
                     String expectedOutputUnified = testCase[1].replace("\r\n", "\n").replace("\r", "\n");
                     String actualOutputUnified = currentResult.getFiles().getStdout().trim().replace("\r\n", "\n").replace("\r", "\n");
+                    finalResult.getFiles().setStdout(currentResult.getFiles().getStdout());
 
                     if (!expectedOutputUnified.equals(actualOutputUnified)) {
                         finalResult.setStatus("Wrong Answer"); // 状态标记，后续由 processFinalResult 翻译
@@ -146,6 +149,7 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                 } catch (Exception e) {
                     logger.error("统一换行符处理出错", e);
                     finalResult.setStatus("Wrong Answer");
+                    finalResult.getFiles().setStdout(currentResult.getFiles() != null ? currentResult.getFiles().getStdout() : "");
                     finalResult.getFiles().setStderr("比较输出出错: " + e.getMessage() + "\n实际输出: " + truncateString(currentResult.getFiles().getStdout(), 200));
                     return finalResult;
                 }

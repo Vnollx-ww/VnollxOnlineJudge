@@ -129,6 +129,16 @@ public class ZhipuAiStreamingClient {
                 .build();
     }
 
+    /**
+     * 构建一条智谱格式的系统消息
+     */
+    public static ChatMessage systemMessage(String content) {
+        return ChatMessage.builder()
+                .role(ChatMessageRole.SYSTEM.value())
+                .content(content)
+                .build();
+    }
+
     public static final class Builder {
         private String apiKey;
         private String modelId;

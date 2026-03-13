@@ -481,6 +481,21 @@ create table ai_chat_record
     index idx_user_create (user_id, create_time)
 ) comment '用户AI对话记录表' collate = utf8mb4_unicode_ci;
 
+create table ai_chat_summary
+(
+    id                      bigint auto_increment comment '摘要ID'
+        primary key,
+    user_id                 int                                 not null comment '用户ID',
+    summary_content         text                                not null comment '摘要内容',
+    covered_until_record_id bigint                              null comment '本次摘要覆盖到的最后一条 ai_chat_record 的 ID',
+    covered_rounds          int          default 0              null comment '被摘要的对话轮数',
+    create_time             datetime     default CURRENT_TIMESTAMP null comment '创建时间',
+    update_time             datetime     default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint fk_ai_chat_summary_user
+        foreign key (user_id) references user (id) on delete cascade,
+    index idx_user_id (user_id)
+) comment '用户AI对话摘要表' collate = utf8mb4_unicode_ci;
+
 -- =====================================================
 -- 初始化角色数据（id 从 1 开始）
 -- =====================================================
@@ -587,7 +602,8 @@ INSERT INTO `tag` (`id`, `name`) VALUES
 -- =====================================================
 INSERT INTO ai_platform (id, code, name, description, sort_order, status) VALUES
 (1, 'langchain4j', 'LangChain4j', 'OpenAI / Mistral / 阿里云百炼 等，统一走 LangChain4j', 0, 1),
-(2, 'zhipu', '智谱 AI', '智谱开放平台，直接使用 zai-sdk 调用', 1, 1);
+(2, 'zhipu', '智谱 AI', '智谱开放平台，直接使用 zai-sdk 调用', 1, 1),
+(3, 'dashscope', '阿里云 DashScope', '阿里云百炼平台，直接使用 dashscope-sdk 调用', 2, 1);
 
 -- =====================================================
 -- 初始化 AI 模型（示例：LangChain4j-Mistral + 智谱 GLM-4.7）
@@ -595,4 +611,6 @@ INSERT INTO ai_platform (id, code, name, description, sort_order, status) VALUES
 INSERT INTO ai_model (id, platform_id, adapter_code, name, model_id, logo_url, endpoint, api_key, max_tokens, temperature, timeout_seconds, sort_order, status)
 VALUES
 (1, 1, 'mistral', 'Mistral Large', 'mistral-large-latest', NULL, 'https://api.mistral.ai', '', 4096, 0.70, 60, 0, 1),
-(2, 2, NULL, '智谱 GLM-4.7', 'glm-4.7', NULL, NULL, 'your-zhipu-api-key', 8192, 0.70, 60, 1, 0);
+(2, 2, NULL, '智谱 GLM-4.7', 'glm-4.7', NULL, NULL, 'your-zhipu-api-key', 8192, 0.70, 60, 2, 0),
+(3, 1, 'dashscope', '通义千问 Plus', 'qwen-plus', NULL, 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'your-dashscope-api-key', 8192, 0.70, 60, 1, 1),
+(4, 3, NULL, 'DeepSeek v3.1', 'deepseek-v3.1', NULL, NULL, 'your-dashscope-api-key', 8192, 0.70, 60, 3, 1);

@@ -31,16 +31,16 @@ public class StreamingChatModelAdapterFactory {
             throw new BusinessException("模型未关联平台");
         }
         var platform = aiPlatformService.getById(model.getPlatformId());
-        if (!"langchain4j".equalsIgnoreCase(platform.getCode())) {
+        if (!StreamingChatModelAdapter.PLATFORM_LANGCHAIN4J.equalsIgnoreCase(platform.getCode())) {
             throw new BusinessException("当前平台非 LangChain4j，不应走此工厂");
         }
-        String code = model.getAdapterCode() != null ? model.getAdapterCode().trim().toLowerCase() : "openai";
+        String code = model.getAdapterCode() != null ? model.getAdapterCode().trim().toLowerCase() : StreamingChatModelAdapter.CODE_DEFAULT;
         if (code.isEmpty()) {
-            code = "openai";
+            code = StreamingChatModelAdapter.CODE_DEFAULT;
         }
         StreamingChatModelAdapter adapter = adapterByCode.get(code);
         if (adapter == null) {
-            adapter = adapterByCode.get("openai");
+            adapter = adapterByCode.get(StreamingChatModelAdapter.CODE_DEFAULT);
         }
         if (adapter == null) {
             throw new BusinessException("未找到适配器: " + code);

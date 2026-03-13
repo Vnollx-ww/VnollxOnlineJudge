@@ -324,6 +324,18 @@ const CompetitionProblemDetail: React.FC = () => {
   }, [problem?.examples]);
 
   const [customTestInput, setCustomTestInput] = useState('');
+  const normalizeTestText = useCallback((text?: string | null) => (text ?? '').replace(/\r\n/g, '\n').trim(), []);
+  const matchedExample = useMemo(() => {
+    if (!problem?.examples?.length) {
+      return null;
+    }
+    const normalizedInput = normalizeTestText(customTestInput);
+    return problem.examples.find((example) => normalizeTestText(example.input) === normalizedInput) ?? null;
+  }, [customTestInput, problem?.examples, normalizeTestText]);
+  const isCustomTest = useMemo(() => {
+    return problem?.examples?.length ? !matchedExample : false;
+  }, [matchedExample, problem?.examples?.length]);
+
   useEffect(() => {
     if (firstExample?.input != null) {
       setCustomTestInput(firstExample.input);
@@ -349,17 +361,26 @@ const CompetitionProblemDetail: React.FC = () => {
         option: language,
         pid: String(problem!.id),
         inputExample: customTestInput,
-        outputExample: firstExample.output,
+        outputExample: matchedExample?.output ?? firstExample.output,
         time: String(problem!.timeLimit || 1000),
         memory: String(problem!.memoryLimit || 256),
+        customTest: isCustomTest,
       };
       const data = await api.post('/judge/test', payload);
       if (data.code === 200) {
-        setTestResult({
-          type: data.data.status === '答案正确' ? 'success' : 'warning',
-          message: data.data.status || '测试完成',
-          detail: data.data.errorInfo,
-        });
+        if (isCustomTest) {
+          setTestResult({
+            type: 'info',
+            message: '自定义测试完成',
+            detail: `程序输出:\n${data.data.actualOutput || '无输出'}`,
+          });
+        } else {
+          setTestResult({
+            type: data.data.status === '答案正确' ? 'success' : 'warning',
+            message: data.data.status || '测试完成',
+            detail: data.data.errorInfo,
+          });
+        }
       } else {
         setTestResult({ type: 'error', message: data.msg || '测试失败' });
       }
@@ -741,7 +762,7 @@ const CompetitionProblemDetail: React.FC = () => {
             {problem.examples?.length ? (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">调试输入（测试时使用下方输入，期望输出以第一组样例为准）</span>
+                  <span className="text-sm font-medium">调试输入（默认使用第一组样例；如果你修改了输入，测试结果只显示程序实际输出）</span>
                   <Button type="link" size="small" onClick={() => firstExample && setCustomTestInput(firstExample.input)}>
                     恢复第一组样例
                   </Button>

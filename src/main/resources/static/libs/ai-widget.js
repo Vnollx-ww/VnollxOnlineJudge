@@ -490,9 +490,13 @@
     document.addEventListener('keydown', handleEsc);
   }
 
-  function loadMessageHistory(){
+  function loadMessageHistoryPage(beforeId = null, limit = 10){
     const token = localStorage.getItem('token');
-    return fetch('/ai/history', {
+    let url = `/ai/history/page?limit=${limit}`;
+    if (beforeId) {
+      url += `&beforeId=${beforeId}`;
+    }
+    return fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -509,6 +513,9 @@
     const send = panel.querySelector('#aiChatSend');
 
     let sending = false;
+    let nextCursor = null;
+    let hasMore = false;
+    let loadingMore = false;
 
     function checkLoginStatus() {
       const token = localStorage.getItem('token');
@@ -580,14 +587,24 @@
       // 显示加载状态
       const loadingMsg = appendMessage(body, 'bot', '正在加载历史消息...');
       
-      loadMessageHistory()
+      // 首次加载10条
+      loadMessageHistoryPage(null, 10)
         .then(response => {
           // 移除加载提示
           loadingMsg.parentNode.remove();
           
-          if (response.code === 200 && response.data && response.data.length > 0) {
-            // 解析历史消息
-            parseHistoryMessages(response.data);
+          if (response.code === 200 && response.data) {
+            const { items, nextCursor: cursor, hasMore: more } = response.data;
+            nextCursor = cursor;
+            hasMore = more;
+            
+            if (items && items.length > 0) {
+              // 解析历史消息
+              parseHistoryMessages(items);
+            } else {
+              // 没有历史消息，显示欢迎信息
+              appendMessage(body, 'bot', '你好！我是AI助手，有什么可以帮助您的吗？');
+            }
           } else {
             // 没有历史消息，显示欢迎信息
             appendMessage(body, 'bot', '你好！我是AI助手，有什么可以帮助您的吗？');
@@ -601,31 +618,83 @@
         });
     }
 
+    function loadMoreMessages(){
+      if (!hasMore || loadingMore || !nextCursor) return;
+      
+      loadingMore = true;
+      
+      // 滚动加载5条
+      loadMessageHistoryPage(nextCursor, 5)
+        .then(response => {
+          loadingMore = false;
+          
+          if (response.code === 200 && response.data) {
+            const { items, nextCursor: cursor, hasMore: more } = response.data;
+            nextCursor = cursor;
+            hasMore = more;
+            
+            if (items && items.length > 0) {
+              // 记录当前滚动位置
+              const scrollHeight = body.scrollHeight;
+              
+              // 在顶部插入历史消息
+              prependHistoryMessages(items);
+              
+              // 保持滚动位置
+              body.scrollTop = body.scrollHeight - scrollHeight;
+            }
+          }
+        })
+        .catch(error => {
+          loadingMore = false;
+          console.error('加载更多消息失败:', error);
+        });
+    }
+
+    function prependHistoryMessages(historyList){
+      const fragment = document.createDocumentFragment();
+      
+      for (const item of historyList) {
+        const role = item.role === 'user' ? 'user' : 'bot';
+        const content = item.content || '';
+        
+        if (!content || content.startsWith('[系统]')) continue;
+        
+        const wrap = document.createElement('div');
+        wrap.className = `ai-msg ai-${role}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        
+        if (role === 'bot') {
+          bubble.className += ' ai-markdown';
+          bubble.innerHTML = parseMarkdown(content);
+        } else {
+          bubble.textContent = content;
+        }
+        
+        wrap.appendChild(bubble);
+        fragment.appendChild(wrap);
+      }
+      
+      body.insertBefore(fragment, body.firstChild);
+    }
+
     function parseHistoryMessages(historyList){
       // 清空当前消息
       body.innerHTML = '';
-
       
-      // 解析历史消息
-      for (const historyItem of historyList) {
-        // 解析格式: [用户/AI] 消息内容（支持多行）
-        const match = historyItem.match(/^\[(用户|AI)\]\s*(.*)$/s);
-        if (match) {
-          const role = match[1] === '用户' ? 'user' : 'bot';
-          const content = match[2];
-
-          
-          // 跳过系统消息
-          if (content.startsWith('[系统]') || content.includes('你是一个专业的编程助手')) {
-            continue;
-          }
-          
-          appendMessage(body, role, content, role === 'bot');
-        } else {
-          console.log('消息格式不匹配:', historyItem.substring(0, 100) + '...');
+      // 解析历史消息（新格式：{role, content, ...}）
+      for (const item of historyList) {
+        const role = item.role === 'user' ? 'user' : 'bot';
+        const content = item.content || '';
+        
+        // 跳过系统消息
+        if (!content || content.startsWith('[系统]') || content.includes('你是一个专业的编程助手')) {
+          continue;
         }
+        
+        appendMessage(body, role, content, role === 'bot');
       }
-
       
       // 如果没有有效的历史消息，显示欢迎信息
       if (body.children.length === 0) {
@@ -741,6 +810,13 @@
     send.addEventListener('click', doSend);
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+    });
+
+    // 滚动到顶部时加载更多历史消息
+    body.addEventListener('scroll', () => {
+      if (body.scrollTop < 50 && hasMore && !loadingMore) {
+        loadMoreMessages();
+      }
     });
 
     // 添加事件监听器

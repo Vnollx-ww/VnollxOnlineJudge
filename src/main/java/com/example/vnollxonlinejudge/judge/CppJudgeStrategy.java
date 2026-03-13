@@ -172,6 +172,10 @@ public class CppJudgeStrategy implements JudgeStrategy {
                             finalResult.setMemory(memoryLimitMB * 1024 * 1024);
                         }
                         finalResult.setStatus(result.getStatus());
+                        if (result.getFiles() != null) {
+                            finalResult.getFiles().setStdout(result.getFiles().getStdout());
+                            finalResult.getFiles().setStderr(result.getFiles().getStderr());
+                        }
                         deleteBinaryFile(binaryFileId);
                         return finalResult;
                     }
@@ -189,12 +193,14 @@ public class CppJudgeStrategy implements JudgeStrategy {
                                     truncateString(actualOutput, 200)
                             );
                             finalResult.setStatus(WRONG_ANSWER);
+                            finalResult.getFiles().setStdout(result.getFiles().getStdout());
                             finalResult.getFiles().setStderr(errorMessage);
                             deleteBinaryFile(binaryFileId);
                             return finalResult;
                         }
                     } catch (Exception e) {
                         finalResult.setStatus(WRONG_ANSWER);
+                        finalResult.getFiles().setStdout(result.getFiles() != null ? result.getFiles().getStdout() : "");
                         finalResult.getFiles().setStderr("比较输出出错: " + e.getMessage());
                         deleteBinaryFile(binaryFileId);
                         return finalResult;

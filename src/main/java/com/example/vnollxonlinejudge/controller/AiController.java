@@ -6,6 +6,7 @@ import com.alibaba.fastjson2.JSON;
 import com.example.vnollxonlinejudge.model.dto.ai.AiChatRequestDTO;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.ai.AiChatHistoryItemVo;
+import com.example.vnollxonlinejudge.model.vo.ai.AiChatHistoryPageVo;
 import com.example.vnollxonlinejudge.model.vo.ai.AiModelVo;
 import com.example.vnollxonlinejudge.service.AiModelService;
 import com.example.vnollxonlinejudge.service.AiService;
@@ -81,5 +82,21 @@ public class AiController {
     public Result<List<AiChatHistoryItemVo>> getMessageHistoryList() {
         Long userId = UserContextHolder.getCurrentUserId();
         return Result.Success(aiService.getMessageHistoryList(userId));
+    }
+
+    /**
+     * 分页查询对话历史（懒加载）
+     * @param beforeId 游标：查询ID小于此值的记录，null或不传表示首次加载
+     * @param limit 每页条数，首次加载建议10，后续滚动加载建议5
+     */
+    @GetMapping("/history/page")
+    @RequirePermission(PermissionCode.AI_CHAT)
+    public Result<AiChatHistoryPageVo> getMessageHistoryPage(
+            @RequestParam(required = false) Long beforeId,
+            @RequestParam(defaultValue = "10") int limit) {
+        Long userId = UserContextHolder.getCurrentUserId();
+        // 限制每页最大条数
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        return Result.Success(aiService.getMessageHistoryPage(userId, beforeId, safeLimit));
     }
 }

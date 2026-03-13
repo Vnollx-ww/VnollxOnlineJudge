@@ -37,6 +37,7 @@ public class JudgeController {
     ){
         Long userId=UserContextHolder.getCurrentUserId();
         JudgeResultVO result=judgeService.testSubmission(req,userId);
-        return Result.Success(result,result.getStatus());
+        String message = Boolean.TRUE.equals(req.getCustomTest()) ? "测试完成" : result.getStatus();
+        return Result.Success(result, message);
     }
 }
