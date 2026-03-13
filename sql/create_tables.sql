@@ -594,5 +594,5 @@ INSERT INTO ai_platform (id, code, name, description, sort_order, status) VALUES
 -- =====================================================
 INSERT INTO ai_model (id, platform_id, adapter_code, name, model_id, logo_url, endpoint, api_key, max_tokens, temperature, timeout_seconds, sort_order, status)
 VALUES
-(1, 1, 'mistral', 'Mistral Large', 'mistral-large-latest', NULL, 'https://api.mistral.ai', '648QnrLzTQCpJJMtjF41ETYj0OBkap96', 4096, 0.70, 60, 0, 1),
+(1, 1, 'mistral', 'Mistral Large', 'mistral-large-latest', NULL, 'https://api.mistral.ai', '', 4096, 0.70, 60, 0, 1),
 (2, 2, NULL, '智谱 GLM-4.7', 'glm-4.7', NULL, NULL, 'your-zhipu-api-key', 8192, 0.70, 60, 1, 0);
