@@ -32,6 +32,12 @@ marked.setOptions({
   breaks: true,
 });
 
+interface ProblemExampleItem {
+  input: string;
+  output: string;
+  sortOrder?: number;
+}
+
 interface Problem {
   id: number;
   title: string;
@@ -146,6 +152,7 @@ const AdminProblems: React.FC = () => {
   const [fileList, setFileList] = useState<any[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
+  const [examplesList, setExamplesList] = useState<ProblemExampleItem[]>([{ input: '', output: '', sortOrder: 0 }]);
 
   useEffect(() => {
     loadProblems();
@@ -180,7 +187,7 @@ const AdminProblems: React.FC = () => {
     }
   };
 
-  const showModal = (problem: Problem | null = null) => {
+  const showModal = async (problem: Problem | null = null) => {
     setEditingProblem(problem);
     setModalVisible(true);
     if (problem) {
@@ -192,17 +199,26 @@ const AdminProblems: React.FC = () => {
         difficulty: problem.difficulty,
         inputFormat: problem.inputFormat,
         outputFormat: problem.outputFormat,
-        inputExample: problem.inputExample,
-        outputExample: problem.outputExample,
         hint: problem.hint,
         open: problem.open,
       });
       setTags(problem.tags || []);
       setFileList([]);
+      try {
+        const res = await api.get('/admin/problem/examples', { params: { pid: problem.id } }) as ApiResponse<ProblemExampleItem[]>;
+        if (res.code === 200 && res.data?.length) {
+          setExamplesList(res.data.map((e, i) => ({ input: e.input ?? '', output: e.output ?? '', sortOrder: i })));
+        } else {
+          setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
+        }
+      } catch {
+        setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
+      }
     } else {
       form.resetFields();
       setTags([]);
       setFileList([]);
+      setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
     }
   };
 
@@ -235,8 +251,10 @@ const AdminProblems: React.FC = () => {
       formData.append('difficulty', values.difficulty);
       formData.append('inputFormat', values.inputFormat);
       formData.append('outputFormat', values.outputFormat);
-      formData.append('inputExample', values.inputExample || '');
-      formData.append('outputExample', values.outputExample || '');
+      const validExamples = examplesList.filter((e) => (e.input ?? '').trim() || (e.output ?? '').trim());
+      formData.append('examples', JSON.stringify(validExamples.map((e, i) => ({ input: e.input ?? '', output: e.output ?? '', sortOrder: i }))));
+      formData.append('inputExample', validExamples[0]?.input ?? '');
+      formData.append('outputExample', validExamples[0]?.output ?? '');
       formData.append('hint', values.hint || '');
       formData.append('open', values.open ? 'true' : 'false');
 
@@ -294,14 +312,22 @@ const AdminProblems: React.FC = () => {
     }
     setAiParsing(true);
     try {
-      const prompt = `请解析以下题目描述，提取信息并返回JSON格式（不要返回其他内容，只返回纯JSON）：
+      const prompt = `请解析以下题目描述，提取信息并返回JSON格式（不要返回其他内容，只返回纯JSON）。
+
+要求：
+1. 若题目中有多组「样例」「示例」「输入/输出」等，请全部识别并填入 examples 数组。
+2. examples 为数组，每项为 { "input": "该组输入", "output": "该组输出" }，按出现顺序排列。
+
+JSON 格式：
 {
   "title": "题目标题",
   "description": "题目描述（保留原始markdown格式）",
   "inputFormat": "输入格式说明",
   "outputFormat": "输出格式说明",
-  "inputExample": "输入样例（纯文本）",
-  "outputExample": "输出样例（纯文本）",
+  "examples": [
+    { "input": "第一组输入内容", "output": "第一组输出内容" },
+    { "input": "第二组输入内容", "output": "第二组输出内容" }
+  ],
   "hint": "提示信息（如数据范围等，可为空）",
   "difficulty": "简单/中等/困难",
   "tags": ["标签1", "标签2"]
@@ -360,13 +386,27 @@ ${aiInput}`;
         description: parsed.description || '',
         inputFormat: parsed.inputFormat || '',
         outputFormat: parsed.outputFormat || '',
-        inputExample: parsed.inputExample || '',
-        outputExample: parsed.outputExample || '',
         hint: parsed.hint || '',
         difficulty: parsed.difficulty || '简单',
       });
 
-      // 设置标签
+      // 多组样例：优先使用 examples 数组，否则用单组 inputExample/outputExample
+      if (parsed.examples && Array.isArray(parsed.examples) && parsed.examples.length > 0) {
+        setExamplesList(
+          parsed.examples.map((e: { input?: string; output?: string }, i: number) => ({
+            input: (e.input ?? '').trim(),
+            output: (e.output ?? '').trim(),
+            sortOrder: i,
+          }))
+        );
+      } else if (parsed.inputExample != null || parsed.outputExample != null) {
+        setExamplesList([
+          { input: (parsed.inputExample ?? '').trim(), output: (parsed.outputExample ?? '').trim(), sortOrder: 0 },
+        ]);
+      } else {
+        setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
+      }
+
       if (parsed.tags && Array.isArray(parsed.tags)) {
         setTags(parsed.tags.slice(0, 5));
       }
@@ -632,18 +672,73 @@ ${aiInput}`;
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="inputExample" label="输入样例">
-                <Input.TextArea rows={3} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="outputExample" label="输出样例">
-                <Input.TextArea rows={3} />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item label="输入/输出样例（可多组）">
+            <div className="space-y-4">
+              {examplesList.map((_, index) => (
+                <div
+                  key={index}
+                  className="p-4 rounded-2xl border border-solid flex flex-col gap-3"
+                  style={{ borderColor: 'var(--gemini-border-light)', backgroundColor: 'var(--gemini-bg)' }}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
+                      样例 {index + 1}
+                    </span>
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      onClick={() => {
+                        if (examplesList.length <= 1) return;
+                        setExamplesList(examplesList.filter((_, i) => i !== index));
+                      }}
+                      disabled={examplesList.length <= 1}
+                    >
+                      删除
+                    </Button>
+                  </div>
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <div className="text-sm mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输入</div>
+                      <Input.TextArea
+                        rows={3}
+                        value={examplesList[index]?.input ?? ''}
+                        onChange={(e) => {
+                          const next = [...examplesList];
+                          next[index] = { ...next[index], input: e.target.value, sortOrder: index };
+                          setExamplesList(next);
+                        }}
+                        placeholder="输入样例"
+                      />
+                    </Col>
+                    <Col span={12}>
+                      <div className="text-sm mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输出</div>
+                      <Input.TextArea
+                        rows={3}
+                        value={examplesList[index]?.output ?? ''}
+                        onChange={(e) => {
+                          const next = [...examplesList];
+                          next[index] = { ...next[index], output: e.target.value, sortOrder: index };
+                          setExamplesList(next);
+                        }}
+                        placeholder="输出样例"
+                      />
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+              <Button
+                type="dashed"
+                onClick={() => setExamplesList([...examplesList, { input: '', output: '', sortOrder: examplesList.length }])}
+                className="w-full"
+              >
+                + 添加一组样例
+              </Button>
+            </div>
+            <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
+              至少保留一组样例；多组将按顺序展示给用户
+            </p>
+          </Form.Item>
 
           <Form.Item name="hint" label="提示">
             <MarkdownEditor rows={4} placeholder="请输入提示信息" />

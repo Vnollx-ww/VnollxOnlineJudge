@@ -40,12 +40,20 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
+interface ProblemExampleItem {
+  id?: number;
+  input: string;
+  output: string;
+  sortOrder?: number;
+}
+
 interface Problem {
   id: number;
   title: string;
   description: string;
   inputFormat?: string;
   outputFormat?: string;
+  examples?: ProblemExampleItem[];
   inputExample?: string;
   outputExample?: string;
   hint?: string;
@@ -308,12 +316,28 @@ const CompetitionProblemDetail: React.FC = () => {
     ];
   }, [problem]);
 
+  const firstExample = useMemo(() => {
+    if (problem?.examples?.length) {
+      return { input: problem.examples[0].input, output: problem.examples[0].output };
+    }
+    return null;
+  }, [problem?.examples]);
+
+  const [customTestInput, setCustomTestInput] = useState('');
+  useEffect(() => {
+    if (firstExample?.input != null) {
+      setCustomTestInput(firstExample.input);
+    } else {
+      setCustomTestInput('');
+    }
+  }, [problem?.id, firstExample?.input]);
+
   const handleTestCode = async () => {
     if (!code.trim()) {
       toast('请先输入代码', { icon: '⚠️' });
       return;
     }
-    if (!problem?.inputExample || !problem?.outputExample) {
+    if (!firstExample?.output) {
       toast('该题目没有提供样例，无法测试', { icon: '⚠️' });
       return;
     }
@@ -323,11 +347,11 @@ const CompetitionProblemDetail: React.FC = () => {
       const payload = {
         code,
         option: language,
-        pid: String(problem.id),
-        inputExample: problem.inputExample,
-        outputExample: problem.outputExample,
-        time: String(problem.timeLimit || 1000),
-        memory: String(problem.memoryLimit || 256),
+        pid: String(problem!.id),
+        inputExample: customTestInput,
+        outputExample: firstExample.output,
+        time: String(problem!.timeLimit || 1000),
+        memory: String(problem!.memoryLimit || 256),
       };
       const data = await api.post('/judge/test', payload);
       if (data.code === 200) {
@@ -565,46 +589,52 @@ const CompetitionProblemDetail: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Title level={5} className="!mb-0">输入样例</Title>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => {
-                      navigator.clipboard.writeText(problem.inputExample || '');
-                      toast.success('已复制输入样例');
-                    }}
-                  >
-                    复制
-                  </Button>
+            {problem.examples?.length ? (
+              problem.examples.map((ex, idx) => (
+                <div key={idx} className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Title level={5} className="!mb-0">输入样例 {idx + 1}</Title>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={() => {
+                          navigator.clipboard.writeText(ex.input || '');
+                          toast.success('已复制输入样例');
+                        }}
+                      >
+                        复制
+                      </Button>
+                    </div>
+                    <pre className="bg-white p-3 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap">
+                      {ex.input || '暂无输入样例'}
+                    </pre>
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Title level={5} className="!mb-0">输出样例 {idx + 1}</Title>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={() => {
+                          navigator.clipboard.writeText(ex.output || '');
+                          toast.success('已复制输出样例');
+                        }}
+                      >
+                        复制
+                      </Button>
+                    </div>
+                    <pre className="bg-white p-3 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap">
+                      {ex.output || '暂无输出样例'}
+                    </pre>
+                  </div>
                 </div>
-                <pre className="bg-white p-3 rounded-lg overflow-auto text-sm font-mono">
-                  {problem.inputExample || '暂无输入样例'}
-                </pre>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Title level={5} className="!mb-0">输出样例</Title>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => {
-                      navigator.clipboard.writeText(problem.outputExample || '');
-                      toast.success('已复制输出样例');
-                    }}
-                  >
-                    复制
-                  </Button>
-                </div>
-                <pre className="bg-white p-3 rounded-lg overflow-auto text-sm font-mono">
-                  {problem.outputExample || '暂无输出样例'}
-                </pre>
-              </div>
-            </div>
+              ))
+            ) : (
+              <div className="mb-6 text-gray-500">暂无样例</div>
+            )}
 
             {problem.hint && (
               <div>
@@ -708,13 +738,31 @@ const CompetitionProblemDetail: React.FC = () => {
               />
             )}
 
+            {problem.examples?.length ? (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">调试输入（测试时使用下方输入，期望输出以第一组样例为准）</span>
+                  <Button type="link" size="small" onClick={() => firstExample && setCustomTestInput(firstExample.input)}>
+                    恢复第一组样例
+                  </Button>
+                </div>
+                <Input.TextArea
+                  value={customTestInput}
+                  onChange={(e) => setCustomTestInput(e.target.value)}
+                  placeholder="默认已填入第一组样例输入，可修改后点击「测试样例」"
+                  rows={4}
+                  className="!rounded-xl font-mono text-sm"
+                />
+              </div>
+            ) : null}
+
             <div className="mt-4">
               <Space>
                 <Button
                   type="primary"
                   loading={codeLoading.test}
                   onClick={handleTestCode}
-                  disabled={isCompetitionEnd || language === 'java'}
+                  disabled={isCompetitionEnd || language === 'java' || !problem.examples?.length}
                 >
                   {isCompetitionEnd ? "比赛已结束" : "测试样例"}
                 </Button>

@@ -238,6 +238,12 @@
             <artifactId>langchain4j-mistral-ai</artifactId>
             <version>${langchain4j.version}</version>
         </dependency>
+        <!-- 智谱 AI SDK -->
+        <dependency>
+            <groupId>ai.z.openapi</groupId>
+            <artifactId>zai-sdk</artifactId>
+            <version>0.3.3</version>
+        </dependency>
         <!-- Resilience4j 熔断降级 -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>

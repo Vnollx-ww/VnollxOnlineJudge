@@ -9,8 +9,10 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAddProblemDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
+import com.example.vnollxonlinejudge.model.dto.admin.ProblemExampleItemDTO;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemBasicVo;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemExampleVo;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
@@ -45,6 +47,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     private final SubmissionService submissionService;
     private final TagService tagService;
     private final TestCaseCacheService testCaseCacheService;
+    private final ProblemExampleService problemExampleService;
     private final static SnowflakeIdGenerator gen = new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
     public ProblemServiceImpl(
@@ -54,7 +57,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             OssService ossService,
             @Lazy SubmissionService submissionService,
             TagService tagService,
-            TestCaseCacheService testCaseCacheService
+            TestCaseCacheService testCaseCacheService,
+            ProblemExampleService problemExampleService
     ) {
         this.problemTagService=problemTagService;
         this.userSolvedProblemService=userSolvedProblemService;
@@ -63,11 +67,15 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         this.submissionService=submissionService;
         this.tagService=tagService;
         this.testCaseCacheService=testCaseCacheService;
+        this.problemExampleService=problemExampleService;
     }
 
     @Override
     @Transactional
     public void createProblem(AdminSaveProblemDTO dto) {
+        if (dto.getTestCaseFile() == null || dto.getTestCaseFile().isEmpty()) {
+            throw new BusinessException("新建题目必须上传测试数据文件");
+        }
         Problem problem=Problem.builder()
                 .title(dto.getTitle())
                 .description(dto.getDescription())
@@ -90,6 +98,14 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         QueryWrapper<Problem> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq("snake_id",problem.getSnakeId());
         problem=this.getOne(queryWrapper);
+        // 保存多组样例到 problem_example
+        List<ProblemExampleItemDTO> exampleList = dto.getExamplesList();
+        if (exampleList != null && !exampleList.isEmpty()) {
+            problemExampleService.saveExamples(problem.getId(), exampleList);
+            problem.setInputExample(exampleList.get(0).getInput());
+            problem.setOutputExample(exampleList.get(0).getOutput());
+            updateById(problem);
+        }
         // 2. 使用获取到的ID处理文件上传
         try {
             if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
@@ -134,10 +150,14 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         problem.setDifficulty(dto.getDifficulty());
         problem.setInputFormat(dto.getInputFormat());
         problem.setOutputFormat(dto.getOutputFormat());
-        problem.setInputExample(dto.getInputExample());
-        problem.setOutputExample(dto.getOutputExample());
         problem.setHint(dto.getHint());
         problem.setOpen(Objects.equals(dto.getOpen(), "true"));
+        List<ProblemExampleItemDTO> exampleList = dto.getExamplesList();
+        if (exampleList != null && !exampleList.isEmpty()) {
+            problemExampleService.saveExamples(problem.getId(), exampleList);
+            problem.setInputExample(exampleList.get(0).getInput());
+            problem.setOutputExample(exampleList.get(0).getOutput());
+        }
         problemTagService.deleteTagByProblem(problem.getId());
         for (String s: dto.getTags()){
             tagService.createTag(s);
@@ -192,7 +212,16 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         if (problem == null) {
             throw new BusinessException("题目不存在或已被删除");
         }
-        return new ProblemVo(problem);
+        ProblemVo vo = new ProblemVo(problem);
+        List<ProblemExampleVo> examples = problemExampleService.listByProblemId(problem.getId());
+        if (examples != null) {
+            vo.setExamples(examples);
+            if (!examples.isEmpty()) {
+                vo.setInputExample(examples.get(0).getInput());
+                vo.setOutputExample(examples.get(0).getOutput());
+            }
+        }
+        return vo;
     }
 
     @Override

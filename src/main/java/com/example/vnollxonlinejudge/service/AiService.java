@@ -1,11 +1,19 @@
 package com.example.vnollxonlinejudge.service;
 
+import com.example.vnollxonlinejudge.model.vo.ai.AiChatHistoryItemVo;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 
 public interface AiService {
+    /** 使用指定模型对话（推荐，会落库） */
+    Flux<String> chat(Long userId, Long modelId, String message);
+
+    /** 兼容旧版：未传 modelId 时使用第一个可用模型 */
     Flux<String> chat(Long userId, String message);
+
     void clearMemory(Long userId);
-    List<String> getMessageHistoryList(Long userId);
+
+    /** 从数据库拉取对话记录，返回结构化列表（含 role、content、modelLogoUrl、timestamp） */
+    List<AiChatHistoryItemVo> getMessageHistoryList(Long userId);
 }

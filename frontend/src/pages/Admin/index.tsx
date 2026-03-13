@@ -10,16 +10,16 @@ import {
   Shield,
   Home,
   BookOpen,
-  Settings,
   Key,
   BarChart3,
+  Bot,
 } from 'lucide-react';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
 import AdminSolves from './AdminSolves';
 import AdminCompetitions from './AdminCompetitions';
 import AdminPractices from './AdminPractices';
-import AdminSettings from './AdminSettings';
+import AdminAiModels from './AdminAiModels';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
 import AdminStatistics from './AdminStatistics';
@@ -119,7 +119,7 @@ const Admin: React.FC = () => {
     { key: '/admin/statistics', icon: <BarChart3 className="w-4 h-4" />, label: '数据统计', permissions: [PermissionCode.SYSTEM_MONITOR] },
     { key: '/admin/roles', icon: <Shield className="w-4 h-4" />, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
     { key: '/admin/permissions', icon: <Key className="w-4 h-4" />, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
-    { key: '/admin/settings', icon: <Settings className="w-4 h-4" />, label: '系统设置', permissions: [PermissionCode.SYSTEM_SETTINGS] },
+    { key: '/admin/ai-models', icon: <Bot className="w-4 h-4" />, label: 'AI 模型', permissions: [PermissionCode.AI_CONFIG_VIEW] },
   ];
   
   const menuItems = useMemo(() => {
@@ -225,7 +225,7 @@ const Admin: React.FC = () => {
             <Route path="statistics" element={<AdminStatistics />} />
             <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />
-            <Route path="settings" element={<AdminSettings />} />
+            <Route path="ai-models" element={<AdminAiModels />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>
         </Content>

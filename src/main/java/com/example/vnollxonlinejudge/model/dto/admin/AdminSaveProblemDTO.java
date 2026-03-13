@@ -1,9 +1,11 @@
 package com.example.vnollxonlinejudge.model.dto.admin;
 
+import com.alibaba.fastjson.JSON;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
 
 @Data
@@ -36,11 +38,27 @@ public class AdminSaveProblemDTO {
     @NotBlank(message = "输出格式不能为空")
     private String outputFormat;
 
-    @NotBlank(message = "输入样例不能为空")
+    /** 多组样例，表单传入时为 JSON 字符串，如 [{"input":"...","output":"...","sortOrder":0}] */
+    private String examples;
+
+    /** 兼容：单组输入样例（当 examples 为空时使用） */
     private String inputExample;
 
-    @NotBlank(message = "输出样例不能为空")
+    /** 兼容：单组输出样例（当 examples 为空时使用） */
     private String outputExample;
+
+    /** 解析 examples JSON 为列表，供业务层使用 */
+    public List<ProblemExampleItemDTO> getExamplesList() {
+        if (examples == null || examples.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            List<ProblemExampleItemDTO> list = JSON.parseArray(examples, ProblemExampleItemDTO.class);
+            return list != null ? list : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
 
     private String hint;
 
@@ -48,7 +66,7 @@ public class AdminSaveProblemDTO {
     @Pattern(regexp = "^(true|false|0|1)$", message = "开放状态格式不正确")
     private String open;
 
-    @NotNull(message = "测试用例文件不能为空")
+    /** 新建时必传，更新时可选（不传则保留原测试数据） */
     private MultipartFile testCaseFile;
     private List<String> tags;
 }

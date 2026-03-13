@@ -46,6 +46,13 @@ marked.setOptions({
   breaks: true,
 });
 
+interface ProblemExampleItem {
+  id?: number;
+  input: string;
+  output: string;
+  sortOrder?: number;
+}
+
 interface Problem {
   id: number;
   title: string;
@@ -55,8 +62,10 @@ interface Problem {
   description: string;
   inputFormat: string;
   outputFormat: string;
-  inputExample: string;
-  outputExample: string;
+  /** 多组样例 */
+  examples?: ProblemExampleItem[];
+  inputExample?: string;
+  outputExample?: string;
   hint: string;
   submitCount: number;
   passCount: number;
@@ -184,6 +193,8 @@ const ProblemDetail: React.FC = () => {
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  /** 调试输入：默认第一组样例输入，用户可修改 */
+  const [customTestInput, setCustomTestInput] = useState('');
 
   const userInfo = getUserInfo();
 
@@ -418,12 +429,29 @@ const ProblemDetail: React.FC = () => {
     ];
   }, [problem]);
 
+  // 第一组样例：默认用于测试，期望输出以第一组为准
+  const firstExample = useMemo(() => {
+    if (problem?.examples?.length) {
+      return { input: problem.examples[0].input, output: problem.examples[0].output };
+    }
+    return null;
+  }, [problem?.examples]);
+
+  // 题目或第一组样例变化时，将调试输入重置为第一组输入
+  useEffect(() => {
+    if (firstExample?.input != null) {
+      setCustomTestInput(firstExample.input);
+    } else {
+      setCustomTestInput('');
+    }
+  }, [problem?.id, firstExample?.input]);
+
   const handleTestCode = async () => {
     if (!code.trim()) {
       toast('请先输入代码');
       return;
     }
-    if (!problem?.inputExample || !problem?.outputExample) {
+    if (!firstExample?.output) {
       toast('该题目没有提供样例，无法测试');
       return;
     }
@@ -433,11 +461,11 @@ const ProblemDetail: React.FC = () => {
       const payload = {
         code,
         option: language,
-        pid: String(problem.id),
-        inputExample: problem.inputExample,
-        outputExample: problem.outputExample,
-        time: String(problem.timeLimit || 1000),
-        memory: String(problem.memoryLimit || 256),
+        pid: String(problem!.id),
+        inputExample: customTestInput,
+        outputExample: firstExample.output,
+        time: String(problem!.timeLimit || 1000),
+        memory: String(problem!.memoryLimit || 256),
       };
       const data = await api.post('/judge/test', payload) as ApiResponse<{ status: string; errorInfo?: string }>;
       if (data.code === 200) {
@@ -777,39 +805,47 @@ ${code}
           </section>
         </div>
 
-        {/* 样例 */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <div className="rounded-3xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>输入样例</h3>
-              <button
-                onClick={() => problem.inputExample && copyToClipboard(problem.inputExample, '输入样例')}
-                className="transition-colors"
-                style={{ color: 'var(--gemini-text-secondary)' }}
-              >
-                <Copy className="w-4 h-4" />
-              </button>
+        {/* 样例：仅来自 problem_example 多组 */}
+        {problem.examples?.length ? (
+          problem.examples.map((ex, idx) => (
+            <div key={idx} className="grid md:grid-cols-2 gap-6 mb-6">
+              <div className="rounded-3xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>输入样例 {idx + 1}</h3>
+                  <button
+                    onClick={() => ex.input && copyToClipboard(ex.input, '输入样例')}
+                    className="transition-colors"
+                    style={{ color: 'var(--gemini-text-secondary)' }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <pre className="rounded-2xl p-3 text-sm font-mono overflow-x-auto whitespace-pre-wrap" style={{ backgroundColor: 'var(--gemini-surface)', color: 'var(--gemini-text-primary)' }}>
+                  {ex.input || '暂无输入样例'}
+                </pre>
+              </div>
+              <div className="rounded-3xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>输出样例 {idx + 1}</h3>
+                  <button
+                    onClick={() => ex.output && copyToClipboard(ex.output, '输出样例')}
+                    className="transition-colors"
+                    style={{ color: 'var(--gemini-text-secondary)' }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <pre className="rounded-2xl p-3 text-sm font-mono overflow-x-auto whitespace-pre-wrap" style={{ backgroundColor: 'var(--gemini-surface)', color: 'var(--gemini-text-primary)' }}>
+                  {ex.output || '暂无输出样例'}
+                </pre>
+              </div>
             </div>
-            <pre className="rounded-2xl p-3 text-sm font-mono overflow-x-auto" style={{ backgroundColor: 'var(--gemini-surface)', color: 'var(--gemini-text-primary)' }}>
-              {problem.inputExample || '暂无输入样例'}
-            </pre>
+          ))
+        ) : (
+          <div className="rounded-3xl p-4 mb-6" style={{ backgroundColor: 'var(--gemini-bg)', color: 'var(--gemini-text-disabled)' }}>
+            暂无样例
           </div>
-          <div className="rounded-3xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>输出样例</h3>
-              <button
-                onClick={() => problem.outputExample && copyToClipboard(problem.outputExample, '输出样例')}
-                className="transition-colors"
-                style={{ color: 'var(--gemini-text-secondary)' }}
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-            </div>
-            <pre className="rounded-2xl p-3 text-sm font-mono overflow-x-auto" style={{ backgroundColor: 'var(--gemini-surface)', color: 'var(--gemini-text-primary)' }}>
-              {problem.outputExample || '暂无输出样例'}
-            </pre>
-          </div>
-        </div>
+        )}
 
         {/* 提示 */}
         <section>
@@ -901,6 +937,32 @@ ${code}
           <CodeEditor value={code} onChange={setCode} language={language} height={420} />
         )}
 
+        {/* 调试输入：默认第一组样例，用户可修改 */}
+        {problem.examples?.length ? (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
+                调试输入（测试样例将使用下方输入，期望输出以第一组样例为准）
+              </span>
+              <Button
+                type="link"
+                size="small"
+                onClick={() => firstExample && setCustomTestInput(firstExample.input)}
+              >
+                恢复第一组样例
+              </Button>
+            </div>
+            <Input.TextArea
+              value={customTestInput}
+              onChange={(e) => setCustomTestInput(e.target.value)}
+              placeholder="默认已填入第一组样例输入，可修改后点击「测试样例」"
+              rows={4}
+              className="rounded-2xl font-mono text-sm"
+              style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)' }}
+            />
+          </div>
+        ) : null}
+
         {/* 操作按钮 */}
         <div className="flex flex-wrap items-center gap-3 mt-4">
           <PermissionGuard permission={PermissionCode.AI_CHAT}>
@@ -908,7 +970,7 @@ ${code}
               AI分析
             </Button>
           </PermissionGuard>
-          <Button loading={codeLoading.test} onClick={handleTestCode} disabled={language === 'java'}>
+          <Button loading={codeLoading.test} onClick={handleTestCode} disabled={language === 'java' || !problem.examples?.length}>
             测试样例
           </Button>
           <Button

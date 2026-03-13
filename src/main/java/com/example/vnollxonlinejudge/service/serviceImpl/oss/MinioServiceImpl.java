@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.UUID;
 
 @Service
 @Primary
@@ -87,5 +88,24 @@ public class MinioServiceImpl implements OssService {
 
     private static String generateAvatarUrl(String encryptedFileName) {
         return  endpoint+ "/" + "avatar" + "/" + encryptedFileName;
+    }
+
+    @Override
+    public String uploadImage(MultipartFile file, String prefix) throws IOException {
+        try {
+            String ext = FileOperation.getFileExtension(file);
+            if (ext == null || ext.isEmpty()) ext = "png";
+            String objectKey = prefix + "/" + UUID.randomUUID().toString().replace("-", "") + "." + ext;
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket("avatar")
+                    .object(objectKey)
+                    .stream(file.getInputStream(), file.getSize(), -1)
+                    .contentType(file.getContentType())
+                    .build());
+            return endpoint + "/" + "avatar" + "/" + objectKey;
+        } catch (Exception e) {
+            logger.error("图片上传失败: " + e.getMessage());
+            throw new IOException("图片上传失败: " + e.getMessage(), e);
+        }
     }
 }

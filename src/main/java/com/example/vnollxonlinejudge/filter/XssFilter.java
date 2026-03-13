@@ -23,18 +23,20 @@ public class XssFilter implements Filter {
 
     // 排除的路径（如文件上传、代码提交等需要原始内容的接口）
     private static final List<String> EXCLUDED_PATHS = Arrays.asList(
-            "/admin/upload",
-            "/problem/upload",
-            "/judge/submit",
-            "/judge/test",
-            "/solve/create",
             "/api/v1/admin/upload",
             "/api/v1/admin/solve",
             "/api/v1/problem/upload",
             "/api/v1/judge/submit",
             "/api/v1/judge/test",
             "/api/v1/friend/message",
-            "/api/v1/solve/create"
+            "/api/v1/solve/create",
+            // AI 对话内容可能含代码/Markdown，不做 XSS 清洗避免破坏
+            "/api/v1/ai/chat",
+            // 管理端保存 AI 模型配置（endpoint、extraConfig 等可能含特殊字符）
+            "/api/v1/admin/ai-model/save",
+            // 管理端题目创建/更新：含 description、多组样例 JSON 等富文本，避免被 XSS 清洗破坏
+            "/api/v1/admin/problem/create",
+            "/api/v1/admin/problem/update"
     );
 
     // 排除的Content-Type

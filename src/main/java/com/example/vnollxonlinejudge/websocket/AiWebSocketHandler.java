@@ -81,18 +81,35 @@ public class AiWebSocketHandler extends TextWebSocketHandler {
                     sendError(session, "消息不能为空");
                     return;
                 }
+                Long modelId = null;
+                if (data.get("modelId") != null) {
+                    if (data.get("modelId") instanceof Number) {
+                        modelId = ((Number) data.get("modelId")).longValue();
+                    }
+                }
 
-                logger.info("[AiWS] 收到消息: uid={}, message={}", uid, userMessage);
+                logger.info("[AiWS] 收到消息: uid={}, modelId={}, message={}", uid, modelId, userMessage);
 
                 // 发送开始标记
                 sendJsonMessage(session, Map.of("type", "start"));
 
-                // 流式发送 AI 响应
-                aiService.chat(uid, userMessage)
-                        .filter(token -> !token.equals("[DONE]") && !token.startsWith("[ERROR]"))
+                // 流式发送 AI 响应（支持指定 modelId）
+                reactor.core.publisher.Flux<String> flux = (modelId != null && modelId > 0)
+                        ? aiService.chat(uid, modelId, userMessage)
+                        : aiService.chat(uid, userMessage);
+                flux
                         .doOnNext(token -> {
-                            // 直接发送 token，WebSocket 不需要编码换行符
-                            sendJsonMessage(session, Map.of("type", "token", "content", token));
+                            if (token.equals("[DONE]")) return;
+                            if (token.startsWith("[ERROR] ")) {
+                                sendJsonMessage(session, Map.of("type", "error", "message", token.substring(8)));
+                                return;
+                            }
+                            // 区分思考内容与最终答复，便于前端分别展示
+                            if (token.startsWith("[THINKING]")) {
+                                sendJsonMessage(session, Map.of("type", "thinking_token", "content", token.substring(10)));
+                            } else {
+                                sendJsonMessage(session, Map.of("type", "token", "content", token));
+                            }
                         })
                         .doOnComplete(() -> {
                             sendJsonMessage(session, Map.of("type", "done"));

@@ -4,7 +4,9 @@ import com.example.vnollxonlinejudge.annotation.RequirePermission;
 import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveProblemDTO;
+import com.example.vnollxonlinejudge.model.vo.problem.ProblemExampleVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
+import com.example.vnollxonlinejudge.service.ProblemExampleService;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -22,10 +24,18 @@ import java.util.List;
 @Validated
 public class AdminProblemController {
     private final ProblemService problemService;
-    
+    private final ProblemExampleService problemExampleService;
+
     @Autowired
-    public AdminProblemController(ProblemService problemService) {
+    public AdminProblemController(ProblemService problemService, ProblemExampleService problemExampleService) {
         this.problemService = problemService;
+        this.problemExampleService = problemExampleService;
+    }
+
+    @GetMapping("/examples")
+    @RequirePermission(PermissionCode.PROBLEM_VIEW)
+    public Result<List<ProblemExampleVo>> getProblemExamples(@RequestParam @NotNull Long pid) {
+        return Result.Success(problemExampleService.listByProblemIdForAdmin(pid), "获取题目样例成功");
     }
     @PostMapping(value ="/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequirePermission(PermissionCode.PROBLEM_CREATE)

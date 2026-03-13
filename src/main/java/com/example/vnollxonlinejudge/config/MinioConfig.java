@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 public class MinioConfig {
 
-    @Value("http://minio:9000")
+    @Value("http://111.230.105.54:9000")
     private String endpoint;
 
     @Value("vnollxvnollx")

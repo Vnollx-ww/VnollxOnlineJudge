@@ -6,6 +6,7 @@ import com.example.vnollxonlinejudge.model.entity.UserTag;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.model.vo.statistics.LearningAnalyticsVO;
+import com.example.vnollxonlinejudge.service.OssService;
 import com.example.vnollxonlinejudge.service.StatisticsService;
 import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.service.UserTagService;
@@ -13,6 +14,7 @@ import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import com.example.vnollxonlinejudge.model.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,12 +27,14 @@ public class UserController {
     private final UserService userService;
     private final UserTagService userTagService;
     private final StatisticsService statisticsService;
-    
+    private final OssService ossService;
+
     @Autowired
-    public UserController(UserService userService, UserTagService userTagService, StatisticsService statisticsService) {
+    public UserController(UserService userService, UserTagService userTagService, StatisticsService statisticsService, OssService ossService) {
         this.userService = userService;
         this.userTagService = userTagService;
         this.statisticsService = statisticsService;
+        this.ossService = ossService;
     }
     @PostMapping("/login")
     public Result<String> login(@RequestBody LoginDTO request){
@@ -73,6 +77,21 @@ public class UserController {
                 request.getVerifyCode()
         );
         return Result.Success("修改个人信息成功");
+    }
+
+    /** 上传图片（与头像同 bucket），用于头像、AI 模型 Logo 等。prefix 默认 avatar，传 ai-model 时存到 ai-model/ 目录 */
+    @PostMapping("/upload/avatar")
+    public Result<String> uploadImage(@RequestParam("file") MultipartFile file,
+                                     @RequestParam(value = "prefix", defaultValue = "avatar") String prefix) {
+        if (file == null || file.isEmpty()) {
+            return Result.LogicError("请选择文件");
+        }
+        try {
+            String url = ossService.uploadImage(file, prefix);
+            return Result.Success(url, "上传成功");
+        } catch (Exception e) {
+            return Result.SystemError("上传失败: " + e.getMessage());
+        }
     }
     @GetMapping("/list")
     public Result<List<UserVo>> getAllUser(){
