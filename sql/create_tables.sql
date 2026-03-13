@@ -177,6 +177,23 @@ create table problem
     snake_id       bigint               null
 );
 
+create table problem_example
+(
+    id            bigint auto_increment comment '样例ID'
+        primary key,
+    problem_id    bigint        not null comment '题目ID',
+    input         text          null comment '输入样例',
+    output        text          null comment '输出样例',
+    sort_order    int default 0 null comment '排序序号',
+    is_public     tinyint(1) default 1 null comment '是否公开',
+    create_time   datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint fk_problem_example_problem_id
+        foreign key (problem_id) references problem (id)
+            on delete cascade
+)
+    comment '题目样例表' collate = utf8mb4_unicode_ci;
+
 create table competition_problem
 (
     id             int auto_increment
