@@ -128,14 +128,23 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                 }
 
                 // 2. 检验输出结果（答案比对）
-                String actualOutput = currentResult.getFiles().getStdout() != null ? currentResult.getFiles().getStdout().trim() : "";
-                if (!expectedOutput.equals(actualOutput)) {
-                    finalResult.setStatus("Wrong Answer"); // 状态标记，后续由 processFinalResult 翻译
-                    finalResult.getFiles().setStderr(String.format(
-                            "测试用例 %d 失败%n输入: %s%n期待输出: %s%n实际输出: %s",
-                            i + 1,
-                            truncateString(input, 100),
-                            truncateString(expectedOutput, 200),
+                try {
+                    String expectedOutputUnified = testCase[1].replace("\r\n", "\n").replace("\r", "\n");
+                    String actualOutputUnified = currentResult.getFiles().getStdout().trim().replace("\r\n", "\n").replace("\r", "\n");
+
+                    if (!expectedOutputUnified.equals(actualOutputUnified)) {
+                        finalResult.setStatus("Wrong Answer"); // 状态标记，后续由 processFinalResult 翻译
+                        finalResult.getFiles().setStderr(String.format(
+                                "测试用例 %d 失败%n输入: %s%n期待输出: %s%n实际输出: %s",
+                                i + 1,
+                                truncateString(input, 100),
+                                truncateString(expectedOutputUnified, 200),
+                                truncateString(actualOutputUnified, 200)
+                        ));
+                        return finalResult;
+                    }
+                } catch (Exception e) {
+                    logger.error("统一换行符处理出错", e);
                             truncateString(actualOutput, 200)
                     ));
                     return finalResult;

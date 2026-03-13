@@ -178,8 +178,8 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
                     // 检验输出结果
                     try {
-                        String expectedOutput = testCase[1];
-                        String actualOutput = result.getFiles().getStdout().trim();
+                        String expectedOutput = testCase[1].replace("\r\n", "\n").replace("\r", "\n");
+                        String actualOutput = result.getFiles().getStdout().trim().replace("\r\n", "\n").replace("\r", "\n");
 
                         if (!expectedOutput.equals(actualOutput)) {
                             String errorMessage = String.format(
