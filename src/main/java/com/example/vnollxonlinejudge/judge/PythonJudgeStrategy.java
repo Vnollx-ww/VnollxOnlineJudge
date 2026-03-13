@@ -145,8 +145,8 @@ public class PythonJudgeStrategy implements JudgeStrategy {
                     }
                 } catch (Exception e) {
                     logger.error("统一换行符处理出错", e);
-                            truncateString(actualOutput, 200)
-                    ));
+                    finalResult.setStatus("Wrong Answer");
+                    finalResult.getFiles().setStderr("比较输出出错: " + e.getMessage() + "\n实际输出: " + truncateString(currentResult.getFiles().getStdout(), 200));
                     return finalResult;
                 }
 
