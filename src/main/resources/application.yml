@@ -93,7 +93,7 @@ management:
 # AI 代理配置
 ai:
   proxy:
-    url: http://localhost:8000
+    url: http://74.122.24.92:8000
     timeout: 300
 
 # Resilience4j 熔断配置
