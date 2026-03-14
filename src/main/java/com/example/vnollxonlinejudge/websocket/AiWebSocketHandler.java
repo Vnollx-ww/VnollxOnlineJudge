@@ -77,6 +77,7 @@ public class AiWebSocketHandler extends TextWebSocketHandler {
 
             if ("chat".equals(type)) {
                 String userMessage = (String) data.get("message");
+                String sessionId = data.get("sessionId") instanceof String ? (String) data.get("sessionId") : null;
                 if (userMessage == null || userMessage.trim().isEmpty()) {
                     sendError(session, "消息不能为空");
                     return;
@@ -88,36 +89,65 @@ public class AiWebSocketHandler extends TextWebSocketHandler {
                     }
                 }
 
-                logger.info("[AiWS] 收到消息: uid={}, modelId={}, message={}", uid, modelId, userMessage);
+                logger.info("[AiWS] 收到消息: uid={}, sessionId={}, modelId={}, message={}", uid, sessionId, modelId, userMessage);
 
                 // 发送开始标记
-                sendJsonMessage(session, Map.of("type", "start"));
+                Map<String, Object> startPayload = new HashMap<>();
+                startPayload.put("type", "start");
+                if (sessionId != null && !sessionId.isBlank()) {
+                    startPayload.put("sessionId", sessionId);
+                }
+                sendJsonMessage(session, startPayload);
 
                 // 流式发送 AI 响应（支持指定 modelId）
                 reactor.core.publisher.Flux<String> flux = (modelId != null && modelId > 0)
-                        ? aiService.chat(uid, modelId, userMessage)
-                        : aiService.chat(uid, userMessage);
+                        ? aiService.chat(uid, modelId, sessionId, userMessage)
+                        : aiService.chat(uid, sessionId, userMessage);
                 flux
                         .doOnNext(token -> {
                             if (token.equals("[DONE]")) return;
                             if (token.startsWith("[ERROR] ")) {
-                                sendJsonMessage(session, Map.of("type", "error", "message", token.substring(8)));
+                                Map<String, Object> errorPayload = new HashMap<>();
+                                errorPayload.put("type", "error");
+                                errorPayload.put("message", token.substring(8));
+                                if (sessionId != null && !sessionId.isBlank()) {
+                                    errorPayload.put("sessionId", sessionId);
+                                }
+                                sendJsonMessage(session, errorPayload);
                                 return;
                             }
                             // 区分思考内容与最终答复，便于前端分别展示
-                            if (token.startsWith("[THINKING]")) {
-                                sendJsonMessage(session, Map.of("type", "thinking_token", "content", token.substring(10)));
-                            } else {
-                                sendJsonMessage(session, Map.of("type", "token", "content", token));
+                            Map<String, Object> tokenPayload = new HashMap<>();
+                            if (sessionId != null && !sessionId.isBlank()) {
+                                tokenPayload.put("sessionId", sessionId);
                             }
+                            if (token.startsWith("[THINKING]")) {
+                                tokenPayload.put("type", "thinking_token");
+                                tokenPayload.put("content", token.substring(10));
+                            } else {
+                                tokenPayload.put("type", "token");
+                                tokenPayload.put("content", token);
+                            }
+                            sendJsonMessage(session, tokenPayload);
                         })
                         .doOnComplete(() -> {
-                            sendJsonMessage(session, Map.of("type", "done"));
-                            logger.info("[AiWS] 响应完成: uid={}", uid);
+                            Map<String, Object> donePayload = new HashMap<>();
+                            donePayload.put("type", "done");
+                            if (sessionId != null && !sessionId.isBlank()) {
+                                donePayload.put("sessionId", sessionId);
+                            }
+                            sendJsonMessage(session, donePayload);
+                            logger.info("[AiWS] 响应完成: uid={}, sessionId={}", uid, sessionId);
                         })
                         .doOnError(error -> {
-                            logger.error("[AiWS] AI错误: uid={}, error={}", uid, error.getMessage());
-                            sendJsonMessage(session, Map.of("type", "error", "message", error.getMessage()));
+                            logger.error("[AiWS] AI错误: uid={}, sessionId={}, error={}", uid, sessionId, error.getMessage());
+                            Map<String, Object> errorPayload = new HashMap<>();
+                            errorPayload.put("type", "error");
+                            errorPayload.put("message", error.getMessage());
+                            if (sessionId != null && !sessionId.isBlank()) {
+                                errorPayload.put("sessionId", sessionId);
+                            }
+                            sendJsonMessage(session, errorPayload);
                         })
                         .subscribe();
 

@@ -162,82 +162,84 @@ const SolutionDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen">
+      <div className="max-w-4xl mx-auto space-y-6">
         {loading ? (
-          <Skeleton active paragraph={{ rows: 8 }} />
+          <div className="gemini-card">
+            <Skeleton active paragraph={{ rows: 8 }} />
+          </div>
         ) : error ? (
-          <Result
-            status="error"
-            title="加载题解失败"
-            subTitle={error}
-            extra={
-              <Space>
-                <Button onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: titleFromState } })}>
+          <div className="gemini-card">
+            <Result
+              status="error"
+              title="加载题解失败"
+              subTitle={error}
+              extra={
+                <Space>
+                  <Button onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: titleFromState } })}>
+                    返回题解列表
+                  </Button>
+                  <Button 
+                    type="primary" 
+                    onClick={loadSolution}
+                    style={{ 
+                      backgroundColor: 'var(--gemini-accent)',
+                      color: 'var(--gemini-accent-text)',
+                      border: 'none'
+                    }}
+                  >
+                    重试
+                  </Button>
+                </Space>
+              }
+            />
+          </div>
+        ) : (
+          <div className="gemini-card">
+            <Space direction="vertical" size="large" className="w-full">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <Button
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: titleFromState } })}
+                  className="gemini-btn gemini-btn-outlined"
+                >
                   返回题解列表
                 </Button>
-                <Button 
-                  type="primary" 
-                  onClick={loadSolution}
-                  style={{ 
-                    backgroundColor: 'var(--gemini-accent)',
-                    color: 'var(--gemini-accent-text)',
-                    border: 'none'
-                  }}
+              </div>
+              <div>
+                <Title level={2} className="!mb-2" style={{ color: 'var(--gemini-text-primary)' }}>{solution?.title}</Title>
+                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{solution?.problemName}</Text>
+              </div>
+              <div className="flex gap-4 flex-wrap">
+                <div 
+                  className="rounded-2xl px-4 py-2"
+                  style={{ backgroundColor: 'var(--gemini-bg)' }}
                 >
-                  重试
-                </Button>
-              </Space>
-            }
-          />
-        ) : (
-          <>
-            <Button
-              type="link"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: titleFromState } })}
-              className="!pl-0 !mb-4"
-              style={{ color: 'var(--gemini-accent-strong)' }}
-            >
-              返回题解列表
-            </Button>
-            <div className="gemini-card">
-              <Space direction="vertical" size="large" className="w-full">
-                <div>
-                  <Title level={2} className="!mb-2" style={{ color: 'var(--gemini-text-primary)' }}>{solution?.title}</Title>
-                  <Text style={{ color: 'var(--gemini-text-secondary)' }}>{solution?.problemName}</Text>
-                </div>
-                <div className="flex gap-4 flex-wrap">
-                  <div 
-                    className="rounded-2xl px-4 py-2"
-                    style={{ backgroundColor: 'var(--gemini-bg)' }}
-                  >
-                    <span className="text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>题目 ID</span>
-                    <div className="font-bold" style={{ color: 'var(--gemini-accent-strong)' }}>#{solution?.pid}</div>
-                  </div>
-                  <div 
-                    className="rounded-2xl px-4 py-2"
-                    style={{ backgroundColor: 'var(--gemini-bg)' }}
-                  >
-                    <span className="text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>作者</span>
-                    <div className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{solution?.name}</div>
-                  </div>
-                  <div 
-                    className="rounded-2xl px-4 py-2"
-                    style={{ backgroundColor: 'var(--gemini-bg)' }}
-                  >
-                    <span className="text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>发布时间</span>
-                    <div className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{dayjs(solution?.createTime).format('YYYY-MM-DD HH:mm')}</div>
-                  </div>
+                  <span className="text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>题目 ID</span>
+                  <div className="font-bold" style={{ color: 'var(--gemini-accent-strong)' }}>#{solution?.pid}</div>
                 </div>
                 <div 
-                  className="prose prose-blue max-w-none" 
-                  ref={contentRef} 
-                  dangerouslySetInnerHTML={{ __html: renderedContent }} 
-                />
-              </Space>
-            </div>
-          </>
+                  className="rounded-2xl px-4 py-2"
+                  style={{ backgroundColor: 'var(--gemini-bg)' }}
+                >
+                  <span className="text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>作者</span>
+                  <div className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{solution?.name}</div>
+                </div>
+                <div 
+                  className="rounded-2xl px-4 py-2"
+                  style={{ backgroundColor: 'var(--gemini-bg)' }}
+                >
+                  <span className="text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>发布时间</span>
+                  <div className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{dayjs(solution?.createTime).format('YYYY-MM-DD HH:mm')}</div>
+                </div>
+              </div>
+              <div 
+                className="prose prose-blue max-w-none" 
+                ref={contentRef} 
+                dangerouslySetInnerHTML={{ __html: renderedContent }} 
+              />
+            </Space>
+          </div>
         )}
       </div>
     </div>

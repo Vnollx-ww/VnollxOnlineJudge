@@ -156,20 +156,20 @@ const SolutionListPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+    <div className="min-h-screen">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header Card - Gemini 风格 */}
         <div className="gemini-card">
           <Space direction="vertical" size="small" className="w-full">
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate(`/problem/${pid}`)}
-              type="link"
-              className="!pl-0"
-              style={{ color: 'var(--gemini-accent-strong)' }}
-            >
-              返回题目详情
-            </Button>
+            <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate(`/problem/${pid}`)}
+                className="gemini-btn gemini-btn-outlined"
+              >
+                返回题目详情
+              </Button>
+            </div>
             <div className="mb-4">
               <Title level={2} className="!mb-2" style={{ color: 'var(--gemini-text-primary)' }}>{pageTitle}</Title>
               <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>分享你的解题思路，帮助更多同学</Paragraph>

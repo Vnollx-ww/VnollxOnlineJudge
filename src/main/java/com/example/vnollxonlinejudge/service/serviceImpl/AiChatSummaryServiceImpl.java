@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.vnollxonlinejudge.mapper.AiChatSummaryMapper;
 import com.example.vnollxonlinejudge.model.entity.AiChatSummary;
@@ -16,10 +17,11 @@ public class AiChatSummaryServiceImpl implements AiChatSummaryService {
     }
 
     @Override
-    public AiChatSummary getLatestByUserId(Long userId) {
+    public AiChatSummary getLatestByUserIdAndSessionId(Long userId, String sessionId) {
         return aiChatSummaryMapper.selectOne(
                 new LambdaQueryWrapper<AiChatSummary>()
                         .eq(AiChatSummary::getUserId, userId)
+                        .eq(AiChatSummary::getSessionId, sessionId)
                         .orderByDesc(AiChatSummary::getId)
                         .last("LIMIT 1")
         );
@@ -39,6 +41,26 @@ public class AiChatSummaryServiceImpl implements AiChatSummaryService {
         aiChatSummaryMapper.delete(
                 new LambdaQueryWrapper<AiChatSummary>()
                         .eq(AiChatSummary::getUserId, userId)
+        );
+    }
+
+    @Override
+    public void deleteByUserIdAndSessionId(Long userId, String sessionId) {
+        aiChatSummaryMapper.delete(
+                new LambdaQueryWrapper<AiChatSummary>()
+                        .eq(AiChatSummary::getUserId, userId)
+                        .eq(AiChatSummary::getSessionId, sessionId)
+        );
+    }
+
+    @Override
+    public void assignLegacySummariesToSession(Long userId, String sessionId) {
+        aiChatSummaryMapper.update(
+                null,
+                new LambdaUpdateWrapper<AiChatSummary>()
+                        .eq(AiChatSummary::getUserId, userId)
+                        .isNull(AiChatSummary::getSessionId)
+                        .set(AiChatSummary::getSessionId, sessionId)
         );
     }
 }

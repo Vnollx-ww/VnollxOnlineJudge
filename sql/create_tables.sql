@@ -481,11 +481,32 @@ create table ai_chat_record
     index idx_user_create (user_id, create_time)
 ) comment '用户AI对话记录表' collate = utf8mb4_unicode_ci;
 
+create table ai_chat_session
+(
+    id              varchar(64)                         not null comment '会话ID'
+        primary key,
+    user_id         int                                 not null comment '用户ID',
+    title           varchar(120)                       null comment '会话标题',
+    last_model_id   bigint                              null comment '最近一次使用的模型ID',
+    message_count   int          default 0              null comment '消息轮数',
+    last_message_at datetime                            null comment '最后一条消息时间',
+    create_time     datetime     default CURRENT_TIMESTAMP null comment '创建时间',
+    update_time     datetime     default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint fk_ai_chat_session_user
+        foreign key (user_id) references user (id) on delete cascade,
+    constraint fk_ai_chat_session_model
+        foreign key (last_model_id) references ai_model (id) on delete set null,
+    index idx_ai_chat_session_user (user_id),
+    index idx_ai_chat_session_last_message (user_id, last_message_at),
+    index idx_ai_chat_session_update (user_id, update_time)
+) comment '用户AI会话表' collate = utf8mb4_unicode_ci;
+
 create table ai_chat_summary
 (
     id                      bigint auto_increment comment '摘要ID'
         primary key,
     user_id                 int                                 not null comment '用户ID',
+    session_id              varchar(64)                         null comment '会话ID',
     summary_content         text                                not null comment '摘要内容',
     covered_until_record_id bigint                              null comment '本次摘要覆盖到的最后一条 ai_chat_record 的 ID',
     covered_rounds          int          default 0              null comment '被摘要的对话轮数',
@@ -493,7 +514,8 @@ create table ai_chat_summary
     update_time             datetime     default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     constraint fk_ai_chat_summary_user
         foreign key (user_id) references user (id) on delete cascade,
-    index idx_user_id (user_id)
+    index idx_user_id (user_id),
+    index idx_ai_chat_summary_session (user_id, session_id)
 ) comment '用户AI对话摘要表' collate = utf8mb4_unicode_ci;
 
 -- =====================================================

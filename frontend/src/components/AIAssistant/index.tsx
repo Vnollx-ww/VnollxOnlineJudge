@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FloatButton, Drawer, Input, Button, message as antMessage, Modal, Avatar, Select } from 'antd';
-import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
+import { Drawer, Input, Button, message as antMessage, Avatar, Select } from 'antd';
+import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, Sparkles, Loader2, MessageSquarePlus, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -170,9 +170,39 @@ const SyncToEditorButton: React.FC<{ code: string; language: string }> = ({ code
 };
 
 const AI_ASSISTANT_MODEL_KEY = 'ai_assistant_model_id';
+const AI_ASSISTANT_SESSION_KEY = 'ai_assistant_session_id';
+
+interface AiChatSession {
+  id: string;
+  title: string;
+  lastModelId?: number | null;
+  lastModelLogoUrl?: string | null;
+  messageCount?: number | null;
+  lastMessagePreview?: string | null;
+  lastMessageAt?: number | null;
+  createTime?: number | null;
+  /** 标记为临时会话（尚未在后端创建） */
+  isPending?: boolean;
+}
+
+interface OpenAssistantDetail {
+  message?: string;
+  forceNewSession?: boolean;
+}
 
 const AIAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [sessions, setSessions] = useState<AiChatSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(AI_ASSISTANT_SESSION_KEY);
+    } catch (_) {
+      return null;
+    }
+  });
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
@@ -189,8 +219,8 @@ const AIAssistant: React.FC = () => {
     return null;
   });
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  /** 由「AI分析」等外部事件带入的待发送消息，等模型列表加载后再发 */
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  /** 由「AI分析」等外部事件带入的待执行动作 */
+  const [pendingAction, setPendingAction] = useState<OpenAssistantDetail | null>(null);
   /** 分页游标 */
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -199,15 +229,22 @@ const AIAssistant: React.FC = () => {
   const shouldScrollToBottomRef = useRef(true);
   /** 首次打开后，历史消息落地时直接定位到底部，但不播放动画 */
   const shouldJumpToBottomOnceRef = useRef(false);
+  /** 新建会话后跳过一次空历史拉取，避免覆盖本地首条消息 */
+  const skipNextHistoryLoadSessionRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [messageApi, contextHolder] = antMessage.useMessage();
-  const [modal, modalContextHolder] = Modal.useModal();
   const { hasPermission } = usePermission();
+  const currentSessionIdRef = useRef<string | null>(currentSessionId);
+  const streamSessionIdRef = useRef<string | null>(null);
 
   const scrollToBottom = (smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
+
+  useEffect(() => {
+    currentSessionIdRef.current = currentSessionId;
+  }, [currentSessionId]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -217,7 +254,7 @@ const AIAssistant: React.FC = () => {
       requestAnimationFrame(() => scrollToBottom(false));
       return;
     }
-    // 上滑分页 / 历史加载时不滚动
+    // 会话切换 / 历史加载时不滚动
     if (!shouldScrollToBottomRef.current) return;
     // 发新消息时平滑滚动
     scrollToBottom(true);
@@ -239,99 +276,89 @@ const AIAssistant: React.FC = () => {
       })) as Message[];
   };
 
-  // 加载历史消息（分页接口，首次加载10条）
-  const loadHistory = useCallback(async () => {
-    shouldScrollToBottomRef.current = false;
+  const sortSessions = useCallback((list: AiChatSession[]) => {
+    return [...list].sort((a, b) => {
+      const timeA = a.lastMessageAt ?? a.createTime ?? 0;
+      const timeB = b.lastMessageAt ?? b.createTime ?? 0;
+      return timeB - timeA;
+    });
+  }, []);
+
+  const loadHistory = useCallback(async (sessionId: string, beforeId?: number | null, append = false) => {
     if (!isAuthenticated()) {
-      setMessages([
-        {
-          role: 'bot',
-          content: '请先登录后再使用AI助手功能',
-          timestamp: Date.now(),
-        },
-      ]);
+      setMessages([]);
+      setHasMore(false);
+      setNextCursor(null);
+      setHistoryLoaded(true);
       return;
     }
 
-    try {
-      const response = await api.get('/ai/history/page?limit=10') as ApiResponse<HistoryPageResponse>;
-      if (response.code === 200 && response.data) {
-        const { items, nextCursor: cursor, hasMore: more } = response.data;
-        setNextCursor(cursor);
-        setHasMore(more);
-        
-        if (items && items.length > 0) {
-          const list = parseHistoryItems(items);
-          if (list.length > 0) {
-            setMessages(list);
-            return;
-          }
-        }
-      }
-      setMessages([
-        {
-          role: 'bot',
-          content: '你好！我是AI助手，有什么可以帮助您的吗？',
-          timestamp: Date.now(),
-        },
-      ]);
-    } catch (error) {
-      console.error('加载历史消息失败:', error);
-      setMessages([
-        {
-          role: 'bot',
-          content: '你好！我是AI助手，有什么可以帮助您的吗？',
-          timestamp: Date.now(),
-        },
-      ]);
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      shouldScrollToBottomRef.current = false;
+      setMessages([]);
+      setHasMore(false);
+      setNextCursor(null);
+      setHistoryLoaded(false);
     }
-  }, []);
 
-  // 滚动加载更多历史消息（每次5条）
-  const loadMoreHistory = useCallback(async () => {
-    if (!hasMore || loadingMore || !nextCursor) return;
-    
-    setLoadingMore(true);
-    // 加载历史消息时不滚动到底部
-    shouldScrollToBottomRef.current = false;
-    
     const container = messagesContainerRef.current;
-    const prevScrollHeight = container?.scrollHeight ?? 0;
-    
+    const prevScrollHeight = append ? (container?.scrollHeight ?? 0) : 0;
+
     try {
-      const response = await api.get(`/ai/history/page?beforeId=${nextCursor}&limit=5`) as ApiResponse<HistoryPageResponse>;
+      const query = new URLSearchParams({
+        sessionId,
+        limit: String(beforeId ? 5 : 10),
+      });
+      if (beforeId) {
+        query.set('beforeId', String(beforeId));
+      }
+      const response = await api.get(`/ai/history/page?${query.toString()}`) as ApiResponse<HistoryPageResponse>;
       if (response.code === 200 && response.data) {
         const { items, nextCursor: cursor, hasMore: more } = response.data;
+        const list = parseHistoryItems(items || []);
         setNextCursor(cursor);
         setHasMore(more);
-        
-        if (items && items.length > 0) {
-          const list = parseHistoryItems(items);
+        if (append) {
           if (list.length > 0) {
-            // 在顶部插入历史消息
             setMessages((prev) => [...list, ...prev]);
-            // 保持滚动位置
             requestAnimationFrame(() => {
               if (container) {
                 container.scrollTop = container.scrollHeight - prevScrollHeight;
               }
             });
           }
+        } else {
+          setMessages(list);
         }
       }
+      setHistoryLoaded(true);
     } catch (error) {
-      console.error('加载更多历史消息失败:', error);
+      console.error('加载会话历史失败:', error);
+      if (!append) {
+        setMessages([]);
+      }
+      setHistoryLoaded(true);
     } finally {
-      setLoadingMore(false);
+      if (append) {
+        setLoadingMore(false);
+      }
     }
-  }, [hasMore, loadingMore, nextCursor]);
+  }, []);
+
+  const loadMoreHistory = useCallback(async () => {
+    if (!currentSessionId || !hasMore || loadingMore || !nextCursor) return;
+    shouldScrollToBottomRef.current = false;
+    await loadHistory(currentSessionId, nextCursor, true);
+  }, [currentSessionId, hasMore, loadingMore, nextCursor, loadHistory]);
 
   // 滚动事件处理：滚动到顶部时加载更多
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
     if (container.scrollTop < 50 && hasMore && !loadingMore) {
-      loadMoreHistory();
+      void loadMoreHistory();
     }
   }, [hasMore, loadingMore, loadMoreHistory]);
 
@@ -343,6 +370,18 @@ const AIAssistant: React.FC = () => {
       } catch (_) {}
     }
   }, [selectedModelId]);
+
+  useEffect(() => {
+    if (currentSessionId && !currentSessionId.startsWith('pending_')) {
+      try {
+        localStorage.setItem(AI_ASSISTANT_SESSION_KEY, currentSessionId);
+      } catch (_) {}
+    } else if (!currentSessionId) {
+      try {
+        localStorage.removeItem(AI_ASSISTANT_SESSION_KEY);
+      } catch (_) {}
+    }
+  }, [currentSessionId]);
 
   // 打开抽屉时加载可选模型列表，并恢复缓存的模型选择
   const loadModels = useCallback(async () => {
@@ -377,34 +416,206 @@ const AIAssistant: React.FC = () => {
     }
   }, []);
 
+  const loadSessions = useCallback(async (preferredSessionId?: string | null) => {
+    if (!isAuthenticated()) {
+      setSessions([]);
+      setCurrentSessionId(null);
+      setMessages([]);
+      return;
+    }
+    setSessionsLoading(true);
+    try {
+      const res = await api.get('/ai/sessions') as ApiResponse<AiChatSession[]>;
+      const list = sortSessions(res.code === 200 && Array.isArray(res.data) ? res.data : []);
+      setSessions(list);
+      const preferred = preferredSessionId ?? currentSessionIdRef.current;
+      const nextSessionId =
+        (preferred && list.some((item) => item.id === preferred) ? preferred : null)
+        || list[0]?.id
+        || null;
+      setCurrentSessionId(nextSessionId);
+      if (!nextSessionId) {
+        setMessages([]);
+        setHasMore(false);
+        setNextCursor(null);
+      }
+    } catch (e) {
+      console.error('加载会话列表失败:', e);
+      setSessions([]);
+      setCurrentSessionId(null);
+      setMessages([]);
+      setHasMore(false);
+      setNextCursor(null);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, [sortSessions]);
+
   useEffect(() => {
     if (open) {
-      if (messages.length === 0) {
-        shouldJumpToBottomOnceRef.current = true;
-      }
       loadModels();
       loadUserProfile();
-      if (messages.length === 0) loadHistory();
+      void loadSessions();
     }
-  }, [open, messages.length, loadHistory, loadModels, loadUserProfile]);
+  }, [open, loadModels, loadSessions, loadUserProfile]);
 
-  // 待发送消息：由「AI分析」等外部事件带入，等模型列表加载后再发，保证 bot 能拿到 modelLogo
-  const sendChatRef = useRef<(msg: string) => void>(() => {});
+  useEffect(() => {
+    if (!open) return;
+    if (!currentSessionId) {
+      setMessages([]);
+      setHasMore(false);
+      setNextCursor(null);
+      return;
+    }
+    // 临时会话不存在于后端，跳过历史加载
+    if (currentSessionId.startsWith('pending_')) {
+      setMessages([]);
+      setHasMore(false);
+      setNextCursor(null);
+      setHistoryLoaded(true);
+      return;
+    }
+    if (skipNextHistoryLoadSessionRef.current === currentSessionId) {
+      skipNextHistoryLoadSessionRef.current = null;
+      setHasMore(false);
+      setNextCursor(null);
+      return;
+    }
+    shouldJumpToBottomOnceRef.current = true;
+    void loadHistory(currentSessionId);
+  }, [currentSessionId, open, loadHistory]);
+
+  const createSessionApi = useCallback(async (title?: string) => {
+    const res = await api.post('/ai/sessions', title ? { title } : {}) as ApiResponse<AiChatSession>;
+    if (res.code !== 200 || !res.data) {
+      throw new Error((res as any).msg || '创建会话失败');
+    }
+    return res.data;
+  }, []);
+
+  const upsertSession = useCallback((session: AiChatSession) => {
+    setSessions((prev) => sortSessions([session, ...prev.filter((item) => item.id !== session.id)]));
+  }, [sortSessions]);
+
+  const handleCreateSession = useCallback(() => {
+    if (loading) {
+      messageApi.info('当前正在生成回复，请稍后再新建会话');
+      return null;
+    }
+    // 延迟创建：不调用后端，不在左侧列表创建记录
+    // 仅设置一个 pending ID，右侧显示空聊天界面
+    const pendingId = `pending_${Date.now()}`;
+    setCurrentSessionId(pendingId);
+    setMessages([]);
+    setHasMore(false);
+    setNextCursor(null);
+    setHistoryLoaded(true);
+    return pendingId;
+  }, [loading, messageApi]);
+
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    if (loading) {
+      messageApi.info('当前正在生成回复，请稍后再删除');
+      return;
+    }
+    setDeletingSessionId(sessionId);
+  }, [loading, messageApi]);
+
+  const confirmDeleteSession = useCallback(async (sessionId: string) => {
+    try {
+      const res = await api.delete(`/ai/sessions/${sessionId}`) as ApiResponse<void>;
+      if (res.code === 200) {
+        setSessions((prev) => {
+          const newList = prev.filter((s) => s.id !== sessionId);
+          if (currentSessionIdRef.current === sessionId) {
+            const next = newList[0]?.id ?? null;
+            setCurrentSessionId(next);
+            if (!next) {
+              setMessages([]);
+              setHasMore(false);
+              setNextCursor(null);
+              setHistoryLoaded(true);
+            }
+          }
+          return newList;
+        });
+        messageApi.success('会话已删除');
+      } else {
+        messageApi.error((res as any).msg || '删除失败');
+      }
+    } catch {
+      messageApi.error('删除失败，请稍后重试');
+    } finally {
+      setDeletingSessionId(null);
+    }
+  }, [messageApi]);
+
+  const cancelDeleteSession = useCallback(() => {
+    setDeletingSessionId(null);
+  }, []);
+
+  /** 如果当前是临时会话，切回最近的真实会话 */
+  const cleanupPendingSessions = useCallback(() => {
+    if (currentSessionIdRef.current?.startsWith('pending_')) {
+      const next = sessions.find((s) => !s.isPending)?.id ?? null;
+      setCurrentSessionId(next);
+      if (!next) {
+        setMessages([]);
+        setHasMore(false);
+        setNextCursor(null);
+        setHistoryLoaded(true);
+      }
+    }
+  }, [sessions]);
+
+  const sendChatRef = useRef<(msg: string, targetSessionId?: string | null) => void>(() => {});
   useEffect(() => {
     sendChatRef.current = sendChat;
   });
   useEffect(() => {
-    if (!open || models.length === 0 || !pendingMessage) return;
-    sendChatRef.current(pendingMessage);
-    setPendingMessage(null);
-  }, [open, models.length, pendingMessage]);
+    if (!open || models.length === 0 || sessionsLoading || !pendingAction) return;
+    let cancelled = false;
+    const run = async () => {
+      const action = pendingAction;
+      setPendingAction(null);
+      let targetSessionId = currentSessionIdRef.current;
+      if (action.forceNewSession || !targetSessionId) {
+        try {
+          const created = await createSessionApi();
+          if (cancelled) return;
+          skipNextHistoryLoadSessionRef.current = created.id;
+          upsertSession(created);
+          setCurrentSessionId(created.id);
+          setMessages([]);
+          setHasMore(false);
+          setNextCursor(null);
+          setHistoryLoaded(true);
+          targetSessionId = created.id;
+        } catch (error: any) {
+          if (!cancelled) {
+            messageApi.error(error?.message || '创建会话失败');
+          }
+          return;
+        }
+      }
+      if (action.message?.trim()) {
+        sendChatRef.current(action.message.trim(), targetSessionId);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, models.length, sessionsLoading, pendingAction, createSessionApi, upsertSession, messageApi]);
 
   // 监听外部事件打开 AI 助手并发送消息（等模型加载后再发，避免 Logo 不显示）
   useEffect(() => {
-    const handleOpenAiAssistant = (event: CustomEvent<{ message: string }>) => {
+    const handleOpenAiAssistant = (event: CustomEvent<OpenAssistantDetail>) => {
       setOpen(true);
-      const message = event.detail?.message?.trim();
-      if (message) setPendingMessage(message);
+      setPendingAction({
+        message: event.detail?.message,
+        forceNewSession: Boolean(event.detail?.forceNewSession),
+      });
     };
 
     window.addEventListener('open-ai-assistant', handleOpenAiAssistant as EventListener);
@@ -420,7 +631,12 @@ const AIAssistant: React.FC = () => {
   const botMessageCreatedRef = useRef<boolean>(false);
 
   // WebSocket 发送消息
-  const sendChat = (userMessage: string) => {
+  const sendChat = async (userMessage: string, targetSessionId?: string | null) => {
+    let sessionId = targetSessionId ?? currentSessionIdRef.current;
+    if (!sessionId) {
+      messageApi.warning('请先选择或创建一个会话');
+      return;
+    }
     if (!isAuthenticated()) {
       messageApi.warning('请先登录后再使用AI助手');
       return;
@@ -432,9 +648,23 @@ const AIAssistant: React.FC = () => {
       return;
     }
 
+    // 临时会话：发送第一条消息时，先在后端创建真实会话
+    if (sessionId.startsWith('pending_')) {
+      try {
+        const created = await createSessionApi();
+        skipNextHistoryLoadSessionRef.current = created.id;
+        upsertSession(created);
+        setCurrentSessionId(created.id);
+        sessionId = created.id;
+      } catch (error: any) {
+        messageApi.error(error?.message || '创建会话失败');
+        return;
+      }
+    }
+
+    streamSessionIdRef.current = sessionId;
     setLoading(true);
     setThinking(true);
-    // 发送新消息时应该滚动到底部
     shouldScrollToBottomRef.current = true;
 
     const userMsg: Message = {
@@ -459,8 +689,11 @@ const AIAssistant: React.FC = () => {
     botMessageCreatedRef.current = false;
 
     ws.onopen = () => {
-      // 发送聊天消息（携带选中的模型 ID）
-      const payload: { type: string; message: string; modelId?: number } = { type: 'chat', message: userMessage };
+      const payload: { type: string; message: string; sessionId: string; modelId?: number } = {
+        type: 'chat',
+        message: userMessage,
+        sessionId,
+      };
       if (selectedModelId != null && selectedModelId > 0) payload.modelId = selectedModelId;
       ws.send(JSON.stringify(payload));
     };
@@ -518,8 +751,31 @@ const AIAssistant: React.FC = () => {
             });
           }
         } else if (data.type === 'done') {
-          // 响应完成
           setLoading(false);
+          const finalSessionId = streamSessionIdRef.current;
+          if (finalSessionId) {
+            const preview = accumulatedTextRef.current.slice(0, 50).replace(/\n/g, ' ') || userMessage.slice(0, 50);
+            setSessions((prev) =>
+              sortSessions(
+                prev.map((s) => {
+                  if (s.id !== finalSessionId) return s;
+                  let updatedTitle = s.title;
+                  if (data.title) {
+                    updatedTitle = data.title;
+                  } else if (!s.title || s.title === '新会话') {
+                    updatedTitle = userMessage.length > 30 ? userMessage.slice(0, 30) + '...' : userMessage;
+                  }
+                  return {
+                    ...s,
+                    title: updatedTitle,
+                    lastMessagePreview: preview,
+                    lastMessageAt: Date.now(),
+                    lastModelLogoUrl: models.find((m) => m.id === selectedModelId)?.logoUrl,
+                  };
+                })
+              )
+            );
+          }
           ws.close();
         } else if (data.type === 'error') {
           // 错误
@@ -555,61 +811,34 @@ const AIAssistant: React.FC = () => {
 
   const handleSend = () => {
     const text = inputValue.trim();
-    if (!text || loading) return;
-    sendChat(text);
-  };
-
-  const handleClear = () => {
-    if (!isAuthenticated()) {
-      messageApi.warning('请先登录');
-      return;
-    }
-
-    modal.confirm({
-      title: '确认清空记忆',
-      content: '确定要删除所有历史消息记录吗？此操作不可恢复。',
-      okText: '确认',
-      cancelText: '取消',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          const token = localStorage.getItem('token');
-          await fetch('/api/v1/ai/clear', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-          });
-          setMessages([
-            {
-              role: 'bot',
-              content: '你好！我是AI助手，有什么可以帮助您的吗？',
-              timestamp: Date.now(),
-            },
-          ]);
-          messageApi.success('消息记录已清空');
-        } catch {
-          messageApi.error('清空失败，请稍后重试');
-        }
-      },
-    });
+    if (!text || loading || !currentSessionId) return;
+    sendChat(text, currentSessionId);
   };
 
   return (
     <>
+      <style>{`
+        @keyframes fadeScaleIn {
+          from { opacity: 0; transform: scaleY(0.92); }
+          to   { opacity: 1; transform: scaleY(1); }
+        }
+      `}</style>
       {contextHolder}
-      {modalContextHolder}
-      
+
       {/* 悬浮按钮 - 需要AI使用权限 */}
       {hasPermission(PermissionCode.AI_CHAT) && (
-        <FloatButton
-          icon={<Bot className="w-5 h-5" />}
-          type="primary"
-          className="!w-12 !h-12 !right-10 !bottom-12"
+        <button
           onClick={() => setOpen(true)}
-          tooltip="AI 助手"
-        />
+          title="AI 助手"
+          className="fixed right-10 bottom-12 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[22px] border border-white/60 bg-white/75 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_rgba(15,23,42,0.24)]"
+        >
+          <div className="relative flex h-[44px] w-[44px] items-center justify-center rounded-[16px] bg-gradient-to-br from-slate-900 via-slate-700 to-blue-500 shadow-[0_10px_24px_rgba(37,99,235,0.22)]">
+            <div className="absolute inset-[1.5px] rounded-[15px] bg-white/88 backdrop-blur-xl" />
+            <div className="absolute inset-[6px] rounded-[11px] bg-gradient-to-br from-sky-50 via-white to-violet-50" />
+            <Sparkles className="relative z-10 h-5 w-5 text-slate-700" />
+            <span className="absolute top-[5px] right-[5px] h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-white" />
+          </div>
+        </button>
       )}
 
       {/* 聊天抽屉 */}
@@ -629,47 +858,212 @@ const AIAssistant: React.FC = () => {
           </div>
         }
         placement="right"
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          cleanupPendingSessions();
+          setOpen(false);
+        }}
         open={open}
-        width={900}
-        extra={
-          <button
-            onClick={handleClear}
-            className="p-2.5 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all duration-300 group"
-            title="清空记忆"
-          >
-            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-          </button>
-        }
+        width={1000}
         styles={{
           header: { borderBottom: 'none', paddingBottom: 0 },
           body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' },
         }}
         className="ai-drawer"
       >
-        <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-slate-50 to-gray-100">
-          {/* 消息列表 */}
-          <div 
-            ref={messagesContainerRef}
-            onScroll={handleScroll}
-            className="flex-1 overflow-y-auto p-5 space-y-5"
-          >
-            {/* 加载更多提示 */}
-            {loadingMore && (
-              <div className="flex items-center justify-center gap-2 text-gray-400 text-sm py-3">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>加载历史消息...</span>
-              </div>
-            )}
-            {hasMore && !loadingMore && (
-              <div className="text-center py-2">
-                <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 bg-white/60 px-3 py-1.5 rounded-full backdrop-blur-sm">
-                  <ChevronRight className="w-3 h-3 -rotate-90" />
-                  滚动加载更多
-                </span>
-              </div>
-            )}
-            {messages.map((msg, index) => (
+        <div className="flex-1 flex h-full bg-gradient-to-b from-slate-50 to-gray-100">
+          {/* 左侧会话列表 */}
+          <div className="w-64 shrink-0 border-r border-gray-200 bg-white/60 backdrop-blur-sm flex flex-col h-full">
+            <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-600">会话列表</span>
+              <button
+                onClick={handleCreateSession}
+                disabled={loading}
+                className="p-1.5 rounded-lg text-gray-500 hover:bg-blue-50 hover:text-blue-500 transition-colors disabled:opacity-50"
+                title="新建会话"
+              >
+                <MessageSquarePlus className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {sessionsLoading ? (
+                <div className="flex items-center justify-center py-8 text-gray-400">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                </div>
+              ) : sessions.length === 0 ? (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  <MessageSquarePlus className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>暂无会话</p>
+                  <p className="text-xs mt-1">点击右上角新建</p>
+                </div>
+              ) : (
+                sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className={`group rounded-xl transition-all ${loading ? 'pointer-events-none opacity-60' : ''}`}
+                  >
+                    <div
+                      onClick={() => {
+                        if (!loading && session.id !== currentSessionId && deletingSessionId !== session.id) {
+                          setCurrentSessionId(session.id);
+                        }
+                      }}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+                        session.id === currentSessionId
+                          ? 'bg-blue-50/80 text-gray-900'
+                          : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <MessageSquare className={`w-4 h-4 shrink-0 ${
+                        session.id === currentSessionId ? 'text-blue-500' : 'text-gray-400'
+                      }`} />
+                      <span className={`text-sm truncate flex-1 ${
+                        session.id === currentSessionId ? 'font-medium' : ''
+                      }`}>
+                        {session.title || '新会话'}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSession(session.id);
+                        }}
+                        className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-gray-200/60 text-gray-400 hover:text-gray-600 transition-all"
+                        title="删除会话"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {deletingSessionId === session.id && (
+                      <div
+                        className="mx-1 mt-1 mb-1 p-3 rounded-xl bg-white border border-gray-200/80 shadow-lg shadow-gray-200/40"
+                        style={{ animation: 'fadeScaleIn 0.15s ease-out', transformOrigin: 'top center' }}
+                      >
+                        <p className="text-xs text-gray-500 mb-2.5">确定删除此会话及所有消息？</p>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={cancelDeleteSession}
+                            className="px-3 py-1.5 text-xs text-gray-600 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                          >
+                            取消
+                          </button>
+                          <button
+                            onClick={() => confirmDeleteSession(session.id)}
+                            className="px-3 py-1.5 text-xs text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* 右侧消息区域 */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* 消息列表 */}
+            <div 
+              ref={messagesContainerRef}
+              onScroll={handleScroll}
+              className="flex-1 overflow-y-auto p-5 space-y-5"
+            >
+              {!currentSessionId ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <Sparkles className="w-12 h-12 mb-4 opacity-50" />
+                  <p className="text-lg font-medium">选择或新建一个会话开始聊天</p>
+                </div>
+              ) : !historyLoaded ? (
+                // 加载中，显示加载指示器
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+                </div>
+              ) : messages.length === 0 && !thinking && !loadingMore ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                  <div className="mb-6 relative">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-3xl flex items-center justify-center shadow-xl">
+                      <Sparkles className="w-10 h-10 text-white" />
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center shadow-lg">
+                      <MessageSquare className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-800 mb-3">
+                    你好，我是 AI 助手
+                  </h2>
+                  <p className="text-gray-500 text-base mb-8 max-w-md">
+                    我可以帮助你解答编程问题、分析代码、提供算法思路等。试着向我提问吧！
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 max-w-2xl w-full">
+                    <button
+                      onClick={() => setInputValue('帮我分析这道题的解题思路')}
+                      className="group p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                          <MessageSquare className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">解题思路</span>
+                      </div>
+                      <p className="text-xs text-gray-500">分析算法题目的解决方案</p>
+                    </button>
+                    <button
+                      onClick={() => setInputValue('这段代码有什么问题？')}
+                      className="group p-4 bg-white rounded-xl border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                          <Bot className="w-4 h-4 text-purple-500" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">代码审查</span>
+                      </div>
+                      <p className="text-xs text-gray-500">帮助检查和优化代码</p>
+                    </button>
+                    <button
+                      onClick={() => setInputValue('能帮我优化一下算法复杂度吗？')}
+                      className="group p-4 bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-md transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                          <Sparkles className="w-4 h-4 text-green-500" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">性能优化</span>
+                      </div>
+                      <p className="text-xs text-gray-500">提升代码执行效率</p>
+                    </button>
+                    <button
+                      onClick={() => setInputValue('讲解一下这个算法的原理')}
+                      className="group p-4 bg-white rounded-xl border border-gray-200 hover:border-orange-300 hover:shadow-md transition-all text-left"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                          <MessageSquarePlus className="w-4 h-4 text-orange-500" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">算法讲解</span>
+                      </div>
+                      <p className="text-xs text-gray-500">深入理解算法原理</p>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* 加载更多提示 */}
+                  {loadingMore && (
+                    <div className="flex items-center justify-center gap-2 text-gray-400 text-sm py-3">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>加载历史消息...</span>
+                    </div>
+                  )}
+                  {hasMore && !loadingMore && (
+                    <div className="text-center py-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 bg-white/60 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                        <ChevronRight className="w-3 h-3 -rotate-90" />
+                        滚动加载更多
+                      </span>
+                    </div>
+                  )}
+                  {messages.map((msg, index) => (
               <div
                 key={index}
                 className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-fade-in`}
@@ -781,35 +1175,37 @@ const AIAssistant: React.FC = () => {
               </div>
             ))}
             
-            {/* 思考中指示器：使用当前选中模型的 Logo */}
-            {thinking && (
-              <div className="flex gap-3 animate-fade-in">
-                <Avatar
-                  size={38}
-                  src={models.find((m) => m.id === selectedModelId)?.logoUrl}
-                  className="flex-shrink-0 shadow-md ring-2 ring-white"
-                >
-                  {!models.find((m) => m.id === selectedModelId)?.logoUrl && <Bot className="w-4 h-4 text-blue-500" />}
-                </Avatar>
-                <div className="bg-white shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/80 px-4 py-3">
-                  <div className="flex items-center gap-3 text-gray-500 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
-                      <span>正在思考中</span>
+                  {/* 思考中指示器：使用当前选中模型的 Logo */}
+                  {thinking && (
+                    <div className="flex gap-3 animate-fade-in">
+                      <Avatar
+                        size={38}
+                        src={models.find((m) => m.id === selectedModelId)?.logoUrl}
+                        className="flex-shrink-0 shadow-md ring-2 ring-white"
+                      >
+                        {!models.find((m) => m.id === selectedModelId)?.logoUrl && <Bot className="w-4 h-4 text-blue-500" />}
+                      </Avatar>
+                      <div className="bg-white shadow-sm shadow-gray-200/50 rounded-2xl rounded-tl-sm border border-gray-100/80 px-4 py-3">
+                        <div className="flex items-center gap-3 text-gray-500 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+                            <span>正在思考中</span>
+                          </div>
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                            <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                      <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce [animation-delay:300ms]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+                  )}
+                </>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
 
-          {/* 输入区域 */}
+            {/* 输入区域 */}
           <div className="p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100/50">
             <div className="flex gap-3 items-start">
               {models.length > 0 && (
@@ -851,7 +1247,8 @@ const AIAssistant: React.FC = () => {
                       </span>
                     );
                   }}
-                  className="w-[160px] shrink-0 self-end"
+                  className="w-[180px] shrink-0 self-end"
+                  popupMatchSelectWidth={false}
                   placeholder="选择模型"
                   placement="topLeft"
                   getPopupContainer={(node) => node.parentElement ?? document.body}
@@ -866,21 +1263,22 @@ const AIAssistant: React.FC = () => {
                     handleSend();
                   }
                 }}
-                placeholder="输入您的问题..."
+                placeholder={currentSessionId ? '输入您的问题...' : '请先选择或新建一个会话'}
                 autoSize={{ minRows: 1, maxRows: 4 }}
-                disabled={loading || !isAuthenticated()}
+                disabled={loading || !isAuthenticated() || !currentSessionId}
                 className="flex-1 min-w-0 !rounded-2xl !border-gray-200 !bg-gray-50/50 focus:!border-blue-300 focus:!bg-white !shadow-sm hover:!border-gray-300 transition-all"
               />
               <Button
                 type="primary"
                 icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 onClick={handleSend}
-                disabled={!inputValue.trim() || !isAuthenticated() || loading}
+                disabled={!inputValue.trim() || !isAuthenticated() || loading || !currentSessionId}
                 className="!h-10 !px-5 shrink-0 flex-none !rounded-2xl !bg-blue-500 !border-none hover:!bg-blue-600 !shadow-lg !shadow-blue-500/25 disabled:!opacity-50 disabled:!shadow-none transition-all duration-300"
               >
                 发送
               </Button>
             </div>
+          </div>
           </div>
         </div>
       </Drawer>

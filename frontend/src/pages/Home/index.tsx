@@ -160,7 +160,7 @@ const Home: React.FC = () => {
               className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight"
               style={{ color: 'var(--gemini-text-primary)' }}
             >
-              探索算法之美
+              在线算法训练平台
               <br />
               <span 
                 className="bg-clip-text text-transparent"
@@ -168,7 +168,7 @@ const Home: React.FC = () => {
                   backgroundImage: 'linear-gradient(135deg, #1a73e8 0%, #041e49 100%)' 
                 }}
               >
-                构建代码世界
+                从练习到进阶
               </span>
             </h1>
 
@@ -177,7 +177,7 @@ const Home: React.FC = () => {
               className="text-lg max-w-xl"
               style={{ color: 'var(--gemini-text-secondary)' }}
             >
-              专为程序员打造的在线算法训练平台。无论你是算法初学者还是竞赛大神，在这里都能找到属于你的挑战。
+              提供题目练习、竞赛参与与代码提交服务，适合日常刷题与算法能力提升。
             </p>
 
             {/* Actions - Gemini 风格按钮 */}

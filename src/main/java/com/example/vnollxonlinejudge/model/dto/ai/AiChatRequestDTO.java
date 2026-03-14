@@ -9,5 +9,7 @@ import lombok.Data;
 public class AiChatRequestDTO {
     /** 选中的模型 ID，不传则用第一个启用模型 */
     private Long modelId;
+    /** 会话 ID */
+    private String sessionId;
     private String message;
 }

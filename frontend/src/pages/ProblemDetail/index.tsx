@@ -194,7 +194,11 @@ const ProblemDetail: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
   /** 调试输入：默认第一组样例输入，用户可修改 */
-  const [customTestInput, setCustomTestInput] = useState('');
+  const [exampleInputs, setExampleInputs] = useState<Record<number, string>>({});
+  /** 当前选中的样例 Tab 索引 */
+  const [activeExampleTab, setActiveExampleTab] = useState(0);
+  /** 记录每个样例是否被修改过（用于显示"自定义"标识） */
+  const [modifiedExamples, setModifiedExamples] = useState<Record<number, boolean>>({});
   const userInfo = getUserInfo();
 
   // 监听浏览器全屏状态变化
@@ -428,43 +432,83 @@ const ProblemDetail: React.FC = () => {
     ];
   }, [problem]);
 
-  // 第一组样例：默认用于测试，期望输出以第一组为准
-  const firstExample = useMemo(() => {
-    if (problem?.examples?.length) {
-      return { input: problem.examples[0].input, output: problem.examples[0].output };
+  // 当前选中的样例（用于测试）
+  const currentExample = useMemo(() => {
+    if (problem?.examples?.length && activeExampleTab < problem.examples.length) {
+      return { 
+        input: problem.examples[activeExampleTab].input, 
+        output: problem.examples[activeExampleTab].output,
+        index: activeExampleTab
+      };
     }
     return null;
-  }, [problem?.examples]);
+  }, [problem?.examples, activeExampleTab]);
 
   const normalizeTestText = useCallback((text?: string | null) => (text ?? '').replace(/\r\n/g, '\n').trim(), []);
+  const currentTestInput = exampleInputs[activeExampleTab] ?? '';
 
   const matchedExample = useMemo(() => {
     if (!problem?.examples?.length) {
       return null;
     }
-    const normalizedInput = normalizeTestText(customTestInput);
+    const normalizedInput = normalizeTestText(currentTestInput);
     return problem.examples.find((example) => normalizeTestText(example.input) === normalizedInput) ?? null;
-  }, [customTestInput, problem?.examples, normalizeTestText]);
+  }, [currentTestInput, problem?.examples, normalizeTestText]);
 
+  // 判断当前输入是否为自定义（与当前选中的样例不同）
   const isCustomTest = useMemo(() => {
-    return problem?.examples?.length ? !matchedExample : false;
-  }, [matchedExample, problem?.examples?.length]);
+    if (!problem?.examples?.length || !currentExample) return false;
+    return normalizeTestText(currentTestInput) !== normalizeTestText(currentExample.input);
+  }, [currentTestInput, currentExample, problem?.examples?.length, normalizeTestText]);
 
-  // 题目或第一组样例变化时，将调试输入重置为第一组输入
+  // 题目变化时，重置所有状态
   useEffect(() => {
-    if (firstExample?.input != null) {
-      setCustomTestInput(firstExample.input);
+    if (problem?.examples?.length) {
+      setExampleInputs(
+        problem.examples.reduce<Record<number, string>>((acc, example, index) => {
+          acc[index] = example.input || '';
+          return acc;
+        }, {})
+      );
+      setActiveExampleTab(0);
+      setModifiedExamples({});
     } else {
-      setCustomTestInput('');
+      setExampleInputs({});
     }
-  }, [problem?.id, firstExample?.input]);
+  }, [problem?.id]);
+
+  // 切换样例 Tab 时保留各自输入内容
+  const handleExampleTabChange = useCallback((index: number) => {
+    if (!problem?.examples?.length) return;
+    setActiveExampleTab(index);
+  }, [problem?.examples]);
+
+  // 输入内容变化时，检查是否被修改
+  const handleTestInputChange = useCallback((value: string) => {
+    setExampleInputs((prev) => ({ ...prev, [activeExampleTab]: value }));
+    // 检查当前输入是否与当前样例原始输入不同
+    if (currentExample && normalizeTestText(value) !== normalizeTestText(currentExample.input)) {
+      setModifiedExamples(prev => ({ ...prev, [activeExampleTab]: true }));
+    } else {
+      setModifiedExamples(prev => ({ ...prev, [activeExampleTab]: false }));
+    }
+  }, [currentExample, activeExampleTab, normalizeTestText]);
+
+  const handleResetCurrentExample = useCallback(() => {
+    if (!currentExample) return;
+    setExampleInputs((prev) => ({
+      ...prev,
+      [activeExampleTab]: currentExample.input || '',
+    }));
+    setModifiedExamples((prev) => ({ ...prev, [activeExampleTab]: false }));
+  }, [currentExample, activeExampleTab]);
 
   const handleTestCode = async () => {
     if (!code.trim()) {
       toast('请先输入代码');
       return;
     }
-    if (!firstExample?.output) {
+    if (!currentExample?.output) {
       toast('该题目没有提供样例，无法测试');
       return;
     }
@@ -475,8 +519,8 @@ const ProblemDetail: React.FC = () => {
         code,
         option: language,
         pid: String(problem!.id),
-        inputExample: customTestInput,
-        outputExample: matchedExample?.output ?? firstExample.output,
+        inputExample: currentTestInput,
+        outputExample: matchedExample?.output ?? currentExample.output,
         time: String(problem!.timeLimit || 1000),
         memory: String(problem!.memoryLimit || 256),
         customTest: isCustomTest,
@@ -632,8 +676,8 @@ ${code}
 3. 潜在问题：边界条件、溢出等
 4. 优化建议：如果有更优解法，请给出思路`;
 
-    // 触发自定义事件，打开 AI 助手并发送消息
-    window.dispatchEvent(new CustomEvent('open-ai-assistant', { detail: { message: prompt } }));
+    // 触发自定义事件，打开 AI 助手并自动创建新会话发送消息
+    window.dispatchEvent(new CustomEvent('open-ai-assistant', { detail: { message: prompt, forceNewSession: true } }));
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -959,29 +1003,77 @@ ${code}
           <CodeEditor value={code} onChange={setCode} language={language} height={420} />
         )}
 
-        {/* 调试输入：默认第一组样例，用户可修改 */}
+        {/* 调试输入：支持 Tab 切换多组样例 */}
         {problem.examples?.length ? (
           <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-                调试输入（默认使用第一组样例；如果你修改了输入，测试结果只显示程序实际输出）
-              </span>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => firstExample && setCustomTestInput(firstExample.input)}
-              >
-                恢复第一组样例
-              </Button>
+            {/* 样例 Tab 切换 */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {problem.examples.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleExampleTabChange(index)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    activeExampleTab === index
+                      ? 'shadow-sm'
+                      : 'hover:opacity-80'
+                  }`}
+                  style={{
+                    backgroundColor: activeExampleTab === index 
+                      ? 'var(--gemini-accent)' 
+                      : 'var(--gemini-bg)',
+                    color: activeExampleTab === index 
+                      ? 'var(--gemini-accent-text)' 
+                      : 'var(--gemini-text-secondary)',
+                    border: `1px solid ${activeExampleTab === index ? 'transparent' : 'var(--gemini-border-light)'}`,
+                  }}
+                >
+                  样例 {index + 1}
+                  {modifiedExamples[index] && (
+                    <span 
+                      className="ml-1 px-1.5 py-0.5 text-xs rounded"
+                      style={{ 
+                        backgroundColor: 'var(--gemini-warning)', 
+                        color: '#fff' 
+                      }}
+                    >
+                      已修改
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
-            <Input.TextArea
-              value={customTestInput}
-              onChange={(e) => setCustomTestInput(e.target.value)}
-              placeholder="默认已填入第一组样例输入，可修改后点击「测试样例」"
-              rows={4}
-              className="rounded-2xl font-mono text-sm"
-              style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)' }}
-            />
+            <div className="relative">
+              <Input.TextArea
+                value={currentTestInput}
+                onChange={(e) => handleTestInputChange(e.target.value)}
+                placeholder="默认已填入当前样例输入，可修改后点击「测试样例」"
+                rows={4}
+                className="rounded-2xl font-mono text-sm"
+                style={{
+                  backgroundColor: 'var(--gemini-bg)',
+                  borderColor: 'var(--gemini-border-light)',
+                  paddingBottom: 36,
+                }}
+              />
+              <button
+                onClick={handleResetCurrentExample}
+                className="absolute bottom-3 right-3 text-xs transition-colors"
+                style={{
+                  color: 'var(--gemini-text-secondary)',
+                  backgroundColor: 'var(--gemini-surface)',
+                  border: '1px solid var(--gemini-border-light)',
+                  borderRadius: 9999,
+                  padding: '2px 8px',
+                }}
+              >
+                重置当前样例
+              </button>
+            </div>
+            {isCustomTest && (
+              <div className="mt-2 text-xs" style={{ color: 'var(--gemini-warning)' }}>
+                输入已修改，测试时将使用自定义输入，结果只显示程序实际输出
+              </div>
+            )}
           </div>
         ) : null}
 
