@@ -25,6 +25,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [layoutMode, setLayoutMode] = useState<'top' | 'left'>(() => {
     return (localStorage.getItem('layoutMode') as 'top' | 'left') || 'left';
   });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem('sidebarCollapsed') === 'true';
+  });
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -167,6 +170,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     localStorage.setItem('layoutMode', newMode);
   };
 
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('sidebarCollapsed', String(next));
+      return next;
+    });
+  };
+
   return (
     <Layout 
       className={`min-h-screen ${layoutMode === 'left' ? 'flex-row' : 'flex-col'}`}
@@ -185,6 +196,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           loadNotificationCount={loadNotificationCount}
           layoutMode={layoutMode}
           toggleLayoutMode={toggleLayoutMode}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebarCollapsed}
         />
       ) : (
         <Header
@@ -198,7 +211,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         className="relative z-10" 
         style={{ 
           background: 'transparent',
-          marginLeft: layoutMode === 'left' ? '224px' : '0',
+          marginLeft: layoutMode === 'left' ? (sidebarCollapsed ? '80px' : '224px') : '0',
           transition: 'margin-left 0.3s ease'
         }}
       >

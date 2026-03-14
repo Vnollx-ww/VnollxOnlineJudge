@@ -15,6 +15,8 @@ import {
   ArrowLeftRight,
   Zap,
   Users,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { isAuthenticated, removeToken } from '@/utils/auth';
 import { usePermission } from '@/contexts/PermissionContext';
@@ -29,6 +31,8 @@ interface SidebarProps {
   loadNotificationCount: () => Promise<void>;
   layoutMode: 'top' | 'left';
   toggleLayoutMode: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -36,6 +40,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   notificationCount,
   unreadMessageCount,
   toggleLayoutMode,
+  collapsed = false,
+  onToggleCollapse,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -126,168 +132,261 @@ const Sidebar: React.FC<SidebarProps> = ({
     { key: '/about', icon: Info, label: '关于' },
   ];
 
+  const sidebarWidth = collapsed ? 80 : 224;
+
   return (
-    <aside 
-      className="fixed left-0 top-0 bottom-0 w-56 flex flex-col z-50"
-      style={{ 
+    <aside
+      className="fixed left-0 top-0 bottom-0 flex flex-col z-50 transition-[width] duration-200 ease-out"
+      style={{
+        width: sidebarWidth,
         backgroundColor: 'var(--gemini-surface)',
         borderRight: '1px solid var(--gemini-border-light)',
-        boxShadow: 'var(--shadow-gemini)'
+        boxShadow: 'var(--shadow-gemini)',
       }}
     >
       {contextHolder}
       {messageContextHolder}
 
-      {/* Header - Gemini 风格 */}
-      <div 
-        className="h-16 px-4 flex items-center justify-between"
-        style={{ borderBottom: '1px solid var(--gemini-border-light)' }}
+      {/* Header */}
+      <div
+        className="h-16 flex items-center shrink-0 transition-[padding] duration-200"
+        style={{
+          padding: collapsed ? '0 12px' : '0 16px',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          borderBottom: '1px solid var(--gemini-border-light)',
+        }}
       >
-        <Link to="/" className="flex items-center gap-2 group">
-          <div 
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-105"
+        <Link
+          to="/"
+          className="flex items-center gap-2 group"
+          style={{ minWidth: collapsed ? 'auto' : undefined }}
+        >
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-105"
             style={{ backgroundColor: 'var(--gemini-accent)' }}
           >
             <Zap className="w-4 h-4" style={{ color: 'var(--gemini-accent-text)' }} />
           </div>
-          <span 
-            className="text-lg font-semibold tracking-tight"
-            style={{ color: 'var(--gemini-text-primary)' }}
-          >
-            VnollxOJ
-          </span>
+          {!collapsed && (
+            <span
+              className="text-lg font-semibold tracking-tight truncate"
+              style={{ color: 'var(--gemini-text-primary)' }}
+            >
+              VnollxOJ
+            </span>
+          )}
         </Link>
-        <Tooltip title="切换为顶部导航" placement="right">
-          <button
-            onClick={toggleLayoutMode}
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
-            style={{ 
-              backgroundColor: 'var(--gemini-bg)',
-              color: 'var(--gemini-text-secondary)'
-            }}
-          >
-            <ArrowLeftRight className="w-4 h-4" />
-          </button>
-        </Tooltip>
-      </div>
-
-      {/* Navigation - Gemini 风格 */}
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname === item.key;
-          return (
+        {!collapsed && (
+          <Tooltip title="切换为顶部导航" placement="right">
             <button
-              key={item.key}
-              onClick={() => handleGuardedNavigate(item.key, item.key !== '/')}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-full text-sm font-medium transition-all duration-200"
-              style={{ 
-                backgroundColor: isActive ? 'var(--gemini-accent)' : 'transparent',
-                color: isActive ? 'var(--gemini-accent-text)' : 'var(--gemini-text-secondary)'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'var(--gemini-surface-hover)';
-                  e.currentTarget.style.color = 'var(--gemini-text-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--gemini-text-secondary)';
-                }
+              type="button"
+              onClick={toggleLayoutMode}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shrink-0"
+              style={{
+                backgroundColor: 'var(--gemini-bg)',
+                color: 'var(--gemini-text-secondary)',
               }}
             >
-              {item.key === '/friends' && unreadMessageCount > 0 ? (
-                <Badge count={unreadMessageCount} size="small" offset={[-2, 2]}>
-                  <Icon className="w-5 h-5" style={{ color: isActive ? 'var(--gemini-accent-text)' : 'var(--gemini-text-secondary)' }} />
-                </Badge>
-              ) : (
-                <Icon className="w-5 h-5" />
-              )}
-              <span>{item.label}</span>
+              <ArrowLeftRight className="w-4 h-4" />
             </button>
-          );
-        })}
+          </Tooltip>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden" style={{ paddingLeft: 12, paddingRight: 12 }}>
+        <div className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => handleGuardedNavigate(item.key, item.key !== '/')}
+                className="w-full flex items-center rounded-full text-sm font-medium transition-all duration-200"
+                style={{
+                  gap: 12,
+                  padding: collapsed ? '12px 0' : '12px 16px',
+                  justifyContent: collapsed ? 'center' : 'flex-start',
+                  backgroundColor: isActive ? 'var(--gemini-accent)' : 'transparent',
+                  color: isActive ? 'var(--gemini-accent-text)' : 'var(--gemini-text-secondary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'var(--gemini-surface-hover)';
+                    e.currentTarget.style.color = 'var(--gemini-text-primary)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--gemini-text-secondary)';
+                  }
+                }}
+              >
+                {item.key === '/friends' && unreadMessageCount > 0 ? (
+                  <Badge count={unreadMessageCount} size="small" offset={[-2, 2]}>
+                    <Icon
+                      className="w-5 h-5 shrink-0"
+                      style={{ color: isActive ? 'var(--gemini-accent-text)' : 'var(--gemini-text-secondary)' }}
+                    />
+                  </Badge>
+                ) : (
+                  <Icon className="w-5 h-5 shrink-0" />
+                )}
+                {!collapsed && <span className="truncate">{item.label}</span>}
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
-      {/* Footer - User Area - Gemini 风格 */}
-      <div 
-        className="p-4"
-        style={{ borderTop: '1px solid var(--gemini-border-light)' }}
+      {/* Footer: 用户区 + 折叠按钮 */}
+      <div
+        className="shrink-0 transition-[padding] duration-200"
+        style={{
+          padding: collapsed ? 12 : 16,
+          borderTop: '1px solid var(--gemini-border-light)',
+        }}
       >
         {isAuthenticated() && user ? (
           <div className="space-y-3">
-            {/* Notification */}
-            <Link 
-              to="/notifications"
-              className="flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-200"
-              style={{ backgroundColor: 'var(--gemini-bg)' }}
-            >
-              <Badge count={notificationCount} size="small" offset={[-2, 2]}>
-                <Bell className="w-5 h-5" style={{ color: 'var(--gemini-text-secondary)' }} />
-              </Badge>
-              <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>通知</span>
-            </Link>
-
-            {/* User Dropdown */}
-            <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
-              <div 
-                className="flex items-center gap-3 px-3 py-2.5 rounded-3xl cursor-pointer transition-all duration-200"
-                style={{ backgroundColor: 'var(--gemini-bg)' }}
-              >
-                <Avatar
-                  size={36}
-                  src={user.avatar}
-                  className="flex-shrink-0"
-                  style={{ 
-                    background: user.avatar ? 'transparent' : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
-                    color: '#fff'
-                  }}
+            {!collapsed && (
+              <>
+                <Link
+                  to="/notifications"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-200"
+                  style={{ backgroundColor: 'var(--gemini-bg)' }}
                 >
-                  {user.name?.charAt(0)?.toUpperCase() || 'U'}
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div 
-                    className="text-sm font-medium truncate"
-                    style={{ color: 'var(--gemini-text-primary)' }}
+                  <Badge count={notificationCount} size="small" offset={[-2, 2]}>
+                    <Bell className="w-5 h-5 shrink-0" style={{ color: 'var(--gemini-text-secondary)' }} />
+                  </Badge>
+                  <span className="text-sm truncate" style={{ color: 'var(--gemini-text-secondary)' }}>
+                    通知
+                  </span>
+                </Link>
+                <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
+                  <div
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-3xl cursor-pointer transition-all duration-200"
+                    style={{ backgroundColor: 'var(--gemini-bg)' }}
                   >
-                    {user.name}
+                    <Avatar
+                      size={36}
+                      src={user.avatar}
+                      className="flex-shrink-0"
+                      style={{
+                        background: user.avatar
+                          ? 'transparent'
+                          : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
+                        color: '#fff',
+                      }}
+                    >
+                      {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate" style={{ color: 'var(--gemini-text-primary)' }}>
+                        {user.name}
+                      </div>
+                      <div className="text-xs truncate" style={{ color: 'var(--gemini-text-disabled)' }}>
+                        {user.email || '点击展开菜单'}
+                      </div>
+                    </div>
                   </div>
-                  <div 
-                    className="text-xs truncate"
-                    style={{ color: 'var(--gemini-text-disabled)' }}
+                </Dropdown>
+              </>
+            )}
+            {collapsed && (
+              <div className="flex flex-col items-center gap-2">
+                <Link
+                  to="/notifications"
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                  style={{ backgroundColor: 'var(--gemini-bg)' }}
+                >
+                  <Badge count={notificationCount} size="small" offset={[-2, 2]}>
+                    <Bell className="w-5 h-5" style={{ color: 'var(--gemini-text-secondary)' }} />
+                  </Badge>
+                </Link>
+                <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
+                    style={{
+                      backgroundColor: 'var(--gemini-bg)',
+                      background: user.avatar
+                        ? 'transparent'
+                        : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
+                      color: '#fff',
+                    }}
                   >
-                    {user.email || '点击展开菜单'}
+                    {user.avatar ? (
+                      <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <span className="text-sm font-medium">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                    )}
                   </div>
-                </div>
+                </Dropdown>
               </div>
-            </Dropdown>
+            )}
           </div>
         ) : (
-          <div className="space-y-2">
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full py-2.5 rounded-full text-sm font-medium transition-all duration-200"
-              style={{ 
-                color: 'var(--gemini-text-secondary)',
-                border: '1px solid var(--gemini-border)',
-                backgroundColor: 'transparent'
-              }}
-            >
-              登录
-            </button>
-            <button
-              onClick={() => navigate('/register')}
-              className="w-full py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
-              style={{ 
-                backgroundColor: 'var(--gemini-accent)',
-                color: 'var(--gemini-accent-text)'
-              }}
-            >
-              注册
-            </button>
-          </div>
+          !collapsed && (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => navigate('/login')}
+                className="w-full py-2.5 rounded-full text-sm font-medium transition-all duration-200"
+                style={{
+                  color: 'var(--gemini-text-secondary)',
+                  border: '1px solid var(--gemini-border)',
+                  backgroundColor: 'transparent',
+                }}
+              >
+                登录
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="w-full py-2.5 rounded-full text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                style={{
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                }}
+              >
+                注册
+              </button>
+            </div>
+          )
+        )}
+
+        {/* 折叠/展开按钮 - 在侧边栏内部底部 */}
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border border-[var(--gemini-border-light)]"
+            style={{
+              backgroundColor: 'var(--gemini-surface)',
+              color: 'var(--gemini-text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--gemini-surface-hover)';
+              e.currentTarget.style.color = 'var(--gemini-text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--gemini-surface)';
+              e.currentTarget.style.color = 'var(--gemini-text-secondary)';
+            }}
+            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-4 h-4 shrink-0" />
+            ) : (
+              <>
+                <PanelLeftClose className="w-4 h-4 shrink-0" />
+                <span>收起侧边栏</span>
+              </>
+            )}
+          </button>
         )}
       </div>
     </aside>

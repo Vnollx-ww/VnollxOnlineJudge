@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
-import { Layout, Menu, Avatar, Spin, Button } from 'antd';
 import toast from 'react-hot-toast';
 import {
   Users,
@@ -13,6 +12,8 @@ import {
   Key,
   BarChart3,
   Bot,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
@@ -29,7 +30,8 @@ import { usePermission } from '../../contexts/PermissionContext';
 import { PermissionCode } from '../../constants/permissions';
 import type { ApiResponse } from '../../types';
 
-const { Sider, Header, Content } = Layout;
+const SIDER_WIDTH = 220;
+const SIDER_COLLAPSED_WIDTH = 80;
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -40,7 +42,6 @@ const Admin: React.FC = () => {
   const { hasAnyPermission, loading: permissionLoading } = usePermission();
 
   useEffect(() => {
-    // 等待权限加载完成后再检查
     if (!permissionLoading) {
       checkAdminPermission();
     }
@@ -88,7 +89,6 @@ const Admin: React.FC = () => {
         return;
       }
 
-      // 使用权限守卫检查是否有任一管理权限
       if (hasAnyPermission(...adminPermissions)) {
         setHasPermission(true);
       } else {
@@ -111,24 +111,20 @@ const Admin: React.FC = () => {
   };
 
   const allMenuItems = [
-    { key: '/admin/users', icon: <Users className="w-4 h-4" />, label: '用户管理', permissions: [PermissionCode.USER_VIEW, PermissionCode.USER_MANAGE] },
-    { key: '/admin/problems', icon: <HelpCircle className="w-4 h-4" />, label: '题目管理', permissions: [PermissionCode.PROBLEM_VIEW, PermissionCode.PROBLEM_MANAGE] },
-    { key: '/admin/solves', icon: <Lightbulb className="w-4 h-4" />, label: '题解管理', permissions: [PermissionCode.SOLVE_VIEW, PermissionCode.SOLVE_AUDIT] },
-    { key: '/admin/competitions', icon: <Trophy className="w-4 h-4" />, label: '比赛管理', permissions: [PermissionCode.COMPETITION_VIEW, PermissionCode.COMPETITION_MANAGE] },
-    { key: '/admin/practices', icon: <BookOpen className="w-4 h-4" />, label: '练习管理', permissions: [PermissionCode.PRACTICE_VIEW, PermissionCode.PRACTICE_MANAGE] },
-    { key: '/admin/statistics', icon: <BarChart3 className="w-4 h-4" />, label: '数据统计', permissions: [PermissionCode.SYSTEM_MONITOR] },
-    { key: '/admin/roles', icon: <Shield className="w-4 h-4" />, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
-    { key: '/admin/permissions', icon: <Key className="w-4 h-4" />, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
-    { key: '/admin/ai-models', icon: <Bot className="w-4 h-4" />, label: 'AI 模型', permissions: [PermissionCode.AI_CONFIG_VIEW] },
+    { key: '/admin/users', icon: Users, label: '用户管理', permissions: [PermissionCode.USER_VIEW, PermissionCode.USER_MANAGE] },
+    { key: '/admin/problems', icon: HelpCircle, label: '题目管理', permissions: [PermissionCode.PROBLEM_VIEW, PermissionCode.PROBLEM_MANAGE] },
+    { key: '/admin/solves', icon: Lightbulb, label: '题解管理', permissions: [PermissionCode.SOLVE_VIEW, PermissionCode.SOLVE_AUDIT] },
+    { key: '/admin/competitions', icon: Trophy, label: '比赛管理', permissions: [PermissionCode.COMPETITION_VIEW, PermissionCode.COMPETITION_MANAGE] },
+    { key: '/admin/practices', icon: BookOpen, label: '练习管理', permissions: [PermissionCode.PRACTICE_VIEW, PermissionCode.PRACTICE_MANAGE] },
+    { key: '/admin/statistics', icon: BarChart3, label: '数据统计', permissions: [PermissionCode.SYSTEM_MONITOR] },
+    { key: '/admin/roles', icon: Shield, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
+    { key: '/admin/permissions', icon: Key, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
+    { key: '/admin/ai-models', icon: Bot, label: 'AI 模型', permissions: [PermissionCode.AI_CONFIG_VIEW] },
   ];
-  
+
   const menuItems = useMemo(() => {
     return allMenuItems.filter(item => hasAnyPermission(...item.permissions));
   }, [hasAnyPermission]);
-
-  const handleMenuClick = ({ key }: { key: string }) => {
-    navigate(key);
-  };
 
   const selectedKey = location.pathname.startsWith('/admin')
     ? location.pathname
@@ -136,8 +132,12 @@ const Admin: React.FC = () => {
 
   if (checking) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" tip="检查权限中..." />
+      <div
+        className="flex flex-col items-center justify-center min-h-screen gap-4"
+        style={{ color: 'var(--gemini-text-secondary)' }}
+      >
+        <div className="admin-loading-spinner" />
+        <span>检查权限中...</span>
       </div>
     );
   }
@@ -147,75 +147,87 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <Layout className="min-h-screen">
-      <Sider
-        width={220}
-        collapsed={collapsed}
-        collapsible
-        onCollapse={setCollapsed}
-        style={{ 
-          backgroundColor: 'var(--gemini-surface)',
-          borderRight: '1px solid var(--gemini-border-light)'
-        }}
+    <div className="min-h-screen flex">
+      {/* 固定侧边栏 */}
+      <aside
+        className="admin-sider"
+        style={{
+          '--sider-width': `${SIDER_WIDTH}px`,
+          '--sider-collapsed-width': `${SIDER_COLLAPSED_WIDTH}px`,
+          width: collapsed ? SIDER_COLLAPSED_WIDTH : SIDER_WIDTH,
+        } as React.CSSProperties}
       >
-        {/* Logo - Gemini 风格 */}
-        <div 
-          className="h-16 flex items-center justify-center gap-2"
-          style={{ borderBottom: '1px solid var(--gemini-border-light)' }}
-        >
-          <Shield className="w-6 h-6" style={{ color: 'var(--gemini-accent-strong)' }} />
+        <div className="admin-sider__logo">
+          <div className="admin-sider__logo-icon">
+            <Shield className="w-5 h-5" style={{ color: 'var(--gemini-accent-text)' }} />
+          </div>
           {!collapsed && (
-            <span className="text-lg font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>管理后台</span>
+            <span className="admin-sider__logo-text">管理后台</span>
           )}
         </div>
 
-        {/* Menu */}
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={menuItems}
-          onClick={handleMenuClick}
-          className="border-none mt-4"
-        />
-      </Sider>
+        <nav className="admin-sider__nav">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isSelected = selectedKey === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => navigate(item.key)}
+                className={`admin-sider__item ${isSelected ? 'admin-sider__item--selected' : ''}`}
+              >
+                <Icon className="w-5 h-5 shrink-0" />
+                {!collapsed && <span className="admin-sider__item-label">{item.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
 
-      <Layout>
-        {/* Header - Gemini 风格 */}
-        <Header 
-          className="px-6 flex items-center justify-between"
-          style={{ 
-            backgroundColor: 'var(--gemini-surface)',
-            borderBottom: '1px solid var(--gemini-border-light)'
-          }}
-        >
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
-            Vnollx在线评测系统 - 管理后台
-          </h1>
-          <div className="flex items-center gap-4">
-            <Button
-              type="primary"
-              icon={<Home className="w-4 h-4" />}
+        <div className="admin-sider__footer">
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            className="admin-sider__trigger"
+            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          >
+            {collapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+            {!collapsed && <span>收起侧边栏</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* 主内容区 */}
+      <div
+        className="admin-main"
+        style={{
+          marginLeft: collapsed ? SIDER_COLLAPSED_WIDTH : SIDER_WIDTH,
+        }}
+      >
+        <header className="admin-header">
+          <h1 className="admin-header__title">Vnollx在线评测系统 - 管理后台</h1>
+          <div className="admin-header__actions">
+            <button
+              type="button"
               onClick={() => navigate('/')}
-              style={{ 
-                backgroundColor: 'var(--gemini-accent)',
-                color: 'var(--gemini-accent-text)',
-                border: 'none'
-              }}
+              className="admin-header__btn-home"
             >
+              <Home className="w-4 h-4" />
               返回主页
-            </Button>
-            <Avatar style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}>
-              A
-            </Avatar>
-            <span style={{ color: 'var(--gemini-text-secondary)' }}>管理员</span>
+            </button>
+            <div className="admin-header__user">
+              <div
+                className="admin-header__avatar"
+                style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}
+              >
+                A
+              </div>
+              <span className="admin-header__user-label">管理员</span>
+            </div>
           </div>
-        </Header>
+        </header>
 
-        {/* Content - Gemini 风格 */}
-        <Content 
-          className="p-6 min-h-[calc(100vh-64px)]"
-          style={{ backgroundColor: 'var(--gemini-bg)' }}
-        >
+        <main className="admin-content">
           <Routes>
             <Route path="users" element={<AdminUsers />} />
             <Route path="problems" element={<AdminProblems />} />
@@ -228,9 +240,9 @@ const Admin: React.FC = () => {
             <Route path="ai-models" element={<AdminAiModels />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>
-        </Content>
-      </Layout>
-    </Layout>
+        </main>
+      </div>
+    </div>
   );
 };
 

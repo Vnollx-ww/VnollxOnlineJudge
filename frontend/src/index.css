@@ -800,10 +800,319 @@ body {
   background-color: var(--gemini-accent-strong) !important;
 }
 
+/* ========================================
+   管理后台侧边栏 - 固定 + 菜单样式
+======================================== */
+
+/* 管理后台侧边栏菜单：圆角、间距、选中态 */
+.admin-sidebar-menu.ant-menu-inline {
+  border: none !important;
+}
+
+.admin-sidebar-menu .ant-menu-item,
+.admin-sidebar-menu .ant-menu-submenu-title {
+  margin: 2px 8px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  border-radius: 12px !important;
+  color: var(--gemini-text-secondary) !important;
+  transition: background-color 0.2s, color 0.2s !important;
+}
+
+.admin-sidebar-menu .ant-menu-item:hover,
+.admin-sidebar-menu .ant-menu-submenu-title:hover {
+  background-color: var(--gemini-surface-hover) !important;
+  color: var(--gemini-text-primary) !important;
+}
+
+.admin-sidebar-menu .ant-menu-item-selected {
+  background-color: var(--gemini-accent) !important;
+  color: var(--gemini-accent-text) !important;
+  font-weight: 500 !important;
+}
+
+.admin-sidebar-menu .ant-menu-item-selected:hover {
+  background-color: var(--gemini-accent-hover) !important;
+  color: var(--gemini-accent-text) !important;
+}
+
+.admin-sidebar-menu .ant-menu-item .ant-menu-item-icon,
+.admin-sidebar-menu .ant-menu-submenu-title .ant-menu-item-icon {
+  font-size: 18px !important;
+}
+
+/* 折叠按钮：避免被其它布局影响 */
+.admin-sider-trigger:focus {
+  outline: none;
+}
+
+.admin-sider-trigger:focus-visible {
+  outline: 2px solid var(--gemini-accent-strong);
+  outline-offset: 2px;
+}
+
 /* Form */
 .ant-form-item-label > label {
   color: var(--gemini-text-secondary) !important;
   font-weight: 500 !important;
+}
+
+/* ========================================
+   管理后台 - 手写布局（无 Ant Design）
+======================================== */
+
+/* 权限检查加载 */
+.admin-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--gemini-border-light);
+  border-top-color: var(--gemini-accent-strong);
+  border-radius: 50%;
+  animation: admin-spin 0.8s linear infinite;
+}
+
+@keyframes admin-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 侧边栏 */
+.admin-sider {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--gemini-surface);
+  border-right: 1px solid var(--gemini-border-light);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
+  transition: width 0.2s ease;
+}
+
+.admin-sider__logo {
+  height: 64px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--gemini-border-light);
+}
+
+.admin-sider[style*="80px"] .admin-sider__logo {
+  padding: 0 12px;
+}
+
+.admin-sider__logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%);
+}
+
+.admin-sider__logo-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gemini-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-sider__nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-sider__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--gemini-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  text-align: left;
+}
+
+.admin-sider__item:hover {
+  background-color: var(--gemini-surface-hover);
+  color: var(--gemini-text-primary);
+}
+
+.admin-sider__item--selected {
+  background-color: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+}
+
+.admin-sider__item--selected:hover {
+  background-color: var(--gemini-accent-hover);
+  color: var(--gemini-accent-text);
+}
+
+.admin-sider__item-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-sider[style*="80px"] .admin-sider__item {
+  padding: 0;
+  justify-content: center;
+}
+
+.admin-sider__footer {
+  flex-shrink: 0;
+  padding: 12px 10px;
+  border-top: 1px solid var(--gemini-border-light);
+}
+
+.admin-sider__trigger {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--gemini-border-light);
+  border-radius: 12px;
+  background: var(--gemini-surface);
+  color: var(--gemini-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-sider__trigger:hover {
+  background: var(--gemini-surface-hover);
+  color: var(--gemini-text-primary);
+  border-color: var(--gemini-border);
+}
+
+.admin-sider__trigger:focus-visible {
+  outline: 2px solid var(--gemini-accent-strong);
+  outline-offset: 2px;
+}
+
+.admin-sider[style*="80px"] .admin-sider__footer {
+  padding: 12px;
+}
+
+.admin-sider[style*="80px"] .admin-sider__trigger {
+  padding: 0;
+}
+
+.admin-sider[style*="80px"] .admin-sider__trigger span {
+  display: none;
+}
+
+/* 主内容区 */
+.admin-main {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.2s ease;
+}
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  background-color: var(--gemini-surface);
+  border-bottom: 1px solid var(--gemini-border-light);
+}
+
+.admin-header__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--gemini-text-primary);
+}
+
+.admin-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-header__btn-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--gemini-accent);
+  color: var(--gemini-accent-text);
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.admin-header__btn-home:hover {
+  background: var(--gemini-accent-hover);
+}
+
+.admin-header__btn-home:active {
+  transform: scale(0.98);
+}
+
+.admin-header__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-header__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.admin-header__user-label {
+  font-size: 0.875rem;
+  color: var(--gemini-text-secondary);
+}
+
+.admin-content {
+  flex: 1;
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background-color: var(--gemini-bg);
 }
 
 /* Monaco Editor 容器样式 */
