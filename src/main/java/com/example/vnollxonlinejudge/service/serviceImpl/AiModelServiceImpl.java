@@ -9,8 +9,6 @@ import com.example.vnollxonlinejudge.model.entity.AiPlatform;
 import com.example.vnollxonlinejudge.model.vo.ai.AiModelVo;
 import com.example.vnollxonlinejudge.service.AiModelService;
 import com.example.vnollxonlinejudge.service.AiPlatformService;
-import com.example.vnollxonlinejudge.service.ai.adapter.StreamingChatModelAdapterFactory;
-import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,13 +22,10 @@ public class AiModelServiceImpl implements AiModelService {
     private static final Logger logger = LoggerFactory.getLogger(AiModelServiceImpl.class);
     private final AiModelMapper aiModelMapper;
     private final AiPlatformService aiPlatformService;
-    private final StreamingChatModelAdapterFactory adapterFactory;
 
-    public AiModelServiceImpl(AiModelMapper aiModelMapper, AiPlatformService aiPlatformService,
-                              StreamingChatModelAdapterFactory adapterFactory) {
+    public AiModelServiceImpl(AiModelMapper aiModelMapper, AiPlatformService aiPlatformService) {
         this.aiModelMapper = aiModelMapper;
         this.aiPlatformService = aiPlatformService;
-        this.adapterFactory = adapterFactory;
     }
 
     @Override
@@ -74,10 +69,7 @@ public class AiModelServiceImpl implements AiModelService {
         if (dto.getPlatformId() == null) {
             throw new BusinessException("请选择 AI 平台");
         }
-        var platform = aiPlatformService.getById(dto.getPlatformId());
-        if ("langchain4j".equalsIgnoreCase(platform.getCode()) && (dto.getAdapterCode() == null || dto.getAdapterCode().trim().isEmpty())) {
-            throw new BusinessException("LangChain4j 平台请选择适配器（OpenAI/Mistral/阿里云百炼）");
-        }
+        aiPlatformService.getById(dto.getPlatformId());
         AiModel entity = toEntity(dto);
         entity.setId(null);
         aiModelMapper.insert(entity);
@@ -117,14 +109,6 @@ public class AiModelServiceImpl implements AiModelService {
             throw new BusinessException("AI 模型不存在");
         }
         aiModelMapper.deleteById(id);
-    }
-
-    @Override
-    public StreamingChatLanguageModel buildStreamingModel(AiModel model) {
-        if (model.getApiKey() == null || model.getApiKey().trim().isEmpty()) {
-            throw new BusinessException("该模型未配置 API Key");
-        }
-        return adapterFactory.build(model);
     }
 
     private AiModelVo toVo(AiModel e, AiPlatform platform) {
