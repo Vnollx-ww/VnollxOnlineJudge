@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Typography,
@@ -8,23 +8,16 @@ import {
   Spin,
   Tooltip,
   Button,
-  Modal,
   Progress,
   Select,
 } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import toast from 'react-hot-toast';
-import { TrendingUp, Target, Bot, BarChart3, GraduationCap } from 'lucide-react';
+import { TrendingUp, Target, Bot, BarChart3 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from 'recharts';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
-import hljs from 'highlight.js';
-import katex from 'katex';
-import 'highlight.js/styles/github.css';
-import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -64,31 +57,6 @@ interface LearningData {
 
 const CHART_COLORS = ['#1a73e8', '#34a853', '#f9ab00', '#d93025', '#9334e6', '#0d9488'];
 
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-});
-
-// 渲染 LaTeX 公式
-const renderLatex = (text: string) => {
-  if (!text) return text;
-  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
-    try {
-      return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
-    } catch {
-      return match;
-    }
-  });
-  text = text.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
-    try {
-      return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
-    } catch {
-      return match;
-    }
-  });
-  return text;
-};
-
 const UserProfile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -99,40 +67,6 @@ const UserProfile: React.FC = () => {
   const [learningData, setLearningData] = useState<LearningData | null>(null);
   const [learningLoading, setLearningLoading] = useState(false);
   const [learningDays, setLearningDays] = useState(30);
-  const [aiAdviceVisible, setAiAdviceVisible] = useState(false);
-  const [aiAdviceLoading, setAiAdviceLoading] = useState(false);
-  const [aiAdviceResult, setAiAdviceResult] = useState('');
-  const [aiPathVisible, setAiPathVisible] = useState(false);
-  const [aiPathLoading, setAiPathLoading] = useState(false);
-  const [aiPathResult, setAiPathResult] = useState('');
-  const aiAdviceRef = useRef<HTMLDivElement>(null);
-  const aiPathRef = useRef<HTMLDivElement>(null);
-
-  // 渲染 AI 结果为 HTML
-  const renderAiContent = useMemo(() => (content: string) => {
-    if (!content) return '';
-    const withLatex = renderLatex(content);
-    const html = marked.parse(withLatex) as string;
-    return DOMPurify.sanitize(html);
-  }, []);
-
-  // 为 AI 弹窗内容高亮代码块
-  useEffect(() => {
-    if (aiAdviceRef.current && aiAdviceResult) {
-      aiAdviceRef.current.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block as HTMLElement);
-      });
-    }
-  }, [aiAdviceResult]);
-
-  useEffect(() => {
-    if (aiPathRef.current && aiPathResult) {
-      aiPathRef.current.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block as HTMLElement);
-      });
-    }
-  }, [aiPathResult]);
-
   useEffect(() => {
     if (!isAuthenticated()) {
       toast.error('请先登录！', { duration: 3000 });
@@ -187,14 +121,15 @@ const UserProfile: React.FC = () => {
     if (user) loadLearningData();
   }, [user, learningDays]);
 
-  const handleGetAiAdvice = async () => {
-    setAiAdviceLoading(true);
-    setAiAdviceResult('');
-    try {
-      const solvedInfo = solvedProblems.length > 0
-        ? solvedProblems.slice(0, 30).map(p => `#${p.problemId} ${p.problemName || ''}`).join(', ')
-        : '暂无做题记录';
-      const prompt = `你是编程学习顾问。请根据以下学生数据，生成个性化学习进度报告和改进建议：
+  // 打开 AI 对话弹窗并自动创建新会话、用学习建议提示词发起提问（固定使用 modelId=1）
+  const handleOpenAiLearningAdvice = () => {
+    const passRate = user && user.submitCount > 0
+      ? Math.round((user.passCount / user.submitCount) * 10000) / 100
+      : 0;
+    const solvedInfo = solvedProblems.length > 0
+      ? solvedProblems.slice(0, 30).map(p => `#${p.problemId} ${p.problemName || ''}`).join(', ')
+      : '暂无做题记录';
+    const prompt = `你是编程学习顾问。请根据以下学生数据，生成个性化学习进度报告和改进建议：
 
 【用户】${user?.name || '未知'}
 【总提交数】${user?.submitCount || 0}
@@ -212,102 +147,13 @@ const UserProfile: React.FC = () => {
 
 请使用Markdown格式，结构清晰，语言鼓励性。`;
 
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Accept': 'text/event-stream',
-          'Content-Type': 'text/plain',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: prompt,
-      });
-      if (!response.ok || !response.body) throw new Error('AI服务请求失败');
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-      let accumulatedText = '';
-      const pump = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) { setAiAdviceLoading(false); return; }
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\n\n/);
-        buffer = parts.pop() || '';
-        for (const chunk of parts) {
-          const lines = chunk.split(/\n/).map(l => l.replace(/^data:\s?/, '')).filter(l => l.trim());
-          const data = lines.join('\n');
-          const cleaned = data.replace(/\[DONE\]/g, '').replace(/^"+|"+$/g, '');
-          if (cleaned) { accumulatedText += cleaned; setAiAdviceResult(accumulatedText); }
-        }
-        return pump();
-      };
-      await pump();
-    } catch (error: any) {
-      setAiAdviceResult('AI建议获取失败，请稍后重试: ' + (error.message || ''));
-      setAiAdviceLoading(false);
-    }
-  };
-
-  const handleGetAiPath = async () => {
-    setAiPathLoading(true);
-    setAiPathResult('');
-    try {
-      const solvedInfo = solvedProblems.length > 0
-        ? solvedProblems.slice(0, 30).map(p => `#${p.problemId} ${p.problemName || ''}`).join(', ')
-        : '暂无做题记录';
-      const prompt = `你是编程学习规划专家。请根据以下学生数据，生成个性化学习路径推荐：
-
-【用户】${user?.name || '未知'}
-【总提交数】${user?.submitCount || 0}
-【通过题数】${user?.passCount || 0}
-【通过率】${passRate}%
-【近期已通过题目（最近30道）】${solvedInfo}
-
-请提供详细的学习路径规划：
-1. **当前水平评估**：根据做题数据判断当前编程水平（入门/初级/中级/高级）
-2. **前置知识检查**：列出应该掌握但可能薄弱的基础知识点
-3. **短期学习路径（1-2周）**：具体的每日学习计划和目标
-4. **中期学习路径（1-3个月）**：按周划分的学习阶段和里程碑
-5. **长期发展方向（3-6个月）**：可选择的进阶方向（算法竞赛/后端开发/数据结构等）
-6. **推荐学习资源**：书籍、网站、视频课程等
-7. **练习建议**：每个阶段应该重点练习的题目类型和数量
-
-请使用Markdown格式，结构清晰，语言鼓励性。`;
-
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Accept': 'text/event-stream',
-          'Content-Type': 'text/plain',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: prompt,
-      });
-      if (!response.ok || !response.body) throw new Error('AI服务请求失败');
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-      let accumulatedText = '';
-      const pump = async (): Promise<void> => {
-        const { done, value } = await reader.read();
-        if (done) { setAiPathLoading(false); return; }
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split(/\n\n/);
-        buffer = parts.pop() || '';
-        for (const chunk of parts) {
-          const lines = chunk.split(/\n/).map(l => l.replace(/^data:\s?/, '')).filter(l => l.trim());
-          const data = lines.join('\n');
-          const cleaned = data.replace(/\[DONE\]/g, '').replace(/^"+|"+$/g, '');
-          if (cleaned) { accumulatedText += cleaned; setAiPathResult(accumulatedText); }
-        }
-        return pump();
-      };
-      await pump();
-    } catch (error: any) {
-      setAiPathResult('AI学习路径获取失败，请稍后重试: ' + (error.message || ''));
-      setAiPathLoading(false);
-    }
+    window.dispatchEvent(new CustomEvent('open-ai-assistant', {
+      detail: {
+        message: prompt,
+        forceNewSession: true,
+        modelId: 1,
+      },
+    }));
   };
 
   if (loading) {
@@ -415,7 +261,7 @@ const UserProfile: React.FC = () => {
                   <Button
                     type="primary"
                     icon={<Bot className="w-4 h-4" />}
-                    onClick={() => { setAiAdviceVisible(true); if (!aiAdviceResult) handleGetAiAdvice(); }}
+                    onClick={handleOpenAiLearningAdvice}
                     style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
                   >
                     AI学习建议
@@ -584,102 +430,6 @@ const UserProfile: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* AI 学习建议弹窗 */}
-        <Modal
-          title={
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-              <span style={{ color: 'var(--gemini-text-primary)' }}>AI 个性化学习建议</span>
-              {aiAdviceLoading && <Spin size="small" className="ml-2" />}
-            </div>
-          }
-          open={aiAdviceVisible}
-          onCancel={() => setAiAdviceVisible(false)}
-          footer={null}
-          width={900}
-          styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
-        >
-          <div className="mb-4 flex justify-end">
-            <Button
-              type="primary"
-              icon={<Bot className="w-4 h-4" />}
-              onClick={handleGetAiAdvice}
-              loading={aiAdviceLoading}
-              disabled={aiAdviceLoading}
-              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-            >
-              {aiAdviceResult ? '重新生成' : '获取建议'}
-            </Button>
-          </div>
-          <div className="prose prose-sm max-w-none rounded-2xl p-4 min-h-[200px]" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-            {aiAdviceLoading && !aiAdviceResult ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Spin size="large" />
-                <span className="mt-4" style={{ color: 'var(--gemini-text-secondary)' }}>AI 正在分析您的学习数据，生成个性化建议...</span>
-              </div>
-            ) : aiAdviceResult ? (
-              <div
-                ref={aiAdviceRef}
-                className="prose prose-blue max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderAiContent(aiAdviceResult) }}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Bot className="w-12 h-12 mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
-                <p style={{ color: 'var(--gemini-text-disabled)' }}>点击"获取建议"按钮，AI 将为您生成个性化学习建议</p>
-              </div>
-            )}
-          </div>
-        </Modal>
-
-        {/* AI 学习路径推荐弹窗 */}
-        <Modal
-          title={
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5" style={{ color: '#34a853' }} />
-              <span style={{ color: 'var(--gemini-text-primary)' }}>个性化学习路径推荐</span>
-              {aiPathLoading && <Spin size="small" className="ml-2" />}
-            </div>
-          }
-          open={aiPathVisible}
-          onCancel={() => setAiPathVisible(false)}
-          footer={null}
-          width={900}
-          styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
-        >
-          <div className="mb-4 flex justify-end">
-            <Button
-              type="primary"
-              icon={<GraduationCap className="w-4 h-4" />}
-              onClick={handleGetAiPath}
-              loading={aiPathLoading}
-              disabled={aiPathLoading}
-              style={{ backgroundColor: '#34a853', color: '#fff', border: 'none' }}
-            >
-              {aiPathResult ? '重新生成' : '获取路径'}
-            </Button>
-          </div>
-          <div className="prose prose-sm max-w-none rounded-2xl p-4 min-h-[200px]" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-            {aiPathLoading && !aiPathResult ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Spin size="large" />
-                <span className="mt-4" style={{ color: 'var(--gemini-text-secondary)' }}>AI 正在为您规划个性化学习路径...</span>
-              </div>
-            ) : aiPathResult ? (
-              <div
-                ref={aiPathRef}
-                className="prose prose-blue max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderAiContent(aiPathResult) }}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <GraduationCap className="w-12 h-12 mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
-                <p style={{ color: 'var(--gemini-text-disabled)' }}>点击"获取路径"按钮，AI 将为您规划个性化学习路径</p>
-              </div>
-            )}
-          </div>
-        </Modal>
       </div>
     </div>
   );

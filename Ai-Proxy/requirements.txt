@@ -1,0 +1,11 @@
+fastapi
+httpx
+uvicorn
+mistralai
+openai
+zai-sdk
+dashscope
+groq
+aiomysql
+sqlalchemy[asyncio]
+pydantic-settings

@@ -187,6 +187,8 @@ interface AiChatSession {
 interface OpenAssistantDetail {
   message?: string;
   forceNewSession?: boolean;
+  /** 本次发送使用的模型 ID，不传则用当前选中模型 */
+  modelId?: number;
   problemContext?: ProblemChatContext | null;
 }
 
@@ -623,45 +625,38 @@ const AIAssistant: React.FC = () => {
     setOpen(false);
   }, [cleanupPendingSessions]);
 
-  const sendChatRef = useRef<(msg: string, targetSessionId?: string | null) => void>(() => {});
+  const sendChatRef = useRef<(msg: string, targetSessionId?: string | null, modelIdOverride?: number | null) => void>(() => {});
   useEffect(() => {
     sendChatRef.current = sendChat;
   });
+  // 外部入口（如 AI 学习建议）：先创建临时会话并切换，再自动用提示词发送（发送时再落库真实会话）
   useEffect(() => {
     if (!open || models.length === 0 || sessionsLoading || !pendingAction) return;
-    let cancelled = false;
-    const run = async () => {
+    const run = () => {
       const action = pendingAction;
       setPendingAction(null);
       let targetSessionId = currentSessionIdRef.current;
       if (action.forceNewSession || !targetSessionId) {
-        try {
-          const created = await createSessionApi();
-          if (cancelled) return;
-          skipNextHistoryLoadSessionRef.current = created.id;
-          upsertSession(created);
-          setCurrentSessionId(created.id);
-          setMessages([]);
-          setHasMore(false);
-          setNextCursor(null);
-          setHistoryLoaded(true);
-          targetSessionId = created.id;
-        } catch (error: any) {
-          if (!cancelled) {
-            messageApi.error(error?.message || '创建会话失败');
-          }
-          return;
-        }
+        // 创建临时会话并切换，不先调后端
+        const pendingId = `pending_${Date.now()}`;
+        upsertSession({
+          id: pendingId,
+          title: '新会话',
+          isPending: true,
+        });
+        setCurrentSessionId(pendingId);
+        setMessages([]);
+        setHasMore(false);
+        setNextCursor(null);
+        setHistoryLoaded(true);
+        targetSessionId = pendingId;
       }
       if (action.message?.trim()) {
-        sendChatRef.current(action.message.trim(), targetSessionId);
+        sendChatRef.current(action.message.trim(), targetSessionId, action.modelId);
       }
     };
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, models.length, sessionsLoading, pendingAction, createSessionApi, upsertSession, messageApi]);
+    run();
+  }, [open, models.length, sessionsLoading, pendingAction, upsertSession]);
 
   // 监听外部事件打开 AI 助手并发送消息（等模型加载后再发，避免 Logo 不显示）
   useEffect(() => {
@@ -671,6 +666,7 @@ const AIAssistant: React.FC = () => {
       setPendingAction({
         message: event.detail?.message,
         forceNewSession: Boolean(event.detail?.forceNewSession),
+        modelId: event.detail?.modelId,
       });
     };
 
@@ -687,8 +683,8 @@ const AIAssistant: React.FC = () => {
   const botMessageCreatedRef = useRef<boolean>(false);
   const thinkingModelLogoRef = useRef<string | undefined>(undefined);
 
-  // WebSocket 发送消息
-  const sendChat = async (userMessage: string, targetSessionId?: string | null) => {
+  // WebSocket 发送消息（modelIdOverride 用于外部入口如「AI学习建议」固定使用某模型）
+  const sendChat = async (userMessage: string, targetSessionId?: string | null, modelIdOverride?: number | null) => {
     let sessionId = targetSessionId ?? currentSessionIdRef.current;
     if (!sessionId) {
       messageApi.warning('请先选择或创建一个会话');
@@ -725,8 +721,8 @@ const AIAssistant: React.FC = () => {
     shouldScrollToBottomRef.current = true;
 
     // 捕获发送时的模型信息，避免用户在等待响应时切换模型导致 Logo 错乱
-    const currentModelId = selectedModelId;
-    const currentModelLogo = models.find((m) => m.id === currentModelId)?.logoUrl;
+    const effectiveModelId = modelIdOverride ?? selectedModelId;
+    const currentModelLogo = models.find((m) => m.id === effectiveModelId)?.logoUrl;
     thinkingModelLogoRef.current = currentModelLogo;
 
     const userMsg: Message = {
@@ -756,7 +752,8 @@ const AIAssistant: React.FC = () => {
         message: userMessage,
         sessionId,
       };
-      if (selectedModelId != null && selectedModelId > 0) payload.modelId = selectedModelId;
+      const modelToUse = modelIdOverride ?? selectedModelId;
+      if (modelToUse != null && modelToUse > 0) payload.modelId = modelToUse;
       ws.send(JSON.stringify(payload));
     };
 
@@ -773,7 +770,7 @@ const AIAssistant: React.FC = () => {
             // 第一次收到内容，创建 bot 消息并关闭思考中状态
             botMessageCreatedRef.current = true;
             setThinking(false);
-            const modelLogo = models.find((m) => m.id === selectedModelId)?.logoUrl;
+            const modelLogo = models.find((m) => m.id === effectiveModelId)?.logoUrl;
             setMessages((prev) => [
               ...prev,
               { role: 'bot', content: '', thinkingContent: accumulatedThinkingRef.current, timestamp: Date.now(), modelLogoUrl: modelLogo },
