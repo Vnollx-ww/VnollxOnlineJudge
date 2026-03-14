@@ -415,6 +415,7 @@ const Friends: React.FC = () => {
           isMine: false
         };
         setMessages(prev => [...prev, newMsg]);
+        setTimeout(scrollToBottomSmooth, 50);
         // 更新缓存
         const cached = chatCacheRef.current.get(msg.senderId);
         if (cached) {
@@ -459,7 +460,7 @@ const Friends: React.FC = () => {
     });
 
     return unsubscribe;
-  }, [subscribe, selectedFriend, loadFriends, loadPendingRequests]);
+  }, [subscribe, selectedFriend, loadFriends, loadPendingRequests, scrollToBottomSmooth, wsSendMessage]);
 
   // 初始加载
   useEffect(() => {

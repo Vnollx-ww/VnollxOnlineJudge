@@ -650,34 +650,26 @@ const ProblemDetail: React.FC = () => {
 
   // 打开 AI 助手并发送分析请求
   const handleOpenAiAnalysis = () => {
-    if (!code.trim()) {
-      toast('请先输入代码');
-      return;
-    }
     if (!problem) return;
 
-    const prompt = `请分析以下代码，结合题目信息给出改进建议：
-
-【题目】${problem.title}
-【题目描述】${problem.description || '无'}
-【输入格式】${problem.inputFormat || '无'}
-【输出格式】${problem.outputFormat || '无'}
-【时间限制】${problem.timeLimit}ms
-【内存限制】${problem.memoryLimit}MB
-
-【用户代码】(${language})
-\`\`\`${language}
-${code}
-\`\`\`
-
-请从以下方面分析：
-1. 代码正确性：是否能正确解决题目
-2. 算法复杂度：时间和空间复杂度是否满足限制
-3. 潜在问题：边界条件、溢出等
-4. 优化建议：如果有更优解法，请给出思路`;
-
-    // 触发自定义事件，打开 AI 助手并自动创建新会话发送消息
-    window.dispatchEvent(new CustomEvent('open-ai-assistant', { detail: { message: prompt, forceNewSession: true } }));
+    window.dispatchEvent(new CustomEvent('open-ai-assistant', {
+      detail: {
+        forceNewSession: true,
+        problemContext: {
+          problemId: problem.id,
+          title: problem.title,
+          difficulty: problem.difficulty,
+          description: problem.description || '',
+          inputFormat: problem.inputFormat || '',
+          outputFormat: problem.outputFormat || '',
+          hint: problem.hint || '',
+          timeLimit: problem.timeLimit,
+          memoryLimit: problem.memoryLimit,
+          language,
+          code,
+        },
+      },
+    }));
   };
 
   const copyToClipboard = (text: string, label: string) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Drawer, Input, Button, message as antMessage, Avatar, Select } from 'antd';
+import { Modal, Input, Button, message as antMessage, Avatar, Select } from 'antd';
 import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, Sparkles, Loader2, MessageSquarePlus, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -188,7 +188,52 @@ interface AiChatSession {
 interface OpenAssistantDetail {
   message?: string;
   forceNewSession?: boolean;
+  problemContext?: ProblemChatContext | null;
 }
+
+interface ProblemChatContext {
+  problemId: number;
+  title: string;
+  difficulty?: string;
+  description?: string;
+  inputFormat?: string;
+  outputFormat?: string;
+  hint?: string;
+  timeLimit?: number;
+  memoryLimit?: number;
+  language?: string;
+  code?: string;
+}
+
+const buildProblemInfoPrompt = (context: ProblemChatContext): string => `请基于下面这道题的信息，为我分析解题思路、核心算法、注意事项和可能的坑点：
+
+【题号】${context.problemId}
+【题目】${context.title}
+【难度】${context.difficulty || '未知'}
+【题目描述】${context.description || '无'}
+【输入格式】${context.inputFormat || '无'}
+【输出格式】${context.outputFormat || '无'}
+【提示】${context.hint || '无'}
+【时间限制】${context.timeLimit ?? '未知'}ms
+【内存限制】${context.memoryLimit ?? '未知'}MB
+
+请优先给出：
+1. 解题思路
+2. 推荐算法与复杂度
+3. 容易出错的边界情况
+4. 实现建议`;
+
+const buildCodePrompt = (context: ProblemChatContext): string => `请分析我当前在这道题里的代码实现，指出正确性、复杂度、边界情况和可优化点：
+
+【题号】${context.problemId}
+【题目】${context.title}
+【语言】${context.language || '未知'}
+
+\`\`\`${context.language || ''}
+${context.code || ''}
+\`\`\`
+
+如果代码有问题，请直接说明原因，并给出修改建议。`;
 
 const AIAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
@@ -221,10 +266,12 @@ const AIAssistant: React.FC = () => {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   /** 由「AI分析」等外部事件带入的待执行动作 */
   const [pendingAction, setPendingAction] = useState<OpenAssistantDetail | null>(null);
+  const [problemContext, setProblemContext] = useState<ProblemChatContext | null>(null);
   /** 分页游标 */
   const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [inputCollapsed, setInputCollapsed] = useState(false);
   /** 是否应该滚动到底部 */
   const shouldScrollToBottomRef = useRef(true);
   /** 首次打开后，历史消息落地时直接定位到底部，但不播放动画 */
@@ -360,6 +407,8 @@ const AIAssistant: React.FC = () => {
     if (container.scrollTop < 50 && hasMore && !loadingMore) {
       void loadMoreHistory();
     }
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+    setInputCollapsed(!atBottom);
   }, [hasMore, loadingMore, loadMoreHistory]);
 
   // 缓存选中的模型到 localStorage
@@ -568,6 +617,13 @@ const AIAssistant: React.FC = () => {
     }
   }, [sessions]);
 
+  const handleCloseAssistant = useCallback(() => {
+    cleanupPendingSessions();
+    setPendingAction(null);
+    setProblemContext(null);
+    setOpen(false);
+  }, [cleanupPendingSessions]);
+
   const sendChatRef = useRef<(msg: string, targetSessionId?: string | null) => void>(() => {});
   useEffect(() => {
     sendChatRef.current = sendChat;
@@ -612,6 +668,7 @@ const AIAssistant: React.FC = () => {
   useEffect(() => {
     const handleOpenAiAssistant = (event: CustomEvent<OpenAssistantDetail>) => {
       setOpen(true);
+      setProblemContext(event.detail?.problemContext ?? null);
       setPendingAction({
         message: event.detail?.message,
         forceNewSession: Boolean(event.detail?.forceNewSession),
@@ -815,6 +872,16 @@ const AIAssistant: React.FC = () => {
     sendChat(text, currentSessionId);
   };
 
+  const handleQuickSend = async (builder: (context: ProblemChatContext) => string) => {
+    if (!problemContext || loading || sessionsLoading) return;
+    let targetSessionId = currentSessionIdRef.current;
+    if (!targetSessionId) {
+      targetSessionId = handleCreateSession();
+    }
+    if (!targetSessionId) return;
+    await sendChat(builder(problemContext), targetSessionId);
+  };
+
   return (
     <>
       <style>{`
@@ -822,13 +889,33 @@ const AIAssistant: React.FC = () => {
           from { opacity: 0; transform: scaleY(0.92); }
           to   { opacity: 1; transform: scaleY(1); }
         }
+        .ai-modal {
+          width: 100vw !important;
+          max-width: 100vw !important;
+          margin: 0 !important;
+          padding-bottom: 0 !important;
+          top: 0 !important;
+        }
+        .ai-modal .ant-modal-content {
+          padding: 0 !important;
+        }
+        .ai-modal .ant-modal-header {
+          padding: 20px 24px 0 !important;
+          margin-bottom: 0 !important;
+        }
+        .ai-modal .ant-modal-body {
+          width: 100% !important;
+        }
       `}</style>
       {contextHolder}
 
       {/* 悬浮按钮 - 需要AI使用权限 */}
       {hasPermission(PermissionCode.AI_CHAT) && (
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setProblemContext(null);
+            setOpen(true);
+          }}
           title="AI 助手"
           className="fixed right-10 bottom-12 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[22px] border border-white/60 bg-white/75 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_rgba(15,23,42,0.24)]"
         >
@@ -841,8 +928,8 @@ const AIAssistant: React.FC = () => {
         </button>
       )}
 
-      {/* 聊天抽屉 */}
-      <Drawer
+      {/* 聊天弹窗 */}
+      <Modal
         title={
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -857,20 +944,19 @@ const AIAssistant: React.FC = () => {
             </div>
           </div>
         }
-        placement="right"
-        onClose={() => {
-          cleanupPendingSessions();
-          setOpen(false);
-        }}
+        onCancel={handleCloseAssistant}
         open={open}
-        width={1000}
+        footer={null}
+        width="100vw"
+        style={{ top: 0, paddingBottom: 0, maxWidth: '100vw', margin: 0 }}
         styles={{
+          content: { height: '100vh', overflow: 'hidden', paddingBottom: 0, borderRadius: 0 },
           header: { borderBottom: 'none', paddingBottom: 0 },
-          body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' },
+          body: { padding: 0, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)' },
         }}
-        className="ai-drawer"
+        className="ai-modal"
       >
-        <div className="flex-1 flex h-full bg-gradient-to-b from-slate-50 to-gray-100">
+        <div className="flex-1 flex h-full min-h-0 bg-gradient-to-b from-slate-50 to-gray-100">
           {/* 左侧会话列表 */}
           <div className="w-64 shrink-0 border-r border-gray-200 bg-white/60 backdrop-blur-sm flex flex-col h-full">
             <div className="p-3 border-b border-gray-100 flex items-center justify-between">
@@ -962,7 +1048,7 @@ const AIAssistant: React.FC = () => {
           </div>
 
           {/* 右侧消息区域 */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 min-h-0">
             {/* 消息列表 */}
             <div 
               ref={messagesContainerRef}
@@ -1206,82 +1292,124 @@ const AIAssistant: React.FC = () => {
             </div>
 
             {/* 输入区域 */}
-          <div className="p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100/50">
-            <div className="flex gap-3 items-start">
-              {models.length > 0 && (
-                <Select
-                  value={selectedModelId ?? undefined}
-                  onChange={(v) => setSelectedModelId(v ?? null)}
-                  options={models.map((m) => ({
-                    value: m.id,
-                    label: m.name,
-                  }))}
-                  labelRender={({ value }) => {
-                    const m = models.find((x) => x.id === value);
-                    if (!m) return <span className="text-gray-400">选择模型</span>;
-                    return (
-                      <span className="flex items-center gap-2">
-                        {m.logoUrl ? (
-                          <img src={m.logoUrl} alt="" className="w-5 h-5 rounded-lg object-cover shrink-0 ring-1 ring-gray-200" />
-                        ) : (
-                          <div className="w-5 h-5 rounded-lg bg-blue-400 flex items-center justify-center shrink-0">
-                            <Bot className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                        <span className="truncate text-gray-700">{m.name}</span>
-                      </span>
-                    );
-                  }}
-                  optionRender={(opt) => {
-                    const m = models.find((x) => x.id === opt.value);
-                    return (
-                      <span className="flex items-center gap-2.5 py-0.5">
-                        {m?.logoUrl ? (
-                          <img src={m.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover shrink-0 ring-1 ring-gray-200" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-lg bg-blue-400 flex items-center justify-center shrink-0">
-                            <Bot className="w-3.5 h-3.5 text-white" />
-                          </div>
-                        )}
-                        <span className="text-gray-700">{opt.label}</span>
-                      </span>
-                    );
-                  }}
-                  className="w-[180px] shrink-0 self-end"
-                  popupMatchSelectWidth={false}
-                  placeholder="选择模型"
-                  placement="topLeft"
-                  getPopupContainer={(node) => node.parentElement ?? document.body}
-                />
-              )}
-              <TextArea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onPressEnter={(e) => {
-                  if (!e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder={currentSessionId ? '输入您的问题...' : '请先选择或新建一个会话'}
-                autoSize={{ minRows: 1, maxRows: 4 }}
-                disabled={loading || !isAuthenticated() || !currentSessionId}
-                className="flex-1 min-w-0 !rounded-2xl !border-gray-200 !bg-gray-50/50 focus:!border-blue-300 focus:!bg-white !shadow-sm hover:!border-gray-300 transition-all"
-              />
-              <Button
-                type="primary"
-                icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                onClick={handleSend}
-                disabled={!inputValue.trim() || !isAuthenticated() || loading || !currentSessionId}
-                className="!h-10 !px-5 shrink-0 flex-none !rounded-2xl !bg-blue-500 !border-none hover:!bg-blue-600 !shadow-lg !shadow-blue-500/25 disabled:!opacity-50 disabled:!shadow-none transition-all duration-300"
+          <div className="p-4 bg-white/80 backdrop-blur-xl">
+            <div
+              className="rounded-[20px] bg-gray-100 transition-all"
+              onClick={() => inputCollapsed && setInputCollapsed(false)}
+            >
+              <div
+                className="overflow-hidden transition-all duration-300 ease-in-out"
+                style={{ maxHeight: inputCollapsed ? 0 : 300, opacity: inputCollapsed ? 0 : 1 }}
               >
-                发送
-              </Button>
+                <TextArea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onPressEnter={(e) => {
+                    if (!e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={currentSessionId ? '输入您的问题...' : '请先选择或新建一个会话'}
+                  autoSize={{ minRows: 4, maxRows: 8 }}
+                  disabled={loading || !isAuthenticated() || !currentSessionId}
+                  bordered={false}
+                  className="!bg-transparent px-5 pt-4 pb-2 text-[15px]"
+                />
+              </div>
+              <div className={`flex items-center gap-2 px-4 py-3 ${inputCollapsed ? 'cursor-pointer' : ''}`}>
+                {inputCollapsed && (
+                  <span className="text-sm text-gray-400 select-none">点击展开输入框...</span>
+                )}
+                {!inputCollapsed && problemContext && (
+                  <>
+                    <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg shrink-0">
+                      #{problemContext.problemId} {problemContext.title}
+                    </span>
+                    <button
+                      onClick={() => void handleQuickSend(buildProblemInfoPrompt)}
+                      disabled={loading || sessionsLoading}
+                      className="h-9 px-4 text-xs font-medium text-gray-600 bg-white rounded-xl shadow-md shadow-gray-200/30 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
+                    >
+                      发送题目信息
+                    </button>
+                    <button
+                      onClick={() => void handleQuickSend(buildCodePrompt)}
+                      disabled={loading || sessionsLoading || !problemContext.code?.trim()}
+                      className="h-9 px-4 text-xs font-medium text-gray-600 bg-white rounded-xl shadow-md shadow-gray-200/30 hover:bg-gray-50 transition-all duration-200 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
+                    >
+                      发送当前代码
+                    </button>
+                  </>
+                )}
+                <div className="flex-1" />
+                {models.length > 0 && (
+                  <Select
+                    value={selectedModelId ?? undefined}
+                    onChange={(v) => setSelectedModelId(v ?? null)}
+                    options={models.map((m) => ({
+                      value: m.id,
+                      label: m.name,
+                    }))}
+                    labelRender={({ value }) => {
+                      const m = models.find((x) => x.id === value);
+                      if (!m) return <span className="text-gray-400">选择模型</span>;
+                      return (
+                        <span className="flex items-center gap-2">
+                          {m.logoUrl ? (
+                            <img src={m.logoUrl} alt="" className="w-5 h-5 rounded-lg object-cover shrink-0 ring-1 ring-gray-200" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-lg bg-blue-400 flex items-center justify-center shrink-0">
+                              <Bot className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          <span className="truncate text-gray-600 text-sm">{m.name}</span>
+                        </span>
+                      );
+                    }}
+                    optionRender={(opt) => {
+                      const m = models.find((x) => x.id === opt.value);
+                      return (
+                        <span className="flex items-center gap-2.5 py-0.5">
+                          {m?.logoUrl ? (
+                            <img src={m.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover shrink-0 ring-1 ring-gray-200" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-lg bg-blue-400 flex items-center justify-center shrink-0">
+                              <Bot className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          )}
+                          <span className="text-gray-700">{opt.label}</span>
+                        </span>
+                      );
+                    }}
+                    className="w-[220px] max-w-full shrink-0 [&_.ant-select-selector]:!bg-white [&.ant-select-focused_.ant-select-selector]:!bg-white"
+                    variant="borderless"
+                    popupMatchSelectWidth={false}
+                    placeholder="选择模型"
+                    placement="topLeft"
+                    getPopupContainer={(node) => node.parentElement ?? document.body}
+                    style={{
+                      background: '#fff',
+                      borderRadius: 10,
+                      minHeight: 34,
+                    }}
+                  />
+                )}
+                <Button
+                  type="primary"
+                  icon={loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || !isAuthenticated() || loading || !currentSessionId}
+                  className="!h-9 !px-5 shrink-0 !rounded-xl !bg-blue-500 !border-none hover:!bg-blue-600 !shadow-md !shadow-blue-500/20 disabled:!opacity-50 disabled:!shadow-none transition-all duration-200"
+                >
+                  发送
+                </Button>
+              </div>
             </div>
           </div>
           </div>
         </div>
-      </Drawer>
+      </Modal>
     </>
   );
 };
