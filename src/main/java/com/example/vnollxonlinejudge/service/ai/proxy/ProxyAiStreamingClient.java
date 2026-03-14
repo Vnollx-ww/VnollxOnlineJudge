@@ -68,8 +68,10 @@ public class ProxyAiStreamingClient {
 
     /**
      * 流式对话（带工具调用）
+     * @param proxyBaseUrl 代理根地址（国内/国外由调用方根据 ai_model.proxy_type 选择）
      */
     public Flux<String> streamChat(
+            String proxyBaseUrl,
             String model,
             String apiKey,
             List<ChatMessage> messages,
@@ -102,7 +104,8 @@ public class ProxyAiStreamingClient {
         }
         requestBody.put("timeout", (double) timeoutSeconds);
 
-        String url = proxyUrl + "/v1/chat/stream/tools";
+        String base = (proxyBaseUrl != null && !proxyBaseUrl.isBlank()) ? proxyBaseUrl.trim() : proxyUrl;
+        String url = base.replaceAll("/$", "") + "/v1/chat/stream/tools";
         logger.info("[ProxyAI] 调用代理: url={}, model={}", url, model);
 
         ParameterizedTypeReference<ServerSentEvent<String>> typeRef =

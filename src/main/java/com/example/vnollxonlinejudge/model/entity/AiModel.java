@@ -48,6 +48,8 @@ public class AiModel {
     private Integer sortOrder;
     /** 状态：1-启用，0-禁用 */
     private Integer status;
+    /** 代理类型：domestic-国内代理，overseas-国外代理 */
+    private String proxyType;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

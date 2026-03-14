@@ -16,6 +16,7 @@ import com.example.vnollxonlinejudge.service.AiService;
 import com.example.vnollxonlinejudge.service.ai.proxy.ProxyAiStreamingClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -41,6 +42,11 @@ public class AiServiceImpl implements AiService {
     private final ProxyAiStreamingClient proxyClient;
     private final Map<String, List<ProxyAiStreamingClient.ChatMessage>> sessionMessageHistories = new ConcurrentHashMap<>();
 
+    @Value("${ai.proxy.domestic.url:http://111.230.105.54:8000}")
+    private String proxyDomesticUrl;
+    @Value("${ai.proxy.overseas.url:http://74.122.24.92:8000}")
+    private String proxyOverseasUrl;
+
     public AiServiceImpl(AiModelService aiModelService,
                          AiChatRecordService aiChatRecordService,
                          AiChatSummaryService aiChatSummaryService,
@@ -51,6 +57,14 @@ public class AiServiceImpl implements AiService {
         this.aiChatSummaryService = aiChatSummaryService;
         this.aiChatSessionService = aiChatSessionService;
         this.proxyClient = proxyClient;
+    }
+
+    /** 根据模型的 proxy_type 选择国内或国外代理地址 */
+    private String resolveProxyBaseUrl(AiModel aiModel) {
+        if (aiModel.getProxyType() != null && "domestic".equalsIgnoreCase(aiModel.getProxyType().trim())) {
+            return proxyDomesticUrl;
+        }
+        return proxyOverseasUrl;
     }
 
     @Override
@@ -195,7 +209,9 @@ public class AiServiceImpl implements AiService {
         StringBuilder fullResponse = new StringBuilder();
         StringBuilder fullThinking = new StringBuilder();
 
+        String proxyBaseUrl = resolveProxyBaseUrl(aiModel);
         return proxyClient.streamChat(
+                        proxyBaseUrl,
                         aiModel.getModelId(),
                         aiModel.getApiKey().trim(),
                         messages,

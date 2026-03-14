@@ -28,4 +28,6 @@ public class AdminAiModelDetailVo {
     private String extraConfig;
     private Integer sortOrder;
     private Integer status;
+    /** 代理类型：domestic-国内代理，overseas-国外代理 */
+    private String proxyType;
 }

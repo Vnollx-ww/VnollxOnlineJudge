@@ -90,10 +90,13 @@ management:
       export:
         enabled: true
 
-# AI 代理配置
+# AI 代理配置（按模型 proxy_type 选择：国内走 domestic，国外走 overseas）
 ai:
   proxy:
-    url: http://74.122.24.92:8000
+    domestic:
+      url: http://111.230.105.54:8000
+    overseas:
+      url: http://74.122.24.92:8000
     timeout: 300
 
 # Resilience4j 熔断配置

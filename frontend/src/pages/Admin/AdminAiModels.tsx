@@ -39,6 +39,8 @@ interface AdminAiModelDetail {
   timeoutSeconds?: number;
   sortOrder?: number;
   status?: number;
+  /** 代理类型: domestic-国内代理, overseas-国外代理 */
+  proxyType?: string;
 }
 
 const AdminAiModels: React.FC = () => {
@@ -89,6 +91,7 @@ const AdminAiModels: React.FC = () => {
       platformId: platforms[0]?.id ?? undefined,
       adapterCode: platforms[0]?.code === 'langchain4j' ? 'openai' : undefined,
       status: 1,
+      proxyType: 'overseas',
       maxTokens: 4096,
       temperature: 0.7,
       timeoutSeconds: 60,
@@ -115,6 +118,7 @@ const AdminAiModels: React.FC = () => {
           timeoutSeconds: d.timeoutSeconds,
           sortOrder: d.sortOrder,
           status: d.status,
+          proxyType: d.proxyType ?? 'overseas',
         });
         setModalVisible(true);
       } else {
@@ -179,6 +183,7 @@ const AdminAiModels: React.FC = () => {
         timeoutSeconds: values.timeoutSeconds ?? 60,
         sortOrder: values.sortOrder ?? 0,
         status: values.status ?? 1,
+        proxyType: values.proxyType ?? 'overseas',
       };
       const res = await api.post('/admin/ai-model/save', payload) as ApiResponse<number>;
       if (res.code === 200) {
@@ -377,6 +382,15 @@ const AdminAiModels: React.FC = () => {
                 { value: 1, label: '启用' },
                 { value: 0, label: '禁用' },
               ]}
+            />
+          </Form.Item>
+          <Form.Item name="proxyType" label="代理类型">
+            <Select
+              options={[
+                { value: 'domestic', label: '国内代理' },
+                { value: 'overseas', label: '国外代理' },
+              ]}
+              placeholder="国内模型选国内代理，国外模型选国外代理"
             />
           </Form.Item>
           <Form.Item className="mb-0 flex justify-end gap-2">

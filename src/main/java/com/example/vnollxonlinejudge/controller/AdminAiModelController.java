@@ -62,6 +62,7 @@ public class AdminAiModelController {
                 .extraConfig(entity.getExtraConfig())
                 .sortOrder(entity.getSortOrder())
                 .status(entity.getStatus())
+                .proxyType(entity.getProxyType())
                 .build();
         return Result.Success(vo);
     }

@@ -100,6 +100,9 @@ public class AiModelServiceImpl implements AiModelService {
         if (dto.getApiKey() == null || dto.getApiKey().trim().isEmpty()) {
             entity.setApiKey(existing.getApiKey());
         }
+        if (dto.getProxyType() == null || dto.getProxyType().isBlank()) {
+            entity.setProxyType(existing.getProxyType() != null ? existing.getProxyType() : "overseas");
+        }
         aiModelMapper.updateById(entity);
     }
 
@@ -141,6 +144,7 @@ public class AiModelServiceImpl implements AiModelService {
                 .extraConfig(dto.getExtraConfig())
                 .sortOrder(dto.getSortOrder() != null ? dto.getSortOrder() : 0)
                 .status(dto.getStatus() != null ? dto.getStatus() : 1)
+                .proxyType(dto.getProxyType() != null ? dto.getProxyType() : "overseas")
                 .build();
     }
 }
