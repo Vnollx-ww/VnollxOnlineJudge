@@ -38,7 +38,7 @@
 | RabbitMQ | Latest | 消息队列 |
 | MinIO | Latest | 对象存储 |
 | Go-Judge | Latest | 代码评测沙箱 |
-| LangChain4j | 0.31.0 | AI集成 |
+| Python 代理 (FastAPI) | - | AI 多厂商调用、工具调用，国内/海外双机部署 |
 
 ### 前端技术
 
@@ -138,7 +138,7 @@ cd frontend && npm install && npm run dev
 | 💡 题解分享 | Markdown编辑、评论点赞 | ✅ |
 | 👥 社交功能 | 好友系统、私信功能 | ✅ |
 | 🔔 通知系统 | 系统通知、消息推送 | ✅ |
-| 🤖 AI助手 | 智能对话、代码分析 | ✅ |
+| 🤖 AI 助手 | 多模型对话、题目分析、学习建议，国内/海外双代理 | ✅ |
 | 🔐 权限管理 | RBAC模型、细粒度控制 | ✅ |
 
 ---
@@ -150,7 +150,7 @@ cd frontend && npm install && npm run dev
 - **📡 实时推送** - WebSocket实时通知评测结果
 - **💾 权限缓存** - Redis缓存权限数据，30分钟过期
 - **🧵 虚拟线程** - Java 21虚拟线程，高并发支持
-- **🤖 AI集成** - 多模型支持（Gemini、Kimi、MiniMax、Mistral、DeepSeek、通义千问、智谱）
+- **🤖 AI 集成** - 多模型（Gemini、Kimi、MiniMax、Mistral、DeepSeek、通义千问、智谱），国内/海外双代理部署
 - **🔒 安全认证** - JWT无状态认证，BCrypt密码加密
 - **📊 监控运维** - Actuator + Prometheus 指标监控
 
@@ -199,6 +199,6 @@ VnollxOnlineJudge/
 
 Made with ❤️ by Vnollx Team
 
-*最后更新: 2026年1月27日*
+*最后更新: 2026年3月*
 
 </div>

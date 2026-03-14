@@ -154,15 +154,29 @@ Python 代理内置了 21 个 OJ 系统工具，直接查询数据库：
 - `getPublicPracticeList` - 获取练习列表
 - `getPracticeCount` - 获取练习总数
 
+## 国内 / 海外双机部署
+
+为兼顾国内模型（通义、智谱、Kimi、MiniMax、DeepSeek 等）与海外模型（Gemini、Mistral 等）的访问，**AI 代理建议分两台服务器部署**：
+
+- **国内代理**：部署在国内服务器，供「代理类型」为 `domestic` 的模型使用。
+- **海外代理**：部署在海外服务器，供「代理类型」为 `overseas` 的模型使用。
+
+后台「AI 模型管理」中每个模型可设置代理类型；用户发起对话时，Java 根据该模型的 `proxy_type` 选择对应代理 URL 发起请求。详见 [部署文档 - AI 代理部署](./部署文档.md#7-ai-代理部署python—-国内--海外双机)。
+
 ## 配置
 
 ### Java 后端 (application.yml)
 
+需配置**国内**与**海外**两个代理地址，分别对应两台 ai-proxy 服务：
+
 ```yaml
 ai:
   proxy:
-    url: http://localhost:8000  # Python 代理地址
-    timeout: 300                # 超时时间（秒）
+    domestic:
+      url: http://国内服务器:8000   # 国内 ai-proxy
+    overseas:
+      url: http://海外服务器:8000   # 海外 ai-proxy
+    timeout: 300                   # 超时时间（秒）
 ```
 
 ### Python 代理 (.env)
@@ -190,7 +204,9 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### Docker Compose 示例
+### Docker Compose 示例（单机开发）
+
+生产环境建议按 [部署文档 - AI 代理双机部署](./部署文档.md#7-ai-代理部署python—-国内--海外双机) 在国内、海外各部署一台 ai-proxy。单机开发可仅起一个服务：
 
 ```yaml
 services:
