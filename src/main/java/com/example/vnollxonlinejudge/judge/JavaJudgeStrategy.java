@@ -164,10 +164,12 @@ public class JavaJudgeStrategy implements JudgeStrategy {
 
                     // 检验输出结果
                     try {
-                        String expectedOutput = testCase[1].replace("\r\n", "\n").replace("\r", "\n");
-                        String actualOutput = result.getFiles().getStdout().trim().replace("\r\n", "\n").replace("\r", "\n");
+                        String expectedOutput = JudgeOutputComparator.normalizeLineEndings(testCase[1]);
+                        String actualOutput = JudgeOutputComparator.normalizeLineEndings(
+                                result.getFiles() != null ? result.getFiles().getStdout() : ""
+                        );
 
-                        if (!expectedOutput.equals(actualOutput)) {
+                        if (!JudgeOutputComparator.equalsIgnoringWhitespace(expectedOutput, actualOutput)) {
                             String errorMessage = String.format(
                                     "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
                                     truncateString(testCase[0], 100),

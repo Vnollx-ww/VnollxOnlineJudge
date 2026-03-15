@@ -93,8 +93,6 @@ public class PythonJudgeStrategy implements JudgeStrategy {
             for (int i = 0; i < testCases.size(); i++) {
                 String[] testCase = testCases.get(i);
                 String input = testCase[0];
-                String expectedOutput = testCase[1].trim();
-
                 // 构造单次运行请求
                 String jsonPayload = buildSingleRunPayload(submittedCode, input, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
                 HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
@@ -131,11 +129,13 @@ public class PythonJudgeStrategy implements JudgeStrategy {
 
                 // 2. 检验输出结果（答案比对）
                 try {
-                    String expectedOutputUnified = testCase[1].replace("\r\n", "\n").replace("\r", "\n");
-                    String actualOutputUnified = currentResult.getFiles().getStdout().trim().replace("\r\n", "\n").replace("\r", "\n");
+                    String expectedOutputUnified = JudgeOutputComparator.normalizeLineEndings(testCase[1]);
+                    String actualOutputUnified = JudgeOutputComparator.normalizeLineEndings(
+                            currentResult.getFiles() != null ? currentResult.getFiles().getStdout() : ""
+                    );
                     finalResult.getFiles().setStdout(currentResult.getFiles().getStdout());
 
-                    if (!expectedOutputUnified.equals(actualOutputUnified)) {
+                    if (!JudgeOutputComparator.equalsIgnoringWhitespace(expectedOutputUnified, actualOutputUnified)) {
                         finalResult.setStatus("Wrong Answer"); // 状态标记，后续由 processFinalResult 翻译
                         finalResult.getFiles().setStderr(String.format(
                                 "测试用例 %d 失败%n输入: %s%n期待输出: %s%n实际输出: %s",
