@@ -15,14 +15,14 @@ spring:
       datasource:
         master:
           driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://mysql-master:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+          url: jdbc:mysql://${MYSQL_HOST:mysql-master}:${MYSQL_PORT:3308}/${MYSQL_DATABASE:vnollxonlinejudge}?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
           username: root
-          password: rootpassword
+          password: ${MYSQL_ROOT_PASSWORD:rootpassword}
           type: com.alibaba.druid.pool.DruidDataSource
   data:
     redis:
-      host: redis
-      port: 6379
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
       timeout: 10000
       connect-timeout: 10000
       lettuce:
@@ -32,10 +32,10 @@ spring:
           min-idle: 5
         shutdown-timeout: 200
   rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: admin
-    password: admin
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:admin}
+    password: ${RABBITMQ_PASSWORD:admin}
     listener:
       simple:
         concurrency: 5
@@ -45,18 +45,21 @@ spring:
     virtual:
       enabled: true
   mail:
-    host: smtp.qq.com
-    port: 465
-    password: jfccwlsdynqfdchg
-    username: 2720741614@qq.com
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
   main:
     allow-circular-references: true
     allow-bean-definition-overriding: true
 
 minio:
-  endpoint: http://minio:9000
-  access-key: vnollxvnollx
-  secret-key: vnollxvnollxvnollx
+  endpoint: ${MINIO_ENDPOINT:http://minio:9000}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+
+go-judge:
+  endpoint: ${GO_JUDGE_ENDPOINT:http://go-judge:5050}
 
 server:
   port: 8080
@@ -99,10 +102,10 @@ management:
 ai:
   proxy:
     domestic:
-      url: http://ai-proxy:8000
+      url: ${AI_PROXY_DOMESTIC_URL:http://ai-proxy:8000}
     overseas:
-      url: http://ai-proxy:8000
-    timeout: 300
+      url: ${AI_PROXY_OVERSEAS_URL:http://ai-proxy:8000}
+    timeout: ${AI_PROXY_TIMEOUT:300}
 
 # Resilience4j 熔断配置
 resilience4j:

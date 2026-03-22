@@ -6,12 +6,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GoJudgeConfig {
-    @Value("http://go-judge:5050")
+    @Value("${go-judge.endpoint}")
     private String goJudgeEndpoint;
 
     @Bean
     public String getGoJudgeEndpoint() {
         return goJudgeEndpoint;
     }
-
 }
