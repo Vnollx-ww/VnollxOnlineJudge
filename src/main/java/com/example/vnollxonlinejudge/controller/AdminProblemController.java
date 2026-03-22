@@ -61,33 +61,33 @@ public class AdminProblemController {
     }
     @GetMapping("/count")
     @RequirePermission(PermissionCode.PROBLEM_VIEW)
-    public Result<Long> getProblemCount(@RequestParam(required = false) String keyword){
-        if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
-            return Result.Success(
-                    problemService.getCount(keyword,Long.parseLong(keyword),true)
-                    ,"获取关键字题目总数成功");
-        }else{
-            return Result.Success(
-                    problemService.getCount(keyword,0L,true)
-                    ,"获取关键字题目总数成功");
+    public Result<Long> getProblemCount(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String tag) {
+        Long pid = 0L;
+        if (keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)) {
+            pid = Long.parseLong(keyword);
         }
+        return Result.Success(
+                problemService.getCount(keyword, pid, true, tag),
+                "获取题目总数成功");
     }
+
     @GetMapping("/list")
     @RequirePermission(PermissionCode.PROBLEM_VIEW)
-    public Result<List<ProblemVo>> getProblemList(@RequestParam(required = false) String keyword, @RequestParam String offset, @RequestParam String size){
-        if(keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)){
-            return Result.Success(
-                    problemService.getProblemList(
-                            keyword,Long.parseLong(keyword),
-                            Integer.parseInt(offset),Integer.parseInt(size),true
-                    )
-                    ,"搜索题目成功");
-        }else{
-            return Result.Success(
-                    problemService.getProblemList(
-                            keyword,0L,Integer.parseInt(offset),Integer.parseInt(size),true
-                    )
-                    ,"搜索题目成功");
+    public Result<List<ProblemVo>> getProblemList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam String offset,
+            @RequestParam String size,
+            @RequestParam(required = false) String tag) {
+        Long pid = 0L;
+        if (keyword != null && !keyword.isEmpty() && keyword.chars().allMatch(Character::isDigit)) {
+            pid = Long.parseLong(keyword);
         }
+        return Result.Success(
+                problemService.getProblemList(
+                        keyword, pid,
+                        Integer.parseInt(offset), Integer.parseInt(size), true, tag),
+                "搜索题目成功");
     }
 }

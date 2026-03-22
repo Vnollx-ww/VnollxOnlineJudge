@@ -144,6 +144,8 @@ const AdminProblems: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
+  const [filterTag, setFilterTag] = useState<string | undefined>(undefined);
+  const [tagOptions, setTagOptions] = useState<{ id: number; name: string }[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
   const [form] = Form.useForm();
@@ -155,8 +157,22 @@ const AdminProblems: React.FC = () => {
   const [examplesList, setExamplesList] = useState<ProblemExampleItem[]>([{ input: '', output: '', sortOrder: 0 }]);
 
   useEffect(() => {
+    const loadTagList = async () => {
+      try {
+        const res = await api.get('/tag/list') as ApiResponse<{ id: number; name: string }[]>;
+        if (res.code === 200 && res.data) {
+          setTagOptions(res.data);
+        }
+      } catch {
+        // 标签列表加载失败时忽略，筛选下拉可为空
+      }
+    };
+    loadTagList();
+  }, []);
+
+  useEffect(() => {
     loadProblems();
-  }, [currentPage, pageSize, keyword]);
+  }, [currentPage, pageSize, keyword, filterTag]);
 
   const loadProblems = async () => {
     setLoading(true);
@@ -166,6 +182,7 @@ const AdminProblems: React.FC = () => {
           offset: ((currentPage - 1) * pageSize).toString(),
           size: pageSize.toString(),
           keyword: keyword || undefined,
+          tag: filterTag || undefined,
         },
       }) as ApiResponse<Problem[]>;
       if (data.code === 200) {
@@ -173,7 +190,7 @@ const AdminProblems: React.FC = () => {
       }
 
       const countData = await api.get('/admin/problem/count', {
-        params: { keyword: keyword || undefined },
+        params: { keyword: keyword || undefined, tag: filterTag || undefined },
       }) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
@@ -509,16 +526,29 @@ ${aiInput}`;
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <Input.Search
-          placeholder="搜索题目..."
-          allowClear
-          className="w-72"
-          onSearch={(value) => {
-            setKeyword(value);
-            setCurrentPage(1);
-          }}
-        />
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Input.Search
+            placeholder="搜索题目..."
+            allowClear
+            className="w-72"
+            onSearch={(value) => {
+              setKeyword(value);
+              setCurrentPage(1);
+            }}
+          />
+          <Select
+            placeholder="按标签筛选"
+            allowClear
+            className="w-40"
+            value={filterTag || undefined}
+            onChange={(value) => {
+              setFilterTag(value ?? undefined);
+              setCurrentPage(1);
+            }}
+            options={tagOptions.map((t) => ({ label: t.name, value: t.name }))}
+          />
+        </div>
         <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadProblems}>
           刷新
         </Button>

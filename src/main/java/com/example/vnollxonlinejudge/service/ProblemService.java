@@ -17,7 +17,11 @@ public interface ProblemService {
     List<String> getTagNames(Long pid);
     List<ProblemVo> getProblemList(String name, Long pid, int offset, int size, boolean ok);
 
+    List<ProblemVo> getProblemList(String name, Long pid, int offset, int size, boolean ok, String tag);
+
     Long getCount(String keyword, Long pid,boolean ok);
+
+    Long getCount(String keyword, Long pid, boolean ok, String tag);
     boolean isSolved(Long pid,Long uid,Long cid);
     void updatePassCount(Long pid, int ok);
     void addUserSolveRecord(Long pid,Long uid,Long cid,String problemName);

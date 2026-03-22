@@ -232,10 +232,22 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok) {
+        return getProblemList(keyword, pid, offset, size, ok, null);
+    }
+
+    @Override
+    public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok, String tag) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
         if (!ok){
             wrapper.eq("open",1);
             wrapper.select("id, title, difficulty, submit_count, pass_count");
+        }
+        if (StringUtils.isNotBlank(tag)) {
+            List<Long> tagPids = problemTagService.getProblemByTag(tag);
+            if (tagPids == null || tagPids.isEmpty()) {
+                return List.of();
+            }
+            wrapper.in("id", tagPids);
         }
         if (StringUtils.isNotBlank(keyword)){
             if (pid>0){
@@ -261,10 +273,23 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 })
                 .collect(Collectors.toList());
     }
+
     @Override
     public Long getCount(String keyword, Long pid,boolean ok) {
+        return getCount(keyword, pid, ok, null);
+    }
+
+    @Override
+    public Long getCount(String keyword, Long pid, boolean ok, String tag) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
-        if (!ok)wrapper.eq("open",1);
+        if (!ok) wrapper.eq("open",1);
+        if (StringUtils.isNotBlank(tag)) {
+            List<Long> tagPids = problemTagService.getProblemByTag(tag);
+            if (tagPids == null || tagPids.isEmpty()) {
+                return 0L;
+            }
+            wrapper.in("id", tagPids);
+        }
         if (StringUtils.isNotBlank(keyword)){
             if (pid>0){
                 wrapper.and(wq -> wq.like("title", keyword).or().eq("id", pid));
