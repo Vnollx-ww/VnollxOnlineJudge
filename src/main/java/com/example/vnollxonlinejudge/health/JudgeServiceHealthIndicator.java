@@ -25,13 +25,13 @@ public class JudgeServiceHealthIndicator implements HealthIndicator {
         try {
             // 检查 RabbitMQ 连接
             rabbitTemplate.execute(channel -> {
-                channel.queueDeclarePassive("judgeQueue");
+                channel.queueDeclarePassive("submissionQueue");
                 return null;
             });
 
             return Health.up()
                     .withDetail("rabbitMQ", "正常")
-                    .withDetail("judgeQueue", "可用")
+                    .withDetail("submissionQueue", "可用")
                     .build();
 
         } catch (Exception e) {
