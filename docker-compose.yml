@@ -1,33 +1,79 @@
-#version: '3.8'
-
 services:
+
+  # ==================== 前端 (React + Nginx) ====================
+  vnollx-web:
+    build: ./frontend
+    image: vnollx/vnollx-web:latest
+    container_name: vnollx-web
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      vnollx:
+        condition: service_started
+    networks:
+      - app-network
+
+  # ==================== 后端 (Spring Boot 3.2 / Java 21) ====================
   vnollx:
+    build: .
     image: vnollx/vnollx:latest
     container_name: vnollx
     ports:
       - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+      mysql-slave:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      go-judge:
+        condition: service_started
     networks:
       - app-network
-    depends_on:
-      - mysql-master
-      - mysql-slave
-      - redis
-      - rabbitmq
 
+  # ==================== AI 代理 (Python FastAPI) ====================
+  # 单机开发环境；生产环境建议国内/海外各部署一台，详见 docs/部署文档.md
+  ai-proxy:
+    build: ./Ai-Proxy
+    image: vnollx/ai-proxy:latest
+    container_name: ai-proxy
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: mysql-master
+      DB_PORT: "3308"
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: vnollxonlinejudge
+    restart: unless-stopped
+    depends_on:
+      mysql-master:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ==================== MySQL 主库 ====================
   mysql-master:
     image: mysql:8.0
     container_name: mysql-master
     ports:
-      - "3308:3308"  # 主库映射到 3308
+      - "3308:3308"
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: vnollxonlinejudge
-      MYSQL_REPLICATION_USER: repl  # 自动创建复制用户
+      MYSQL_REPLICATION_USER: repl
       MYSQL_REPLICATION_PASSWORD: repl123
     volumes:
       - mysql-master-data:/var/lib/mysql
     command:
-      - --port=3308  # 关键！让 MySQL 在容器内监听 3308
+      - --port=3308
       - --server-id=1
       - --log-bin=mysql-bin
       - --binlog-format=ROW
@@ -35,21 +81,29 @@ services:
       - --gtid-mode=ON
       - --enforce-gtid-consistency=ON
       - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-P", "3308", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
     networks:
       - app-network
 
+  # ==================== MySQL 从库 ====================
   mysql-slave:
     image: mysql:8.0
     container_name: mysql-slave
     ports:
-      - "3309:3309"  # 从库映射到 3309
+      - "3309:3309"
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: vnollxonlinejudge
     volumes:
       - mysql-slave-data:/var/lib/mysql
     command:
-      - --port=3309  # 关键！让 MySQL 在容器内监听 3308
+      - --port=3309
       - --server-id=2
       - --log-bin=mysql-bin
       - --binlog-format=ROW
@@ -58,57 +112,92 @@ services:
       - --enforce-gtid-consistency=ON
       - --read-only=1
       - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-P", "3309", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
     depends_on:
-      - mysql-master
+      mysql-master:
+        condition: service_healthy
     networks:
       - app-network
 
+  # ==================== Redis ====================
   redis:
-    image: redis:latest
+    image: redis:7
     container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
     networks:
       - app-network
 
+  # ==================== MinIO (对象存储) ====================
   minio:
     image: bitnami/minio:latest
     container_name: minio
     environment:
-      MINIO_ACCESS_KEY: vnollxvnollx           # 设置 MinIO 访问密钥
-      MINIO_SECRET_KEY: vnollxvnollxvnollx        # 设置 MinIO 秘密密钥
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     ports:
-      - "9000:9000"                             # 映射 MinIO 服务端口
-      - "9001:9001"                             # 映射 MinIO 控制台端口
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio-data:/data
+    restart: unless-stopped
     networks:
       - app-network
 
+  # ==================== RabbitMQ (消息队列) ====================
   rabbitmq:
-    image: rabbitmq:management
+    image: rabbitmq:3-management
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
     ports:
       - "5672:5672"
-      - "15672:15672"  # RabbitMQ management UI
+      - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
     networks:
       - app-network
+
+  # ==================== Go-Judge (评测沙箱) ====================
   go-judge:
     image: criyle/go-judge:latest
     container_name: go-judge
     ports:
       - "5050:5050"
+    privileged: true
+    shm_size: 256m
+    restart: unless-stopped
     networks:
       - app-network
+
 volumes:
   mysql-master-data:
     driver: local
   mysql-slave-data:
+    driver: local
+  redis-data:
     driver: local
   minio-data:
     driver: local
