@@ -19,12 +19,6 @@ spring:
           username: root
           password: rootpassword
           type: com.alibaba.druid.pool.DruidDataSource
-        slave:
-          driver-class-name: com.mysql.cj.jdbc.Driver
-          url: jdbc:mysql://mysql-slave:3309/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
-          username: root
-          password: rootpassword
-          type: com.alibaba.druid.pool.DruidDataSource
   data:
     redis:
       host: redis

@@ -2,7 +2,9 @@ services:
 
   # ==================== 前端 (React + Nginx) ====================
   vnollx-web:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
     image: vnollx/vnollx-web:latest
     container_name: vnollx-web
     ports:
@@ -16,7 +18,9 @@ services:
 
   # ==================== 后端 (Spring Boot 3.2 / Java 21) ====================
   vnollx:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
     image: vnollx/vnollx:latest
     container_name: vnollx
     ports:
@@ -24,8 +28,6 @@ services:
     restart: unless-stopped
     depends_on:
       mysql-master:
-        condition: service_healthy
-      mysql-slave:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -41,7 +43,9 @@ services:
   # ==================== AI 代理 (Python FastAPI) ====================
   # 单机开发环境；生产环境建议国内/海外各部署一台，详见 docs/部署文档.md
   ai-proxy:
-    build: ./Ai-Proxy
+    build:
+      context: .
+      dockerfile: docker/ai-proxy.Dockerfile
     image: vnollx/ai-proxy:latest
     container_name: ai-proxy
     ports:
@@ -59,7 +63,7 @@ services:
     networks:
       - app-network
 
-  # ==================== MySQL 主库 ====================
+  # ==================== MySQL ====================
   mysql-master:
     image: mysql:8.0
     container_name: mysql-master
@@ -68,18 +72,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: vnollxonlinejudge
-      MYSQL_REPLICATION_USER: repl
-      MYSQL_REPLICATION_PASSWORD: repl123
     volumes:
       - mysql-master-data:/var/lib/mysql
     command:
       - --port=3308
-      - --server-id=1
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --binlog-do-db=vnollxonlinejudge
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
       - --default-authentication-plugin=mysql_native_password
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-P", "3308", "-u", "root", "-prootpassword"]
@@ -88,40 +84,6 @@ services:
       retries: 10
       start_period: 30s
     restart: unless-stopped
-    networks:
-      - app-network
-
-  # ==================== MySQL 从库 ====================
-  mysql-slave:
-    image: mysql:8.0
-    container_name: mysql-slave
-    ports:
-      - "3309:3309"
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: vnollxonlinejudge
-    volumes:
-      - mysql-slave-data:/var/lib/mysql
-    command:
-      - --port=3309
-      - --server-id=2
-      - --log-bin=mysql-bin
-      - --binlog-format=ROW
-      - --replicate-do-db=vnollxonlinejudge
-      - --gtid-mode=ON
-      - --enforce-gtid-consistency=ON
-      - --read-only=1
-      - --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-P", "3309", "-u", "root", "-prootpassword"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    restart: unless-stopped
-    depends_on:
-      mysql-master:
-        condition: service_healthy
     networks:
       - app-network
 
@@ -194,8 +156,6 @@ services:
 
 volumes:
   mysql-master-data:
-    driver: local
-  mysql-slave-data:
     driver: local
   redis-data:
     driver: local
