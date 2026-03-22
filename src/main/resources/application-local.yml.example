@@ -1,0 +1,34 @@
+# 本地开发环境配置模板
+# 复制为 application-local.yml 后填入实际值
+# 启动时使用: --spring.profiles.active=local
+
+spring:
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:mysql://localhost:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+          password: your_mysql_password
+  data:
+    redis:
+      host: localhost
+  rabbitmq:
+    host: localhost
+  mail:
+    username: your_email@qq.com
+    password: your_email_auth_code
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: your_minio_access_key
+  secret-key: your_minio_secret_key
+
+go-judge:
+  endpoint: http://localhost:5050
+
+ai:
+  proxy:
+    domestic:
+      url: http://localhost:8000
+    overseas:
+      url: http://localhost:8000

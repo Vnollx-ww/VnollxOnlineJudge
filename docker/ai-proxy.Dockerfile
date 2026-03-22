@@ -6,13 +6,13 @@ ENV PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-COPY Ai-Proxy/requirements.txt ./
+COPY ai-proxy/requirements.txt ./
 
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-COPY Ai-Proxy/app ./app
-COPY Ai-Proxy/main.py ./
+COPY ai-proxy/app ./app
+COPY ai-proxy/main.py ./
 
 EXPOSE 8000
 
