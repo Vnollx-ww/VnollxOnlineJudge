@@ -47,16 +47,16 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.qq.com}
     port: ${MAIL_PORT:465}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USERNAME:2720741614@qq.com}
+    password: ${MAIL_PASSWORD:jfccwlsdynqfdchg}
   main:
     allow-circular-references: true
     allow-bean-definition-overriding: true
 
 minio:
   endpoint: ${MINIO_ENDPOINT:http://minio:9000}
-  access-key: ${MINIO_ACCESS_KEY:}
-  secret-key: ${MINIO_SECRET_KEY:}
+  access-key: ${MINIO_ACCESS_KEY:vnollxvnollx}
+  secret-key: ${MINIO_SECRET_KEY:vnollxvnollxvnollx}
 
 go-judge:
   endpoint: ${GO_JUDGE_ENDPOINT:http://go-judge:5050}
