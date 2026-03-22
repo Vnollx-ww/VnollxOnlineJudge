@@ -428,26 +428,17 @@ create table ai_platform
 -- -----------------------------------------------------
 create table ai_model
 (
-    id              bigint auto_increment comment '模型ID'
+    id           bigint auto_increment comment '模型ID'
         primary key,
-    platform_id     bigint                              not null comment '所属平台ID(关联 ai_platform)',
-    adapter_code    varchar(50)                         null comment '平台=langchain4j 时必填: openai/mistral/dashscope',
-    name            varchar(100)                        not null comment '模型显示名称',
-    model_id        varchar(100)                        not null comment '模型标识(如 gpt-4、glm-4.7)',
-    logo_url        varchar(512)                        null comment '模型 Logo 图片地址',
-    endpoint        varchar(512)                        null comment 'API 请求地址(仅 langchain4j 部分适配器可填)',
-    api_key         varchar(512)                        null comment 'API 密钥(加密存储)',
-    max_tokens      int default 4096                    null comment '单次最大 token 数',
-    temperature     decimal(3, 2) default 0.70          null comment '温度参数 0-2',
-    timeout_seconds int default 60                      null comment '请求超时秒数',
-    extra_config    json                                null comment '扩展配置(JSON)',
-    sort_order      int default 0                      null comment '排序序号',
-    status          tinyint default 1                   null comment '状态：1-启用，0-禁用',
-    create_time     datetime default CURRENT_TIMESTAMP  null comment '创建时间',
-    update_time     datetime default CURRENT_TIMESTAMP  null on update CURRENT_TIMESTAMP comment '更新时间',
-    constraint fk_ai_model_platform foreign key (platform_id) references ai_platform (id) on delete restrict,
-    index idx_ai_model_platform (platform_id),
-    index idx_model_id (model_id),
+    name         varchar(100)                        not null comment '模型显示名称',
+    logo_url     varchar(512)                        null comment '模型 Logo 图片地址',
+    api_key      varchar(512)                        null comment 'API 密钥(加密存储)',
+    extra_config json                                null comment '扩展配置(JSON)',
+    sort_order   int default 0                       null comment '排序序号',
+    status       tinyint default 1                   null comment '状态：1-启用，0-禁用',
+    proxy_type   varchar(20) default 'overseas'       null comment '代理类型：domestic-国内，overseas-国外',
+    create_time  datetime default CURRENT_TIMESTAMP  null comment '创建时间',
+    update_time  datetime default CURRENT_TIMESTAMP  null on update CURRENT_TIMESTAMP comment '更新时间',
     index idx_status (status),
     index idx_sort_order (sort_order)
 ) comment 'AI 模型配置表' collate = utf8mb4_unicode_ci;
@@ -630,9 +621,9 @@ INSERT INTO ai_platform (id, code, name, description, sort_order, status) VALUES
 -- =====================================================
 -- 初始化 AI 模型（示例：LangChain4j-Mistral + 智谱 GLM-4.7）
 -- =====================================================
-INSERT INTO ai_model (id, platform_id, adapter_code, name, model_id, logo_url, endpoint, api_key, max_tokens, temperature, timeout_seconds, sort_order, status)
+INSERT INTO ai_model (id, name, logo_url, api_key, sort_order, status, proxy_type)
 VALUES
-(1, 1, 'mistral', 'Mistral Large', 'mistral-large-latest', NULL, 'https://api.mistral.ai', '', 4096, 0.70, 60, 0, 1),
-(2, 2, NULL, '智谱 GLM-4.7', 'glm-4.7', NULL, NULL, 'your-zhipu-api-key', 8192, 0.70, 60, 2, 0),
-(3, 1, 'dashscope', '通义千问 Plus', 'qwen-plus', NULL, 'https://dashscope.aliyuncs.com/compatible-mode/v1', 'your-dashscope-api-key', 8192, 0.70, 60, 1, 1),
-(4, 3, NULL, 'DeepSeek v3.1', 'deepseek-v3.1', NULL, NULL, 'your-dashscope-api-key', 8192, 0.70, 60, 3, 1);
+(1, 'Mistral Large', NULL, '', 0, 1, 'overseas'),
+(2, '智谱 GLM-4.7', NULL, 'your-zhipu-api-key', 2, 0, 'domestic'),
+(3, '通义千问 Plus', NULL, 'your-dashscope-api-key', 1, 1, 'domestic'),
+(4, 'DeepSeek v3.1', NULL, 'your-dashscope-api-key', 3, 1, 'domestic');

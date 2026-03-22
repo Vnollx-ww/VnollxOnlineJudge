@@ -24,13 +24,16 @@ import java.util.UUID;
 @Service
 @Primary
 public class MinioServiceImpl implements OssService {
-    private static final String endpoint="http://111.230.105.54:9000";
     private static final Logger logger = LoggerFactory.getLogger(MinioServiceImpl.class);
-    @Autowired
-    public MinioServiceImpl(MinioClient minioClient){
-        this.minioClient=minioClient;
-    }
+
     private final MinioClient minioClient;
+    private final String endpoint;
+
+    @Autowired
+    public MinioServiceImpl(MinioClient minioClient, @Value("${minio.endpoint}") String endpoint) {
+        this.minioClient = minioClient;
+        this.endpoint = endpoint;
+    }
     private final String bucket="problem";
     @Override
     public void uploadFile(String fileUrl,MultipartFile testCaseFile) throws IOException {
@@ -86,8 +89,8 @@ public class MinioServiceImpl implements OssService {
     }
 
 
-    private static String generateAvatarUrl(String encryptedFileName) {
-        return  endpoint+ "/" + "avatar" + "/" + encryptedFileName;
+    private String generateAvatarUrl(String encryptedFileName) {
+        return endpoint + "/" + "avatar" + "/" + encryptedFileName;
     }
 
     @Override

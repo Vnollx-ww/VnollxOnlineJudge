@@ -203,21 +203,18 @@ public class AiServiceImpl implements AiService {
         List<ProxyAiStreamingClient.ChatMessage> messages = new ArrayList<>(history);
         messages.add(ProxyAiStreamingClient.userMessage(message));
 
-        Double temperature = aiModel.getTemperature() != null ? aiModel.getTemperature().doubleValue() : null;
-        Integer maxTokens = aiModel.getMaxTokens();
-
         StringBuilder fullResponse = new StringBuilder();
         StringBuilder fullThinking = new StringBuilder();
 
         String proxyBaseUrl = resolveProxyBaseUrl(aiModel);
         return proxyClient.streamChat(
                         proxyBaseUrl,
-                        aiModel.getModelId(),
+                        aiModel.getName(),
                         aiModel.getApiKey().trim(),
                         messages,
                         userId,
-                        temperature,
-                        maxTokens
+                        null,
+                        null
                 )
                 .doOnNext(token -> {
                     if (token.startsWith("[THINKING]")) {

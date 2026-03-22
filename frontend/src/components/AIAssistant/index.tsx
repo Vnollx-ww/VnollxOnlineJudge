@@ -35,9 +35,7 @@ interface HistoryPageResponse {
 interface AiModelOption {
   id: number;
   name: string;
-  modelId: string;
   logoUrl?: string;
-  provider?: string;
 }
 
 // 规范化 Markdown 格式（修复 AI 输出的格式问题）

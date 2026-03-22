@@ -5,27 +5,22 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.AiModelMapper;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAiModelSaveDTO;
 import com.example.vnollxonlinejudge.model.entity.AiModel;
-import com.example.vnollxonlinejudge.model.entity.AiPlatform;
 import com.example.vnollxonlinejudge.model.vo.ai.AiModelVo;
 import com.example.vnollxonlinejudge.service.AiModelService;
-import com.example.vnollxonlinejudge.service.AiPlatformService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class AiModelServiceImpl implements AiModelService {
     private static final Logger logger = LoggerFactory.getLogger(AiModelServiceImpl.class);
     private final AiModelMapper aiModelMapper;
-    private final AiPlatformService aiPlatformService;
 
-    public AiModelServiceImpl(AiModelMapper aiModelMapper, AiPlatformService aiPlatformService) {
+    public AiModelServiceImpl(AiModelMapper aiModelMapper) {
         this.aiModelMapper = aiModelMapper;
-        this.aiPlatformService = aiPlatformService;
     }
 
     @Override
@@ -45,14 +40,7 @@ public class AiModelServiceImpl implements AiModelService {
     }
 
     private List<AiModelVo> toVoList(List<AiModel> list) {
-        if (list.isEmpty()) {
-            return List.of();
-        }
-        Map<Long, AiPlatform> platformMap = aiPlatformService.getByIds(
-                list.stream().map(AiModel::getPlatformId).distinct().toList());
-        return list.stream()
-                .map(m -> toVo(m, platformMap.get(m.getPlatformId())))
-                .collect(Collectors.toList());
+        return list.stream().map(this::toVo).collect(Collectors.toList());
     }
 
     @Override
@@ -66,10 +54,6 @@ public class AiModelServiceImpl implements AiModelService {
 
     @Override
     public Long create(AdminAiModelSaveDTO dto) {
-        if (dto.getPlatformId() == null) {
-            throw new BusinessException("请选择 AI 平台");
-        }
-        aiPlatformService.getById(dto.getPlatformId());
         AiModel entity = toEntity(dto);
         entity.setId(null);
         aiModelMapper.insert(entity);
@@ -85,18 +69,8 @@ public class AiModelServiceImpl implements AiModelService {
         if (existing == null) {
             throw new BusinessException("AI 模型不存在");
         }
-        if (dto.getPlatformId() != null) {
-            aiPlatformService.getById(dto.getPlatformId()); // 校验平台存在
-        }
         AiModel entity = toEntity(dto);
         entity.setId(dto.getId());
-        if (dto.getPlatformId() == null) {
-            entity.setPlatformId(existing.getPlatformId());
-        }
-        if (dto.getAdapterCode() == null && existing.getAdapterCode() != null) {
-            entity.setAdapterCode(existing.getAdapterCode());
-        }
-        // 更新时若未传 apiKey 则保留原值
         if (dto.getApiKey() == null || dto.getApiKey().trim().isEmpty()) {
             entity.setApiKey(existing.getApiKey());
         }
@@ -114,15 +88,10 @@ public class AiModelServiceImpl implements AiModelService {
         aiModelMapper.deleteById(id);
     }
 
-    private AiModelVo toVo(AiModel e, AiPlatform platform) {
+    private AiModelVo toVo(AiModel e) {
         return AiModelVo.builder()
                 .id(e.getId())
-                .platformId(e.getPlatformId())
-                .platformCode(platform != null ? platform.getCode() : null)
-                .platformName(platform != null ? platform.getName() : null)
-                .adapterCode(e.getAdapterCode())
                 .name(e.getName())
-                .modelId(e.getModelId())
                 .logoUrl(e.getLogoUrl())
                 .sortOrder(e.getSortOrder())
                 .build();
@@ -131,16 +100,9 @@ public class AiModelServiceImpl implements AiModelService {
     private AiModel toEntity(AdminAiModelSaveDTO dto) {
         return AiModel.builder()
                 .id(dto.getId())
-                .platformId(dto.getPlatformId())
-                .adapterCode(dto.getAdapterCode())
                 .name(dto.getName())
-                .modelId(dto.getModelId())
                 .logoUrl(dto.getLogoUrl())
-                .endpoint(dto.getEndpoint())
                 .apiKey(dto.getApiKey())
-                .maxTokens(dto.getMaxTokens() != null ? dto.getMaxTokens() : 4096)
-                .temperature(dto.getTemperature() != null ? dto.getTemperature() : new java.math.BigDecimal("0.70"))
-                .timeoutSeconds(dto.getTimeoutSeconds() != null ? dto.getTimeoutSeconds() : 60)
                 .extraConfig(dto.getExtraConfig())
                 .sortOrder(dto.getSortOrder() != null ? dto.getSortOrder() : 0)
                 .status(dto.getStatus() != null ? dto.getStatus() : 1)

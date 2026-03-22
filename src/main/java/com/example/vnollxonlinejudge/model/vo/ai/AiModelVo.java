@@ -14,12 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AiModelVo {
     private Long id;
-    private Long platformId;
-    private String platformCode;
-    private String platformName;
-    private String adapterCode;
     private String name;
-    private String modelId;
     private String logoUrl;
     private Integer sortOrder;
 }
