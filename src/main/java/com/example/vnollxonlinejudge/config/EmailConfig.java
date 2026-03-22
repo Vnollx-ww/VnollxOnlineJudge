@@ -8,14 +8,12 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Configuration
 public class EmailConfig {
-    @Value("smtp.qq.com")
+    @Value("${spring.mail.host}")
     private String hostName;
-    @Value("465")
+    @Value("${spring.mail.port}")
     private int smtpPost;
-    @Value("2720741614@qq.com")
+    @Value("${spring.mail.username}")
     private String userName;
-    @Value("jfccwlsdynqfdchg")
+    @Value("${spring.mail.password}")
     private String password;
-
-
 }

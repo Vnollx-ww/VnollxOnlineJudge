@@ -44,9 +44,20 @@ spring:
   threads:
     virtual:
       enabled: true
+  mail:
+    host: smtp.qq.com
+    port: 465
+    password: jfccwlsdynqfdchg
+    username: 2720741614@qq.com
   main:
     allow-circular-references: true
     allow-bean-definition-overriding: true
+
+minio:
+  endpoint: http://minio:9000
+  access-key: vnollxvnollx
+  secret-key: vnollxvnollxvnollx
+
 server:
   port: 8080
   servlet:
@@ -88,9 +99,9 @@ management:
 ai:
   proxy:
     domestic:
-      url: http://111.230.105.54:8000
+      url: http://ai-proxy:8000
     overseas:
-      url: http://74.122.24.92:8000
+      url: http://ai-proxy:8000
     timeout: 300
 
 # Resilience4j 熔断配置
