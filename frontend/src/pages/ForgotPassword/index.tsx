@@ -154,7 +154,7 @@ const ForgotPassword: React.FC = () => {
               </svg>
             </div>
             <div className="text-black font-black text-xl tracking-tight text-center">
-              Vnollx<br />OnlineJudge
+              CodeArena<br />OnlineJudge
             </div>
           </div>
 

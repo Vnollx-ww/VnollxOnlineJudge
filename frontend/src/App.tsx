@@ -32,7 +32,7 @@ import {
   SolutionDetailPage,
   SolutionPublishPage,
   About,
-  VnollxHome,
+  CodeArenaHome,
 } from "./pages";
 
 // Ant Design 主题配置 - Gemini 风格
@@ -200,7 +200,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/vnollx" element={<VnollxHome />} />
+            <Route path="/codearena" element={<CodeArenaHome />} />
 
             {/* 管理后台 - 独立布局，不使用全局导航 */}
             <Route path="/admin/*" element={<Admin />} />

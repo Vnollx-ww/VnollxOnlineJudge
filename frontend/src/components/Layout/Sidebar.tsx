@@ -172,7 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               className="text-lg font-semibold tracking-tight truncate"
               style={{ color: 'var(--gemini-text-primary)' }}
             >
-              VnollxOJ
+              CodeArena
             </span>
           )}
         </Link>

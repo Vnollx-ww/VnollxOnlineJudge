@@ -226,7 +226,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
             className="text-xl font-semibold tracking-tight hidden sm:block"
             style={{ color: 'var(--gemini-text-primary)' }}
           >
-            VnollxOJ
+            CodeArena
           </span>
         </Link>
 

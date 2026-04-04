@@ -205,7 +205,7 @@ const Admin: React.FC = () => {
         }}
       >
         <header className="admin-header">
-          <h1 className="admin-header__title">Vnollx在线评测系统 - 管理后台</h1>
+          <h1 className="admin-header__title">CodeArena 在线评测系统 - 管理后台</h1>
           <div className="admin-header__actions">
             <button
               type="button"

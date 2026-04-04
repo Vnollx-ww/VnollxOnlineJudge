@@ -120,12 +120,12 @@ const Register: React.FC = () => {
               </svg>
             </div>
             <div className="text-black font-black text-xl tracking-tight text-center leading-tight">
-              Vnollx<br />OnlineJudge
+              CodeArena<br />OnlineJudge
             </div>
           </div>
 
           <h2 className="text-center text-gray-800 text-lg font-semibold mb-6">
-            注册 VnollxOnlineJudge
+            注册 CodeArena
           </h2>
 
           <form onSubmit={onFinish} className="space-y-4">

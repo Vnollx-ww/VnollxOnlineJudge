@@ -499,7 +499,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
       >
         <div className="text-center pt-4 pb-2">
           <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
-            {mode === 'login' ? '欢迎回来' : mode === 'register' ? '立即加入 Vnollx' : '找回密码'}
+            {mode === 'login' ? '欢迎回来' : mode === 'register' ? '立即加入 CodeArena' : '找回密码'}
           </h2>
           <Text style={{ color: 'var(--gemini-text-secondary)' }}>
             {mode === 'login'

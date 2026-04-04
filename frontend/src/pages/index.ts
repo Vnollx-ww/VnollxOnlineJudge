@@ -43,4 +43,4 @@ export { default as Admin } from './Admin';
 
 // 其他
 export { default as About } from './About';
-export { default as VnollxHome } from './VnollxHome';
+export { default as CodeArenaHome } from './VnollxHome';
