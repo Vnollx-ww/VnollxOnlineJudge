@@ -183,6 +183,12 @@ const CompetitionProblemDetail: React.FC = () => {
         detail = '正在进行评测...';
       } else {
         detail = `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`;
+        if (msg.testCount != null && msg.testCount > 0) {
+          detail += `\n测试点：${msg.passCount ?? 0}/${msg.testCount}`;
+        }
+        if (msg.errorInfo) {
+          detail += `\n\n${msg.errorInfo}`;
+        }
       }
 
       setSubmitResult({ type, message: status, detail });
@@ -423,10 +429,15 @@ const CompetitionProblemDetail: React.FC = () => {
             detail: `程序输出:\n${data.data.actualOutput || '无输出'}`,
           });
         } else {
+          let detail: string | undefined = data.data.errorInfo;
+          if (data.data.testCount != null && data.data.testCount > 0) {
+            const tcLine = `测试点：${data.data.passCount ?? 0}/${data.data.testCount}`;
+            detail = detail ? `${detail}\n\n${tcLine}` : tcLine;
+          }
           setTestResult({
             type: data.data.status === '答案正确' ? 'success' : 'warning',
             message: data.data.status || '测试完成',
-            detail: data.data.errorInfo,
+            detail,
           });
         }
       } else {

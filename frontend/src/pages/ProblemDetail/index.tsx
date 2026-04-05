@@ -237,8 +237,8 @@ const ProblemDetail: React.FC = () => {
   }, [language]);
 
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
-    if (msg && currentSnowflakeId && String((msg as any).snowflakeId) === String(currentSnowflakeId)) {
-      const status = (msg as any).status || '未知状态';
+    if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
+      const status = msg.status || '未知状态';
       let type = 'info';
       if (status === '答案正确') type = 'success';
       else if (status === '评测中') type = 'info';
@@ -250,8 +250,11 @@ const ProblemDetail: React.FC = () => {
         detail = '正在进行评测...';
       } else {
         detail = `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`;
-        if ((msg as any).errorInfo) {
-          detail += `\n\n${(msg as any).errorInfo}`;
+        if (msg.testCount != null && msg.testCount > 0) {
+          detail += `\n测试点：${msg.passCount ?? 0}/${msg.testCount}`;
+        }
+        if (msg.errorInfo) {
+          detail += `\n\n${msg.errorInfo}`;
         }
       }
 
@@ -525,7 +528,13 @@ const ProblemDetail: React.FC = () => {
         memory: String(problem!.memoryLimit || 256),
         customTest: isCustomTest,
       };
-      const data = await api.post('/judge/test', payload) as ApiResponse<{ status?: string; errorInfo?: string; actualOutput?: string }>;
+      const data = await api.post('/judge/test', payload) as ApiResponse<{
+        status?: string;
+        errorInfo?: string;
+        actualOutput?: string;
+        passCount?: number | null;
+        testCount?: number | null;
+      }>;
       if (data.code === 200) {
         if (isCustomTest) {
           setTestResult({
@@ -534,10 +543,15 @@ const ProblemDetail: React.FC = () => {
             detail: `程序输出:\n${data.data.actualOutput || '无输出'}`,
           });
         } else {
+          let detail = data.data.errorInfo || '';
+          if (data.data.testCount != null && data.data.testCount > 0) {
+            const tcLine = `测试点：${data.data.passCount ?? 0}/${data.data.testCount}`;
+            detail = detail ? `${detail}\n\n${tcLine}` : tcLine;
+          }
           setTestResult({
             type: data.data.status === '答案正确' ? 'success' : 'warning',
             message: data.data.status || '测试完成',
-            detail: data.data.errorInfo,
+            detail: detail || undefined,
           });
         }
       } else {

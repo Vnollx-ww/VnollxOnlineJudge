@@ -23,6 +23,8 @@ interface Submission {
   createTime: string;
   code?: string;
   errorInfo?: string;
+  passCount?: number | null;
+  testCount?: number | null;
 }
 
 const Submissions: React.FC = () => {
@@ -46,24 +48,26 @@ const Submissions: React.FC = () => {
   }, [currentPage]);
 
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
-    const wsMsg = msg as unknown as { snowflakeId: string; status: string; time: number; memory: number };
-    if (!wsMsg || !wsMsg.snowflakeId) return;
+    const wsMsg = msg as JudgeMessage;
+    if (!wsMsg?.snowflakeId) return;
 
     setSubmissions((prev) =>
         prev.map((item) => {
           if (String(item.snowflakeId) === String(wsMsg.snowflakeId)) {
             return {
               ...item,
-              status: wsMsg.status,
-              time: wsMsg.time,
-              memory: wsMsg.memory,
+              status: (wsMsg.status as string) || item.status,
+              time: wsMsg.time ?? item.time,
+              memory: wsMsg.memory ?? item.memory,
+              passCount: wsMsg.passCount ?? item.passCount,
+              testCount: wsMsg.testCount ?? item.testCount,
             };
           }
           return item;
         })
     );
 
-    if (wsMsg.status !== '评测中') {
+    if (wsMsg.status != null && wsMsg.status !== '评测中') {
       setTimeout(() => {
         loadSubmissions(currentPageRef.current);
       }, 500);
@@ -235,6 +239,20 @@ const Submissions: React.FC = () => {
       },
     },
     {
+      title: '测试点',
+      key: 'testcase',
+      width: 100,
+      align: 'center' as const,
+      render: (_: unknown, record: Submission) =>
+        record.testCount != null && record.testCount > 0 ? (
+          <span style={{ color: 'var(--gemini-text-secondary)' }}>
+            {record.passCount ?? 0}/{record.testCount}
+          </span>
+        ) : (
+          <span style={{ color: 'var(--gemini-text-disabled)' }}>—</span>
+        ),
+    },
+    {
       title: '时间',
       dataIndex: 'createTime',
       key: 'submitTime',
@@ -357,6 +375,11 @@ const Submissions: React.FC = () => {
             width="80%"
         >
           <div className="space-y-4">
+            {currentSubmission?.testCount != null && currentSubmission.testCount > 0 && (
+              <div className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                测试点：<span className="font-mono">{currentSubmission.passCount ?? 0}/{currentSubmission.testCount}</span>
+              </div>
+            )}
             {/* 错误信息展示区 */}
             {currentSubmission?.errorInfo && (
                 <div

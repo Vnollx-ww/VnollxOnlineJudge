@@ -181,6 +181,7 @@ public class JavaJudgeStrategy implements JudgeStrategy {
                             deleteClassFile(classFileId);
                             return finalResult;
                         }
+                        finalResult.setPassCount(finalResult.getPassCount() + 1);
                     } catch (Exception e) {
                         finalResult.setStatus(WRONG_ANSWER);
                         finalResult.getFiles().setStderr("比较输出出错: " + e.getMessage());
@@ -192,7 +193,6 @@ public class JavaJudgeStrategy implements JudgeStrategy {
 
             // 3. 删除编译产物
             deleteClassFile(classFileId);
-            finalResult.setPassCount(testCases.size());
             return finalResult;
 
         } catch (Exception e) {

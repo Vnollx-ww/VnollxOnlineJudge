@@ -285,7 +285,9 @@ create table submission
     cid          bigint default 0 null,
     memory       int              not null,
     snowflake_id bigint           null,
-    error_info   text             null
+    error_info   text             null,
+    pass_count   int              null comment '通过的数据组数',
+    test_count   int              null comment '总数据组数'
 );
 
 create index submission_snowflake_id_index

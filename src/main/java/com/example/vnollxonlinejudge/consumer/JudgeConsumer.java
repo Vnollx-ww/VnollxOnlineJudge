@@ -51,8 +51,8 @@ public class JudgeConsumer {
             logger.info("Processing submission: snowflakeId={}, uid={}", judgeInfo.getSnowflakeId(), judgeInfo.getUid());
 
             JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
-            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),"评测中",null,null,null);
-            sendUpdate(judgeInfo, "评测中", null, null, null);
+            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(), "评测中", null, null, null, null, null);
+            sendUpdate(judgeInfo, "评测中", null, null, null, null, null);
 
 
             RunResult result=strategy.judge(
@@ -66,9 +66,17 @@ public class JudgeConsumer {
             if (result.getFiles() != null && result.getFiles().getStderr() != null) {
                 errorInfo = result.getFiles().getStderr();
             }
-            submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(),result.getStatus(), result.getRunTime(),result.getMemory(),errorInfo);
+            submissionService.updateSubmissionJudgeStatusBySnowflake(
+                    judgeInfo.getSnowflakeId(),
+                    result.getStatus(),
+                    result.getRunTime(),
+                    result.getMemory(),
+                    errorInfo,
+                    result.getPassCount(),
+                    result.getTestCount()
+            );
             submissionService.processSubmission(judgeInfo,result.getStatus());
-            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), errorInfo);
+            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), errorInfo, result.getPassCount(), result.getTestCount());
             logger.info("评测完成: snowflakeId={}", judgeInfo.getSnowflakeId());
 
         } catch (IOException e) {
@@ -77,14 +85,16 @@ public class JudgeConsumer {
         }
     }
 
-    private void sendUpdate(JudgeInfo judgeInfo, String status, Long time, Long memory, String errorInfo) {
+    private void sendUpdate(JudgeInfo judgeInfo, String status, Long time, Long memory, String errorInfo, Integer passCount, Integer testCount) {
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("snowflakeId", String.valueOf(judgeInfo.getSnowflakeId())); // Ensure it's a string for JS
             data.put("status", status);
             data.put("time", time);
             data.put("memory", memory);
-            data.put("errorInfo", errorInfo); // 添加错误信息
+            data.put("errorInfo", errorInfo);
+            data.put("passCount", passCount);
+            data.put("testCount", testCount);
 
             String json = objectMapper.writeValueAsString(data);
             judgeWebSocketHandler.sendMessageToUser(judgeInfo.getUid(), json);

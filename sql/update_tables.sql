@@ -18,3 +18,7 @@ INSERT IGNORE INTO ai_model (id, name, logo_url, api_key, sort_order, status, pr
 VALUES
 (7, 'Kimi K2.5', NULL, '', 10, 1, 'domestic'),
 (8, 'MiniMax M2.5', NULL, '', 11, 1, 'domestic');
+
+-- submission：评测通过/总测试组数（若列已存在会报错，可忽略后一条）
+ALTER TABLE submission ADD COLUMN pass_count int NULL COMMENT '通过的数据组数' AFTER error_info;
+ALTER TABLE submission ADD COLUMN test_count int NULL COMMENT '总数据组数' AFTER pass_count;

@@ -18,6 +18,8 @@ public class SubmissionVo {
     private Long uid;
     private Long pid;
     private String errorInfo;
+    private Integer passCount;
+    private Integer testCount;
     public SubmissionVo(){
     }
     public SubmissionVo(Submission submission){
@@ -34,5 +36,7 @@ public class SubmissionVo {
         this.uid=submission.getUid();
         this.pid=submission.getPid();
         this.errorInfo=submission.getErrorInfo();
+        this.passCount=submission.getPassCount();
+        this.testCount=submission.getTestCount();
     }
 }

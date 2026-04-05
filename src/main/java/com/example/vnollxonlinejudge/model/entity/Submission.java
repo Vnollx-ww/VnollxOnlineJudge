@@ -48,4 +48,12 @@ public class Submission {
 
     @Column(name = "error_info", columnDefinition = "TEXT")
     private String errorInfo;
+
+    /** 评测通过的数据组数（含样例测试） */
+    @Column(name = "pass_count")
+    private Integer passCount;
+
+    /** 总数据组数 */
+    @Column(name = "test_count")
+    private Integer testCount;
 }

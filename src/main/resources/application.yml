@@ -102,9 +102,9 @@ management:
 ai:
   proxy:
     domestic:
-      url: ${AI_PROXY_DOMESTIC_URL:http://ai-proxy:8000}
+      url: ${AI_PROXY_DOMESTIC_URL:http://111.230.105.54:8000}
     overseas:
-      url: ${AI_PROXY_OVERSEAS_URL:http://ai-proxy:8000}
+      url: ${AI_PROXY_OVERSEAS_URL:http://74.122.24.92:8000}
     timeout: ${AI_PROXY_TIMEOUT:300}
 
 # Resilience4j 熔断配置

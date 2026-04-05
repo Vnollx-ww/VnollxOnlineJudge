@@ -172,15 +172,19 @@ export interface PageResponse<T> {
   pages: number;
 }
 
-// WebSocket 消息类型
+// WebSocket 消息类型（后端推送字段以实际 JSON 为准）
 export interface JudgeMessage {
-  type: 'status' | 'result' | 'error' | 'complete';
-  submissionId: number;
-  status?: SubmissionStatus;
+  type?: 'status' | 'result' | 'error' | 'complete';
+  submissionId?: number;
+  snowflakeId?: string;
+  status?: SubmissionStatus | string;
   testcaseId?: number;
   time?: number;
   memory?: number;
   message?: string;
+  errorInfo?: string | null;
+  passCount?: number | null;
+  testCount?: number | null;
 }
 
 // 表单类型

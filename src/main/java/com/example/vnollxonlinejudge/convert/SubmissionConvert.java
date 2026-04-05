@@ -25,6 +25,8 @@ public interface SubmissionConvert {
     @Mapping(source = "uid", target = "uid")
     @Mapping(source = "pid", target = "pid")
     @Mapping(source = "errorInfo", target = "errorInfo")
+    @Mapping(source = "passCount", target = "passCount")
+    @Mapping(source = "testCount", target = "testCount")
     SubmissionVo toVo(Submission submission);
 
     List<SubmissionVo> toVoList(List<Submission> list);

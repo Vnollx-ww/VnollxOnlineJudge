@@ -186,7 +186,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     }
 
     @Override
-    public void updateSubmissionJudgeStatusBySnowflake(Long snowflakeId,String judgeStatus,Long time,Long memory,String errorInfo) {
+    public void updateSubmissionJudgeStatusBySnowflake(Long snowflakeId, String judgeStatus, Long time, Long memory, String errorInfo, Integer passCount, Integer testCount) {
         QueryWrapper<Submission> wrapper=new QueryWrapper<>();
         wrapper.eq("snowflake_id",snowflakeId);
         Submission submission=this.baseMapper.selectOne(wrapper);
@@ -194,6 +194,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         submission.setMemory(memory);
         submission.setTime(time);
         submission.setErrorInfo(errorInfo);
+        submission.setPassCount(passCount);
+        submission.setTestCount(testCount);
         this.updateById(submission);
     }
 

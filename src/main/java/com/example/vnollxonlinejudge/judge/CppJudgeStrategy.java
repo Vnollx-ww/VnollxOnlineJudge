@@ -200,6 +200,7 @@ public class CppJudgeStrategy implements JudgeStrategy {
                             deleteBinaryFile(binaryFileId);
                             return finalResult;
                         }
+                        finalResult.setPassCount(finalResult.getPassCount() + 1);
                     } catch (Exception e) {
                         finalResult.setStatus(WRONG_ANSWER);
                         finalResult.getFiles().setStdout(result.getFiles() != null ? result.getFiles().getStdout() : "");
@@ -212,7 +213,6 @@ public class CppJudgeStrategy implements JudgeStrategy {
 
             // 3. 删除编译产物
             deleteBinaryFile(binaryFileId);
-            finalResult.setPassCount(testCases.size());
             logger.info("评测完成: 全部 {} 个测试用例通过", testCases.size());
             return finalResult;
 
