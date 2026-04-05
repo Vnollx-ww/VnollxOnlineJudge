@@ -1,10 +1,5 @@
-FROM eclipse-temurin:21-jdk-jammy AS builder
-
-RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get install -y maven && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# 官方 Maven 镜像已含 JDK 21，避免 apt + 第三方 Ubuntu 源（易 502 / 缺包）
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
 WORKDIR /build
 COPY pom.xml .

@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -76,8 +76,6 @@ export default function JudgeOutcomeCard({ data, onClose }: JudgeOutcomeCardProp
   
   const total = metrics?.testCount ?? 0;
   const passed = metrics?.passCount ?? 0;
-  const ratio = total > 0 ? Math.min(100, Math.round((passed / total) * 100)) : 0;
-  const allPassed = total > 0 && passed === total;
 
   const showTime = metrics?.timeMs !== undefined;
   const showMemory = metrics?.memoryMb !== undefined;
