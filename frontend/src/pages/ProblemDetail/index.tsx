@@ -33,7 +33,8 @@ import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
-import { CodeEditor, PermissionGuard } from '@/components';
+import { CodeEditor, JudgeOutcomeCard, PermissionGuard, mapJudgeStatusToVariant } from '@/components';
+import type { JudgeOutcomeData } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
 import SuccessCelebration from '@/components/SuccessCelebration';
 import type { ApiResponse, JudgeMessage } from '@/types';
@@ -180,8 +181,8 @@ const ProblemDetail: React.FC = () => {
       return null;
     }
   }, [getCodeCacheKey]);
-  const [testResult, setTestResult] = useState<{ type: string; message: string; detail?: string } | null>(null);
-  const [submitResult, setSubmitResult] = useState<{ type: string; message: string; detail?: string } | null>(null);
+  const [testResult, setTestResult] = useState<JudgeOutcomeData | null>(null);
+  const [submitResult, setSubmitResult] = useState<JudgeOutcomeData | null>(null);
   const [codeLoading, setCodeLoading] = useState({ test: false, submit: false });
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentLoading, setCommentLoading] = useState(false);
@@ -239,26 +240,27 @@ const ProblemDetail: React.FC = () => {
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
     if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
       const status = msg.status || '未知状态';
-      let type = 'info';
-      if (status === '答案正确') type = 'success';
-      else if (status === '评测中') type = 'info';
-      else if (status === '编译错误') type = 'warning';
-      else type = 'error';
-
-      let detail = '';
       if (status === '评测中') {
-        detail = '正在进行评测...';
+        setSubmitResult({
+          variant: 'info',
+          source: 'submit',
+          headline: status,
+          bodyText: '正在进行评测...',
+        });
       } else {
-        detail = `运行时间: ${msg.time || 0}ms, 内存: ${msg.memory || 0}MB`;
-        if (msg.testCount != null && msg.testCount > 0) {
-          detail += `\n测试点：${msg.passCount ?? 0}/${msg.testCount}`;
-        }
-        if (msg.errorInfo) {
-          detail += `\n\n${msg.errorInfo}`;
-        }
+        const hasTests = msg.testCount != null && msg.testCount > 0;
+        setSubmitResult({
+          variant: mapJudgeStatusToVariant(status),
+          source: 'submit',
+          headline: status,
+          metrics: {
+            timeMs: msg.time ?? 0,
+            memoryMb: msg.memory ?? 0,
+            ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
+          },
+          errorInfo: msg.errorInfo || undefined,
+        });
       }
-
-      setSubmitResult({ type, message: status, detail });
 
       // 答案正确时触发庆祝动画
       if (status === '答案正确') {
@@ -538,29 +540,35 @@ const ProblemDetail: React.FC = () => {
       if (data.code === 200) {
         if (isCustomTest) {
           setTestResult({
-            type: 'info',
-            message: '自定义测试完成',
-            detail: `程序输出:\n${data.data.actualOutput || '无输出'}`,
+            variant: 'info',
+            source: 'test',
+            headline: '自定义测试完成',
+            bodyText: `程序输出:\n${data.data.actualOutput || '无输出'}`,
           });
         } else {
-          let detail = data.data.errorInfo || '';
-          if (data.data.testCount != null && data.data.testCount > 0) {
-            const tcLine = `测试点：${data.data.passCount ?? 0}/${data.data.testCount}`;
-            detail = detail ? `${detail}\n\n${tcLine}` : tcLine;
-          }
+          const hasTests = data.data.testCount != null && data.data.testCount > 0;
           setTestResult({
-            type: data.data.status === '答案正确' ? 'success' : 'warning',
-            message: data.data.status || '测试完成',
-            detail: detail || undefined,
+            variant: data.data.status === '答案正确' ? 'success' : 'warning',
+            source: 'test',
+            headline: data.data.status || '测试完成',
+            metrics: hasTests
+              ? { passCount: data.data.passCount ?? 0, testCount: data.data.testCount! }
+              : undefined,
+            errorInfo: data.data.errorInfo || undefined,
           });
         }
       } else {
-        setTestResult({ type: 'error', message: (data as any).msg || '测试失败' });
+        setTestResult({
+          variant: 'error',
+          source: 'test',
+          headline: (data as any).msg || '测试失败',
+        });
       }
     } catch (error: any) {
       setTestResult({
-        type: 'error',
-        message: error?.response?.data?.msg || '测试失败，请稍后重试',
+        variant: 'error',
+        source: 'test',
+        headline: error?.response?.data?.msg || '测试失败，请稍后重试',
       });
     } finally {
       setCodeLoading((prev) => ({ ...prev, test: false }));
@@ -594,18 +602,24 @@ const ProblemDetail: React.FC = () => {
           setCurrentSnowflakeId(data.data.snowflakeId);
         }
         setSubmitResult({
-          type: 'info',
-          message: '等待评测',
-          detail: '已提交，等待评测...',
+          variant: 'info',
+          source: 'submit',
+          headline: '等待评测',
+          bodyText: '已提交，等待评测...',
         });
         window.dispatchEvent(new Event('notification-updated'));
       } else {
-        setSubmitResult({ type: 'error', message: (data as any).msg || '提交失败' });
+        setSubmitResult({
+          variant: 'error',
+          source: 'submit',
+          headline: (data as any).msg || '提交失败',
+        });
       }
     } catch (error: any) {
       setSubmitResult({
-        type: 'error',
-        message: error?.response?.data?.msg || '提交失败，请稍后重试',
+        variant: 'error',
+        source: 'submit',
+        headline: error?.response?.data?.msg || '提交失败，请稍后重试',
       });
     } finally {
       setCodeLoading((prev) => ({ ...prev, submit: false }));
@@ -1108,24 +1122,10 @@ const ProblemDetail: React.FC = () => {
         {(testResult || submitResult) && (
           <div className="mt-4 space-y-3">
             {testResult && (
-              <Alert
-                type={testResult.type as 'success' | 'info' | 'warning' | 'error'}
-                message={`测试结果：${testResult.message}`}
-                description={<pre className="whitespace-pre-wrap">{testResult.detail}</pre>}
-                showIcon
-                closable
-                onClose={() => setTestResult(null)}
-              />
+              <JudgeOutcomeCard data={testResult} onClose={() => setTestResult(null)} />
             )}
             {submitResult && (
-              <Alert
-                type={submitResult.type as 'success' | 'info' | 'warning' | 'error'}
-                message={`提交结果：${submitResult.message}`}
-                description={<pre className="whitespace-pre-wrap">{submitResult.detail}</pre>}
-                showIcon
-                closable
-                onClose={() => setSubmitResult(null)}
-              />
+              <JudgeOutcomeCard data={submitResult} onClose={() => setSubmitResult(null)} />
             )}
           </div>
         )}

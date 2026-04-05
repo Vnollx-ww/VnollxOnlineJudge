@@ -21,3 +21,7 @@ export { default as CountUp } from './CountUp';
 
 // Permission Guard
 export { default as PermissionGuard } from './PermissionGuard';
+
+// Judge outcome (submit / sample test)
+export { default as JudgeOutcomeCard, mapJudgeStatusToVariant } from './JudgeOutcomeCard';
+export type { JudgeOutcomeData, JudgeOutcomeMetrics, JudgeOutcomeVariant } from './JudgeOutcomeCard';
