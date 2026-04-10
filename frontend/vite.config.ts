@@ -59,13 +59,13 @@ export default defineConfig({
     proxy: {
       // WebSocket 代理
       '/ws': {
-        target: 'http://localhost:8080',
+        target: 'http://111.230.105.54:8080',
         changeOrigin: true,
         ws: true,
       },
       // API 请求代理 - 所有 /api/v1/ 开头的请求转发到后端
       '/api/v1': {
-        target: 'http://localhost:8080',
+        target: 'http://111.230.105.54:8080',
         changeOrigin: true,
       },
     },

@@ -220,6 +220,7 @@ const AdminUsers: React.FC = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="name" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>

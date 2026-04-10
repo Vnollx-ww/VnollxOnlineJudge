@@ -472,6 +472,7 @@ const AdminPermissions: React.FC = () => {
         title="分配角色"
         open={assignRoleModalVisible}
         onOk={handleAssignRoleToUser}
+        centered
         onCancel={() => {
           setAssignRoleModalVisible(false);
           setSelectedRoleToAssign(null);
@@ -498,6 +499,7 @@ const AdminPermissions: React.FC = () => {
         title="分配权限"
         open={assignPermissionModalVisible}
         onOk={handleAssignPermissionToRole}
+        centered
         onCancel={() => {
           setAssignPermissionModalVisible(false);
           setSelectedPermissionToAssign(null);

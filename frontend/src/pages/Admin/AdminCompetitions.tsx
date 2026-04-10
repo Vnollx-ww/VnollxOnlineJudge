@@ -336,6 +336,7 @@ const AdminCompetitions: React.FC = () => {
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={600}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="title" label="比赛标题" rules={[{ required: true, message: '请输入比赛标题' }]}>
@@ -392,6 +393,7 @@ const AdminCompetitions: React.FC = () => {
         }}
         footer={null}
         width={800}
+        centered
       >
         <div className="mb-4">
           <Button
@@ -453,6 +455,7 @@ const AdminCompetitions: React.FC = () => {
           setProblemSearchKeyword('');
         }}
         footer={null}
+        centered
         width={700}
       >
         <div className="mb-4">

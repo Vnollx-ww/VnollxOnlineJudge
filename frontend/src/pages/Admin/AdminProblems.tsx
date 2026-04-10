@@ -580,7 +580,7 @@ ${aiInput}`;
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={1100}
-        style={{ top: 20 }}
+        centered
       >
         <Form
           form={form}

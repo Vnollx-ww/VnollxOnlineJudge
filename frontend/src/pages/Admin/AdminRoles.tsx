@@ -353,6 +353,7 @@ const AdminRoles: React.FC = () => {
         onCancel={() => setRoleModalVisible(false)}
         footer={null}
         width={500}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleRoleSubmit}>
           <Form.Item name="code" label="角色码" rules={[{ required: true, message: '请输入角色码' }]}>
@@ -384,6 +385,7 @@ const AdminRoles: React.FC = () => {
         title="分配权限"
         open={assignPermissionModalVisible}
         onOk={handleAssignPermissionToRole}
+        centered
         onCancel={() => {
           setAssignPermissionModalVisible(false);
           setSelectedPermissionToAssign(null);
@@ -418,6 +420,7 @@ const AdminRoles: React.FC = () => {
       <Modal
         title="新建权限"
         open={permissionModalVisible}
+        centered
         onCancel={() => {
           setPermissionModalVisible(false);
           permissionForm.resetFields();

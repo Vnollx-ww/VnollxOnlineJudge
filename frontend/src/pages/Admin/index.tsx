@@ -159,7 +159,7 @@ const Admin: React.FC = () => {
       >
         <div className="admin-sider__logo">
           <div className="admin-sider__logo-icon">
-            <Shield className="w-5 h-5" style={{ color: 'var(--gemini-accent-text)' }} />
+            <Shield className="w-5 h-5" style={{ color: '#ffffff' }} />
           </div>
           {!collapsed && (
             <span className="admin-sider__logo-text">管理后台</span>
@@ -218,7 +218,6 @@ const Admin: React.FC = () => {
             <div className="admin-header__user">
               <div
                 className="admin-header__avatar"
-                style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}
               >
                 A
               </div>

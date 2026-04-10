@@ -332,6 +332,7 @@ const AdminPractices: React.FC = () => {
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={600}
+        centered
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="title" label="练习标题" rules={[{ required: true, message: '请输入练习标题' }]}>
@@ -373,6 +374,7 @@ const AdminPractices: React.FC = () => {
         }}
         footer={null}
         width={800}
+        centered
       >
         <div className="mb-4">
           <Button
@@ -434,6 +436,7 @@ const AdminPractices: React.FC = () => {
           setProblemSearchKeyword('');
         }}
         footer={null}
+        centered
         width={700}
       >
         <div className="mb-4">

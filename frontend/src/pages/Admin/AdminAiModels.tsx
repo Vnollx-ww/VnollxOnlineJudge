@@ -239,6 +239,7 @@ const AdminAiModels: React.FC = () => {
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={560}
+        centered
         destroyOnClose
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>

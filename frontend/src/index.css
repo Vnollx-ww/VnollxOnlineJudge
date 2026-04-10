@@ -653,6 +653,17 @@ body {
   border-bottom: none !important;
 }
 
+/* 表格内 Tag / Button 对齐修正 */
+.ant-table-tbody > tr > td > .ant-tag,
+.ant-table-tbody > tr > td > span > .ant-tag {
+  margin-inline-start: -8px !important;
+}
+
+.ant-table-tbody > tr > td .ant-btn-link:first-child {
+  padding-inline-start: 0 !important;
+  margin-inline-start: -1px !important;
+}
+
 /* 卡片 */
 .ant-card {
   border-radius: 24px !important;
@@ -664,17 +675,30 @@ body {
   border-bottom: 1px solid var(--gemini-border-light) !important;
 }
 
-/* 模态框 */
+/* 模态框 - 居中 + 内部滚动（居中由 Ant Design centered 属性控制） */
 .ant-modal-content {
   border-radius: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: calc(100vh - 64px) !important;
 }
 
 .ant-modal-header {
   border-bottom: 1px solid var(--gemini-border-light) !important;
+  flex-shrink: 0 !important;
+}
+
+.ant-modal-body {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  word-break: break-word !important;
 }
 
 .ant-modal-footer {
   border-top: 1px solid var(--gemini-border-light) !important;
+  flex-shrink: 0 !important;
 }
 
 /* 分页 */
@@ -913,7 +937,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%);
+  background: #3b82f6;
 }
 
 .admin-sider__logo-text {
@@ -929,7 +953,7 @@ body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 10px;
+  padding: 12px 0 12px 10px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -942,30 +966,35 @@ body {
   width: 100%;
   height: 44px;
   padding: 0 14px;
+  margin-right: 10px;
   border: none;
   border-radius: 12px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--gemini-text-secondary);
+  color: #64748b;
   background: transparent;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
   text-align: left;
 }
 
 .admin-sider__item:hover {
-  background-color: var(--gemini-surface-hover);
-  color: var(--gemini-text-primary);
+  background-color: #f8fafc;
+  color: #334155;
 }
 
 .admin-sider__item--selected {
-  background-color: var(--gemini-accent);
-  color: var(--gemini-accent-text);
+  background-color: rgba(59, 130, 246, 0.06);
+  color: #2563eb;
+  border-right: 4px solid #3b82f6;
+  border-radius: 12px 0 0 12px;
+  margin-right: 0;
+  font-weight: 600;
 }
 
 .admin-sider__item--selected:hover {
-  background-color: var(--gemini-accent-hover);
-  color: var(--gemini-accent-text);
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
 }
 
 .admin-sider__item-label {
@@ -977,6 +1006,14 @@ body {
 .admin-sider[style*="80px"] .admin-sider__item {
   padding: 0;
   justify-content: center;
+  margin-right: 0;
+  border-radius: 12px;
+}
+
+.admin-sider[style*="80px"] .admin-sider__item--selected {
+  border-right: none;
+  border-radius: 12px;
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
 .admin-sider__footer {
@@ -1071,14 +1108,14 @@ body {
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 500;
-  background: var(--gemini-accent);
-  color: var(--gemini-accent-text);
+  background: #eff6ff;
+  color: #2563eb;
   cursor: pointer;
   transition: background-color 0.2s, transform 0.15s;
 }
 
 .admin-header__btn-home:hover {
-  background: var(--gemini-accent-hover);
+  background: #dbeafe;
 }
 
 .admin-header__btn-home:active {
@@ -1101,6 +1138,8 @@ body {
   font-size: 0.875rem;
   font-weight: 600;
   color: #fff;
+  background: #3b82f6;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
 }
 
 .admin-header__user-label {
@@ -1112,7 +1151,14 @@ body {
   flex: 1;
   padding: 24px;
   min-height: calc(100vh - 64px);
-  background-color: var(--gemini-bg);
+  background-color: #f0f2f5;
+  overflow-y: auto;
+}
+
+.admin-content > .gemini-card,
+.admin-content > .space-y-6 > .gemini-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 /* Monaco Editor 容器样式 */
