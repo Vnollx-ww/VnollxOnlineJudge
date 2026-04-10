@@ -30,7 +30,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   });
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const loadUserInfo = useCallback(async () => {
     try {
@@ -59,24 +58,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   }, []);
 
-  const loadUnreadMessageCount = useCallback(async () => {
-    try {
-      const data = await api.get('/friend/unread') as ApiResponse<number>;
-      if (data.code === 200) {
-        setUnreadMessageCount(data.data || 0);
-      }
-    } catch (error) {
-      console.error('获取未读消息数量失败:', error);
-    }
-  }, []);
 
   useEffect(() => {
     if (isAuthenticated()) {
       loadUserInfo();
       loadNotificationCount();
-      loadUnreadMessageCount();
     }
-  }, [loadUserInfo, loadNotificationCount, loadUnreadMessageCount]);
+  }, [loadUserInfo, loadNotificationCount]);
 
   useEffect(() => {
     const notificationHandler = () => {
@@ -84,18 +72,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         loadNotificationCount();
       }
     };
-    const messageHandler = () => {
-      if (isAuthenticated()) {
-        loadUnreadMessageCount();
-      }
-    };
     window.addEventListener('notification-updated', notificationHandler);
-    window.addEventListener('message-updated', messageHandler);
     return () => {
       window.removeEventListener('notification-updated', notificationHandler);
-      window.removeEventListener('message-updated', messageHandler);
     };
-  }, [loadNotificationCount, loadUnreadMessageCount]);
+  }, [loadNotificationCount]);
 
   // WebSocket 通知处理
   const handleNotificationMessage = useCallback((notification: NotificationMessage) => {
@@ -191,7 +172,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Sidebar
           user={user}
           notificationCount={notificationCount}
-          unreadMessageCount={unreadMessageCount}
           loadUserInfo={loadUserInfo}
           loadNotificationCount={loadNotificationCount}
           layoutMode={layoutMode}
@@ -239,7 +219,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               className="flex flex-wrap items-center justify-center gap-4 text-sm"
               style={{ color: 'var(--gemini-text-secondary)' }}
             >
-              <span>© 2026 CodeArena</span>
+              <span>© 2026 智学代码</span>
               <button
                 onClick={() => setPrivacyVisible(true)}
                 className="transition-colors duration-200 hover:opacity-80"
@@ -278,7 +258,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <div className="py-4 space-y-6" style={{ color: 'var(--gemini-text-primary)' }}>
           <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
-            欢迎使用 CodeArena 平台（以下简称"本平台"）。我们尊重并保护所有使用本平台用户的个人隐私权。为了给您提供更准确、更优质的服务，本平台会按照本隐私政策的规定使用和披露您的个人信息。
+            欢迎使用智学代码平台（以下简称“本平台”）。我们尊重并保护所有使用本平台用户的个人隐私权。为了给您提供更准确、更优质的服务，本平台会按照本隐私政策的规定使用和披露您的个人信息。
           </Paragraph>
 
           <div>
@@ -326,7 +306,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <div className="py-4 space-y-6" style={{ color: 'var(--gemini-text-primary)' }}>
           <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
-            欢迎使用 CodeArena 平台。使用本平台服务即表示您同意本服务条款的全部内容。
+            欢迎使用智学代码平台。使用本平台服务即表示您同意本服务条款的全部内容。
           </Paragraph>
 
           <div>
@@ -366,7 +346,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <div className="py-4 space-y-6" style={{ color: 'var(--gemini-text-primary)' }}>
           <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
-            感谢您使用 CodeArena 平台。如果您有任何问题、建议或反馈，请通过以下方式与我们联系：
+            感谢您使用智学代码平台。如果您有任何问题、建议或反馈，请通过以下方式与我们联系：
           </Paragraph>
 
           <div>

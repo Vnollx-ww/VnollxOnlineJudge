@@ -43,4 +43,22 @@ public class PracticeController {
     public Result<Long> getPracticeCount() {
         return Result.Success(practiceService.getCount(null), "获取练习数量成功");
     }
+
+    /**
+     * 获取当前学生在所有公开练习中的完成进度
+     */
+    @GetMapping("/my-progress")
+    public Result<List<PracticeVo>> getStudentPracticeProgress() {
+        Long userId = UserContextHolder.getCurrentUserId();
+        return Result.Success(practiceService.getStudentPracticeProgress(userId), "获取学习进度成功");
+    }
+
+    /**
+     * 获取指定教师的教学计划（该教师创建的练习列表，带当前学生的完成进度）
+     */
+    @GetMapping("/teaching-plan")
+    public Result<List<PracticeVo>> getTeachingPlan(@RequestParam Long teacherId) {
+        Long userId = UserContextHolder.getCurrentUserId();
+        return Result.Success(practiceService.getTeacherPractices(teacherId, userId), "获取教学计划成功");
+    }
 }

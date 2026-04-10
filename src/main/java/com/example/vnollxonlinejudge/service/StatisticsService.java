@@ -3,6 +3,7 @@ package com.example.vnollxonlinejudge.service;
 import com.example.vnollxonlinejudge.model.vo.statistics.ErrorPatternStatVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.LearningAnalyticsVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.PlatformStatsVO;
+import com.example.vnollxonlinejudge.model.vo.statistics.AiLearningContextVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.TeachingProgressVO;
 
 import java.util.List;
@@ -35,4 +36,10 @@ public interface StatisticsService {
      * @param practiceId 练习ID，为空则返回所有练习的进度
      */
     List<TeachingProgressVO> getTeachingProgress(Long practiceId);
+
+    /**
+     * AI 学习建议上下文：聚合用户的做题、错题、练习进度数据，供 AI 生成个性化学习建议
+     * @param userId 用户ID
+     */
+    AiLearningContextVO getAiLearningContext(Long userId);
 }

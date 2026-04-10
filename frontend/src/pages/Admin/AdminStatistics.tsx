@@ -46,6 +46,8 @@ interface TeachingProgressItem {
   practiceId: number;
   practiceTitle: string;
   totalProblems: number;
+  creatorId?: number;
+  creatorName?: string;
   problemProgressList: PracticeProgressItem[];
 }
 
@@ -743,7 +745,7 @@ const AdminStatistics: React.FC = () => {
                   {teachingProgress.length > 0 ? (
                     <div className="space-y-4">
                       {teachingProgress.map((p) => (
-                        <Card key={p.practiceId} size="small" title={`${p.practiceTitle}（共 ${p.totalProblems} 题）`}>
+                        <Card key={p.practiceId} size="small" title={<span>{p.practiceTitle}（共 {p.totalProblems} 题）{p.creatorName && <span style={{ color: 'var(--gemini-text-tertiary)', marginLeft: 12, fontSize: 13 }}>教师: {p.creatorName}</span>}</span>}>
                           <Table
                             rowKey="problemId"
                             size="small"

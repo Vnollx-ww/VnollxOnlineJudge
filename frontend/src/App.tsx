@@ -4,21 +4,14 @@ import { Toaster } from 'react-hot-toast';
 import zhCN from "antd/locale/zh_CN";
 import { AppLayout } from "./components/Layout";
 import { PermissionProvider } from "./contexts/PermissionContext";
-import { MessageWebSocketProvider } from "./contexts/MessageWebSocketContext";
 import {
   Home,
   Problems,
   ProblemDetail,
   Submissions,
   Ranklist,
-  Competitions,
-  CompetitionDetail,
-  CompetitionRanklist,
-  CompetitionSubmissions,
-  CompetitionProblemDetail,
   Practices,
   PracticeDetail,
-  Friends,
   Admin,
   Login,
   Register,
@@ -32,7 +25,7 @@ import {
   SolutionDetailPage,
   SolutionPublishPage,
   About,
-  CodeArenaHome,
+  ZhiCodeHome,
 } from "./pages";
 
 // Ant Design 主题配置 - Gemini 风格
@@ -144,7 +137,6 @@ function App() {
     <ConfigProvider theme={theme} locale={zhCN}>
       <AntApp>
         <PermissionProvider>
-        <MessageWebSocketProvider>
         <Toaster
           position="top-center"
           reverseOrder={false}
@@ -200,7 +192,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/codearena" element={<CodeArenaHome />} />
+            <Route path="/codearena" element={<ZhiCodeHome />} />
 
             {/* 管理后台 - 独立布局，不使用全局导航 */}
             <Route path="/admin/*" element={<Admin />} />
@@ -224,31 +216,11 @@ function App() {
                     {/* 排行榜 */}
                     <Route path="/ranklist" element={<Ranklist />} />
 
-                    {/* 竞赛相关 */}
-                    <Route path="/competitions" element={<Competitions />} />
-                    <Route
-                      path="/competition/:id"
-                      element={<CompetitionDetail />}
-                    />
-                    <Route
-                      path="/competition/:id/ranklist"
-                      element={<CompetitionRanklist />}
-                    />
-                    <Route
-                      path="/competition/:id/submissions"
-                      element={<CompetitionSubmissions />}
-                    />
-                    <Route
-                      path="/competition/:cid/problem/:id"
-                      element={<CompetitionProblemDetail />}
-                    />
 
                     {/* 练习相关 */}
                     <Route path="/practices" element={<Practices />} />
                     <Route path="/practice/:id" element={<PracticeDetail />} />
 
-                    {/* 好友相关 */}
-                    <Route path="/friends" element={<Friends />} />
 
                     {/* 题解相关 */}
                     <Route
@@ -284,7 +256,6 @@ function App() {
             />
           </Routes>
         </Router>
-        </MessageWebSocketProvider>
         </PermissionProvider>
       </AntApp>
     </ConfigProvider>

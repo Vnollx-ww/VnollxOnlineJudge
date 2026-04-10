@@ -12,6 +12,7 @@ import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.PracticeProblemService;
 import com.example.vnollxonlinejudge.service.PracticeService;
 import com.example.vnollxonlinejudge.service.ProblemService;
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -43,7 +44,8 @@ public class AdminPracticeController {
     @PostMapping("/create")
     @RequirePermission(PermissionCode.PRACTICE_CREATE)
     public Result<Void> createPractice(@RequestBody AdminSavePracticeDTO req) {
-        practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic());
+        Long creatorId = UserContextHolder.getCurrentUserId();
+        practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic(), creatorId);
         return Result.Success("创建练习成功");
     }
     

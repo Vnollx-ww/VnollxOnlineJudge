@@ -18,6 +18,10 @@ public class TeachingProgressVO {
     private Long practiceId;
     private String practiceTitle;
     private Integer totalProblems;
+    /** 创建该练习的教师ID */
+    private Long creatorId;
+    /** 创建该练习的教师姓名 */
+    private String creatorName;
     /** 各题目通过人数等进度 */
     private List<PracticeProgressItemVO> problemProgressList;
 }

@@ -5,7 +5,6 @@ import {
   Users,
   HelpCircle,
   Lightbulb,
-  Trophy,
   Shield,
   Home,
   BookOpen,
@@ -18,7 +17,6 @@ import {
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
 import AdminSolves from './AdminSolves';
-import AdminCompetitions from './AdminCompetitions';
 import AdminPractices from './AdminPractices';
 import AdminAiModels from './AdminAiModels';
 import AdminPermissions from './AdminPermissions';
@@ -62,7 +60,6 @@ const Admin: React.FC = () => {
   const adminPermissions = [
     PermissionCode.USER_MANAGE,
     PermissionCode.PROBLEM_MANAGE,
-    PermissionCode.COMPETITION_MANAGE,
     PermissionCode.PRACTICE_MANAGE,
     PermissionCode.SOLVE_AUDIT,
     PermissionCode.ROLE_VIEW,
@@ -114,7 +111,6 @@ const Admin: React.FC = () => {
     { key: '/admin/users', icon: Users, label: '用户管理', permissions: [PermissionCode.USER_VIEW, PermissionCode.USER_MANAGE] },
     { key: '/admin/problems', icon: HelpCircle, label: '题目管理', permissions: [PermissionCode.PROBLEM_VIEW, PermissionCode.PROBLEM_MANAGE] },
     { key: '/admin/solves', icon: Lightbulb, label: '题解管理', permissions: [PermissionCode.SOLVE_VIEW, PermissionCode.SOLVE_AUDIT] },
-    { key: '/admin/competitions', icon: Trophy, label: '比赛管理', permissions: [PermissionCode.COMPETITION_VIEW, PermissionCode.COMPETITION_MANAGE] },
     { key: '/admin/practices', icon: BookOpen, label: '练习管理', permissions: [PermissionCode.PRACTICE_VIEW, PermissionCode.PRACTICE_MANAGE] },
     { key: '/admin/statistics', icon: BarChart3, label: '数据统计', permissions: [PermissionCode.SYSTEM_MONITOR] },
     { key: '/admin/roles', icon: Shield, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
@@ -205,7 +201,7 @@ const Admin: React.FC = () => {
         }}
       >
         <header className="admin-header">
-          <h1 className="admin-header__title">CodeArena 在线评测系统 - 管理后台</h1>
+          <h1 className="admin-header__title">智学代码 - 管理后台</h1>
           <div className="admin-header__actions">
             <button
               type="button"
@@ -232,7 +228,6 @@ const Admin: React.FC = () => {
             <Route path="users" element={<AdminUsers />} />
             <Route path="problems" element={<AdminProblems />} />
             <Route path="solves" element={<AdminSolves />} />
-            <Route path="competitions" element={<AdminCompetitions />} />
             <Route path="practices" element={<AdminPractices />} />
             <Route path="statistics" element={<AdminStatistics />} />
             <Route path="roles" element={<AdminRoles />} />

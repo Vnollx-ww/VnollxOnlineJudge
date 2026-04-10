@@ -14,19 +14,11 @@ export { default as ForgotPassword } from './ForgotPassword';
 export { default as Settings } from './Settings';
 export { default as UserProfile } from './UserProfile';
 
-// 竞赛
-export { default as Competitions } from './Competitions';
-export { default as CompetitionDetail } from './CompetitionDetail';
-export { default as CompetitionRanklist } from './CompetitionRanklist';
-export { default as CompetitionSubmissions } from './CompetitionSubmissions';
-export { default as CompetitionProblemDetail } from './CompetitionProblemDetail';
 
 // 练习
 export { default as Practices } from './Practices';
 export { default as PracticeDetail } from './PracticeDetail';
 
-// 好友
-export { default as Friends } from './Friends';
 
 // 通知
 export { default as Notifications } from './Notifications';
@@ -43,4 +35,4 @@ export { default as Admin } from './Admin';
 
 // 其他
 export { default as About } from './About';
-export { default as CodeArenaHome } from './VnollxHome';
+export { default as ZhiCodeHome } from './VnollxHome';

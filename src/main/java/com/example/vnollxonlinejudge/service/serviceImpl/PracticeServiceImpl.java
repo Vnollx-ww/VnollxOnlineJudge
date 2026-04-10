@@ -10,9 +10,11 @@ import com.example.vnollxonlinejudge.model.entity.PracticeProblem;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.model.vo.practice.PracticeVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
+import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.service.PracticeProblemService;
 import com.example.vnollxonlinejudge.service.PracticeService;
 import com.example.vnollxonlinejudge.service.ProblemService;
+import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -31,24 +33,28 @@ public class PracticeServiceImpl extends ServiceImpl<PracticeMapper, Practice> i
     private final PracticeProblemService practiceProblemService;
     private final ProblemService problemService;
     private final UserSolvedProblemService userSolvedProblemService;
+    private final UserService userService;
     
     @Autowired
     public PracticeServiceImpl(
             @Lazy PracticeProblemService practiceProblemService,
             ProblemService problemService,
-            UserSolvedProblemService userSolvedProblemService
+            UserSolvedProblemService userSolvedProblemService,
+            @Lazy UserService userService
     ) {
         this.practiceProblemService = practiceProblemService;
         this.problemService = problemService;
         this.userSolvedProblemService = userSolvedProblemService;
+        this.userService = userService;
     }
     
     @Override
-    public void createPractice(String title, String description, Boolean isPublic) {
+    public void createPractice(String title, String description, Boolean isPublic, Long creatorId) {
         Practice practice = new Practice();
         practice.setTitle(title);
         practice.setDescription(description);
         practice.setIsPublic(isPublic != null ? isPublic : true);
+        practice.setCreatorId(creatorId);
         practice.setCreateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         this.save(practice);
     }
@@ -171,6 +177,68 @@ public class PracticeServiceImpl extends ServiceImpl<PracticeMapper, Practice> i
         return result;
     }
     
+    @Override
+    public List<PracticeVo> getTeacherPractices(Long teacherId, Long studentUserId) {
+        QueryWrapper<Practice> wrapper = new QueryWrapper<>();
+        wrapper.eq("creator_id", teacherId);
+        wrapper.orderByDesc("create_time");
+        List<Practice> practices = this.list(wrapper);
+        
+        Set<Long> solvedProblemIds = getSolvedProblemIds(studentUserId);
+        
+        return practices.stream()
+                .map(p -> {
+                    List<PracticeProblem> problems = practiceProblemService.getProblemList(p.getId());
+                    Integer problemCount = problems.size();
+                    Integer solvedCount = 0;
+                    if (studentUserId != null && !problems.isEmpty()) {
+                        solvedCount = (int) problems.stream()
+                                .filter(pp -> solvedProblemIds.contains(pp.getProblemId()))
+                                .count();
+                    }
+                    PracticeVo vo = new PracticeVo(p, problemCount, solvedCount);
+                    vo.setCreatorName(getCreatorName(p.getCreatorId()));
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PracticeVo> getStudentPracticeProgress(Long userId) {
+        QueryWrapper<Practice> wrapper = new QueryWrapper<>();
+        wrapper.eq("is_public", true);
+        wrapper.orderByDesc("create_time");
+        List<Practice> practices = this.list(wrapper);
+        
+        Set<Long> solvedProblemIds = getSolvedProblemIds(userId);
+        
+        return practices.stream()
+                .map(p -> {
+                    List<PracticeProblem> problems = practiceProblemService.getProblemList(p.getId());
+                    Integer problemCount = problems.size();
+                    Integer solvedCount = 0;
+                    if (userId != null && !problems.isEmpty()) {
+                        solvedCount = (int) problems.stream()
+                                .filter(pp -> solvedProblemIds.contains(pp.getProblemId()))
+                                .count();
+                    }
+                    PracticeVo vo = new PracticeVo(p, problemCount, solvedCount);
+                    vo.setCreatorName(getCreatorName(p.getCreatorId()));
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String getCreatorName(Long creatorId) {
+        if (creatorId == null) return null;
+        try {
+            User user = userService.getUserEntityById(creatorId);
+            return user != null ? user.getName() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private Set<Long> getSolvedProblemIds(Long userId) {
         if (userId == null) {
             return Set.of();

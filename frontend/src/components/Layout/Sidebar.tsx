@@ -5,7 +5,6 @@ import {
   Home,
   BookOpen,
   Trophy,
-  Flag,
   FileText,
   Bell,
   User,
@@ -14,7 +13,6 @@ import {
   Info,
   ArrowLeftRight,
   Zap,
-  Users,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -26,7 +24,6 @@ import type { User as UserType } from '@/types';
 interface SidebarProps {
   user: UserType | null;
   notificationCount: number;
-  unreadMessageCount: number;
   loadUserInfo: () => Promise<void>;
   loadNotificationCount: () => Promise<void>;
   layoutMode: 'top' | 'left';
@@ -38,7 +35,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   user,
   notificationCount,
-  unreadMessageCount,
   toggleLayoutMode,
   collapsed = false,
   onToggleCollapse,
@@ -94,7 +90,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     ...(hasAnyPermission(
         PermissionCode.USER_MANAGE,
         PermissionCode.PROBLEM_MANAGE,
-        PermissionCode.COMPETITION_MANAGE,
         PermissionCode.PRACTICE_MANAGE,
         PermissionCode.SOLVE_AUDIT,
         PermissionCode.ROLE_VIEW,
@@ -126,9 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { key: '/problems', icon: BookOpen, label: '题目列表' },
     { key: '/submissions', icon: FileText, label: '提交列表' },
     { key: '/ranklist', icon: Trophy, label: '排行榜' },
-    { key: '/competitions', icon: Flag, label: '比赛' },
     { key: '/practices', icon: BookOpen, label: '练习' },
-    { key: '/friends', icon: Users, label: '好友' },
     { key: '/about', icon: Info, label: '关于' },
   ];
 
@@ -172,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               className="text-lg font-semibold tracking-tight truncate"
               style={{ color: 'var(--gemini-text-primary)' }}
             >
-              CodeArena
+              智学代码
             </span>
           )}
         </Link>
@@ -225,16 +218,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   }
                 }}
               >
-                {item.key === '/friends' && unreadMessageCount > 0 ? (
-                  <Badge count={unreadMessageCount} size="small" offset={[-2, 2]}>
-                    <Icon
-                      className="w-5 h-5 shrink-0"
-                      style={{ color: isActive ? 'var(--gemini-accent-text)' : 'var(--gemini-text-secondary)' }}
-                    />
-                  </Badge>
-                ) : (
-                  <Icon className="w-5 h-5 shrink-0" />
-                )}
+                <Icon className="w-5 h-5 shrink-0" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </button>
             );

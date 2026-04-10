@@ -28,4 +28,7 @@ public class Practice {
     
     @Column(name = "is_public")
     private Boolean isPublic;
+
+    @Column(name = "creator_id")
+    private Long creatorId;
 }

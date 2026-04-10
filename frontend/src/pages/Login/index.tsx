@@ -73,12 +73,12 @@ const Login: React.FC = () => {
               </svg>
             </div>
             <div className="text-black font-black text-xl tracking-tight text-center">
-              CodeArena<br />OnlineJudge
+              智学代码<br />OnlineJudge
             </div>
           </div>
 
           <h2 className="text-center text-gray-800 text-lg font-semibold mb-8">
-            登录 CodeArena
+            登录 智学代码
           </h2>
 
           <form onSubmit={handleLogin} className="space-y-6">

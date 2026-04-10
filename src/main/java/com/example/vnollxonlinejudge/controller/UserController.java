@@ -3,6 +3,7 @@ package com.example.vnollxonlinejudge.controller;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.dto.user.*;
 import com.example.vnollxonlinejudge.model.entity.UserTag;
+import com.example.vnollxonlinejudge.model.vo.statistics.AiLearningContextVO;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.UserSolvedProblem;
 import com.example.vnollxonlinejudge.model.vo.statistics.LearningAnalyticsVO;
@@ -126,5 +127,17 @@ public class UserController {
             days = 30;
         }
         return Result.Success(statisticsService.getLearningAnalytics(userId, days), "获取成功");
+    }
+
+    /**
+     * AI 学习建议上下文：聚合用户的做题、错题、练习进度数据
+     */
+    @GetMapping("/ai-learning-context")
+    public Result<AiLearningContextVO> getAiLearningContext() {
+        Long userId = UserContextHolder.getCurrentUserId();
+        if (userId == null) {
+            return Result.LogicError("请先登录");
+        }
+        return Result.Success(statisticsService.getAiLearningContext(userId), "获取成功");
     }
 }

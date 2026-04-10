@@ -12,6 +12,8 @@ public class PracticeVo {
     private Boolean isPublic;
     private Integer problemCount;
     private Integer solvedCount;
+    private Long creatorId;
+    private String creatorName;
     
     public PracticeVo() {}
     
@@ -21,6 +23,7 @@ public class PracticeVo {
         this.description = practice.getDescription();
         this.createTime = practice.getCreateTime();
         this.isPublic = practice.getIsPublic();
+        this.creatorId = practice.getCreatorId();
         this.problemCount = 0;
         this.solvedCount = 0;
     }
@@ -31,6 +34,7 @@ public class PracticeVo {
         this.description = practice.getDescription();
         this.createTime = practice.getCreateTime();
         this.isPublic = practice.getIsPublic();
+        this.creatorId = practice.getCreatorId();
         this.problemCount = problemCount;
         this.solvedCount = solvedCount;
     }

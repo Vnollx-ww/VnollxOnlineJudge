@@ -13,7 +13,7 @@ import {
 } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import toast from 'react-hot-toast';
-import { TrendingUp, Target, Bot, BarChart3 } from 'lucide-react';
+import { TrendingUp, Target, Bot, BarChart3, BookOpen } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
@@ -55,6 +55,16 @@ interface LearningData {
   solvedProblems: { problemId: number; title: string; difficulty?: string; tags?: string[] }[];
 }
 
+interface PracticeProgress {
+  id: number;
+  title: string;
+  problemCount: number;
+  solvedCount: number;
+  creatorName?: string;
+  isPublic: boolean;
+  createTime: string;
+}
+
 const CHART_COLORS = ['#1a73e8', '#34a853', '#f9ab00', '#d93025', '#9334e6', '#0d9488'];
 
 const UserProfile: React.FC = () => {
@@ -67,6 +77,9 @@ const UserProfile: React.FC = () => {
   const [learningData, setLearningData] = useState<LearningData | null>(null);
   const [learningLoading, setLearningLoading] = useState(false);
   const [learningDays, setLearningDays] = useState(30);
+  const [practiceProgress, setPracticeProgress] = useState<PracticeProgress[]>([]);
+  const [practiceLoading, setPracticeLoading] = useState(false);
+  const [aiContextLoading, setAiContextLoading] = useState(false);
   useEffect(() => {
     if (!isAuthenticated()) {
       toast.error('请先登录！', { duration: 3000 });
@@ -118,42 +131,96 @@ const UserProfile: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) loadLearningData();
+    if (user) {
+      loadLearningData();
+      loadPracticeProgress();
+    }
   }, [user, learningDays]);
 
-  // 打开 AI 对话弹窗并自动创建新会话、用学习建议提示词发起提问（固定使用 modelId=1）
-  const handleOpenAiLearningAdvice = () => {
-    const passRate = user && user.submitCount > 0
-      ? Math.round((user.passCount / user.submitCount) * 10000) / 100
-      : 0;
-    const solvedInfo = solvedProblems.length > 0
-      ? solvedProblems.slice(0, 30).map(p => `#${p.problemId} ${p.problemName || ''}`).join(', ')
-      : '暂无做题记录';
-    const prompt = `你是编程学习顾问。请根据以下学生数据，生成个性化学习进度报告和改进建议：
+  const loadPracticeProgress = async () => {
+    setPracticeLoading(true);
+    try {
+      const res = await api.get('/practice/my-progress') as ApiResponse<PracticeProgress[]>;
+      if (res.code === 200 && res.data) {
+        setPracticeProgress(res.data);
+      }
+    } catch {
+      setPracticeProgress([]);
+    } finally {
+      setPracticeLoading(false);
+    }
+  };
 
-【用户】${user?.name || '未知'}
-【总提交数】${user?.submitCount || 0}
-【通过题数】${user?.passCount || 0}
-【通过率】${passRate}%
-【近期已通过题目（最近30道）】${solvedInfo}
+  const handleOpenAiLearningAdvice = async () => {
+    setAiContextLoading(true);
+    try {
+      const res = await api.get('/user/ai-learning-context') as ApiResponse<{
+        errorPatterns: { status: string; count: number }[];
+        recentErrors: { problemId: number; problemName: string; status: string }[];
+        practiceProgress: { practiceId: number; practiceTitle: string; totalProblems: number; solvedCount: number; creatorName: string }[];
+        solvedProblems: { problemId: number; title: string; difficulty: string; tags: string[] }[];
+        userId: number; userName: string; totalSubmit: number; totalSolved: number; passRate: number;
+      }>;
+      const ctx = res.code === 200 ? res.data : null;
 
-请从以下方面给出分析和建议：
-1. **学习进度评估**：基于数据评估当前学习阶段和水平
-2. **薄弱环节分析**：根据做题记录分析可能的薄弱知识点
-3. **短期目标设定**：建议未来1-2周的具体学习目标
-4. **长期发展规划**：建议3-6个月的学习路线图
-5. **学习方法建议**：针对当前水平推荐高效的学习方法
-6. **每日计划**：推荐每日练习量和时间安排
+      const errorSummary = ctx?.errorPatterns?.length
+        ? ctx.errorPatterns.map(e => `${e.status}: ${e.count}次`).join(', ')
+        : '暂无错误统计';
+      const recentErrorInfo = ctx?.recentErrors?.length
+        ? ctx.recentErrors.slice(0, 5).map(e => `#${e.problemId} ${e.problemName || ''} (${e.status})`).join(', ')
+        : '暂无近期错题';
+      const practiceSummary = ctx?.practiceProgress?.length
+        ? ctx.practiceProgress.map(p => `【${p.practiceTitle}】${p.solvedCount}/${p.totalProblems}${p.creatorName ? ' (教师:' + p.creatorName + ')' : ''}`).join('\n')
+        : '暂无练习进度';
+      const difficultyMap: Record<string, number> = {};
+      (ctx?.solvedProblems || []).forEach(p => { difficultyMap[p.difficulty || '未知'] = (difficultyMap[p.difficulty || '未知'] || 0) + 1; });
+      const difficultySummary = Object.entries(difficultyMap).map(([k, v]) => `${k}:${v}题`).join(', ');
+      const tagMap: Record<string, number> = {};
+      (ctx?.solvedProblems || []).forEach(p => { (p.tags || []).forEach(t => { tagMap[t] = (tagMap[t] || 0) + 1; }); });
+      const topTags = Object.entries(tagMap).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `${k}:${v}题`);
+      const dailyAvg = learningData?.dailySubmissions?.length
+        ? Math.round(learningData.dailySubmissions.reduce((s, d) => s + d.count, 0) / learningData.dailySubmissions.length * 10) / 10
+        : 0;
 
-请使用Markdown格式，结构清晰，语言鼓励性。`;
+      const prompt = `你是编程学习顾问。请根据以下学生完整数据，生成深度个性化学习分析和改进建议：
 
-    window.dispatchEvent(new CustomEvent('open-ai-assistant', {
-      detail: {
-        message: prompt,
-        forceNewSession: true,
-        modelId: 1,
-      },
-    }));
+【基本信息】
+- 用户: ${user?.name || '未知'}
+- 总提交数: ${user?.submitCount || 0} (日均${dailyAvg}次)
+- 通过题数: ${user?.passCount || 0}
+- 通过率: ${ctx?.passRate?.toFixed(1) || '0'}%
+
+【练习进度】
+${practiceSummary}
+
+【能力分布】
+- 难度分布: ${difficultySummary || '暂无'}
+- 知识点覆盖(Top8): ${topTags.join(', ') || '暂无'}
+
+【错误分析】
+- 错误类型: ${errorSummary}
+- 近期错题: ${recentErrorInfo}
+
+请从以下维度给出专业分析和建议：
+1. **学习阶段评估**：基于通过率和难度分布评估编程水平
+2. **知识薄弱点诊断**：根据错误类型和错题识别需加强的知识点
+3. **练习进度评价**：分析各练习表现，指出重点完成的练习
+4. **个性化题目推荐**：基于能力和薄弱点推荐练习题目类型
+5. **学习方法优化**：根据错误模式建议调试和代码审查方法
+6. **阶段目标设定**：设定未来2周和3个月的具体目标
+7. **每日训练计划**：建议每日练习量、难度配比和知识点策略
+
+请使用Markdown格式，结构清晰，语言专业且鼓励性强。`;
+
+      window.dispatchEvent(new CustomEvent('open-ai-assistant', {
+        detail: { message: prompt, forceNewSession: true, modelId: 1 },
+      }));
+    } catch (error) {
+      toast.error('获取AI分析数据失败');
+      console.error(error);
+    } finally {
+      setAiContextLoading(false);
+    }
   };
 
   if (loading) {
@@ -262,6 +329,7 @@ const UserProfile: React.FC = () => {
                     type="primary"
                     icon={<Bot className="w-4 h-4" />}
                     onClick={handleOpenAiLearningAdvice}
+                    loading={aiContextLoading}
                     style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
                   >
                     AI学习建议
@@ -399,6 +467,47 @@ const UserProfile: React.FC = () => {
             )}
             {!learningLoading && !learningData && (
               <div className="text-center py-8" style={{ color: 'var(--gemini-text-disabled)' }}>暂无学习数据</div>
+            )}
+          </Spin>
+        </div>
+
+        {/* 练习完成进度 */}
+        <div className="gemini-card">
+          <div className="flex items-center gap-2 mb-6">
+            <BookOpen className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
+            <Title level={3} className="!mb-0" style={{ color: 'var(--gemini-text-primary)' }}>练习完成进度</Title>
+          </div>
+          <Spin spinning={practiceLoading}>
+            {practiceProgress.length === 0 ? (
+              <div className="text-center py-8" style={{ color: 'var(--gemini-text-disabled)' }}>暂无练习数据</div>
+            ) : (
+              <div className="space-y-4">
+                {practiceProgress.map((practice) => (
+                  <Link key={practice.id} to={`/practice/${practice.id}`} className="block">
+                    <div className="rounded-2xl p-4 hover:shadow-md transition-shadow" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>{practice.title}</span>
+                          {practice.creatorName && (
+                            <span className="ml-2 text-xs" style={{ color: 'var(--gemini-text-tertiary)' }}>教师: {practice.creatorName}</span>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium" style={{ color: practice.solvedCount === practice.problemCount && practice.problemCount > 0 ? 'var(--gemini-success)' : 'var(--gemini-accent-strong)' }}>
+                          {practice.solvedCount} / {practice.problemCount} 题
+                        </span>
+                      </div>
+                      <Progress
+                        percent={practice.problemCount > 0 ? Math.round(practice.solvedCount / practice.problemCount * 100) : 0}
+                        strokeColor={practice.solvedCount === practice.problemCount && practice.problemCount > 0 ? 'var(--gemini-success)' : { '0%': '#1a73e8', '100%': '#34a853' }}
+                        trailColor="#e8eaed"
+                        strokeWidth={8}
+                        showInfo={false}
+                        className="!mb-0"
+                      />
+                    </div>
+                  </Link>
+                ))}
+              </div>
             )}
           </Spin>
         </div>
