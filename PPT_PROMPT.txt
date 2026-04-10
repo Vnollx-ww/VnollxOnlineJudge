@@ -1,0 +1,329 @@
+# Vnollx 在线评测系统 — 商业 PPT 生成指令（20页完整版）
+
+## 全局视觉规范
+
+整体色调采用科技蓝（主色 #1A73E8）+ 极简灰背景（#F0F4F9）+ 深灰文字（#1F1F1F），辅助色成功绿 #34A853、警示黄 #F9AB00、错误红 #D93025。标题 28-36pt 加粗无衬线字体，正文 16-18pt，要点前加蓝色圆点。每页大量留白。全文禁用"AI赋能""智能化""强大的""颠覆"等空泛修饰词。页码标注右下角，格式 01/20。
+
+---
+
+## 正文内容页（共13页）
+
+### 第1页 — 封面
+
+- 标题：Vnollx 在线评测系统 · 产品技术白皮书
+- 副标题：多语言实时评测 × 竞赛管理 × 社区生态 — 一站式编程能力训练平台
+- 排版：标题居中偏上，副标题小字居中偏下，背景使用深蓝渐变 + 细线条代码纹理
+- 备注：封面需体现"工程感"，避免卡通插图
+
+---
+
+### 第2页 — 目录导航
+
+- 标题：演示纲要
+- 要点（分三列）：
+  - 产品定位：痛点分析 → 解决方案定位
+  - 技术架构：六层分治架构 → 评测流水线 → 数据链路 → 安全体系
+  - 功能矩阵：题库系统 → 评测引擎 → 竞赛体系 → 社区生态 → AI助手 → 管理后台
+  - 工程实践：性能优化 → 高可用设计 → 容器化部署 → 监控运维
+  - 总结与展望：现状 → 路线图
+- 排版：使用带序号的竖向时间轴或横向进度条样式
+
+---
+
+### 第3页 — 行业痛点分析
+
+- 标题：高校与企业编程训练的四大刚需缺口
+- 要点：
+  - 评测延迟高：传统OJ单线程同步评测，高峰期排队10分钟+，用户体验断层
+  - 题库与竞赛割裂：题库、竞赛、练习分属不同子系统，学生数据无法互通
+  - 学习路径缺失：做题后缺少即时分析反馈，学习闭环断裂，教师无法追踪教学进度
+  - 缺乏安全隔离：代码在服务端直接执行，无沙箱保护，存在安全隐患
+- 配图逻辑：左侧四行痛点卡片（每行图标+一句话），右侧一张"痛点 → 方案"的箭头对应图
+
+---
+
+### 第4页 — 产品定位与解决方案
+
+- 标题：Vnollx · 四位一体解决方案
+- 要点（与上页痛点一一对应）：
+  - 评测延迟 → RabbitMQ异步流水线 + GoJudge Docker沙箱，提交到出分秒级响应
+  - 数据割裂 → 统一数据模型，题库/竞赛/练习/提交记录全域打通，38个Service协同
+  - 学习断裂 → 多模型对话助手 + 学习数据统计看板（StatisticsService四维分析）
+  - 安全隐患 → GoJudge特权容器隔离 + XSS过滤器 + 布隆过滤器防穿透
+- 配图逻辑：四组"痛点（红色）→ 方案（蓝色）"的对照卡片
+
+---
+
+### 第5页 — 系统总体架构
+
+- 标题：六层分治架构 · 全链路闭环
+- 要点（自上而下分层）：
+  - 表现层：React 19 + Vite 7 + Ant Design 5 + TailwindCSS，Monaco Editor在线代码编辑，四通道WebSocket实时推送
+  - 接口层：Spring Boot 3.2.5 RESTful API（23个Controller），JWT无状态认证 + TokenFilter请求过滤链
+  - 业务层：38个Service，覆盖用户、题目、评测、竞赛、练习、社区、AI对话、通知、权限、统计全业务域
+  - 评测引擎层：GoJudge + Docker沙箱，策略模式按语言分发，RabbitMQ优先级队列异步消费
+  - 数据层：MySQL 8.0主从复制 + Druid连接池 + MyBatis-Plus；Redis多维缓存；Caffeine本地热点缓存
+  - 存储层：MinIO对象存储（测试数据ZIP包、用户头像、代码文件）
+- 配图逻辑：六层横向色块架构图，每层左侧标名称、右侧列技术图标。层间用箭头标注数据流方向
+- 备注：标注对应代码包：controller → service → judge/consumer → mapper → config
+
+---
+
+### 第6页 — 技术栈全景
+
+- 标题：技术选型 · 12项核心组件
+- 要点（分四组，每组3项）：
+  - 后端框架：Spring Boot 3.2.5 / Java 21 / MyBatis-Plus 3.5.5
+  - 数据存储：MySQL 8.0主从 / Redis 7 / MinIO
+  - 中间件：RabbitMQ（优先级队列）/ Resilience4j（熔断降级）/ Caffeine（本地缓存）
+  - 前端工程：React 19 / Vite 7 / Ant Design 5 / Monaco Editor / Recharts / TailwindCSS
+- 辅助信息：AI代理层Python FastAPI + LangChain4j；部署层Docker Compose + Nginx + Prometheus
+- 配图逻辑：4×3网格，每格一个技术logo + 版本号 + 一句话用途
+
+---
+
+### 第7页 — 核心功能①：题库管理系统
+
+- 标题：结构化题库 · 从录入到检索全流程
+- 要点：
+  - 题目发布支持Markdown + KaTeX数学公式渲染，带输入输出示例（ProblemExampleService）
+  - 标签分类体系：算法标签 + 难度分级（TagService / ProblemTagService），支持按标签/关键词/题号混合检索
+  - 布隆过滤器防缓存穿透：BitSet 1600万位 + 8组哈希函数，启动时加载全部题目ID（BloomFilter.java）
+  - 测试用例ZIP包上传至MinIO，TestCaseCacheService本地缓存避免重复下载
+  - 前端题目列表支持分页、搜索、标签筛选、已做/未做状态标记
+- 配图逻辑：左侧题目数据流程图（录入 → 存储 → 缓存 → 检索）
+
+---
+
+### 第8页 — 核心功能②：智能评测流水线
+
+- 标题：异步评测流水线 · 从提交到出分全自动
+- 要点：
+  - 用户提交代码 → JudgeController校验 → RabbitMQ优先级队列（x-max-priority=10） → JudgeConsumer异步消费
+  - 策略模式分发：JudgeStrategyFactory根据语言路由至CppJudgeStrategy / JavaJudgeStrategy / PythonJudgeStrategy
+  - GoJudge在Docker特权容器（shm_size=256m）中编译运行，逐用例比对输出（JudgeOutputComparator）
+  - 评测状态实时推送：JudgeWebSocketHandler → 前端useJudgeWebSocket Hook无刷新更新
+  - 支持"测试运行"（testJudge）和"正式提交"（judge）两种模式
+- 配图逻辑：横向流水线图——用户 → API → MQ Queue → Consumer → GoJudge Docker → WebSocket → 前端更新
+
+---
+
+### 第9页 — 核心功能③：竞赛系统
+
+- 标题：竞赛引擎 · ACM赛制全流程支撑
+- 要点：
+  - 公开/私有竞赛创建，ACM赛制，支持时间限制与密码准入
+  - Redis ZSet实时排行榜：RedisService.updateIfPass / updateIfNoPass原子操作更新排名与罚时
+  - 竞赛内独立题目视图（CompetitionProblemDetail），独立提交记录（CompetitionSubmissions）
+  - 管理后台竞赛配置：题目绑定、时间设置、公告发布（AdminCompetitionController）
+  - 前端完整路由：/competitions → /competition/:id → /competition/:id/ranklist → /competition/:id/submissions
+- 配图逻辑：竞赛生命周期时间轴：创建 → 报名 → 开赛 → 排名 → 结算
+
+---
+
+### 第10页 — 核心功能④：多模型对话助手
+
+- 标题：七模型聚合调度 · 题目语境自动注入
+- 要点：
+  - 后端AiService：统一会话管理（创建/删除/历史游标分页），Flux响应式流式输出
+  - ProxyAiStreamingClient → Python代理层（ai-proxy/ FastAPI），统一封装七大模型API：Gemini、Kimi、MiniMax、Mistral、DeepSeek、通义千问、智谱
+  - 国内/海外双代理部署：按模型厂商路由，国内模型走国内代理、海外模型走海外代理，保障访问稳定性
+  - AiWebSocketHandler实现流式对话推送，前端AIAssistant组件（63KB大型组件）：多会话管理、Markdown渲染、题目一键带入上下文、学习建议自动生成
+  - AI模型后台管理（AdminAiModels）：模型启停、Logo配置、API Key管理
+- 配图逻辑：中心"对话调度中心"，左侧辐射七个模型节点，右侧标注"双代理架构"拓扑
+
+---
+
+### 第11页 — 核心功能⑤：社区生态
+
+- 标题：题解 · 评论 · 好友 · 私信 — 社区全链路
+- 要点：
+  - 题解系统：Markdown格式发布，评论 + 点赞（SolveController + CommentController），四页面体系：题解总览 / 题目题解列表 / 题解详情 / 发布题解
+  - 好友与私信：好友申请/同意/拒绝，MessageWebSocketHandler实时私信推送，未读消息提醒
+  - 通知系统：系统通知/竞赛公告，NotificationConsumer通过RabbitMQ异步投递 + NotificationWebSocketHandler实时推送
+  - 全站排行榜：按通过题数排序，同分按提交次数、用户名二级排序（pages/Ranklist/index.tsx）
+- 配图逻辑：四宫格——题解、好友、私信、通知，各配一个线条图标 + 一句话
+
+---
+
+### 第12页 — 安全体系深度解析
+
+- 标题：四层纵深安全防御
+- 要点：
+  - 认证层：JWT无状态认证，TokenFilter统一拦截（支持Bearer Header + URL参数双通道），登出后Redis标记失效
+  - 鉴权层：AOP声明式权限——@RequirePermission（AND/OR组合逻辑）、@RequireRole角色校验，RBAC细粒度权限码体系（AdminPermissions / AdminRoles后台管理）
+  - 限流层：@RateLimit注解，支持IP / USER / ALL三种粒度，Redis滑动窗口计数，自定义提示信息
+  - 输入安全：XssFilter + XssHttpServletRequestWrapper全链路XSS过滤，布隆过滤器防缓存穿透
+- 配图逻辑：同心圆/洋葱图——从外到内：限流 → 认证 → 鉴权 → 输入过滤
+
+---
+
+### 第13页 — 高可用与性能优化
+
+- 标题：六项关键性能决策
+- 要点（每项一行，图标+短句+核心参数）：
+  - MySQL主从读写分离：dynamic-datasource动态数据源，写主读从，Master 3308 / Slave 3309
+  - Redis多维应用：分布式锁（tryLock）防重复提交、ZSet排行榜、验证码缓存、会话存储
+  - RabbitMQ优先级队列：x-max-priority=10，prefetchCount=1逐条消费，高并发削峰
+  - Caffeine本地缓存：TestCaseCacheService缓存测试用例，减少MinIO网络I/O
+  - Resilience4j三级熔断：评测服务（失败率60%/60s）、AI服务（失败率40%/120s）、外部服务（时间窗口60s）独立配置
+  - Java 21虚拟线程：Project Loom虚拟线程处理高并发I/O，WebFlux响应式AI流式输出
+- 配图逻辑：六列竖向卡片，每列顶部技术图标，中间核心参数，底部一句话收益
+
+---
+
+### 第14页 — 管理后台与数据统计
+
+- 标题：十模块管理后台 · 运营可视化驾驶舱
+- 要点：
+  - 业务管理（5项）：用户管理（AdminUsers）、题目管理（AdminProblems，29KB大组件）、竞赛管理（AdminCompetitions）、练习管理（AdminPractices）、题解管理（AdminSolves）
+  - 权限中枢（2项）：角色管理（AdminRoles）、权限管理（AdminPermissions），RBAC模型，权限码细粒度分配
+  - AI运营（1项）：模型管理（AdminAiModels）——模型启停、Logo/API Key管理
+  - 数据看板（1项）：AdminStatistics（34KB大型组件），四维分析——错误模式分布、平台趋势、学习分析、教学进度
+  - 系统配置（1项）：标签管理（AdminTags）
+- 配图逻辑：2×5网格，每格图标 + 模块名称 + 一句话描述
+
+---
+
+### 第15页 — 容器化部署架构
+
+- 标题：Docker Compose一键编排 · 七容器协同
+- 要点（来自docker-compose.yml的实际配置）：
+  - vnollx-web：前端React + Nginx，端口3000
+  - vnollx：后端Spring Boot，端口8080，依赖全部基础设施就绪后启动（healthcheck联动）
+  - ai-proxy：Python FastAPI AI代理，端口8000
+  - mysql-master：MySQL 8.0持久化卷，healthcheck自动探活
+  - redis：Redis 7，持久化卷 + ping探活
+  - rabbitmq：RabbitMQ 3 Management，管理面板15672
+  - go-judge：GoJudge评测沙箱，privileged特权模式，shm_size 256MB
+- 配图逻辑：容器拓扑图——七个容器节点 + 端口 + 依赖箭头 + 共享网络app-network
+
+---
+
+### 第16页 — 总结与路线图
+
+- 标题：现状总结 × 演进方向
+- 要点（分两栏）：
+  - 已落地（左栏，打勾清单）：
+    - 异步评测流水线（策略模式 + MQ + WebSocket）
+    - 竞赛/练习双轨训练体系
+    - 七模型对话助手（双代理部署）
+    - 题解/好友/私信/通知社区生态
+    - RBAC十模块管理后台 + 四维数据统计
+    - 四层纵深安全防御
+    - Docker Compose一键部署
+  - 演进方向（右栏，时间轴）：
+    - 近期：题目智能推荐算法、代码查重（相似度检测）
+    - 中期：多机评测集群水平扩展、MySQL分库分表
+    - 远期：移动端适配、Kubernetes编排、CI/CD流水线集成
+- 配图逻辑：左侧"已完成"打勾清单卡片，右侧"路线图"三阶段时间轴
+- 备注：底部加联系方式与项目地址：https://www.vnollx.cloud
+
+---
+
+## 截图展示页（共7页，每页一个独立界面）
+
+---
+
+### 第A页 — 截图页1：系统首页
+
+- 标题：系统首页 · 全局数据概览
+- 内容：仅一张全屏截图
+- 截图说明：pages/Home/index.tsx 运行效果，展示顶部导航栏、统计数据卡片（题目数/用户数/提交数/竞赛数）、Hero区域、功能入口
+- 排版：截图居中铺满页面，上下加细边框，底部标注"系统首页 · pages/Home/index.tsx"
+
+---
+
+### 第B页 — 截图页2：题目列表
+
+- 标题：题库列表 · 搜索与筛选
+- 内容：仅一张全屏截图
+- 截图说明：pages/Problems/index.tsx 运行效果，展示题目表格、难度标签、搜索框、分页器、标签筛选、已做/未做状态标记
+- 排版：截图居中铺满页面，底部标注"题目列表 · pages/Problems/index.tsx"
+
+---
+
+### 第C页 — 截图页3：题目详情与代码编辑器
+
+- 标题：题目详情 · 在线编码与评测
+- 内容：仅一张全屏截图
+- 截图说明：pages/ProblemDetail/index.tsx 运行效果，展示题目描述（Markdown+公式渲染）、Monaco Editor代码编辑器、语言切换、测试运行/提交按钮、评测结果面板
+- 排版：截图居中铺满页面，底部标注"题目详情页 · pages/ProblemDetail/index.tsx"
+
+---
+
+### 第D页 — 截图页4：竞赛排行榜
+
+- 标题：竞赛排行榜 · Redis ZSet实时排名
+- 内容：仅一张全屏截图
+- 截图说明：pages/CompetitionRanklist/index.tsx 运行效果，展示竞赛标题、实时排名表格、用户名/通过数/罚时、顶部三强突出显示
+- 排版：截图居中铺满页面，底部标注"竞赛排行榜 · pages/CompetitionRanklist/index.tsx"
+
+---
+
+### 第E页 — 截图页5：AI对话助手
+
+- 标题：多模型对话助手 · 流式输出
+- 内容：仅一张全屏截图
+- 截图说明：components/AIAssistant/index.tsx 运行效果，展示会话列表、对话气泡、Markdown渲染、模型选择下拉框、输入框、发送按钮
+- 排版：截图居中铺满页面，底部标注"AI对话助手 · components/AIAssistant/index.tsx"
+
+---
+
+### 第F页 — 截图页6：用户个人主页
+
+- 标题：用户个人主页 · 学习数据可视化
+- 内容：仅一张全屏截图
+- 截图说明：pages/UserProfile/index.tsx 运行效果，展示用户信息卡片、统计数据（通过数/提交数/通过率）、Recharts折线图（每日提交趋势）、饼图（题目难度分布）、已做题目列表
+- 排版：截图居中铺满页面，底部标注"个人主页 · pages/UserProfile/index.tsx"
+
+---
+
+### 第G页 — 截图页7：管理后台统计看板
+
+- 标题：管理后台 · 数据统计驾驶舱
+- 内容：仅一张全屏截图
+- 截图说明：pages/Admin/AdminStatistics.tsx 运行效果，展示错误模式分布图、平台数据总览卡片、每日提交趋势折线图、语言分布饼图、教学进度表格
+- 排版：截图居中铺满页面，底部标注"统计看板 · pages/Admin/AdminStatistics.tsx"
+
+---
+
+## 页面顺序建议
+
+按以下顺序排列，正文与截图交替穿插，避免枯燥：
+
+1. 第1页 — 封面
+2. 第2页 — 目录导航
+3. 第3页 — 行业痛点分析
+4. 第4页 — 产品定位与解决方案
+5. 第5页 — 系统总体架构
+6. 第6页 — 技术栈全景
+7. 第A页 — 截图页1：系统首页
+8. 第7页 — 核心功能①：题库管理系统
+9. 第B页 — 截图页2：题目列表
+10. 第8页 — 核心功能②：智能评测流水线
+11. 第C页 — 截图页3：题目详情与代码编辑器
+12. 第9页 — 核心功能③：竞赛系统
+13. 第D页 — 截图页4：竞赛排行榜
+14. 第10页 — 核心功能④：多模型对话助手
+15. 第E页 — 截图页5：AI对话助手
+16. 第11页 — 核心功能⑤：社区生态
+17. 第12页 — 安全体系深度解析
+18. 第13页 — 高可用与性能优化
+19. 第F页 — 截图页6：用户个人主页
+20. 第14页 — 管理后台与数据统计
+21. 第G页 — 截图页7：管理后台统计看板
+22. 第15页 — 容器化部署架构
+23. 第16页 — 总结与路线图
+
+共23页（16页正文 + 7页截图）。
+
+---
+
+## 全局备注
+
+1. 截图页必须独立成页，不与文字内容混排。
+2. 每页正文不超过5个主要点，单个要点不超过2行。
+3. 全文不出现"赋能""智能化""颠覆""强大的"等词汇。
+4. 关键数据均来源于代码仓库实际配置（pom.xml / docker-compose.yml / 源码）。
+5. 演讲时长建议30-35分钟。
