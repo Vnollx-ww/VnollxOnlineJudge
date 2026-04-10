@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, message as antMessage, Avatar } from 'antd';
+import { message as antMessage, Avatar } from 'antd';
 import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, ChevronDown, Sparkles, Loader2, MessageSquarePlus, Menu, Plus, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -903,27 +903,6 @@ const AIAssistant: React.FC = () => {
           from { opacity: 0; transform: scaleY(0.92); }
           to   { opacity: 1; transform: scaleY(1); }
         }
-        .ai-modal {
-          width: 100vw !important;
-          max-width: 100vw !important;
-          margin: 0 !important;
-          padding-bottom: 0 !important;
-          top: 0 !important;
-        }
-        .ai-modal .ant-modal-content {
-          padding: 0 !important;
-          border-radius: 0 !important;
-        }
-        .ai-modal .ant-modal-header {
-          display: none !important;
-        }
-        .ai-modal .ant-modal-body {
-          width: 100% !important;
-          height: 100vh !important;
-        }
-        .ai-modal .ant-modal-close {
-          display: none !important;
-        }
         .gemini-scrollbar::-webkit-scrollbar { width: 4px; }
         .gemini-scrollbar::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
         .gemini-scrollbar-light::-webkit-scrollbar { width: 6px; }
@@ -950,21 +929,9 @@ const AIAssistant: React.FC = () => {
         </button>
       )}
 
-      {/* 聊天弹窗 */}
-      <Modal
-        title={null}
-        onCancel={handleCloseAssistant}
-        open={open}
-        footer={null}
-        width="100vw"
-        style={{ top: 0, paddingBottom: 0, maxWidth: '100vw', margin: 0 }}
-        styles={{
-          content: { height: '100vh', overflow: 'hidden', paddingBottom: 0, borderRadius: 0 },
-          body: { padding: 0, display: 'flex', height: '100vh' },
-        }}
-        className="ai-modal"
-      >
-        <div className="flex h-screen w-full bg-white text-[#1f1f1f] font-sans overflow-hidden">
+      {/* 聊天弹窗 - 全屏覆盖 */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex w-full h-full bg-white">
           {/* 侧边栏 */}
           <aside className={`${sidebarOpen ? 'w-[280px]' : 'w-0'} bg-[#f0f4f9] flex flex-col transition-all duration-300 ease-in-out relative overflow-hidden shrink-0`}>
             <div className="flex flex-col h-full p-3">
@@ -1443,7 +1410,7 @@ const AIAssistant: React.FC = () => {
             </div>
           </main>
         </div>
-      </Modal>
+      )}
     </>
   );
 };
