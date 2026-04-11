@@ -247,9 +247,6 @@ function App() {
                     <Route path="/practices" element={<Practices />} />
                     <Route path="/practice/:id" element={<PracticeDetail />} />
 
-                    {/* 好友相关 */}
-                    <Route path="/friends" element={<Friends />} />
-
                     {/* 题解相关 */}
                     <Route
                       path="/problem/:problemId/solutions"

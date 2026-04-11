@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.PracticeProblemMapper;
@@ -29,6 +30,20 @@ public class PracticeProblemServiceImpl extends ServiceImpl<PracticeProblemMappe
                 .eq(PracticeProblem::getPracticeId, practiceId)
                 .orderByAsc(PracticeProblem::getProblemOrder)
                 .list();
+    }
+    
+    @Override
+    public List<PracticeProblem> getProblemList(Long practiceId, Integer pageNum, Integer pageSize) {
+        if (pageNum == null || pageSize == null || pageNum <= 0 || pageSize <= 0) {
+            return getProblemList(practiceId);
+        }
+
+        Page<PracticeProblem> page = new Page<>(pageNum, pageSize);
+        return lambdaQuery()
+                .eq(PracticeProblem::getPracticeId, practiceId)
+                .orderByAsc(PracticeProblem::getProblemOrder)
+                .page(page)
+                .getRecords();
     }
     
     @Override

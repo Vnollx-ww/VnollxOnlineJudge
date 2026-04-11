@@ -34,9 +34,13 @@ public class PracticeController {
     }
     
     @GetMapping("/{id}/problems")
-    public Result<List<ProblemVo>> getProblemList(@PathVariable Long id) {
+    public Result<List<ProblemVo>> getProblemList(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer pageNum,
+            @RequestParam(required = false) Integer pageSize
+    ) {
         Long userId = UserContextHolder.getCurrentUserId();
-        return Result.Success(practiceService.getProblemList(id, userId), "获取练习题目列表成功");
+        return Result.Success(practiceService.getProblemList(id, userId, pageNum, pageSize), "获取练习题目列表成功");
     }
     
     @GetMapping("/count")

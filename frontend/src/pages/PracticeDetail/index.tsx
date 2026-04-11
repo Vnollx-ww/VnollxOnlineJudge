@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Typography,
@@ -8,6 +8,7 @@ import {
   Table,
   Spin,
 } from 'antd';
+import type { ApiResponse } from '../../types';
 import toast from 'react-hot-toast';
 import {
   BookOutlined,
@@ -39,12 +40,18 @@ interface Problem {
   passCount: number;
 }
 
+const PROBLEMS_BATCH_SIZE = 20;
+
 const PracticeDetail: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [practice, setPractice] = useState<Practice | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMoreProblems, setHasMoreProblems] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -59,8 +66,10 @@ const PracticeDetail: React.FC = () => {
     setLoading(true);
     try {
       const [practiceRes, problemsRes] = await Promise.all([
-        api.get(`/practice/${id}`),
-        api.get(`/practice/${id}/problems`),
+        api.get(`/practice/${id}`) as Promise<ApiResponse<Practice>>,
+        api.get(`/practice/${id}/problems`, {
+          params: { pageNum: 1, pageSize: PROBLEMS_BATCH_SIZE },
+        }) as Promise<ApiResponse<Problem[]>>,
       ]);
 
       if (practiceRes.code === 200) {
@@ -68,7 +77,11 @@ const PracticeDetail: React.FC = () => {
       }
 
       if (problemsRes.code === 200) {
-        setProblems(problemsRes.data || []);
+        const firstPageProblems = problemsRes.data || [];
+        setProblems(firstPageProblems);
+        setCurrentPage(1);
+        const totalProblemCount = practiceRes.code === 200 ? (practiceRes.data?.problemCount || 0) : 0;
+        setHasMoreProblems(firstPageProblems.length < totalProblemCount);
       }
     } catch (error) {
       toast.error('加载练习数据失败');
@@ -77,6 +90,54 @@ const PracticeDetail: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const loadMoreProblems = useCallback(async () => {
+    if (!id || loading || loadingMore || !hasMoreProblems) return;
+
+    setLoadingMore(true);
+    const nextPage = currentPage + 1;
+
+    try {
+      const problemsRes = await api.get(`/practice/${id}/problems`, {
+        params: { pageNum: nextPage, pageSize: PROBLEMS_BATCH_SIZE },
+      }) as ApiResponse<Problem[]>;
+
+      if (problemsRes.code === 200) {
+        const nextBatch = problemsRes.data || [];
+        const nextProblems = [...problems, ...nextBatch];
+        setProblems(nextProblems);
+        setCurrentPage(nextPage);
+        const totalProblemCount = practice?.problemCount || 0;
+        setHasMoreProblems(nextProblems.length < totalProblemCount);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error('加载更多题目失败');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [id, loading, loadingMore, hasMoreProblems, currentPage, practice, problems]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target || !hasMoreProblems || loading || loadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void loadMoreProblems();
+        }
+      },
+      {
+        root: null,
+        rootMargin: '120px 0px',
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMoreProblems, loading, loadingMore, loadMoreProblems]);
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '-';
@@ -263,6 +324,18 @@ const PracticeDetail: React.FC = () => {
             pagination={false}
             locale={{ emptyText: '暂无题目' }}
           />
+          {hasMoreProblems && (
+            <div ref={loadMoreRef} className="flex justify-center py-4">
+              <Spin size="small" spinning={loadingMore} />
+            </div>
+          )}
+          {practice.problemCount > 0 && !hasMoreProblems && problems.length > 0 && (
+            <div className="py-4 text-center">
+              <Text style={{ color: 'var(--gemini-text-tertiary)' }}>
+                已加载全部题目（{problems.length} / {practice.problemCount} 条）
+              </Text>
+            </div>
+          )}
         </div>
       </div>
     </div>

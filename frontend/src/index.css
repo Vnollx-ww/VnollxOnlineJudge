@@ -724,7 +724,16 @@ body {
   border-radius: 9999px !important;
   border: none !important;
 }
-
+.ant-pagination-total-text {
+  display: inline-flex;
+  align-items: center;
+}
+ 
+.ant-pagination-options {
+  display: inline-flex;
+  align-items: center;
+}
+ 
 /* 标签 */
 .ant-tag {
   border-radius: 9999px !important;

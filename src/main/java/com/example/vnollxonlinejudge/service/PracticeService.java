@@ -14,4 +14,5 @@ public interface PracticeService {
     PracticeVo getPracticeById(Long id, Long userId);
     Long getCount(String keyword);
     List<ProblemVo> getProblemList(Long practiceId, Long userId);
+    List<ProblemVo> getProblemList(Long practiceId, Long userId, Integer pageNum, Integer pageSize);
 }

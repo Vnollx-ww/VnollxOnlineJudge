@@ -6,6 +6,7 @@ import java.util.List;
 
 public interface PracticeProblemService {
     List<PracticeProblem> getProblemList(Long practiceId);
+    List<PracticeProblem> getProblemList(Long practiceId, Integer pageNum, Integer pageSize);
     void addProblems(Long practiceId, List<Long> problemIds);
     void deleteProblem(Long practiceId, Long problemId);
     void deleteByPracticeId(Long practiceId);

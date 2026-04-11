@@ -30,7 +30,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   });
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   const loadUserInfo = useCallback(async () => {
     try {
@@ -59,24 +58,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   }, []);
 
-  const loadUnreadMessageCount = useCallback(async () => {
-    try {
-      const data = await api.get('/friend/unread') as ApiResponse<number>;
-      if (data.code === 200) {
-        setUnreadMessageCount(data.data || 0);
-      }
-    } catch (error) {
-      console.error('获取未读消息数量失败:', error);
-    }
-  }, []);
-
   useEffect(() => {
     if (isAuthenticated()) {
       loadUserInfo();
       loadNotificationCount();
-      loadUnreadMessageCount();
     }
-  }, [loadUserInfo, loadNotificationCount, loadUnreadMessageCount]);
+  }, [loadUserInfo, loadNotificationCount]);
 
   useEffect(() => {
     const notificationHandler = () => {
@@ -84,18 +71,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         loadNotificationCount();
       }
     };
-    const messageHandler = () => {
-      if (isAuthenticated()) {
-        loadUnreadMessageCount();
-      }
-    };
     window.addEventListener('notification-updated', notificationHandler);
-    window.addEventListener('message-updated', messageHandler);
     return () => {
       window.removeEventListener('notification-updated', notificationHandler);
-      window.removeEventListener('message-updated', messageHandler);
     };
-  }, [loadNotificationCount, loadUnreadMessageCount]);
+  }, [loadNotificationCount]);
 
   // WebSocket 通知处理
   const handleNotificationMessage = useCallback((notification: NotificationMessage) => {
@@ -191,7 +171,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Sidebar
           user={user}
           notificationCount={notificationCount}
-          unreadMessageCount={unreadMessageCount}
           loadUserInfo={loadUserInfo}
           loadNotificationCount={loadNotificationCount}
           layoutMode={layoutMode}

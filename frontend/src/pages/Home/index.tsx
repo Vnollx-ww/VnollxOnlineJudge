@@ -211,13 +211,13 @@ const Home: React.FC = () => {
             {/* Mini Stats */}
             <div className="flex items-center gap-6 pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: 'var(--gemini-text-primary)' }}>1000+</div>
-                <div className="text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>精选题目</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{stats.problemCount}</div>
+                <div className="text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>算法题目</div>
               </div>
               <div className="w-px h-10" style={{ backgroundColor: 'var(--gemini-border)' }} />
               <div className="text-center">
-                <div className="text-2xl font-bold" style={{ color: 'var(--gemini-text-primary)' }}>50k+</div>
-                <div className="text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>代码提交</div>
+                <div className="text-2xl font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{stats.submissionCount}</div>
+                <div className="text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>提交记录</div>
               </div>
               <div className="w-px h-10" style={{ backgroundColor: 'var(--gemini-border)' }} />
               <div className="text-center">
@@ -265,42 +265,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-12">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--gemini-text-primary)' }}>
-            为什么选择 Vnollx OJ
-          </h2>
-          <p className="max-w-2xl mx-auto" style={{ color: 'var(--gemini-text-secondary)' }}>
-            我们致力于提供最优质的刷题体验，助你成为算法大师
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              className="gemini-card-elevated group cursor-pointer transition-all duration-300 hover:-translate-y-1 animate-slide-up"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div 
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-                style={{ backgroundColor: feature.bgColor }}
-              >
-                <div style={{ color: feature.iconColor }}>
-                  {feature.icon}
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>
-                {feature.title}
-              </h3>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--gemini-text-secondary)' }}>
-                {feature.description}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+      
 
       {/* CTA Section - Gemini 风格渐变 */}
       <section className="py-16">

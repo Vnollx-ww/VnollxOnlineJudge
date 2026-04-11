@@ -156,7 +156,12 @@ public class PracticeServiceImpl extends ServiceImpl<PracticeMapper, Practice> i
     
     @Override
     public List<ProblemVo> getProblemList(Long practiceId, Long userId) {
-        List<PracticeProblem> practiceProblems = practiceProblemService.getProblemList(practiceId);
+        return getProblemList(practiceId, userId, null, null);
+    }
+
+    @Override
+    public List<ProblemVo> getProblemList(Long practiceId, Long userId, Integer pageNum, Integer pageSize) {
+        List<PracticeProblem> practiceProblems = practiceProblemService.getProblemList(practiceId, pageNum, pageSize);
         
         Set<Long> solvedProblemIds = getSolvedProblemIds(userId);
         

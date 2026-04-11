@@ -25,7 +25,7 @@ export { default as CompetitionProblemDetail } from './CompetitionProblemDetail'
 export { default as Practices } from './Practices';
 export { default as PracticeDetail } from './PracticeDetail';
 
-// 好友
+// friends
 export { default as Friends } from './Friends';
 
 // 通知

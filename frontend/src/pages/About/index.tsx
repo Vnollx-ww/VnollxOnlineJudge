@@ -159,7 +159,7 @@ const About: React.FC = () => {
         <p className="flex items-center justify-center gap-1">
           Made with <Heart className="w-4 h-4" style={{ color: 'var(--gemini-error)' }} /> by Vnollx Team
         </p>
-        <p className="mt-2">© 2025 VnollxOnlineJudge. All rights reserved.</p>
+        <p className="mt-2">© 2026 VnollxOnlineJudge. All rights reserved.</p>
       </div>
     </div>
   );
