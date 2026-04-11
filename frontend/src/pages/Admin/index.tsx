@@ -13,11 +13,13 @@ import {
   Bot,
   PanelLeftClose,
   PanelLeftOpen,
+  GraduationCap,
 } from 'lucide-react';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
 import AdminSolves from './AdminSolves';
 import AdminPractices from './AdminPractices';
+import AdminStudentClasses from './AdminStudentClasses';
 import AdminAiModels from './AdminAiModels';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
@@ -112,6 +114,7 @@ const Admin: React.FC = () => {
     { key: '/admin/problems', icon: HelpCircle, label: '题目管理', permissions: [PermissionCode.PROBLEM_VIEW, PermissionCode.PROBLEM_MANAGE] },
     { key: '/admin/solves', icon: Lightbulb, label: '题解管理', permissions: [PermissionCode.SOLVE_VIEW, PermissionCode.SOLVE_AUDIT] },
     { key: '/admin/practices', icon: BookOpen, label: '练习管理', permissions: [PermissionCode.PRACTICE_VIEW, PermissionCode.PRACTICE_MANAGE] },
+    { key: '/admin/student-classes', icon: GraduationCap, label: '班级管理', permissions: [PermissionCode.CLASS_VIEW, PermissionCode.CLASS_MANAGE] },
     { key: '/admin/statistics', icon: BarChart3, label: '数据统计', permissions: [PermissionCode.SYSTEM_MONITOR] },
     { key: '/admin/roles', icon: Shield, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
     { key: '/admin/permissions', icon: Key, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
@@ -229,6 +232,7 @@ const Admin: React.FC = () => {
             <Route path="problems" element={<AdminProblems />} />
             <Route path="solves" element={<AdminSolves />} />
             <Route path="practices" element={<AdminPractices />} />
+            <Route path="student-classes" element={<AdminStudentClasses />} />
             <Route path="statistics" element={<AdminStatistics />} />
             <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />

@@ -31,6 +31,13 @@ export const PermissionCode = {
   PRACTICE_DELETE: 'practice:delete',
   PRACTICE_MANAGE: 'practice:manage',
 
+  // 班级管理权限
+  CLASS_VIEW: 'class:view',
+  CLASS_CREATE: 'class:create',
+  CLASS_UPDATE: 'class:update',
+  CLASS_DELETE: 'class:delete',
+  CLASS_MANAGE: 'class:manage',
+
   // 提交记录权限
   SUBMISSION_VIEW: 'submission:view',
   SUBMISSION_VIEW_ALL: 'submission:view_all',

@@ -6,6 +6,7 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.statistics.ErrorPatternStatVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.LearningAnalyticsVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.PlatformStatsVO;
+import com.example.vnollxonlinejudge.model.vo.statistics.StudentClassBriefVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.TeachingProgressVO;
 import com.example.vnollxonlinejudge.service.StatisticsService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
@@ -73,10 +74,24 @@ public class AdminStatisticsController {
     /**
      * 教学进度跟踪（各练习下题目的通过人数）
      * @param practiceId 练习ID，不传则返回所有练习
+     * @param dimension all=全站；by_class=按练习可见班级拆分；class=仅某班级学生
+     * @param classId dimension=class 时指定班级 ID
      */
     @GetMapping("/teaching-progress")
     @RequirePermission(PermissionCode.SYSTEM_MONITOR)
-    public Result<List<TeachingProgressVO>> getTeachingProgress(@RequestParam(required = false) Long practiceId) {
-        return Result.Success(statisticsService.getTeachingProgress(practiceId), "获取成功");
+    public Result<List<TeachingProgressVO>> getTeachingProgress(
+            @RequestParam(required = false) Long practiceId,
+            @RequestParam(required = false, defaultValue = "all") String dimension,
+            @RequestParam(required = false) Long classId) {
+        return Result.Success(statisticsService.getTeachingProgress(practiceId, dimension, classId), "获取成功");
+    }
+
+    /**
+     * 班级下拉（教学进度「指定班级」维度用）
+     */
+    @GetMapping("/student-classes")
+    @RequirePermission(PermissionCode.SYSTEM_MONITOR)
+    public Result<List<StudentClassBriefVO>> listStudentClassesForStats() {
+        return Result.Success(statisticsService.listStudentClassesForStats(), "获取成功");
     }
 }

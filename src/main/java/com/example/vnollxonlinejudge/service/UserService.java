@@ -28,6 +28,7 @@ public interface UserService {
     List<UserVo> getAllUser();
     List<Integer> getUserIdList(Long uid);
     List<User> getUserByName(String name);
+    List<User> getUsersByIdentity(String identity);
     List<User> searchByName(String keyword, int pageNum, int pageSize);
     List<User> getUsersByIds(Collection<Long> ids);
     User getUserEntityById(Long id);

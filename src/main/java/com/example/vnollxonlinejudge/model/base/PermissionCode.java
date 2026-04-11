@@ -33,7 +33,14 @@ public class PermissionCode {
     public static final String PRACTICE_UPDATE = "practice:update";
     public static final String PRACTICE_DELETE = "practice:delete";
     public static final String PRACTICE_MANAGE = "practice:manage";
-    
+
+    // ==================== 班级管理权限 ====================
+    public static final String CLASS_VIEW = "class:view";
+    public static final String CLASS_CREATE = "class:create";
+    public static final String CLASS_UPDATE = "class:update";
+    public static final String CLASS_DELETE = "class:delete";
+    public static final String CLASS_MANAGE = "class:manage";
+
     // ==================== 提交记录权限 ====================
     public static final String SUBMISSION_VIEW = "submission:view";
     public static final String SUBMISSION_VIEW_ALL = "submission:view_all";

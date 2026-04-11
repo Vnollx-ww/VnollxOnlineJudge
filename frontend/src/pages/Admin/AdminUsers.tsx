@@ -238,7 +238,6 @@ const AdminUsers: React.FC = () => {
           <Form.Item name="identity" label="身份" rules={[{ required: true, message: '请选择身份' }]}>
             <Select>
               <Select.Option value="USER">普通用户</Select.Option>
-              <Select.Option value="VIP">VIP用户</Select.Option>
               <Select.Option value="TEACHER">教师</Select.Option>
               <Select.Option value="ADMIN">管理员</Select.Option>
               <Select.Option value="SUPER_ADMIN">超级管理员</Select.Option>

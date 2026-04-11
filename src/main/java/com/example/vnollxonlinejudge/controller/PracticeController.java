@@ -24,7 +24,7 @@ public class PracticeController {
     @GetMapping("/list")
     public Result<List<PracticeVo>> getPracticeList() {
         Long userId = UserContextHolder.getCurrentUserId();
-        return Result.Success(practiceService.getPublicPracticeList(userId), "获取练习列表成功");
+        return Result.Success(practiceService.getVisiblePracticeList(userId), "获取练习列表成功");
     }
     
     @GetMapping("/{id}")

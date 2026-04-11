@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.annotation.RequirePermission;
+import com.example.vnollxonlinejudge.annotation.SkipAdminCheck;
 import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.entity.Permission;
 import com.example.vnollxonlinejudge.model.entity.Role;
@@ -83,6 +84,7 @@ public class AdminPermissionController {
      * 获取当前登录用户的权限
      */
     @GetMapping("/my/permissions")
+    @SkipAdminCheck
     public Result<Set<String>> getMyPermissions() {
         Long userId = UserContextHolder.getCurrentUserId();
         Set<String> permissions = permissionService.getUserPermissionCodes(userId);
@@ -93,6 +95,7 @@ public class AdminPermissionController {
      * 获取当前登录用户的角色
      */
     @GetMapping("/my/roles")
+    @SkipAdminCheck
     public Result<List<Role>> getMyRoles() {
         Long userId = UserContextHolder.getCurrentUserId();
         List<Role> roles = permissionService.getUserRoles(userId);

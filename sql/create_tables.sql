@@ -516,11 +516,10 @@ INSERT INTO `role` (`id`, `code`, `name`, `description`) VALUES
 (1, 'SUPER_ADMIN', '超级管理员', '拥有系统所有权限'),
 (2, 'ADMIN', '管理员', '拥有大部分管理权限'),
 (3, 'USER', '普通用户', '拥有基本使用权限'),
-(4, 'GUEST', '游客', '只有查看权限'),
-(5, 'TEACHER', '教师', '教师角色，可管理题目/比赛/练习、查看学生提交与数据统计');
+(4, 'TEACHER', '教师', '教师角色，可管理题目/比赛/练习、查看学生提交与数据统计');
 
 -- =====================================================
--- 初始化权限数据（id 从 1 开始，1-5 用户 6-10 题目 11-15 比赛 16-20 练习 21-24 提交 25-29 题解 30-33 标签 34-36 通知 37-39 社交 40-42 AI 43-45 系统 46-50 角色）
+-- 初始化权限数据（id 从 1 开始，1-5 用户 6-10 题目 11-15 比赛 16-20 练习 21-24 提交 25-29 题解 30-33 标签 34-36 通知 37-39 社交 40-42 AI 43-45 系统 46-50 角色 51-55 班级）
 -- =====================================================
 INSERT INTO `permission` (`id`, `code`, `name`, `description`, `module`) VALUES
 (1, 'user:view', '查看用户', '查看用户列表和详情', 'user'),
@@ -572,18 +571,24 @@ INSERT INTO `permission` (`id`, `code`, `name`, `description`, `module`) VALUES
 (47, 'role:create', '创建角色', '创建新角色', 'role'),
 (48, 'role:update', '更新角色', '更新角色信息', 'role'),
 (49, 'role:delete', '删除角色', '删除角色', 'role'),
-(50, 'permission:assign', '分配权限', '为角色分配权限', 'role');
+(50, 'permission:assign', '分配权限', '为角色分配权限', 'role'),
+(51, 'class:view', '查看班级', '查看班级列表及详情', 'class'),
+(52, 'class:create', '创建班级', '创建新班级', 'class'),
+(53, 'class:update', '更新班级', '编辑班级信息/分配学生', 'class'),
+(54, 'class:delete', '删除班级', '删除班级', 'class'),
+(55, 'class:manage', '班级管理', '班级管理所有权限', 'class');
 
 -- =====================================================
 -- 初始化角色-权限关联（仅 role_id、permission_id 数字）
--- 1=超级管理员 全量 1-50；2=管理员 1-42；3=用户 指定；4=游客 指定；5=教师 指定
+-- 1=超级管理员 全量 1-55；2=管理员 1-42；3=用户 指定；4=教师 指定（含班级管理51-55）
 -- =====================================================
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
 SELECT 1, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
     UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15 UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19 UNION SELECT 20
     UNION SELECT 21 UNION SELECT 22 UNION SELECT 23 UNION SELECT 24 UNION SELECT 25 UNION SELECT 26 UNION SELECT 27 UNION SELECT 28 UNION SELECT 29 UNION SELECT 30
     UNION SELECT 31 UNION SELECT 32 UNION SELECT 33 UNION SELECT 34 UNION SELECT 35 UNION SELECT 36 UNION SELECT 37 UNION SELECT 38 UNION SELECT 39 UNION SELECT 40
-    UNION SELECT 41 UNION SELECT 42 UNION SELECT 43 UNION SELECT 44 UNION SELECT 45 UNION SELECT 46 UNION SELECT 47 UNION SELECT 48 UNION SELECT 49 UNION SELECT 50) t;
+    UNION SELECT 41 UNION SELECT 42 UNION SELECT 43 UNION SELECT 44 UNION SELECT 45 UNION SELECT 46 UNION SELECT 47 UNION SELECT 48 UNION SELECT 49 UNION SELECT 50
+    UNION SELECT 51 UNION SELECT 52 UNION SELECT 53 UNION SELECT 54 UNION SELECT 55) t;
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
 SELECT 2, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
     UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15 UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19 UNION SELECT 20
@@ -593,11 +598,9 @@ SELECT 2, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNI
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (3, 6), (3, 11), (3, 16), (3, 21), (3, 24), (3, 25), (3, 26), (3, 30), (3, 34), (3, 37), (3, 38), (3, 39), (3, 41);
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
-(4, 6), (4, 11), (4, 25), (4, 30);
-INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
-(5, 6), (5, 7), (5, 8), (5, 9), (5, 10), (5, 11), (5, 12), (5, 13), (5, 14), (5, 15), (5, 16), (5, 17), (5, 18), (5, 19), (5, 20),
-(5, 21), (5, 22), (5, 23), (5, 24), (5, 25), (5, 26), (5, 27), (5, 28), (5, 29), (5, 30), (5, 31), (5, 32), (5, 33), (5, 34), (5, 35), (5, 36),
-(5, 37), (5, 38), (5, 39), (5, 41), (5, 44), (5, 46);
+(4, 6), (4, 7), (4, 8), (4, 9), (4, 10), (4, 11), (4, 12), (4, 13), (4, 14), (4, 15), (4, 16), (4, 17), (4, 18), (4, 19), (4, 20),
+(4, 21), (4, 22), (4, 23), (4, 24), (4, 25), (4, 26), (4, 27), (4, 28), (4, 29), (4, 30), (4, 31), (4, 32), (4, 33), (4, 34), (4, 35), (4, 36),
+(4, 37), (4, 38), (4, 39), (4, 41), (4, 44), (4, 46), (4, 51), (4, 52), (4, 53), (4, 54), (4, 55);
 
 -- =====================================================
 -- 初始化标签数据（id 从 1 开始）
@@ -627,3 +630,53 @@ VALUES
 (2, '智谱 GLM-4.7', NULL, 'your-zhipu-api-key', 2, 0, 'domestic'),
 (3, '通义千问 Plus', NULL, 'your-dashscope-api-key', 1, 1, 'domestic'),
 (4, 'DeepSeek v3.1', NULL, 'your-dashscope-api-key', 3, 1, 'domestic');
+
+-- =====================================================
+-- 班级管理相关表结构
+-- =====================================================
+
+-- 班级表
+CREATE TABLE IF NOT EXISTS student_class
+(
+    id          bigint auto_increment comment '班级ID'
+        primary key,
+    class_name  varchar(100)                       not null comment '班级名称',
+    teacher_id  int                                not null comment '教师ID',
+    create_time varchar(50)                        null comment '创建时间',
+    constraint uk_class_teacher unique (class_name, teacher_id)
+)
+    comment '班级表';
+
+CREATE INDEX idx_teacher_id ON student_class (teacher_id);
+
+-- 班级-学生关联表（一个学生只能属于一个班级）
+CREATE TABLE IF NOT EXISTS student_class_relation
+(
+    id         bigint auto_increment comment '主键ID'
+        primary key,
+    class_id   bigint not null comment '班级ID',
+    student_id int    not null comment '学生ID',
+    constraint uk_student_class unique (student_id),
+    constraint fk_scr_class foreign key (class_id) references student_class (id) on delete cascade,
+    constraint fk_scr_student foreign key (student_id) references user (id) on delete cascade
+)
+    comment '班级学生关联表';
+
+CREATE INDEX idx_class_id ON student_class_relation (class_id);
+CREATE INDEX idx_student_id ON student_class_relation (student_id);
+
+-- 练习-可见班级关联表（私有练习对指定班级可见）
+CREATE TABLE IF NOT EXISTS practice_visible_class
+(
+    id          bigint auto_increment comment '主键ID'
+        primary key,
+    practice_id bigint not null comment '练习ID',
+    class_id    bigint not null comment '班级ID',
+    constraint uk_practice_class unique (practice_id, class_id),
+    constraint fk_pvc_practice foreign key (practice_id) references practice (id) on delete cascade,
+    constraint fk_pvc_class foreign key (class_id) references student_class (id) on delete cascade
+)
+    comment '练习可见班级关联表';
+
+CREATE INDEX idx_practice_id ON practice_visible_class (practice_id);
+CREATE INDEX idx_class_id_visible ON practice_visible_class (class_id);

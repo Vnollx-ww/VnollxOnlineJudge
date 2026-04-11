@@ -234,9 +234,7 @@ const AdminPermissions: React.FC = () => {
       SUPER_ADMIN: 'red',
       ADMIN: 'orange',
       TEACHER: 'green',
-      VIP: 'purple',
       USER: 'blue',
-      GUEST: 'default',
     };
     return <Tag color={colorMap[code] || 'default'}>{code}</Tag>;
   };

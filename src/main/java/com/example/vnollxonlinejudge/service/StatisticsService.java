@@ -4,6 +4,7 @@ import com.example.vnollxonlinejudge.model.vo.statistics.ErrorPatternStatVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.LearningAnalyticsVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.PlatformStatsVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.AiLearningContextVO;
+import com.example.vnollxonlinejudge.model.vo.statistics.StudentClassBriefVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.TeachingProgressVO;
 
 import java.util.List;
@@ -34,8 +35,15 @@ public interface StatisticsService {
     /**
      * 教学进度跟踪：所有练习（或指定练习）下各题目的通过人数
      * @param practiceId 练习ID，为空则返回所有练习的进度
+     * @param dimension all=全站；by_class=按练习可见班级拆分；class=仅某班级学生
+     * @param filterClassId dimension=class 时指定班级 ID
      */
-    List<TeachingProgressVO> getTeachingProgress(Long practiceId);
+    List<TeachingProgressVO> getTeachingProgress(Long practiceId, String dimension, Long filterClassId);
+
+    /**
+     * 教学进度筛选「指定班级」时下拉数据（仅需 system:monitor）
+     */
+    List<StudentClassBriefVO> listStudentClassesForStats();
 
     /**
      * AI 学习建议上下文：聚合用户的做题、错题、练习进度数据，供 AI 生成个性化学习建议

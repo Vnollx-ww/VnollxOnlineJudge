@@ -1,8 +1,13 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
 import com.example.vnollxonlinejudge.exception.BusinessException;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.example.vnollxonlinejudge.mapper.StudentClassMapper;
+import com.example.vnollxonlinejudge.mapper.StudentClassRelationMapper;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
 import com.example.vnollxonlinejudge.mapper.UserSolvedProblemMapper;
+import com.example.vnollxonlinejudge.model.entity.StudentClass;
+import com.example.vnollxonlinejudge.model.entity.StudentClassRelation;
 import com.example.vnollxonlinejudge.model.entity.Practice;
 import com.example.vnollxonlinejudge.model.entity.PracticeProblem;
 import com.example.vnollxonlinejudge.model.entity.Submission;
@@ -18,6 +23,8 @@ import com.example.vnollxonlinejudge.model.vo.statistics.PlatformStatsVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.PracticeProgressItemVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.SolvedProblemItemVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.AiLearningContextVO;
+import com.example.vnollxonlinejudge.model.vo.statistics.StudentClassBriefVO;
+import com.example.vnollxonlinejudge.model.vo.statistics.TeachingProgressClassSliceVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.TeachingProgressVO;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.PracticeProblemService;
@@ -34,7 +41,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class StatisticsServiceImpl implements StatisticsService {
@@ -48,6 +58,8 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final CompetitionService competitionService;
     private final PracticeService practiceService;
     private final PracticeProblemService practiceProblemService;
+    private final StudentClassRelationMapper studentClassRelationMapper;
+    private final StudentClassMapper studentClassMapper;
 
     @Autowired
     public StatisticsServiceImpl(SubmissionMapper submissionMapper,
@@ -58,7 +70,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                                  ProblemTagService problemTagService,
                                  CompetitionService competitionService,
                                  PracticeService practiceService,
-                                 PracticeProblemService practiceProblemService) {
+                                 PracticeProblemService practiceProblemService,
+                                 StudentClassRelationMapper studentClassRelationMapper,
+                                 StudentClassMapper studentClassMapper) {
         this.submissionMapper = submissionMapper;
         this.userSolvedProblemMapper = userSolvedProblemMapper;
         this.submissionService = submissionService;
@@ -68,6 +82,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         this.competitionService = competitionService;
         this.practiceService = practiceService;
         this.practiceProblemService = practiceProblemService;
+        this.studentClassRelationMapper = studentClassRelationMapper;
+        this.studentClassMapper = studentClassMapper;
     }
 
     @Override
@@ -159,7 +175,12 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public List<TeachingProgressVO> getTeachingProgress(Long practiceId) {
+    public List<TeachingProgressVO> getTeachingProgress(Long practiceId, String dimension, Long filterClassId) {
+        String dim = normalizeTeachingDimension(dimension);
+        if ("class".equals(dim) && (filterClassId == null || filterClassId <= 0)) {
+            dim = "all";
+        }
+
         List<TeachingProgressVO> result = new ArrayList<>();
         List<com.example.vnollxonlinejudge.model.vo.practice.PracticeVo> practices;
         if (practiceId != null) {
@@ -170,37 +191,173 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
         for (com.example.vnollxonlinejudge.model.vo.practice.PracticeVo p : practices) {
             List<PracticeProblem> problemLinks = practiceProblemService.getProblemList(p.getId());
-            List<PracticeProgressItemVO> progressList = new ArrayList<>();
-            for (PracticeProblem pp : problemLinks) {
-                Long solvedCount = userSolvedProblemMapper.countDistinctUsersByProblemId(pp.getProblemId());
-                if (solvedCount == null) solvedCount = 0L;
-                ProblemVo pvo = null;
-                try {
-                    pvo = problemService.getProblemInfo(pp.getProblemId(), 0L, null);
-                } catch (Exception ignored) { }
-                progressList.add(new PracticeProgressItemVO(
-                        pp.getProblemId(),
-                        pvo != null ? pvo.getTitle() : "题目#" + pp.getProblemId(),
-                        solvedCount
-                ));
+            String teacherName = resolvePracticeCreatorName(p.getCreatorId());
+
+            if ("by_class".equals(dim)) {
+                List<Long> visibleIds = p.getVisibleClassIds() != null ? p.getVisibleClassIds() : Collections.emptyList();
+                Map<Long, String> classNameMap = loadClassNameMap(visibleIds);
+                List<TeachingProgressClassSliceVO> slices = new ArrayList<>();
+                for (Long cid : visibleIds) {
+                    List<Long> studentIds = listStudentIdsByClassId(cid);
+                    List<PracticeProgressItemVO> pl = buildPracticeProgressForUserScope(problemLinks, studentIds);
+                    slices.add(TeachingProgressClassSliceVO.builder()
+                            .classId(cid)
+                            .className(classNameMap.getOrDefault(cid, ""))
+                            .studentCount(studentIds.size())
+                            .problemProgressList(pl)
+                            .build());
+                }
+                result.add(TeachingProgressVO.builder()
+                        .practiceId(p.getId())
+                        .practiceTitle(p.getTitle())
+                        .totalProblems(problemLinks.size())
+                        .creatorId(p.getCreatorId())
+                        .creatorName(teacherName)
+                        .dimension("by_class")
+                        .filterClassId(null)
+                        .problemProgressList(null)
+                        .classSlices(slices)
+                        .build());
+            } else if ("class".equals(dim)) {
+                List<Long> studentIds = listStudentIdsByClassId(filterClassId);
+                List<PracticeProgressItemVO> progressList = buildPracticeProgressForUserScope(problemLinks, studentIds);
+                result.add(TeachingProgressVO.builder()
+                        .practiceId(p.getId())
+                        .practiceTitle(p.getTitle())
+                        .totalProblems(problemLinks.size())
+                        .creatorId(p.getCreatorId())
+                        .creatorName(teacherName)
+                        .dimension("class")
+                        .filterClassId(filterClassId)
+                        .problemProgressList(progressList)
+                        .classSlices(null)
+                        .build());
+            } else {
+                List<PracticeProgressItemVO> progressList = buildPracticeProgressGlobal(problemLinks);
+                result.add(TeachingProgressVO.builder()
+                        .practiceId(p.getId())
+                        .practiceTitle(p.getTitle())
+                        .totalProblems(progressList.size())
+                        .creatorId(p.getCreatorId())
+                        .creatorName(teacherName)
+                        .dimension("all")
+                        .filterClassId(null)
+                        .problemProgressList(progressList)
+                        .classSlices(null)
+                        .build());
             }
-            String teacherName = null;
-            if (p.getCreatorId() != null) {
-                try {
-                    User creator = userService.getUserEntityById(p.getCreatorId());
-                    teacherName = creator != null ? creator.getName() : null;
-                } catch (Exception ignored) { }
-            }
-            result.add(TeachingProgressVO.builder()
-                    .practiceId(p.getId())
-                    .practiceTitle(p.getTitle())
-                    .totalProblems(progressList.size())
-                    .creatorId(p.getCreatorId())
-                    .creatorName(teacherName)
-                    .problemProgressList(progressList)
-                    .build());
         }
         return result;
+    }
+
+    @Override
+    public List<StudentClassBriefVO> listStudentClassesForStats() {
+        QueryWrapper<StudentClass> wrapper = new QueryWrapper<>();
+        wrapper.orderByDesc("create_time");
+        List<StudentClass> list = studentClassMapper.selectList(wrapper);
+        if (list == null || list.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<StudentClassBriefVO> out = new ArrayList<>(list.size());
+        for (StudentClass c : list) {
+            out.add(new StudentClassBriefVO(c.getId(), c.getClassName()));
+        }
+        return out;
+    }
+
+    private static String normalizeTeachingDimension(String dimension) {
+        if (dimension == null || dimension.isBlank()) {
+            return "all";
+        }
+        String d = dimension.trim().toLowerCase();
+        if ("by_class".equals(d) || "class".equals(d)) {
+            return d;
+        }
+        return "all";
+    }
+
+    private List<Long> listStudentIdsByClassId(Long classId) {
+        if (classId == null) {
+            return Collections.emptyList();
+        }
+        QueryWrapper<StudentClassRelation> w = new QueryWrapper<>();
+        w.eq("class_id", classId);
+        List<StudentClassRelation> rows = studentClassRelationMapper.selectList(w);
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return rows.stream().map(StudentClassRelation::getStudentId).filter(Objects::nonNull).toList();
+    }
+
+    private Map<Long, String> loadClassNameMap(List<Long> classIds) {
+        if (classIds == null || classIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        QueryWrapper<StudentClass> w = new QueryWrapper<>();
+        w.in("id", classIds);
+        List<StudentClass> list = studentClassMapper.selectList(w);
+        if (list == null || list.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, String> map = new HashMap<>();
+        for (StudentClass c : list) {
+            map.put(c.getId(), c.getClassName());
+        }
+        return map;
+    }
+
+    private String resolvePracticeCreatorName(Long creatorId) {
+        if (creatorId == null) {
+            return null;
+        }
+        try {
+            User creator = userService.getUserEntityById(creatorId);
+            return creator != null ? creator.getName() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private List<PracticeProgressItemVO> buildPracticeProgressGlobal(List<PracticeProblem> problemLinks) {
+        List<PracticeProgressItemVO> progressList = new ArrayList<>();
+        for (PracticeProblem pp : problemLinks) {
+            Long solvedCount = userSolvedProblemMapper.countDistinctUsersByProblemId(pp.getProblemId());
+            if (solvedCount == null) {
+                solvedCount = 0L;
+            }
+            ProblemVo pvo = null;
+            try {
+                pvo = problemService.getProblemInfo(pp.getProblemId(), 0L, null);
+            } catch (Exception ignored) {
+            }
+            progressList.add(new PracticeProgressItemVO(
+                    pp.getProblemId(),
+                    pvo != null ? pvo.getTitle() : "题目#" + pp.getProblemId(),
+                    solvedCount
+            ));
+        }
+        return progressList;
+    }
+
+    private List<PracticeProgressItemVO> buildPracticeProgressForUserScope(List<PracticeProblem> problemLinks, List<Long> userIds) {
+        List<PracticeProgressItemVO> progressList = new ArrayList<>();
+        for (PracticeProblem pp : problemLinks) {
+            Long solvedCount = userSolvedProblemMapper.countDistinctUsersByProblemIdFiltered(pp.getProblemId(), userIds);
+            if (solvedCount == null) {
+                solvedCount = 0L;
+            }
+            ProblemVo pvo = null;
+            try {
+                pvo = problemService.getProblemInfo(pp.getProblemId(), 0L, null);
+            } catch (Exception ignored) {
+            }
+            progressList.add(new PracticeProgressItemVO(
+                    pp.getProblemId(),
+                    pvo != null ? pvo.getTitle() : "题目#" + pp.getProblemId(),
+                    solvedCount
+            ));
+        }
+        return progressList;
     }
 
     @Override

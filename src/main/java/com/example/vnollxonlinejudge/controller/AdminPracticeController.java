@@ -45,7 +45,7 @@ public class AdminPracticeController {
     @RequirePermission(PermissionCode.PRACTICE_CREATE)
     public Result<Void> createPractice(@RequestBody AdminSavePracticeDTO req) {
         Long creatorId = UserContextHolder.getCurrentUserId();
-        practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic(), creatorId);
+        practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic(), req.getClassIds(), creatorId);
         return Result.Success("创建练习成功");
     }
     
@@ -78,7 +78,7 @@ public class AdminPracticeController {
     @PutMapping("/update")
     @RequirePermission(PermissionCode.PRACTICE_UPDATE)
     public Result<Void> updatePractice(@RequestBody AdminSavePracticeDTO req) {
-        practiceService.updatePractice(req.getId(), req.getTitle(), req.getDescription(), req.getIsPublic());
+        practiceService.updatePractice(req.getId(), req.getTitle(), req.getDescription(), req.getIsPublic(), req.getClassIds());
         return Result.Success("修改练习信息成功");
     }
     
@@ -92,6 +92,7 @@ public class AdminPracticeController {
     @RequirePermission(PermissionCode.PRACTICE_UPDATE)
     public Result<Void> addProblems(@RequestBody AdminAddPracticeProblemDTO req) {
         Long practiceId = Long.parseLong(req.getPracticeId());
+        practiceService.validateManagePermission(practiceId);
         List<Long> problemIds = req.getProblemIds().stream()
                 .map(Long::parseLong)
                 .collect(Collectors.toList());
@@ -102,6 +103,7 @@ public class AdminPracticeController {
     @DeleteMapping("/{practiceId}/problems/{problemId}")
     @RequirePermission(PermissionCode.PRACTICE_UPDATE)
     public Result<Void> deleteProblemFromPractice(@PathVariable Long practiceId, @PathVariable Long problemId) {
+        practiceService.validateManagePermission(practiceId);
         practiceProblemService.deleteProblem(practiceId, problemId);
         return Result.Success("从练习中删除题目成功");
     }
@@ -109,6 +111,7 @@ public class AdminPracticeController {
     @GetMapping("/{practiceId}/problems")
     @RequirePermission(PermissionCode.PRACTICE_VIEW)
     public Result<List<ProblemBasicVo>> getPracticeProblems(@PathVariable Long practiceId) {
+        practiceService.validateManagePermission(practiceId);
         List<PracticeProblem> practiceProblems = practiceProblemService.getProblemList(practiceId);
         List<ProblemBasicVo> problems = practiceProblems.stream()
                 .map(pp -> {

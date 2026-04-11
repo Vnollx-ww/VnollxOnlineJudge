@@ -2,6 +2,7 @@ package com.example.vnollxonlinejudge.model.vo.practice;
 
 import com.example.vnollxonlinejudge.model.entity.Practice;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class PracticeVo {
@@ -14,6 +15,8 @@ public class PracticeVo {
     private Integer solvedCount;
     private Long creatorId;
     private String creatorName;
+    private List<Long> visibleClassIds;
+    private List<String> visibleClassNames;
     
     public PracticeVo() {}
     

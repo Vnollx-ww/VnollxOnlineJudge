@@ -6,11 +6,12 @@ import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import java.util.List;
 
 public interface PracticeService {
-    void createPractice(String title, String description, Boolean isPublic, Long creatorId);
-    void updatePractice(Long id, String title, String description, Boolean isPublic);
+    void createPractice(String title, String description, Boolean isPublic, List<Long> classIds, Long creatorId);
+    void updatePractice(Long id, String title, String description, Boolean isPublic, List<Long> classIds);
     void deletePractice(Long id);
+    void validateManagePermission(Long practiceId);
     List<PracticeVo> getPracticeList(int pageNum, int pageSize, String keyword);
-    List<PracticeVo> getPublicPracticeList(Long userId);
+    List<PracticeVo> getVisiblePracticeList(Long userId);
     PracticeVo getPracticeById(Long id, Long userId);
     Long getCount(String keyword);
     List<ProblemVo> getProblemList(Long practiceId, Long userId);

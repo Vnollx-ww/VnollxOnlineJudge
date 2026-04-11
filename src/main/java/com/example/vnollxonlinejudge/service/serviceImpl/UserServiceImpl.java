@@ -168,8 +168,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 根据当前用户身份过滤可见用户
         if (IDENTITY_ADMIN.equals(identity)) {
-            // 管理员只能看到普通用户和VIP用户
-            queryWrapper.in("identity", IDENTITY_USER, "VIP");
+            // 管理员只能看到普通用户
+            queryWrapper.eq("identity", IDENTITY_USER);
         } else if (IDENTITY_SUPER_ADMIN.equals(identity)) {
             // 超级管理员可以看到除超级管理员外的所有用户
             queryWrapper.ne("identity", IDENTITY_SUPER_ADMIN);
@@ -316,8 +316,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         
         // 根据当前用户身份过滤可见用户
         if (IDENTITY_ADMIN.equals(identity)) {
-            // 管理员只能看到普通用户和VIP用户
-            wrapper.in("identity", IDENTITY_USER, "VIP");
+            // 管理员只能看到普通用户
+            wrapper.eq("identity", IDENTITY_USER);
         } else if (IDENTITY_SUPER_ADMIN.equals(identity)) {
             // 超级管理员可以看到除超级管理员外的所有用户
             wrapper.ne("identity", IDENTITY_SUPER_ADMIN);
@@ -358,6 +358,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public List<User> getUserByName(String name) {
         QueryWrapper<User> queryWrapper=new QueryWrapper<>();
         queryWrapper.like("name",name);
+        return this.list(queryWrapper);
+    }
+
+    @Override
+    public List<User> getUsersByIdentity(String identity) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("identity", identity).orderByAsc("name");
         return this.list(queryWrapper);
     }
 

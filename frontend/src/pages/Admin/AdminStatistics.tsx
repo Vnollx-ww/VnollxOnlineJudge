@@ -42,13 +42,29 @@ interface PracticeProgressItem {
   solvedCount: number;
 }
 
+interface TeachingProgressClassSlice {
+  classId: number;
+  className: string;
+  studentCount: number;
+  problemProgressList: PracticeProgressItem[];
+}
+
 interface TeachingProgressItem {
   practiceId: number;
   practiceTitle: string;
   totalProblems: number;
   creatorId?: number;
   creatorName?: string;
-  problemProgressList: PracticeProgressItem[];
+  /** all | by_class | class */
+  dimension?: string;
+  filterClassId?: number;
+  problemProgressList: PracticeProgressItem[] | null;
+  classSlices?: TeachingProgressClassSlice[];
+}
+
+interface StudentClassBrief {
+  id: number;
+  className: string;
 }
 
 interface ErrorPatternStat {
@@ -98,8 +114,12 @@ const AdminStatistics: React.FC = () => {
   const [teachingProgress, setTeachingProgress] = useState<TeachingProgressItem[]>([]);
   const [loadingTeaching, setLoadingTeaching] = useState(false);
   const [teachingPracticeId, setTeachingPracticeId] = useState<number>(0);
+  const [teachingDimension, setTeachingDimension] = useState<'all' | 'by_class' | 'class'>('all');
+  const [teachingClassId, setTeachingClassId] = useState<number>(0);
   const [practiceOptions, setPracticeOptions] = useState<{ id: number; title: string }[]>([]);
   const [loadingPracticeOptions, setLoadingPracticeOptions] = useState(false);
+  const [classOptions, setClassOptions] = useState<StudentClassBrief[]>([]);
+  const [loadingClassOptions, setLoadingClassOptions] = useState(false);
 
   const loadErrorPatterns = async () => {
     setLoadingError(true);
@@ -150,12 +170,16 @@ const AdminStatistics: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    loadClassOptions();
+  }, []);
+
+  useEffect(() => {
     loadLearningAnalytics();
   }, [learningDays, learningUid]);
 
   useEffect(() => {
     loadTeachingProgress();
-  }, [teachingPracticeId]);
+  }, [teachingPracticeId, teachingDimension, teachingClassId]);
 
   const loadUserOptions = async () => {
     setLoadingUserOptions(true);
@@ -189,6 +213,22 @@ const AdminStatistics: React.FC = () => {
     }
   };
 
+  const loadClassOptions = async () => {
+    setLoadingClassOptions(true);
+    try {
+      const res = await api.get('/admin/statistics/student-classes') as ApiResponse<StudentClassBrief[]>;
+      if (res.code === 200 && res.data) {
+        setClassOptions(res.data);
+      } else {
+        setClassOptions([]);
+      }
+    } catch {
+      setClassOptions([]);
+    } finally {
+      setLoadingClassOptions(false);
+    }
+  };
+
   const loadLearningAnalytics = async () => {
     setLoadingLearning(true);
     try {
@@ -210,7 +250,11 @@ const AdminStatistics: React.FC = () => {
   const loadTeachingProgress = async () => {
     setLoadingTeaching(true);
     try {
-      const params = teachingPracticeId > 0 ? { practiceId: teachingPracticeId } : {};
+      const params: Record<string, string | number> = {
+        dimension: teachingDimension,
+      };
+      if (teachingPracticeId > 0) params.practiceId = teachingPracticeId;
+      if (teachingDimension === 'class' && teachingClassId > 0) params.classId = teachingClassId;
       const res = await api.get('/admin/statistics/teaching-progress', { params }) as ApiResponse<TeachingProgressItem[]>;
       if (res.code === 200 && res.data) {
         setTeachingProgress(res.data);
@@ -738,27 +782,110 @@ const AdminStatistics: React.FC = () => {
                       ...practiceOptions.map((p) => ({ value: p.id, label: p.title })),
                     ]}
                   />
+                  <span style={{ color: 'var(--gemini-text-secondary)' }}>统计维度</span>
+                  <Select
+                    value={teachingDimension}
+                    onChange={(v) => {
+                      setTeachingDimension(v);
+                      if (v !== 'class') setTeachingClassId(0);
+                    }}
+                    style={{ width: 160 }}
+                    options={[
+                      { value: 'all', label: '全站通过人数' },
+                      { value: 'by_class', label: '按班级拆分' },
+                      { value: 'class', label: '指定班级' },
+                    ]}
+                  />
+                  {teachingDimension === 'class' && (
+                    <>
+                      <span style={{ color: 'var(--gemini-text-secondary)' }}>班级</span>
+                      <Select
+                        placeholder="选择班级"
+                        showSearch
+                        optionFilterProp="label"
+                        value={teachingClassId || undefined}
+                        onChange={(v) => setTeachingClassId(v ?? 0)}
+                        loading={loadingClassOptions}
+                        allowClear
+                        style={{ width: 220 }}
+                        options={classOptions.map((c) => ({ value: c.id, label: c.className }))}
+                      />
+                    </>
+                  )}
                   <Button type="primary" onClick={loadTeachingProgress} loading={loadingTeaching}>查询</Button>
                   <RefreshCw className="w-5 h-5 cursor-pointer hover:opacity-70" onClick={loadTeachingProgress} />
                 </div>
                 <Spin spinning={loadingTeaching}>
                   {teachingProgress.length > 0 ? (
                     <div className="space-y-4">
-                      {teachingProgress.map((p) => (
-                        <Card key={p.practiceId} size="small" title={<span>{p.practiceTitle}（共 {p.totalProblems} 题）{p.creatorName && <span style={{ color: 'var(--gemini-text-tertiary)', marginLeft: 12, fontSize: 13 }}>教师: {p.creatorName}</span>}</span>}>
-                          <Table
-                            rowKey="problemId"
+                      {teachingProgress.map((p) => {
+                        const dimLabel =
+                          p.dimension === 'by_class'
+                            ? '按班级拆分'
+                            : p.dimension === 'class'
+                              ? `指定班级${p.filterClassId ? ` #${p.filterClassId}` : ''}`
+                              : '全站';
+                        return (
+                          <Card
+                            key={p.practiceId}
                             size="small"
-                            pagination={false}
-                            dataSource={p.problemProgressList || []}
-                            columns={[
-                              { title: '题号', dataIndex: 'problemId', width: 90 },
-                              { title: '题目', dataIndex: 'title', ellipsis: true },
-                              { title: '通过人数', dataIndex: 'solvedCount', width: 110 },
-                            ]}
-                          />
-                        </Card>
-                      ))}
+                            title={
+                              <span>
+                                {p.practiceTitle}（共 {p.totalProblems} 题）
+                                {p.creatorName && (
+                                  <span style={{ color: 'var(--gemini-text-tertiary)', marginLeft: 12, fontSize: 13 }}>教师: {p.creatorName}</span>
+                                )}
+                                <span style={{ color: 'var(--gemini-text-secondary)', marginLeft: 12, fontSize: 13 }}>维度: {dimLabel}</span>
+                              </span>
+                            }
+                          >
+                            {p.dimension === 'by_class' && (p.classSlices?.length ?? 0) > 0 ? (
+                              <div className="space-y-4">
+                                {p.classSlices!.map((slice) => (
+                                  <Card
+                                    key={slice.classId}
+                                    type="inner"
+                                    size="small"
+                                    title={`${slice.className || '班级'}（${slice.studentCount} 人）`}
+                                  >
+                                    <Table
+                                      rowKey="problemId"
+                                      size="small"
+                                      pagination={false}
+                                      dataSource={slice.problemProgressList || []}
+                                      columns={[
+                                        { title: '题号', dataIndex: 'problemId', width: 90 },
+                                        { title: '题目', dataIndex: 'title', ellipsis: true },
+                                        { title: '班级内通过人数', dataIndex: 'solvedCount', width: 130 },
+                                      ]}
+                                    />
+                                  </Card>
+                                ))}
+                              </div>
+                            ) : p.dimension === 'by_class' ? (
+                              <div className="py-4 text-center" style={{ color: 'var(--gemini-text-secondary)' }}>
+                                该练习未关联可见班级，请先在练习管理中为私有练习配置可见班级
+                              </div>
+                            ) : (
+                              <Table
+                                rowKey="problemId"
+                                size="small"
+                                pagination={false}
+                                dataSource={p.problemProgressList || []}
+                                columns={[
+                                  { title: '题号', dataIndex: 'problemId', width: 90 },
+                                  { title: '题目', dataIndex: 'title', ellipsis: true },
+                                  {
+                                    title: p.dimension === 'class' ? '班级内通过人数' : '通过人数',
+                                    dataIndex: 'solvedCount',
+                                    width: p.dimension === 'class' ? 130 : 110,
+                                  },
+                                ]}
+                              />
+                            )}
+                          </Card>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-8" style={{ color: 'var(--gemini-text-secondary)' }}>

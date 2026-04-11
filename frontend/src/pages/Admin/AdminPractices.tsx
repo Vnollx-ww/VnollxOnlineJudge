@@ -11,6 +11,7 @@ import {
   Popconfirm,
   List,
   Empty,
+  Select,
 } from 'antd';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
@@ -19,6 +20,11 @@ import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 
+interface StudentClassOption {
+  id: number;
+  className: string;
+}
+
 interface Practice {
   id: number;
   title: string;
@@ -26,6 +32,8 @@ interface Practice {
   problemCount: number;
   createTime: string;
   isPublic: boolean;
+  visibleClassIds?: number[];
+  visibleClassNames?: string[];
 }
 
 interface Problem {
@@ -44,6 +52,10 @@ const AdminPractices: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingPractice, setEditingPractice] = useState<Practice | null>(null);
   const [form] = Form.useForm();
+  const isPublicWatch = Form.useWatch('isPublic', form);
+
+  const [classOptions, setClassOptions] = useState<StudentClassOption[]>([]);
+  const [classLoading, setClassLoading] = useState(false);
 
   const [problemManageVisible, setProblemManageVisible] = useState(false);
   const [currentPracticeId, setCurrentPracticeId] = useState<number | null>(null);
@@ -82,20 +94,36 @@ const AdminPractices: React.FC = () => {
     }
   };
 
+  const loadClassOptions = async () => {
+    setClassLoading(true);
+    try {
+      const data = (await api.get('/admin/student-class/list')) as ApiResponse<StudentClassOption[]>;
+      if (data.code === 200) {
+        setClassOptions(data.data || []);
+      }
+    } catch {
+      toast.error('加载班级列表失败');
+    } finally {
+      setClassLoading(false);
+    }
+  };
+
   const handleAdd = () => {
     setEditingPractice(null);
     form.resetFields();
-    form.setFieldsValue({ isPublic: true });
+    loadClassOptions();
     setModalVisible(true);
   };
 
-  const handleEdit = (practice: Practice) => {
-    setEditingPractice(practice);
+  const handleEdit = (record: Practice) => {
+    setEditingPractice(record);
     form.setFieldsValue({
-      title: practice.title,
-      description: practice.description,
-      isPublic: practice.isPublic,
+      title: record.title,
+      description: record.description,
+      isPublic: record.isPublic,
+      classIds: record.isPublic ? [] : record.visibleClassIds || [],
     });
+    loadClassOptions();
     setModalVisible(true);
   };
 
@@ -187,6 +215,7 @@ const AdminPractices: React.FC = () => {
         title: values.title,
         description: values.description || '',
         isPublic: values.isPublic,
+        classIds: values.isPublic ? [] : values.classIds || [],
         ...(editingPractice ? { id: editingPractice.id } : {}),
       };
 
@@ -237,6 +266,22 @@ const AdminPractices: React.FC = () => {
       key: 'isPublic',
       width: 100,
       render: (isPublic: boolean) => <Tag color={isPublic ? 'green' : 'default'}>{isPublic ? '公开' : '私有'}</Tag>,
+    },
+    {
+      title: '可见班级',
+      key: 'visibleClasses',
+      width: 200,
+      render: (_: unknown, record: Practice) => (
+        <div className="flex flex-wrap gap-1">
+          {record.isPublic ? (
+            <Tag>全部</Tag>
+          ) : record.visibleClassNames && record.visibleClassNames.length > 0 ? (
+            record.visibleClassNames.map((name) => <Tag key={name}>{name}</Tag>)
+          ) : (
+            <Tag color="orange">未配置</Tag>
+          )}
+        </div>
+      ),
     },
     {
       title: '操作',
@@ -333,7 +378,12 @@ const AdminPractices: React.FC = () => {
         footer={null}
         width={600}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{ isPublic: true, classIds: [] }}
+          onFinish={handleSubmit}
+        >
           <Form.Item name="title" label="练习标题" rules={[{ required: true, message: '请输入练习标题' }]}>
             <Input />
           </Form.Item>
@@ -341,15 +391,39 @@ const AdminPractices: React.FC = () => {
             <Input.TextArea rows={4} />
           </Form.Item>
           <Form.Item name="isPublic" label="是否公开" valuePropName="checked">
-            <Switch checkedChildren="公开" unCheckedChildren="私有" />
+            <Switch
+              checkedChildren="公开"
+              unCheckedChildren="私有"
+              onChange={(checked) => {
+                if (checked) {
+                  form.setFieldsValue({ classIds: [] });
+                }
+              }}
+            />
+          </Form.Item>
+          <Form.Item
+            name="classIds"
+            label="可见班级（仅私有）"
+            extra="公开：全校可见，不可选班级。私有：可选一个或多个班级；不选班级则除创建者外学生不可见"
+          >
+            <Select
+              mode="multiple"
+              placeholder={isPublicWatch ? '请先关闭「公开」' : '选择班级'}
+              loading={classLoading}
+              disabled={!!isPublicWatch}
+              options={classOptions.map((c) => ({ label: c.className, value: c.id }))}
+              showSearch
+              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+              style={{ width: '100%' }}
+            />
           </Form.Item>
           <Form.Item>
             <div className="flex justify-end gap-2">
               <Button onClick={() => setModalVisible(false)}>取消</Button>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 htmlType="submit"
-                style={{ 
+                style={{
                   backgroundColor: 'var(--gemini-accent)',
                   color: 'var(--gemini-accent-text)',
                   border: 'none'
