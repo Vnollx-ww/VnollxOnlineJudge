@@ -16,6 +16,7 @@ import {
   Zap,
   PanelLeftClose,
   PanelLeftOpen,
+  Users,
 } from 'lucide-react';
 import { isAuthenticated, removeToken } from '@/utils/auth';
 import { usePermission } from '@/contexts/PermissionContext';
@@ -125,6 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { key: '/ranklist', icon: Trophy, label: '排行榜' },
     { key: '/competitions', icon: Flag, label: '比赛' },
     { key: '/practices', icon: BookOpen, label: '练习' },
+    { key: '/friends', icon: Users, label: '好友' },
     { key: '/about', icon: Info, label: '关于' },
   ];
 

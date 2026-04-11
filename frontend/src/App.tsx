@@ -18,7 +18,6 @@ import {
   CompetitionProblemDetail,
   Practices,
   PracticeDetail,
-  Friends,
   Admin,
   Login,
   Register,
@@ -33,6 +32,7 @@ import {
   SolutionPublishPage,
   About,
   VnollxHome,
+  Friends,
 } from "./pages";
 
 // Ant Design 主题配置 - Gemini 风格
@@ -265,6 +265,7 @@ function App() {
                     {/* 用户相关 */}
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/user/:userId" element={<UserProfile />} />
+                    <Route path="/friends" element={<Friends />} />
 
                     {/* 通知相关 */}
                     <Route path="/notifications" element={<Notifications />} />

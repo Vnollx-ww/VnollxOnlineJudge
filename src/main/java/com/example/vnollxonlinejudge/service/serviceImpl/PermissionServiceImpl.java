@@ -345,10 +345,126 @@ public class PermissionServiceImpl implements PermissionService {
     }
     
     @Override
+    @Transactional
+    public Long createRole(Role role) {
+        if (role == null) {
+            throw new BusinessException("角色信息不能为空");
+        }
+        String code = role.getCode() == null ? "" : role.getCode().trim();
+        String name = role.getName() == null ? "" : role.getName().trim();
+        if (code.isEmpty()) {
+            throw new BusinessException("角色码不能为空");
+        }
+        if (name.isEmpty()) {
+            throw new BusinessException("角色名称不能为空");
+        }
+        Role existed = roleMapper.selectByCode(code);
+        if (existed != null) {
+            throw new BusinessException("角色码已存在");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        Role entity = Role.builder()
+                .code(code)
+                .name(name)
+                .description(role.getDescription())
+                .status(1)
+                .createTime(now)
+                .updateTime(now)
+                .build();
+        roleMapper.insert(entity);
+        return entity.getId();
+    }
+    
+    @Override
+    @Transactional
+    public void updateRole(Role role) {
+        if (role == null || role.getId() == null) {
+            throw new BusinessException("角色ID不能为空");
+        }
+        Role existing = roleMapper.selectById(role.getId());
+        if (existing == null || existing.getStatus() == null || existing.getStatus() != 1) {
+            throw new BusinessException("角色不存在");
+        }
+        String name = role.getName() == null ? "" : role.getName().trim();
+        if (name.isEmpty()) {
+            throw new BusinessException("角色名称不能为空");
+        }
+        existing.setName(name);
+        existing.setDescription(role.getDescription());
+        existing.setUpdateTime(LocalDateTime.now());
+        roleMapper.updateById(existing);
+        clearAllPermissionCache();
+    }
+    
+    @Override
+    @Transactional
+    public void deleteRole(Long roleId) {
+        if (roleId == null) {
+            throw new BusinessException("角色ID不能为空");
+        }
+        Role existing = roleMapper.selectById(roleId);
+        if (existing == null || existing.getStatus() == null || existing.getStatus() != 1) {
+            throw new BusinessException("角色不存在");
+        }
+        Set<String> systemCodes = Set.of("SUPER_ADMIN", "ADMIN", "TEACHER", "USER", "GUEST");
+        if (systemCodes.contains(existing.getCode())) {
+            throw new BusinessException("系统内置角色不允许删除");
+        }
+        List<Long> userIds = userRoleMapper.selectUserIdsByRoleId(roleId);
+        rolePermissionMapper.deleteByRoleId(roleId);
+        userRoleMapper.deleteByRoleId(roleId);
+        existing.setStatus(0);
+        existing.setUpdateTime(LocalDateTime.now());
+        roleMapper.updateById(existing);
+        clearAllPermissionCache();
+        if (userIds != null) {
+            for (Long userId : userIds) {
+                invalidateUserToken(userId);
+            }
+        }
+    }
+    
+    @Override
     public List<Permission> getAllPermissions() {
         LambdaQueryWrapper<Permission> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Permission::getStatus, 1);
         return permissionMapper.selectList(wrapper);
+    }
+    
+    @Override
+    @Transactional
+    public Long createPermission(Permission permission) {
+        if (permission == null) {
+            throw new BusinessException("权限信息不能为空");
+        }
+        String code = permission.getCode() == null ? "" : permission.getCode().trim();
+        String name = permission.getName() == null ? "" : permission.getName().trim();
+        String module = permission.getModule() == null ? "" : permission.getModule().trim();
+        if (code.isEmpty()) {
+            throw new BusinessException("权限码不能为空");
+        }
+        if (name.isEmpty()) {
+            throw new BusinessException("权限名称不能为空");
+        }
+        if (module.isEmpty()) {
+            throw new BusinessException("模块名称不能为空");
+        }
+        Permission existed = permissionMapper.selectByCode(code);
+        if (existed != null) {
+            throw new BusinessException("权限码已存在");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        Permission entity = Permission.builder()
+                .code(code)
+                .name(name)
+                .module(module)
+                .description(permission.getDescription())
+                .status(1)
+                .createTime(now)
+                .updateTime(now)
+                .build();
+        permissionMapper.insert(entity);
+        return entity.getId();
     }
     
     @Override

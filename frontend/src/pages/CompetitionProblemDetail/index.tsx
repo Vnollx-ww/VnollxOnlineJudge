@@ -615,21 +615,21 @@ const CompetitionProblemDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-5xl mx-auto">
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate(`/competition/${cid}`)}
-          className="!mb-4"
-        >
-          返回比赛题目列表
-        </Button>
-
         <Space direction="vertical" size="large" className="w-full">
           {/* 题目信息卡片 */}
           <Card className="!rounded-2xl !shadow-lg !border-0">
             <div className="mb-6">
-              <Title level={2} className="!mb-2">
-                #{problem.id} - {problem.title}
-              </Title>
+              <div className="flex items-center justify-between">
+                <Title level={2} className="!mb-2">
+                  #{problem.id} - {problem.title}
+                </Title>
+                <Button
+                  icon={<ArrowLeftOutlined />}
+                  onClick={() => navigate(`/competition/${cid}`)}
+                >
+                  返回比赛题目列表
+                </Button>
+              </div>
               <div className="flex items-center gap-4 text-gray-500">
                 <Tag color={getDifficultyColor(problem.difficulty)}>
                   {problem.difficulty}

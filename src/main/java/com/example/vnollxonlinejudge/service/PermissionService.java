@@ -82,9 +82,29 @@ public interface PermissionService {
     List<Role> getAllRoles();
     
     /**
+     * 创建角色
+     */
+    Long createRole(Role role);
+    
+    /**
+     * 更新角色
+     */
+    void updateRole(Role role);
+    
+    /**
+     * 删除角色
+     */
+    void deleteRole(Long roleId);
+    
+    /**
      * 获取所有权限
      */
     List<Permission> getAllPermissions();
+    
+    /**
+     * 创建权限
+     */
+    Long createPermission(Permission permission);
     
     /**
      * 根据模块获取权限

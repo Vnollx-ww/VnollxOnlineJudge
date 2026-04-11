@@ -8,7 +8,6 @@ import {
   Trophy, 
   ArrowRight,
   Terminal,
-  Cpu,
   Sparkles,
 } from 'lucide-react';
 import api from '../../utils/api';
@@ -98,37 +97,6 @@ const Home: React.FC = () => {
     }
   };
 
-  const features = [
-    {
-      icon: <BookOpen className="w-7 h-7" />,
-      title: '海量题库',
-      description: '精选1000+道算法题目，覆盖数据结构、动态规划、图论等核心领域。',
-      bgColor: '#e8f0fe',
-      iconColor: '#1a73e8',
-    },
-    {
-      icon: <Cpu className="w-7 h-7" />,
-      title: '高性能评测',
-      description: '分布式评测集群，支持毫秒级反馈，提供详细性能分析。',
-      bgColor: '#e6f4ea',
-      iconColor: '#34a853',
-    },
-    {
-      icon: <Trophy className="w-7 h-7" />,
-      title: '竞赛系统',
-      description: '支持ACM/OI赛制，实时榜单更新，定期举办积分赛。',
-      bgColor: '#fef7e0',
-      iconColor: '#f9ab00',
-    },
-    {
-      icon: <Users className="w-7 h-7" />,
-      title: '极客社区',
-      description: '汇聚算法爱好者，分享高质量题解，探索最优解法。',
-      bgColor: '#f3e8fd',
-      iconColor: '#9334e6',
-    },
-  ];
-
   const statItems = [
     { icon: BookOpen, value: stats.problemCount, label: '算法题目', bgColor: '#e8f0fe', iconColor: '#1a73e8' },
     { icon: Users, value: stats.userCount, label: '注册用户', bgColor: '#e6f4ea', iconColor: '#34a853' },
@@ -162,14 +130,7 @@ const Home: React.FC = () => {
             >
               在线算法训练平台
               <br />
-              <span 
-                className="bg-clip-text text-transparent"
-                style={{ 
-                  backgroundImage: 'linear-gradient(135deg, #1a73e8 0%, #041e49 100%)' 
-                }}
-              >
-                从练习到进阶
-              </span>
+
             </h1>
 
             {/* Subtitle */}

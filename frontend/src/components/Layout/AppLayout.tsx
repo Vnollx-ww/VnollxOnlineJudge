@@ -241,34 +241,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 联系我们
               </button>
             </div>
-            <div 
-              className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs"
-              style={{ color: 'var(--gemini-text-disabled)' }}
-            >
-              <div className="flex items-center gap-1">
-                <img
-                  src="https://beian.mps.gov.cn/web/assets/logo01.6189a29f.png"
-                  alt="备案图标"
-                  className="w-4 h-4"
-                />
-                <a
-                  href="https://beian.mps.gov.cn/#/query/webSearch?code=50010802006523"
-                  rel="noreferrer"
-                  target="_blank"
-                  className="hover:opacity-80 transition-opacity"
-                >
-                  渝公网安备50010802006523号
-                </a>
-              </div>
-              <a
-                href="https://beian.miit.gov.cn/#/Integrated/index"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:opacity-80 transition-opacity"
-              >
-                渝ICP备2025055483号-1
-              </a>
-            </div>
           </div>
         </Footer>
       </Layout>

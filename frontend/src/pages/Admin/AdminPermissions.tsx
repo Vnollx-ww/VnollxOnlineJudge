@@ -234,7 +234,6 @@ const AdminPermissions: React.FC = () => {
       SUPER_ADMIN: 'red',
       ADMIN: 'orange',
       TEACHER: 'green',
-      VIP: 'purple',
       USER: 'blue',
       GUEST: 'default',
     };
@@ -359,7 +358,7 @@ const AdminPermissions: React.FC = () => {
                 <Descriptions.Item label="用户名">{selectedUser.name}</Descriptions.Item>
                 <Descriptions.Item label="邮箱">{selectedUser.email}</Descriptions.Item>
                 <Descriptions.Item label="原身份">
-                  <Tag color={selectedUser.identity === 'SUPER_ADMIN' ? 'red' : selectedUser.identity === 'ADMIN' ? 'orange' : selectedUser.identity === 'TEACHER' ? 'green' : selectedUser.identity === 'VIP' ? 'purple' : 'blue'}>
+                  <Tag color={selectedUser.identity === 'SUPER_ADMIN' ? 'red' : selectedUser.identity === 'ADMIN' ? 'orange' : selectedUser.identity === 'TEACHER' ? 'green' : 'blue'}>
                     {selectedUser.identity}
                   </Tag>
                 </Descriptions.Item>
@@ -392,7 +391,7 @@ const AdminPermissions: React.FC = () => {
                     {userRoles.map((role: Role) => (
                       <Tag
                         key={role.id}
-                        color={role.code === 'SUPER_ADMIN' ? 'red' : role.code === 'ADMIN' ? 'orange' : role.code === 'TEACHER' ? 'green' : role.code === 'VIP' ? 'purple' : 'blue'}
+                        color={role.code === 'SUPER_ADMIN' ? 'red' : role.code === 'ADMIN' ? 'orange' : role.code === 'TEACHER' ? 'green' : 'blue'}
                         closable
                         onClose={() => handleRemoveRoleFromUser(role.id)}
                       >

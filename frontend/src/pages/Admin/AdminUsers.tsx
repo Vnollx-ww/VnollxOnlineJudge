@@ -112,7 +112,6 @@ const AdminUsers: React.FC = () => {
   const getIdentityTag = (identity: string) => {
     const map: Record<string, { text: string; color: string }> = {
       USER: { text: '普通用户', color: 'blue' },
-      VIP: { text: 'VIP用户', color: 'purple' },
       TEACHER: { text: '教师', color: 'green' },
       ADMIN: { text: '管理员', color: 'orange' },
       SUPER_ADMIN: { text: '超级管理员', color: 'red' },
@@ -239,7 +238,6 @@ const AdminUsers: React.FC = () => {
           <Form.Item name="identity" label="身份" rules={[{ required: true, message: '请选择身份' }]}>
             <Select>
               <Select.Option value="USER">普通用户</Select.Option>
-              <Select.Option value="VIP">VIP用户</Select.Option>
               <Select.Option value="TEACHER">教师</Select.Option>
               <Select.Option value="ADMIN">管理员</Select.Option>
               <Select.Option value="SUPER_ADMIN">超级管理员</Select.Option>

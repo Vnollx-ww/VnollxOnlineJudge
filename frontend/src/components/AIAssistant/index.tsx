@@ -289,6 +289,17 @@ const AIAssistant: React.FC = () => {
   };
 
   useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
+
+  useEffect(() => {
     currentSessionIdRef.current = currentSessionId;
   }, [currentSessionId]);
 
@@ -324,6 +335,8 @@ const AIAssistant: React.FC = () => {
 
   const sortSessions = useCallback((list: AiChatSession[]) => {
     return [...list].sort((a, b) => {
+      if (a.isPending && !b.isPending) return -1;
+      if (!a.isPending && b.isPending) return 1;
       const timeA = a.lastMessageAt ?? a.createTime ?? 0;
       const timeB = b.lastMessageAt ?? b.createTime ?? 0;
       return timeB - timeA;
@@ -361,6 +374,8 @@ const AIAssistant: React.FC = () => {
         query.set('beforeId', String(beforeId));
       }
       const response = await api.get(`/ai/history/page?${query.toString()}`) as ApiResponse<HistoryPageResponse>;
+      // 会话已切换，丢弃过期结果
+      if (currentSessionIdRef.current !== sessionId) return;
       if (response.code === 200 && response.data) {
         const { items, nextCursor: cursor, hasMore: more } = response.data;
         const list = parseHistoryItems(items || []);
@@ -381,6 +396,8 @@ const AIAssistant: React.FC = () => {
       }
       setHistoryLoaded(true);
     } catch (error) {
+      // 会话已切换，丢弃过期结果
+      if (currentSessionIdRef.current !== sessionId) return;
       console.error('加载会话历史失败:', error);
       if (!append) {
         setMessages([]);
@@ -474,10 +491,30 @@ const AIAssistant: React.FC = () => {
     setSessionsLoading(true);
     try {
       const res = await api.get('/ai/sessions') as ApiResponse<AiChatSession[]>;
-      const list = sortSessions(res.code === 200 && Array.isArray(res.data) ? res.data : []);
-      setSessions(list);
       const preferred = preferredSessionId ?? currentSessionIdRef.current;
+      const baseList = res.code === 200 && Array.isArray(res.data) ? res.data : [];
+      const list = preferred?.startsWith('pending_')
+        ? sortSessions([
+          {
+            id: preferred,
+            title: '新会话',
+            createTime: Date.now(),
+            isPending: true,
+          },
+          ...baseList.filter((item) => item.id !== preferred),
+        ])
+        : sortSessions(baseList);
+      setSessions(list);
+
+      // 如果当前已经是临时会话，说明 activatePendingSession 已经执行过，不要覆盖它
+      if (currentSessionIdRef.current?.startsWith('pending_')) {
+        setSessionsLoading(false);
+        return;
+      }
+
       const nextSessionId =
+        (preferred?.startsWith('pending_') ? preferred : null)
+        ||
         (preferred && list.some((item) => item.id === preferred) ? preferred : null)
         || list[0]?.id
         || null;
@@ -545,21 +582,30 @@ const AIAssistant: React.FC = () => {
     setSessions((prev) => sortSessions([session, ...prev.filter((item) => item.id !== session.id)]));
   }, [sortSessions]);
 
-  const handleCreateSession = useCallback(() => {
-    if (loading) {
-      messageApi.info('当前正在生成回复，请稍后再新建会话');
-      return null;
-    }
-    // 延迟创建：不调用后端，不在左侧列表创建记录
-    // 仅设置一个 pending ID，右侧显示空聊天界面
+  const activatePendingSession = useCallback(() => {
     const pendingId = `pending_${Date.now()}`;
+    upsertSession({
+      id: pendingId,
+      title: '新会话',
+      createTime: Date.now(),
+      isPending: true,
+    });
+    currentSessionIdRef.current = pendingId;
     setCurrentSessionId(pendingId);
     setMessages([]);
     setHasMore(false);
     setNextCursor(null);
     setHistoryLoaded(true);
     return pendingId;
-  }, [loading, messageApi]);
+  }, [upsertSession]);
+
+  const handleCreateSession = useCallback(() => {
+    if (loading) {
+      messageApi.info('当前正在生成回复，请稍后再新建会话');
+      return null;
+    }
+    return activatePendingSession();
+  }, [activatePendingSession, loading, messageApi]);
 
   const handleDeleteSession = useCallback(async (sessionId: string) => {
     if (loading) {
@@ -635,36 +681,28 @@ const AIAssistant: React.FC = () => {
       setPendingAction(null);
       let targetSessionId = currentSessionIdRef.current;
       if (action.forceNewSession || !targetSessionId) {
-        // 创建临时会话并切换，不先调后端
-        const pendingId = `pending_${Date.now()}`;
-        upsertSession({
-          id: pendingId,
-          title: '新会话',
-          isPending: true,
-        });
-        setCurrentSessionId(pendingId);
-        setMessages([]);
-        setHasMore(false);
-        setNextCursor(null);
-        setHistoryLoaded(true);
-        targetSessionId = pendingId;
+        targetSessionId = activatePendingSession();
       }
-      if (action.message?.trim()) {
-        sendChatRef.current(action.message.trim(), targetSessionId, action.modelId);
+      const autoMessage = action.message?.trim();
+      if (autoMessage) {
+        sendChatRef.current(autoMessage, targetSessionId, action.modelId);
       }
     };
     run();
-  }, [open, models.length, sessionsLoading, pendingAction, upsertSession]);
+  }, [activatePendingSession, open, models.length, sessionsLoading, pendingAction]);
 
   // 监听外部事件打开 AI 助手并发送消息（等模型加载后再发，避免 Logo 不显示）
   useEffect(() => {
     const handleOpenAiAssistant = (event: CustomEvent<OpenAssistantDetail>) => {
+      // 注意：不在这里直接创建会话，由下方的 useEffect 统一处理
+      // 避免事件处理器和 effect 重复创建会话
       setOpen(true);
       setProblemContext(event.detail?.problemContext ?? null);
       setPendingAction({
         message: event.detail?.message,
         forceNewSession: Boolean(event.detail?.forceNewSession),
         modelId: event.detail?.modelId,
+        problemContext: event.detail?.problemContext,
       });
     };
 
@@ -871,11 +909,13 @@ const AIAssistant: React.FC = () => {
 
   const handleQuickSend = async (builder: (context: ProblemChatContext) => string) => {
     if (!problemContext || loading || sessionsLoading) return;
-    let targetSessionId = currentSessionIdRef.current;
+    const targetSessionId = currentSessionIdRef.current;
+    // 不再自动创建新会话，直接使用当前会话（包括临时会话）
+    // 如果没有会话，提示用户先创建或选择会话
     if (!targetSessionId) {
-      targetSessionId = handleCreateSession();
+      messageApi.info('请先选择或创建一个会话');
+      return;
     }
-    if (!targetSessionId) return;
     await sendChat(builder(problemContext), targetSessionId);
   };
 
@@ -914,8 +954,11 @@ const AIAssistant: React.FC = () => {
       {hasPermission(PermissionCode.AI_CHAT) && (
         <button
           onClick={() => {
-            setProblemContext(null);
-            setOpen(true);
+            window.dispatchEvent(new CustomEvent('open-ai-assistant', {
+              detail: {
+                forceNewSession: true,
+              },
+            }));
           }}
           title="AI 助手"
           className="fixed right-10 bottom-12 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[22px] border border-white/60 bg-white/75 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_rgba(15,23,42,0.24)]"

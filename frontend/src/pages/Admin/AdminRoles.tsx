@@ -199,7 +199,6 @@ const AdminRoles: React.FC = () => {
       SUPER_ADMIN: 'red',
       ADMIN: 'orange',
       TEACHER: 'green',
-      VIP: 'purple',
       USER: 'blue',
       GUEST: 'default',
     };
@@ -357,10 +356,10 @@ const AdminRoles: React.FC = () => {
       >
         <Form form={form} layout="vertical" onFinish={handleRoleSubmit}>
           <Form.Item name="code" label="角色码" rules={[{ required: true, message: '请输入角色码' }]}>
-            <Input placeholder="如: VIP, MODERATOR" disabled={!!editingRole} />
+            <Input placeholder="如: MODERATOR" disabled={!!editingRole} />
           </Form.Item>
           <Form.Item name="name" label="角色名称" rules={[{ required: true, message: '请输入角色名称' }]}>
-            <Input placeholder="如: VIP用户, 版主" />
+            <Input placeholder="如: 版主" />
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea placeholder="角色描述" rows={3} />

@@ -16,6 +16,12 @@ public class AdminCheckAspect {
         // 获取当前请求
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
 
+        String requestUri = request.getRequestURI();
+        if ("/api/v1/admin/permission/my/permissions".equals(requestUri)
+                || "/api/v1/admin/permission/my/roles".equals(requestUri)) {
+            return;
+        }
+
         // 从请求属性中获取身份信息
         String identity = (String) request.getAttribute("identity");
 
