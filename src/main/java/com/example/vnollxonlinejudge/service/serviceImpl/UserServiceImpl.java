@@ -118,6 +118,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
 
         this.save(user);
+        permissionService.syncUserRoleByIdentity(user.getId(), IDENTITY_USER);
     }
 
     @Override
@@ -258,6 +259,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Transactional
     public void addUserByAdmin(String name, String email, String identity) {
         if (lambdaQuery().eq(User::getEmail, email).exists()) {
             throw new BusinessException(ERROR_EMAIL_EXISTS);
@@ -276,6 +278,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
 
         save(user);
+        permissionService.syncUserRoleByIdentity(user.getId(), identity);
     }
 
     @Override

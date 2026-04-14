@@ -80,11 +80,31 @@ public interface PermissionService {
      * 获取所有角色
      */
     List<Role> getAllRoles();
+
+    /**
+     * 创建角色
+     */
+    void createRole(String code, String name, String description);
+
+    /**
+     * 更新角色
+     */
+    void updateRole(Long roleId, String name, String description);
+
+    /**
+     * 删除角色
+     */
+    void deleteRole(Long roleId);
     
     /**
      * 获取所有权限
      */
     List<Permission> getAllPermissions();
+
+    /**
+     * 创建权限
+     */
+    void createPermission(String code, String name, String description, String module);
     
     /**
      * 根据模块获取权限

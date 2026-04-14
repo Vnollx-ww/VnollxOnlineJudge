@@ -2,6 +2,8 @@ package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.annotation.RequirePermission;
 import com.example.vnollxonlinejudge.annotation.SkipAdminCheck;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminSavePermissionDTO;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveRoleDTO;
 import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.entity.Permission;
 import com.example.vnollxonlinejudge.model.entity.Role;
@@ -9,6 +11,7 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.service.PermissionService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +42,36 @@ public class AdminPermissionController {
         List<Role> roles = permissionService.getAllRoles();
         return Result.Success(roles, "获取角色列表成功");
     }
+
+    /**
+     * 创建角色
+     */
+    @PostMapping("/role")
+    @RequirePermission(PermissionCode.ROLE_CREATE)
+    public Result<Void> createRole(@Valid @RequestBody AdminSaveRoleDTO request) {
+        permissionService.createRole(request.getCode(), request.getName(), request.getDescription());
+        return Result.Success("创建角色成功");
+    }
+
+    /**
+     * 更新角色
+     */
+    @PutMapping("/role/{roleId}")
+    @RequirePermission(PermissionCode.ROLE_UPDATE)
+    public Result<Void> updateRole(@PathVariable Long roleId, @Valid @RequestBody AdminSaveRoleDTO request) {
+        permissionService.updateRole(roleId, request.getName(), request.getDescription());
+        return Result.Success("更新角色成功");
+    }
+
+    /**
+     * 删除角色
+     */
+    @DeleteMapping("/role/{roleId}")
+    @RequirePermission(PermissionCode.ROLE_DELETE)
+    public Result<Void> deleteRole(@PathVariable Long roleId) {
+        permissionService.deleteRole(roleId);
+        return Result.Success("删除角色成功");
+    }
     
     /**
      * 获取所有权限
@@ -48,6 +81,16 @@ public class AdminPermissionController {
     public Result<List<Permission>> getAllPermissions() {
         List<Permission> permissions = permissionService.getAllPermissions();
         return Result.Success(permissions, "获取权限列表成功");
+    }
+
+    /**
+     * 创建权限
+     */
+    @PostMapping("/permission")
+    @RequirePermission(PermissionCode.PERMISSION_ASSIGN)
+    public Result<Void> createPermission(@Valid @RequestBody AdminSavePermissionDTO request) {
+        permissionService.createPermission(request.getCode(), request.getName(), request.getDescription(), request.getModule());
+        return Result.Success("创建权限成功");
     }
     
     /**
