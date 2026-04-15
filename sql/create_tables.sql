@@ -406,24 +406,6 @@ create index user_tag_uid_index
     on user_tag (uid);
 
 -- -----------------------------------------------------
--- AI 平台表（SDK/适配器类型：openai、mistral、dashscope 等）
--- -----------------------------------------------------
-create table ai_platform
-(
-    id          bigint auto_increment comment '平台ID'
-        primary key,
-    code        varchar(50)                         not null comment '平台编码: langchain4j | zhipu',
-    name        varchar(100)                        not null comment '平台显示名称',
-    description varchar(256)                        null comment '说明',
-    sort_order  int default 0                      null comment '排序序号',
-    status      tinyint default 1                    null comment '状态：1-启用，0-禁用',
-    create_time datetime default CURRENT_TIMESTAMP  null comment '创建时间',
-    update_time datetime default CURRENT_TIMESTAMP  null on update CURRENT_TIMESTAMP comment '更新时间',
-    unique key uk_ai_platform_code (code),
-    index idx_ai_platform_status (status)
-) comment 'AI 平台表(区分 SDK：langchain4j 或智谱原生)' collate = utf8mb4_unicode_ci;
-
--- -----------------------------------------------------
 -- AI 模型表、用户对话记录表
 -- -----------------------------------------------------
 create table ai_model
@@ -510,14 +492,13 @@ create table ai_chat_summary
 ) comment '用户AI对话摘要表' collate = utf8mb4_unicode_ci;
 
 -- =====================================================
--- 初始化角色数据（id 从 1 开始）
+-- 初始化 AI 模型
 -- =====================================================
 INSERT INTO `role` (`id`, `code`, `name`, `description`) VALUES
 (1, 'SUPER_ADMIN', '超级管理员', '拥有系统所有权限'),
 (2, 'ADMIN', '管理员', '拥有大部分管理权限'),
 (3, 'USER', '普通用户', '拥有基本使用权限'),
-(4, 'GUEST', '游客', '只有查看权限'),
-(5, 'TEACHER', '教师', '教师角色，可管理题目/比赛/练习、查看学生提交与数据统计');
+(4, 'TEACHER', '教师', '教师角色，可管理题目/比赛/练习、查看学生提交与数据统计');
 
 -- =====================================================
 -- 初始化权限数据（id 从 1 开始，1-5 用户 6-10 题目 11-15 比赛 16-20 练习 21-24 提交 25-29 题解 30-33 标签 34-36 通知 37-39 社交 40-42 AI 43-45 系统 46-50 角色）
@@ -576,7 +557,7 @@ INSERT INTO `permission` (`id`, `code`, `name`, `description`, `module`) VALUES
 
 -- =====================================================
 -- 初始化角色-权限关联（仅 role_id、permission_id 数字）
--- 1=超级管理员 全量 1-50；2=管理员 1-42；3=用户 指定；4=游客 指定；5=教师 指定
+-- 1=超级管理员 全量 1-50；2=管理员 1-42；3=用户 指定；4=教师 指定
 -- =====================================================
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
 SELECT 1, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
@@ -591,13 +572,11 @@ SELECT 2, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNI
     UNION SELECT 31 UNION SELECT 32 UNION SELECT 33 UNION SELECT 34 UNION SELECT 35 UNION SELECT 36 UNION SELECT 37 UNION SELECT 38 UNION SELECT 39 UNION SELECT 40
     UNION SELECT 41 UNION SELECT 42) t;
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
-(3, 6), (3, 11), (3, 16), (3, 21), (3, 24), (3, 25), (3, 26), (3, 30), (3, 34), (3, 37), (3, 38), (3, 39), (3, 41);
+(3, 6), (3, 11), (3, 16), (3, 21), (3, 24), (3, 25), (3, 26), (3, 30), (3, 34), (3, 37), (3, 38), (3, 39), (3, 42);
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
-(4, 6), (4, 11), (4, 25), (4, 30);
-INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
-(5, 6), (5, 7), (5, 8), (5, 9), (5, 10), (5, 11), (5, 12), (5, 13), (5, 14), (5, 15), (5, 16), (5, 17), (5, 18), (5, 19), (5, 20),
-(5, 21), (5, 22), (5, 23), (5, 24), (5, 25), (5, 26), (5, 27), (5, 28), (5, 29), (5, 30), (5, 31), (5, 32), (5, 33), (5, 34), (5, 35), (5, 36),
-(5, 37), (5, 38), (5, 39), (5, 41), (5, 44), (5, 46);
+(4, 6), (4, 7), (4, 8), (4, 9), (4, 10), (4, 11), (4, 12), (4, 13), (4, 14), (4, 15), (4, 16), (4, 17), (4, 18), (4, 19), (4, 20),
+(4, 21), (4, 22), (4, 23), (4, 24), (4, 25), (4, 26), (4, 27), (4, 28), (4, 29), (4, 30), (4, 31), (4, 32), (4, 33), (4, 34), (4, 35), (4, 36),
+(4, 37), (4, 38), (4, 39), (4, 42), (4, 44);
 
 -- =====================================================
 -- 初始化标签数据（id 从 1 开始）
@@ -611,19 +590,11 @@ INSERT INTO `tag` (`id`, `name`) VALUES
 (26, '并查集'), (27, '字典树'), (28, '线段树'), (29, '单调栈'), (30, '单调队列');
 
 -- =====================================================
--- 初始化 AI 平台（仅两种 SDK：langchain4j、zhipu）
--- =====================================================
-INSERT INTO ai_platform (id, code, name, description, sort_order, status) VALUES
-(1, 'langchain4j', 'LangChain4j', 'OpenAI / Mistral / 阿里云百炼 等，统一走 LangChain4j', 0, 1),
-(2, 'zhipu', '智谱 AI', '智谱开放平台，直接使用 zai-sdk 调用', 1, 1),
-(3, 'dashscope', '阿里云 DashScope', '阿里云百炼平台，直接使用 dashscope-sdk 调用', 2, 1);
-
--- =====================================================
 -- 初始化 AI 模型（示例：LangChain4j-Mistral + 智谱 GLM-4.7）
 -- =====================================================
 INSERT INTO ai_model (id, name, logo_url, api_key, sort_order, status, proxy_type)
 VALUES
-(1, 'Mistral Large', NULL, '', 0, 1, 'overseas'),
-(2, '智谱 GLM-4.7', NULL, 'your-zhipu-api-key', 2, 0, 'domestic'),
-(3, '通义千问 Plus', NULL, 'your-dashscope-api-key', 1, 1, 'domestic'),
+(1, 'Mistral', NULL, '', 0, 1, 'overseas'),
+(2, 'GLM-4.7', NULL, 'your-zhipu-api-key', 2, 0, 'domestic'),
+(3, 'Qwen Plus', NULL, 'your-dashscope-api-key', 1, 1, 'domestic'),
 (4, 'DeepSeek v3.1', NULL, 'your-dashscope-api-key', 3, 1, 'domestic');

@@ -46,6 +46,12 @@ MODEL_ALIASES: dict[str, tuple[str, str]] = {
     "zhipu": ("zhipu", "glm-4.7"),
     "智谱": ("zhipu", "glm-4.7"),
     "智谱glm": ("zhipu", "glm-4.7"),
+    "智谱 glm": ("zhipu", "glm-4.7"),
+    "智谱 glm-4": ("zhipu", "glm-4.7"),
+    "智谱 glm-4.7": ("zhipu", "glm-4.7"),
+    "zhipu glm": ("zhipu", "glm-4.7"),
+    "zhipu glm-4": ("zhipu", "glm-4.7"),
+    "zhipu glm-4.7": ("zhipu", "glm-4.7"),
     "glm-4.7": ("glm", "glm-4.7"),
     "qwen": ("qwen", "qwen-plus"),
     "通义千问": ("qwen", "qwen-plus"),
@@ -82,6 +88,8 @@ def infer_provider_key(model: str) -> str:
     if alias:
         return alias[0]
 
+    if ("智谱" in model_name or "zhipu" in normalized) and "glm" in normalized:
+        return "zhipu"
     if normalized.startswith("mistral") or normalized.startswith("ministral") or normalized.startswith("pixtral"):
         return "mistral"
     if normalized.startswith("gemini"):
@@ -125,11 +133,16 @@ def normalize_model_name(model: str) -> str:
     if alias:
         return alias[1]
 
+    normalized_input = model.strip().lower()
+    if ("智谱" in model.strip() or "zhipu" in normalized_input) and "glm" in normalized_input:
+        if "glm-4.7" in normalized_input:
+            return "glm-4.7"
+        if "glm-4" in normalized_input:
+            return "glm-4.7"
+        return PROVIDER_DEFAULT_MODELS["zhipu"]
+
     provider_key = infer_provider_key(model)
     normalized = model.strip()
     if normalized.lower() == provider_key:
         return PROVIDER_DEFAULT_MODELS[provider_key]
-
-    if normalized:
-        return model_name
     return PROVIDER_DEFAULT_MODELS[provider_key]
