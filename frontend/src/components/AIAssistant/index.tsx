@@ -582,6 +582,13 @@ const AIAssistant: React.FC = () => {
     setSessions((prev) => sortSessions([session, ...prev.filter((item) => item.id !== session.id)]));
   }, [sortSessions]);
 
+  const replacePendingSession = useCallback((pendingSessionId: string, session: AiChatSession) => {
+    setSessions((prev) => {
+      const next = [session, ...prev.filter((item) => item.id !== pendingSessionId && item.id !== session.id)];
+      return sortSessions(next);
+    });
+  }, [sortSessions]);
+
   const activatePendingSession = useCallback(() => {
     const pendingId = `pending_${Date.now()}`;
     upsertSession({
@@ -739,10 +746,12 @@ const AIAssistant: React.FC = () => {
 
     // 临时会话：发送第一条消息时，先在后端创建真实会话
     if (sessionId.startsWith('pending_')) {
+      const pendingSessionId = sessionId;
       try {
         const created = await createSessionApi();
         skipNextHistoryLoadSessionRef.current = created.id;
-        upsertSession(created);
+        replacePendingSession(pendingSessionId, created);
+        currentSessionIdRef.current = created.id;
         setCurrentSessionId(created.id);
         sessionId = created.id;
       } catch (error: any) {

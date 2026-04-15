@@ -44,7 +44,7 @@ public class AiServiceImpl implements AiService {
 
     @Value("${ai.proxy.domestic.url:http://111.230.105.54:8000}")
     private String proxyDomesticUrl;
-    @Value("${ai.proxy.overseas.url:http://74.122.24.92:8000}")
+    @Value("${ai.proxy.overseas.url:http://103.117.122.213:8000}")
     private String proxyOverseasUrl;
 
     public AiServiceImpl(AiModelService aiModelService,
