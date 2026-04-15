@@ -733,6 +733,11 @@ body {
   display: inline-flex;
   align-items: center;
 }
+
+.ant-pagination {
+  display: flex;
+  align-items: center;
+}
  
 /* 标签 */
 .ant-tag {

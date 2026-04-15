@@ -286,6 +286,7 @@ const AdminStatistics: React.FC = () => {
 
       <Tabs
         defaultActiveKey="error"
+        centered
         items={[
           {
             key: 'error',

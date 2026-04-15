@@ -296,22 +296,6 @@ const UserProfile: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 通过率进度条 */}
-                <div className="mb-6 rounded-2xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>学习进度</span>
-                    <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-                      {learningData.totalSolved} / {learningData.totalSubmit} 提交通过
-                    </span>
-                  </div>
-                  <Progress
-                    percent={learningData.passRate ? Math.round(learningData.passRate * 10) / 10 : 0}
-                    strokeColor={{ '0%': '#1a73e8', '100%': '#34a853' }}
-                    trailColor="#e8eaed"
-                    strokeWidth={12}
-                    className="!mb-0"
-                  />
-                </div>
 
                 {/* 提交趋势图表 */}
                 <div className="grid md:grid-cols-2 gap-6 mb-6">

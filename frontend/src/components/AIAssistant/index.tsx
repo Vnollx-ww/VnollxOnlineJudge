@@ -590,6 +590,16 @@ const AIAssistant: React.FC = () => {
   }, [sortSessions]);
 
   const activatePendingSession = useCallback(() => {
+    const existing = sessions.find((s) => s.isPending);
+    if (existing) {
+      currentSessionIdRef.current = existing.id;
+      setCurrentSessionId(existing.id);
+      setMessages([]);
+      setHasMore(false);
+      setNextCursor(null);
+      setHistoryLoaded(true);
+      return existing.id;
+    }
     const pendingId = `pending_${Date.now()}`;
     upsertSession({
       id: pendingId,
@@ -604,7 +614,7 @@ const AIAssistant: React.FC = () => {
     setNextCursor(null);
     setHistoryLoaded(true);
     return pendingId;
-  }, [upsertSession]);
+  }, [upsertSession, sessions]);
 
   const handleCreateSession = useCallback(() => {
     if (loading) {
