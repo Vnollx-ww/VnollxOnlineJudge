@@ -35,7 +35,7 @@ const AdminRoles: React.FC = () => {
   const [assignPermissionModalVisible, setAssignPermissionModalVisible] = useState(false);
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
   const [permissionForm] = Form.useForm();
-  const [selectedPermissionToAssign, setSelectedPermissionToAssign] = useState<number | null>(null);
+  const [selectedPermissionsToAssign, setSelectedPermissionsToAssign] = useState<number[]>([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -144,19 +144,32 @@ const AdminRoles: React.FC = () => {
   };
 
   const handleAssignPermissionToRole = async () => {
-    if (!selectedRole || !selectedPermissionToAssign) {
+    if (!selectedRole || selectedPermissionsToAssign.length === 0) {
       toast.error('请选择角色和权限');
       return;
     }
     try {
-      const data = await api.post(`/admin/permission/role/${selectedRole.id}/permission/${selectedPermissionToAssign}`) as ApiResponse;
-      if (data.code === 200) {
-        toast.success('分配权限成功');
-        loadRolePermissions(selectedRole.id);
-        setAssignPermissionModalVisible(false);
-        setSelectedPermissionToAssign(null);
+      const results = await Promise.allSettled(
+        selectedPermissionsToAssign.map((permissionId) =>
+          api.post(`/admin/permission/role/${selectedRole.id}/permission/${permissionId}`) as Promise<ApiResponse>
+        )
+      );
+      const successCount = results.filter(
+        (result) => result.status === 'fulfilled' && result.value.code === 200
+      ).length;
+
+      if (successCount === selectedPermissionsToAssign.length) {
+        toast.success(`成功分配 ${successCount} 个权限`);
+      } else if (successCount > 0) {
+        toast.error(`部分分配成功：${successCount}/${selectedPermissionsToAssign.length}`);
       } else {
-        toast.error((data as any).msg || '分配失败');
+        toast.error('分配权限失败');
+      }
+
+      await loadRolePermissions(selectedRole.id);
+      if (successCount > 0) {
+        setAssignPermissionModalVisible(false);
+        setSelectedPermissionsToAssign([]);
       }
     } catch {
       toast.error('分配权限失败');
@@ -387,19 +400,28 @@ const AdminRoles: React.FC = () => {
         centered
         onCancel={() => {
           setAssignPermissionModalVisible(false);
-          setSelectedPermissionToAssign(null);
+          setSelectedPermissionsToAssign([]);
         }}
         okText="分配"
         cancelText="取消"
         okButtonProps={{ style: { backgroundColor: 'var(--gemini-accent)', border: 'none' } }}
       >
-        <div className="py-4">
+        <div className="space-y-3">
+          <div className="flex justify-end gap-2">
+            <Button type="link" size="small" onClick={() => setSelectedPermissionsToAssign(availablePermissions.map((p) => p.id))}>
+              全选
+            </Button>
+            <Button type="link" size="small" onClick={() => setSelectedPermissionsToAssign([])}>
+              清空
+            </Button>
+          </div>
           <Select
+            mode="multiple"
             showSearch
-            placeholder="选择要分配的权限"
+            placeholder="选择要分配的权限（可多选）"
             className="w-full"
-            value={selectedPermissionToAssign}
-            onChange={setSelectedPermissionToAssign}
+            value={selectedPermissionsToAssign}
+            onChange={setSelectedPermissionsToAssign}
             optionFilterProp="children"
           >
             {Object.entries(groupedPermissions).map(([module, perms]) => (

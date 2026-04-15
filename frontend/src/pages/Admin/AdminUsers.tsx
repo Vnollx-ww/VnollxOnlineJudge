@@ -17,8 +17,15 @@ interface User {
   lastLoginTime?: string;
 }
 
+interface Role {
+  id: number;
+  code: string;
+  name: string;
+}
+
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -31,6 +38,21 @@ const AdminUsers: React.FC = () => {
   useEffect(() => {
     loadUsers();
   }, [currentPage, pageSize, keyword]);
+
+  useEffect(() => {
+    loadRoles();
+  }, []);
+
+  const loadRoles = async () => {
+    try {
+      const data = await api.get('/admin/permission/roles') as ApiResponse<Role[]>;
+      if (data.code === 200) {
+        setRoles(data.data || []);
+      }
+    } catch {
+      toast.error('加载角色列表失败');
+    }
+  };
 
   const loadUsers = async () => {
     setLoading(true);
@@ -110,15 +132,18 @@ const AdminUsers: React.FC = () => {
   };
 
   const getIdentityTag = (identity: string) => {
-    const map: Record<string, { text: string; color: string }> = {
-      USER: { text: '普通用户', color: 'blue' },
-      TEACHER: { text: '教师', color: 'green' },
-      ADMIN: { text: '管理员', color: 'orange' },
-      SUPER_ADMIN: { text: '超级管理员', color: 'red' },
+    const role = roles.find((item) => item.code === identity);
+    const item = {
+      text: role?.name || identity,
+      color: role ? 'blue' : 'default',
     };
-    const item = map[identity] || { text: identity, color: 'default' };
     return <Tag color={item.color}>{item.text}</Tag>;
   };
+
+  const identityOptions = roles.map((role) => ({
+    value: role.code,
+    label: role.name,
+  }));
 
   const columns = [
     { title: '用户名', dataIndex: 'name', key: 'name' },
@@ -237,10 +262,9 @@ const AdminUsers: React.FC = () => {
           </Form.Item>
           <Form.Item name="identity" label="身份" rules={[{ required: true, message: '请选择身份' }]}>
             <Select>
-              <Select.Option value="USER">普通用户</Select.Option>
-              <Select.Option value="TEACHER">教师</Select.Option>
-              <Select.Option value="ADMIN">管理员</Select.Option>
-              <Select.Option value="SUPER_ADMIN">超级管理员</Select.Option>
+              {identityOptions.map((option) => (
+                <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
+              ))}
             </Select>
           </Form.Item>
           <Form.Item>
