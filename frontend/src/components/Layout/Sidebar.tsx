@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className="fixed left-0 top-0 bottom-0 flex flex-col z-50 transition-[width] duration-200 ease-out"
+      className="fixed left-0 top-0 bottom-0 flex flex-col z-50 transition-[width] duration-200 ease-out overflow-x-hidden min-w-0"
       style={{
         width: sidebarWidth,
         backgroundColor: 'var(--gemini-surface)',
@@ -140,19 +140,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       {contextHolder}
       {messageContextHolder}
 
-      {/* Header */}
+      {/* Header：品牌名过长时需 min-w-0，否则 truncate 无效、按钮会被挤出侧边栏 */}
       <div
-        className="h-16 flex items-center shrink-0 transition-[padding] duration-200"
+        className="h-16 flex items-center gap-2 min-w-0 shrink-0 transition-[padding] duration-200 overflow-hidden"
         style={{
-          padding: collapsed ? '0 12px' : '0 16px',
-          justifyContent: collapsed ? 'center' : 'space-between',
+          padding: collapsed ? '0 12px' : '0 12px',
+          justifyContent: collapsed ? 'center' : 'flex-start',
           borderBottom: '1px solid var(--gemini-border-light)',
         }}
       >
         <Link
           to="/"
-          className="flex items-center gap-2 group"
-          style={{ minWidth: collapsed ? 'auto' : undefined }}
+          className={`flex items-center gap-2 group min-w-0 ${collapsed ? 'justify-center' : 'flex-1'}`}
         >
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-105"
@@ -162,8 +161,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
           {!collapsed && (
             <span
-              className="text-lg font-semibold tracking-tight truncate"
+              className="text-sm font-semibold tracking-tight truncate min-w-0 block"
               style={{ color: 'var(--gemini-text-primary)' }}
+              title="AI+智能编程辅助平台"
             >
               AI+智能编程辅助平台
             </span>
@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer: 用户区 + 折叠按钮 */}
       <div
-        className="shrink-0 transition-[padding] duration-200"
+        className="shrink-0 min-w-0 transition-[padding] duration-200"
         style={{
           padding: collapsed ? 12 : 16,
           borderTop: '1px solid var(--gemini-border-light)',
@@ -347,7 +347,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border border-[var(--gemini-border-light)]"
+            className="w-full max-w-full mt-3 flex items-center justify-center gap-1.5 min-w-0 py-2.5 px-2 rounded-xl text-xs font-medium transition-all duration-200 border border-[var(--gemini-border-light)]"
             style={{
               backgroundColor: 'var(--gemini-surface)',
               color: 'var(--gemini-text-secondary)',
@@ -367,7 +367,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             ) : (
               <>
                 <PanelLeftClose className="w-4 h-4 shrink-0" />
-                <span>收起侧边栏</span>
+                <span className="truncate">收起侧边栏</span>
               </>
             )}
           </button>
