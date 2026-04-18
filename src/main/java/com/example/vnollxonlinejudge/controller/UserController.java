@@ -126,7 +126,8 @@ public class UserController {
         if (days <= 0 || days > 365) {
             days = 30;
         }
-        return Result.Success(statisticsService.getLearningAnalytics(userId, days), "获取成功");
+        String currentIdentity = UserContextHolder.getCurrentUserIdentity();
+        return Result.Success(statisticsService.getLearningAnalytics(userId, days, userId, currentIdentity), "获取成功");
     }
 
     /**
