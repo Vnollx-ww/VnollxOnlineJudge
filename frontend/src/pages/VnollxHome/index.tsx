@@ -11,7 +11,7 @@ const ZhiCodeHome: React.FC = () => {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
               <Code size={20} className="text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900">智学代码</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900">AI+智能编程辅助平台</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
             <Link to="/problems" className="hover:text-blue-600 transition-colors">题库</Link>
@@ -45,7 +45,7 @@ const ZhiCodeHome: React.FC = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                 </span>
-                智学代码 在线编程平台全新上线
+                AI+智能编程辅助平台全新上线
               </div>
               <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6 tracking-tight text-gray-900">
                 掌握代码 <br />
@@ -54,7 +54,7 @@ const ZhiCodeHome: React.FC = () => {
                 </span>
               </h1>
               <p className="text-lg text-gray-600 mb-8 max-w-xl leading-relaxed">
-                智学代码 提供海量编程题目、实时评测系统和活跃的技术社区。无论你是初学者还是算法大神，这里都是你提升技能的最佳场所。
+                AI+智能编程辅助平台 提供海量编程题目、实时评测系统和活跃的技术社区。无论你是初学者还是算法大神，这里都是你提升技能的最佳场所。
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link 
@@ -170,7 +170,7 @@ const ZhiCodeHome: React.FC = () => {
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">为什么选择 智学代码？</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">为什么选择 AI+智能编程辅助平台？</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               我们致力于提供最优质的编程学习体验，帮助你快速掌握算法与数据结构。
             </p>
@@ -216,7 +216,7 @@ const ZhiCodeHome: React.FC = () => {
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl font-bold text-white mb-6">准备好迎接挑战了吗？</h2>
           <p className="text-blue-100 text-lg mb-10 max-w-2xl mx-auto">
-            加入 智学代码，开启你的编程进阶之旅。现在注册，即可免费获取《算法面试通关手册》。
+            加入 AI+智能编程辅助平台，开启你的编程进阶之旅。现在注册，即可免费获取《算法面试通关手册》。
           </p>
           <Link 
             to="/register"
@@ -235,10 +235,10 @@ const ZhiCodeHome: React.FC = () => {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Code size={20} className="text-white" />
               </div>
-              <span className="text-xl font-bold text-white">智学代码</span>
+              <span className="text-xl font-bold text-white">AI+智能编程辅助平台</span>
             </div>
             <p className="text-sm leading-relaxed">
-              智学代码 是全球领先的在线编程学习平台，致力于帮助开发者提升技术能力，通过算法改变世界。
+              AI+智能编程辅助平台 致力于帮助开发者提升技术能力，通过智能编程辅助改变世界。
             </p>
           </div>
           <div>
@@ -274,7 +274,7 @@ const ZhiCodeHome: React.FC = () => {
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-gray-800 text-center text-sm">
-          <p>&copy; 2025 智学代码. All rights reserved.</p>
+          <p>&copy; 2025 AI+智能编程辅助平台. All rights reserved.</p>
         </div>
       </footer>
     </div>

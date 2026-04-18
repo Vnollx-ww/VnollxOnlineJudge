@@ -8,6 +8,7 @@ import com.example.vnollxonlinejudge.model.vo.statistics.StudentClassBriefVO;
 import com.example.vnollxonlinejudge.model.vo.statistics.TeachingProgressVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 统计数据服务：常见错误模式、平台数据分析、学习数据分析、教学进度跟踪
@@ -27,23 +28,27 @@ public interface StatisticsService {
 
     /**
      * 学习数据分析：某用户的通过数、提交数、通过率、近期每日提交、已通过题目列表
-     * @param userId 用户ID，为空则用当前登录用户
-     * @param days 近期天数
+     * 教师只能查看自己班级内学生的数据
      */
-    LearningAnalyticsVO getLearningAnalytics(Long userId, int days);
+    LearningAnalyticsVO getLearningAnalytics(Long userId, int days, Long currentUserId, String currentIdentity);
 
     /**
      * 教学进度跟踪：所有练习（或指定练习）下各题目的通过人数
-     * @param practiceId 练习ID，为空则返回所有练习的进度
-     * @param dimension all=全站；by_class=按练习可见班级拆分；class=仅某班级学生
-     * @param filterClassId dimension=class 时指定班级 ID
+     * 教师只能看到自己创建的练习、自己班级的统计
      */
-    List<TeachingProgressVO> getTeachingProgress(Long practiceId, String dimension, Long filterClassId);
+    List<TeachingProgressVO> getTeachingProgress(Long practiceId, String dimension, Long filterClassId,
+                                                  Long currentUserId, String currentIdentity);
 
     /**
-     * 教学进度筛选「指定班级」时下拉数据（仅需 system:monitor）
+     * 教学进度筛选「指定班级」时下拉数据
+     * 教师只能看到自己的班级
      */
-    List<StudentClassBriefVO> listStudentClassesForStats();
+    List<StudentClassBriefVO> listStudentClassesForStats(Long currentUserId, String currentIdentity);
+
+    /**
+     * 获取当前用户可查看的学生列表（教师仅返回自己班级内的学生，管理员返回所有学生）
+     */
+    List<Map<String, Object>> listAccessibleStudents(Long currentUserId, String currentIdentity);
 
     /**
      * AI 学习建议上下文：聚合用户的做题、错题、练习进度数据，供 AI 生成个性化学习建议

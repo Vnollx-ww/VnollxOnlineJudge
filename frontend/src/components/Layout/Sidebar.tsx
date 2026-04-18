@@ -165,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               className="text-lg font-semibold tracking-tight truncate"
               style={{ color: 'var(--gemini-text-primary)' }}
             >
-              智学代码
+              AI+智能编程辅助平台
             </span>
           )}
         </Link>

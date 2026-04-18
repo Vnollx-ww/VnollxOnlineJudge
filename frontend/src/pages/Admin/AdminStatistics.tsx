@@ -184,7 +184,7 @@ const AdminStatistics: React.FC = () => {
   const loadUserOptions = async () => {
     setLoadingUserOptions(true);
     try {
-      const res = await api.get('/admin/user/list', { params: { pageNum: 1, pageSize: 500 } }) as ApiResponse<{ id: number; name: string }[]>;
+      const res = await api.get('/admin/statistics/accessible-students') as ApiResponse<{ id: number; name: string }[]>;
       if (res.code === 200 && res.data) {
         setUserOptions(res.data);
       } else {

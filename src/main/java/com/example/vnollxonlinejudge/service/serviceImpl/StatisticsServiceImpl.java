@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.vnollxonlinejudge.mapper.StudentClassMapper;
 import com.example.vnollxonlinejudge.mapper.StudentClassRelationMapper;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
+import com.example.vnollxonlinejudge.mapper.UserMapper;
 import com.example.vnollxonlinejudge.mapper.UserSolvedProblemMapper;
+import com.example.vnollxonlinejudge.model.base.RoleCode;
 import com.example.vnollxonlinejudge.model.entity.StudentClass;
 import com.example.vnollxonlinejudge.model.entity.StudentClassRelation;
 import com.example.vnollxonlinejudge.model.entity.Practice;
@@ -42,9 +44,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class StatisticsServiceImpl implements StatisticsService {
@@ -60,6 +67,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final PracticeProblemService practiceProblemService;
     private final StudentClassRelationMapper studentClassRelationMapper;
     private final StudentClassMapper studentClassMapper;
+    private final UserMapper userMapper;
 
     @Autowired
     public StatisticsServiceImpl(SubmissionMapper submissionMapper,
@@ -72,7 +80,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                                  PracticeService practiceService,
                                  PracticeProblemService practiceProblemService,
                                  StudentClassRelationMapper studentClassRelationMapper,
-                                 StudentClassMapper studentClassMapper) {
+                                 StudentClassMapper studentClassMapper,
+                                 UserMapper userMapper) {
         this.submissionMapper = submissionMapper;
         this.userSolvedProblemMapper = userSolvedProblemMapper;
         this.submissionService = submissionService;
@@ -84,6 +93,7 @@ public class StatisticsServiceImpl implements StatisticsService {
         this.practiceProblemService = practiceProblemService;
         this.studentClassRelationMapper = studentClassRelationMapper;
         this.studentClassMapper = studentClassMapper;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -121,13 +131,19 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public LearningAnalyticsVO getLearningAnalytics(Long userId, int days) {
+    public LearningAnalyticsVO getLearningAnalytics(Long userId, int days, Long currentUserId, String currentIdentity) {
         if (userId == null) {
             throw new BusinessException("请指定用户或登录后查看");
         }
         User user = userService.getUserEntityById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");
+        }
+        if (RoleCode.TEACHER.equals(currentIdentity) && !Objects.equals(userId, currentUserId)) {
+            Set<Long> myStudentIds = listTeacherAllStudentIds(currentUserId);
+            if (!myStudentIds.contains(userId)) {
+                throw new BusinessException("该学生不在您的班级中，无权查看");
+            }
         }
         long totalSolved = 0;
         long totalSubmit = user.getSubmitCount() != null ? user.getSubmitCount().longValue() : 0;
@@ -175,10 +191,20 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public List<TeachingProgressVO> getTeachingProgress(Long practiceId, String dimension, Long filterClassId) {
+    public List<TeachingProgressVO> getTeachingProgress(Long practiceId, String dimension, Long filterClassId,
+                                                         Long currentUserId, String currentIdentity) {
+        boolean isTeacher = RoleCode.TEACHER.equals(currentIdentity);
         String dim = normalizeTeachingDimension(dimension);
         if ("class".equals(dim) && (filterClassId == null || filterClassId <= 0)) {
             dim = "all";
+        }
+
+        Set<Long> teacherClassIds = isTeacher ? listTeacherClassIds(currentUserId) : null;
+
+        if (isTeacher && "class".equals(dim) && filterClassId != null) {
+            if (teacherClassIds == null || !teacherClassIds.contains(filterClassId)) {
+                throw new BusinessException("无权查看该班级的数据");
+            }
         }
 
         List<TeachingProgressVO> result = new ArrayList<>();
@@ -189,12 +215,24 @@ public class StatisticsServiceImpl implements StatisticsService {
         } else {
             practices = practiceService.getPracticeList(1, 500, null);
         }
+
+        if (isTeacher) {
+            practices = practices.stream()
+                    .filter(p -> Objects.equals(p.getCreatorId(), currentUserId))
+                    .toList();
+        }
+
         for (com.example.vnollxonlinejudge.model.vo.practice.PracticeVo p : practices) {
             List<PracticeProblem> problemLinks = practiceProblemService.getProblemList(p.getId());
             String teacherName = resolvePracticeCreatorName(p.getCreatorId());
 
             if ("by_class".equals(dim)) {
                 List<Long> visibleIds = p.getVisibleClassIds() != null ? p.getVisibleClassIds() : Collections.emptyList();
+                if (isTeacher) {
+                    visibleIds = visibleIds.stream()
+                            .filter(cid -> teacherClassIds != null && teacherClassIds.contains(cid))
+                            .toList();
+                }
                 Map<Long, String> classNameMap = loadClassNameMap(visibleIds);
                 List<TeachingProgressClassSliceVO> slices = new ArrayList<>();
                 for (Long cid : visibleIds) {
@@ -233,7 +271,13 @@ public class StatisticsServiceImpl implements StatisticsService {
                         .classSlices(null)
                         .build());
             } else {
-                List<PracticeProgressItemVO> progressList = buildPracticeProgressGlobal(problemLinks);
+                List<PracticeProgressItemVO> progressList;
+                if (isTeacher) {
+                    Set<Long> myStudentIds = listTeacherAllStudentIds(currentUserId);
+                    progressList = buildPracticeProgressForUserScope(problemLinks, new ArrayList<>(myStudentIds));
+                } else {
+                    progressList = buildPracticeProgressGlobal(problemLinks);
+                }
                 result.add(TeachingProgressVO.builder()
                         .practiceId(p.getId())
                         .practiceTitle(p.getTitle())
@@ -251,8 +295,11 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public List<StudentClassBriefVO> listStudentClassesForStats() {
+    public List<StudentClassBriefVO> listStudentClassesForStats(Long currentUserId, String currentIdentity) {
         QueryWrapper<StudentClass> wrapper = new QueryWrapper<>();
+        if (RoleCode.TEACHER.equals(currentIdentity)) {
+            wrapper.eq("teacher_id", currentUserId);
+        }
         wrapper.orderByDesc("create_time");
         List<StudentClass> list = studentClassMapper.selectList(wrapper);
         if (list == null || list.isEmpty()) {
@@ -263,6 +310,58 @@ public class StatisticsServiceImpl implements StatisticsService {
             out.add(new StudentClassBriefVO(c.getId(), c.getClassName()));
         }
         return out;
+    }
+
+    @Override
+    public List<Map<String, Object>> listAccessibleStudents(Long currentUserId, String currentIdentity) {
+        if (RoleCode.TEACHER.equals(currentIdentity)) {
+            Set<Long> studentIds = listTeacherAllStudentIds(currentUserId);
+            if (studentIds.isEmpty()) {
+                return new ArrayList<>();
+            }
+            QueryWrapper<User> wrapper = new QueryWrapper<>();
+            wrapper.in("id", studentIds).orderByAsc("name");
+            List<User> users = userMapper.selectList(wrapper);
+            return users.stream().map(u -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", u.getId());
+                m.put("name", u.getName());
+                return m;
+            }).toList();
+        }
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq("identity", RoleCode.USER).orderByAsc("name");
+        List<User> users = userMapper.selectList(wrapper);
+        return users.stream().map(u -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", u.getId());
+            m.put("name", u.getName());
+            return m;
+        }).toList();
+    }
+
+    private Set<Long> listTeacherClassIds(Long teacherId) {
+        QueryWrapper<StudentClass> w = new QueryWrapper<>();
+        w.eq("teacher_id", teacherId);
+        List<StudentClass> classes = studentClassMapper.selectList(w);
+        if (classes == null || classes.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return classes.stream().map(StudentClass::getId).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private Set<Long> listTeacherAllStudentIds(Long teacherId) {
+        Set<Long> classIds = listTeacherClassIds(teacherId);
+        if (classIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        QueryWrapper<StudentClassRelation> w = new QueryWrapper<>();
+        w.in("class_id", classIds);
+        List<StudentClassRelation> rows = studentClassRelationMapper.selectList(w);
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return rows.stream().map(StudentClassRelation::getStudentId).filter(Objects::nonNull).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private static String normalizeTeachingDimension(String dimension) {

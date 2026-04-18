@@ -199,7 +199,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
             className="text-xl font-semibold tracking-tight hidden sm:block"
             style={{ color: 'var(--gemini-text-primary)' }}
           >
-            智学代码
+            AI+智能编程辅助平台
           </span>
         </Link>
 

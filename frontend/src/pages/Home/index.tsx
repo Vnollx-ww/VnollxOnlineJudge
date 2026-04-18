@@ -152,7 +152,7 @@ const Home: React.FC = () => {
               }}
             >
               <Sparkles className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
-              智学代码 OJ 2.0 全新上线
+              AI+智能编程辅助平台 2.0 全新上线
             </div>
 
             {/* Title */}
@@ -160,7 +160,7 @@ const Home: React.FC = () => {
               className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight"
               style={{ color: 'var(--gemini-text-primary)' }}
             >
-              在线算法训练平台
+              AI+智能编程辅助平台
               <br />
               <span 
                 className="bg-clip-text text-transparent"
@@ -269,7 +269,7 @@ const Home: React.FC = () => {
       <section className="py-12">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--gemini-text-primary)' }}>
-            为什么选择 智学代码
+            为什么选择 AI+智能编程辅助平台
           </h2>
           <p className="max-w-2xl mx-auto" style={{ color: 'var(--gemini-text-secondary)' }}>
             我们致力于提供最优质的刷题体验，助你成为算法大师
@@ -319,7 +319,7 @@ const Home: React.FC = () => {
               准备好接受挑战了吗？
             </h2>
             <p className="text-white/80 text-lg mb-8">
-              加入 智学代码，与数千名开发者一起提升编程能力。
+              加入 AI+智能编程辅助平台，与数千名开发者一起提升编程能力。
             </p>
             <button
               onClick={handleRegister}

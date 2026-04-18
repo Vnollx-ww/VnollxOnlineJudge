@@ -219,7 +219,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               className="flex flex-wrap items-center justify-center gap-4 text-sm"
               style={{ color: 'var(--gemini-text-secondary)' }}
             >
-              <span>© 2026 智学代码</span>
+              <span>© 2026 AI+智能编程辅助平台</span>
               <button
                 onClick={() => setPrivacyVisible(true)}
                 className="transition-colors duration-200 hover:opacity-80"
@@ -258,7 +258,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <div className="py-4 space-y-6" style={{ color: 'var(--gemini-text-primary)' }}>
           <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
-            欢迎使用智学代码平台（以下简称“本平台”）。我们尊重并保护所有使用本平台用户的个人隐私权。为了给您提供更准确、更优质的服务，本平台会按照本隐私政策的规定使用和披露您的个人信息。
+            欢迎使用AI+智能编程辅助平台平台（以下简称“本平台”）。我们尊重并保护所有使用本平台用户的个人隐私权。为了给您提供更准确、更优质的服务，本平台会按照本隐私政策的规定使用和披露您的个人信息。
           </Paragraph>
 
           <div>
@@ -306,7 +306,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <div className="py-4 space-y-6" style={{ color: 'var(--gemini-text-primary)' }}>
           <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
-            欢迎使用智学代码平台。使用本平台服务即表示您同意本服务条款的全部内容。
+            欢迎使用AI+智能编程辅助平台。使用本平台服务即表示您同意本服务条款的全部内容。
           </Paragraph>
 
           <div>
@@ -346,7 +346,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       >
         <div className="py-4 space-y-6" style={{ color: 'var(--gemini-text-primary)' }}>
           <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
-            感谢您使用智学代码平台。如果您有任何问题、建议或反馈，请通过以下方式与我们联系：
+            感谢您使用AI+智能编程辅助平台。如果您有任何问题、建议或反馈，请通过以下方式与我们联系：
           </Paragraph>
 
           <div>
