@@ -3,6 +3,7 @@ package com.example.vnollxonlinejudge.controller;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.dto.competition.ConfirmPasswordDTO;
 import com.example.vnollxonlinejudge.model.dto.competition.GetCompetitionStatusDTO;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
@@ -81,6 +82,11 @@ public class CompetitionController {
 
         return Result.Success(competitionService.getUserList(Long.parseLong(id))
                 ,"获取比赛用户列表成功");
+    }
+    @GetMapping("/ranklist-detail")
+    public Result<CompetitionRanklistVo> getRanklist(@RequestParam String id){
+        return Result.Success(competitionService.getRanklist(Long.parseLong(id))
+                ,"获取比赛排行榜成功");
     }
     @PostMapping("/confirm")
     public Result<Void> confirmPassword(@RequestBody ConfirmPasswordDTO req){

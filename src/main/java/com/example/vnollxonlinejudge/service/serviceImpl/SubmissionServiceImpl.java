@@ -122,6 +122,9 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             };
             Map<Long, ProblemVo> problemMap = JSON.parseObject(problemsJson, typeRef);
             problem = problemMap.get(pid);
+            if (problem == null) {
+                problem = problemService.getProblemInfo(pid,0L,null);
+            }
         }
         //获取题目信息！！！！
         boolean ok=problemService.isSolved(pid,uid,cid);

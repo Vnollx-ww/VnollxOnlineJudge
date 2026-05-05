@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.service;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 
@@ -16,6 +17,7 @@ public interface CompetitionService {
 
     List<ProblemVo> getProblemList(Long cid);
     List<UserVo> getUserList(Long cid);
+    CompetitionRanklistVo getRanklist(Long cid);
     void judgeIsOpenById(String now, Long id);
     void judgeIsEndById(String now,Long id);
     void deleteCompetition(Long id);

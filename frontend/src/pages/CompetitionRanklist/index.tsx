@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Typography,
-  Table,
-  Tag,
   Space,
   Button,
   Modal,
   Input,
   Spin,
   Empty,
-  Avatar,
 } from 'antd';
 import toast from 'react-hot-toast';
 import {
@@ -37,17 +34,53 @@ interface User {
   name: string;
   passCount: number;
   penaltyTime: number;
+  problems?: ProblemResult[];
 }
+
+interface Problem {
+  id: number;
+  title: string;
+  label?: string;
+  passCount?: number;
+  submitCount?: number;
+}
+
+interface ProblemResult {
+  problemId: number;
+  solved: boolean;
+  firstSolve: boolean;
+  wrongCount: number;
+  solveMinutes?: number;
+  solveTime?: string;
+}
+
+const balloonColors = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#38bdf8',
+  '#2563eb',
+  '#a855f7',
+  '#dc2626',
+  '#92400e',
+  '#0f766e',
+  '#db2777',
+  '#0891b2',
+  '#4c0519',
+];
 
 const CompetitionRanklist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordVerified, setPasswordVerified] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -69,6 +102,13 @@ const CompetitionRanklist: React.FC = () => {
       loadRanklist();
     }
   }, [passwordVerified, competition]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadCompetition = async () => {
     try {
@@ -130,17 +170,12 @@ const CompetitionRanklist: React.FC = () => {
   const loadRanklist = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/competition/list-user', {
+      const data = await api.get('/competition/ranklist-detail', {
         params: { id: id },
       });
       if (data.code === 200) {
-        const sorted = (data.data || []).sort((a: User, b: User) => {
-          if (a.passCount !== b.passCount) {
-            return b.passCount - a.passCount;
-          }
-          return (a.penaltyTime || 0) - (b.penaltyTime || 0);
-        });
-        setUsers(sorted);
+        setProblems(data.data?.problems || []);
+        setUsers(data.data?.users || []);
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -162,55 +197,52 @@ const CompetitionRanklist: React.FC = () => {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const formatCompetitionTime = (timeStr: string) => {
-    if (!timeStr) return '-';
-    return new Date(timeStr).toLocaleString('zh-CN');
+  const formatBoardTime = (seconds: number) => {
+    if (!seconds) return '0';
+    return String(seconds);
   };
 
-  const columns = [
-    {
-      title: '排名',
-      key: 'rank',
-      width: 80,
-      render: (_: any, __: any, index: number) => (
-        <span className="font-semibold text-lg" style={{ color: 'var(--gemini-text-primary)' }}>{index + 1}</span>
-      ),
-    },
-    {
-      title: '用户',
-      key: 'user',
-      render: (_: any, record: User) => (
-        <div className="flex items-center gap-3">
-          <Avatar style={{ background: 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)' }}>
-            {record.name?.charAt(0)?.toUpperCase() || 'U'}
-          </Avatar>
-          <div className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>{record.name}</div>
-        </div>
-      ),
-    },
-    {
-      title: '通过数',
-      dataIndex: 'passCount',
-      key: 'passCount',
-      width: 120,
-      align: 'center' as const,
-      render: (count: number) => (
-        <Tag color="success" className="text-sm px-3 py-1 !rounded-full">
-          {count || 0}
-        </Tag>
-      ),
-    },
-    {
-      title: '罚时',
-      dataIndex: 'penaltyTime',
-      key: 'penaltyTime',
-      width: 150,
-      align: 'center' as const,
-      render: (time: number) => (
-        <Text className="font-mono" style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(time || 0)}</Text>
-      ),
-    },
-  ];
+  const formatCountdown = () => {
+    if (!competition?.endTime) return '00:00:00';
+    const end = new Date(competition.endTime).getTime();
+    if (Number.isNaN(end) || end <= now) return '00:00:00';
+    return formatTime(Math.floor((end - now) / 1000));
+  };
+
+  const problemHeaders = useMemo(() => problems.map((problem, index) => ({
+    ...problem,
+    label: problem.label || String.fromCharCode(65 + index),
+    color: balloonColors[index % balloonColors.length],
+    stat: `${problem.passCount || 0}/${problem.submitCount || 0}`,
+  })), [problems]);
+
+  const getProblemCellClassName = (result?: ProblemResult) => {
+    const baseClassName = 'relative whitespace-nowrap px-1.5 py-3 text-center text-sm';
+    if (!result) return `${baseClassName} bg-white`;
+    if (result.solved) {
+      return `${baseClassName} ${result.firstSolve ? 'bg-[#93d093]' : 'bg-[#c8e6c9]'} text-[#333]`;
+    }
+    if ((result.wrongCount || 0) > 0) {
+      return `${baseClassName} bg-[#ff9999]`;
+    }
+    return `${baseClassName} bg-white`;
+  };
+
+  const renderProblemCell = (result?: ProblemResult) => {
+    if (!result) return null;
+    if (result.solved) {
+      return (
+        <>
+          <span className="block text-base font-semibold leading-[1.3] tracking-[-0.02em]">{result.solveTime}</span>
+          <span className="absolute right-2 top-[5px] text-[11px] font-bold opacity-90">+{result.wrongCount || 0}</span>
+        </>
+      );
+    }
+    if ((result.wrongCount || 0) > 0) {
+      return <span className="text-base font-bold text-[#b91c1c]">-{result.wrongCount}</span>;
+    }
+    return null;
+  };
 
   if (loading && !competition) {
     return (
@@ -229,8 +261,7 @@ const CompetitionRanklist: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      {/* 导航栏 - Gemini 风格 */}
+    <div className="min-h-screen bg-[#fcfcfc] text-[#333]">
       <div 
         className="sticky top-0 z-10"
         style={{ 
@@ -257,37 +288,84 @@ const CompetitionRanklist: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* 比赛基本信息 - Gemini 风格 */}
-        <div className="gemini-card mb-6">
-          <Title level={2} className="!mb-4" style={{ color: 'var(--gemini-text-primary)' }}>{competition.title}</Title>
-          <Space>
-            <Text strong style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</Text>
-            <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatCompetitionTime(competition.beginTime)}</Text>
-            <Text strong className="ml-6" style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</Text>
-            <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatCompetitionTime(competition.endTime)}</Text>
-          </Space>
-        </div>
-
-        {/* 排行榜 - Gemini 风格 */}
+      <div className="mx-auto w-full max-w-[1650px] px-5 py-6">
         {passwordVerified ? (
-          <div className="gemini-card">
-            <div className="flex items-center gap-2 mb-4">
-              <TrophyOutlined className="text-yellow-500" />
-              <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>比赛排行榜</span>
+          <>
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center">
+                <svg viewBox="0 0 100 100" className="h-14 w-14">
+                  <circle cx="35" cy="35" r="18" fill="none" stroke="#e11d48" strokeWidth="5" />
+                  <circle cx="65" cy="35" r="18" fill="none" stroke="#2563eb" strokeWidth="5" />
+                  <circle cx="35" cy="65" r="18" fill="none" stroke="#f59e0b" strokeWidth="5" />
+                  <circle cx="65" cy="65" r="18" fill="none" stroke="#16a34a" strokeWidth="5" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1 text-center">
+                <Title level={1} className="!mb-2 !text-3xl !font-bold !tracking-[0.25em] !text-gray-800">
+                  {competition.title}
+                </Title>
+              </div>
+              <div className="shrink-0 rounded border-4 border-inset border-[#333] bg-black px-3 py-1 font-mono text-[2.8rem] leading-none text-[#00ff00] shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                {formatCountdown()}
+              </div>
             </div>
-            {users.length === 0 ? (
-              <Empty description="暂无排名数据" />
+
+            {loading ? (
+              <div className="flex items-center justify-center rounded-lg bg-white py-16">
+                <Spin size="large" tip="榜单加载中..." />
+              </div>
+            ) : users.length === 0 ? (
+              <div className="rounded-lg bg-white py-16">
+                <Empty description="暂无排名数据" />
+              </div>
             ) : (
-              <Table
-                columns={columns}
-                dataSource={users}
-                loading={loading}
-                rowKey="id"
-                pagination={false}
-              />
+              <div className="h-[calc(100vh-180px)] overflow-auto">
+                <table className="w-max table-fixed border-separate border-spacing-[1px]">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 z-20 w-[55px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">排名</th>
+                      <th className="sticky left-[55px] z-20 w-[300px] bg-white py-2.5 pl-5 text-left text-[13px] font-normal text-[#777]">队伍</th>
+                      <th className="w-20 bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">过题数</th>
+                      <th className="w-20 bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">总用时</th>
+                      {problemHeaders.map((problem) => (
+                        <th key={problem.id} className="w-[85px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <svg className="h-[30px] w-[18px]" viewBox="0 0 20 34">
+                              <path fill={problem.color} d="M10 0 C4.5 0 0 4.5 0 10 C0 15.5 4.5 22 10 24 C15.5 22 20 15.5 20 10 C20 4.5 15.5 0 10 0" />
+                              <path fill={problem.color} d="M8 23 L12 23 L10 27 Z" />
+                              <path d="M10 27 C8.5 29 11.5 31 10 34" fill="none" stroke="#777" strokeWidth="1" strokeLinecap="round" />
+                            </svg>
+                            <div className="flex flex-col items-start leading-tight">
+                              <span className="text-base font-bold text-gray-700">{problem.label}</span>
+                              <span className="block text-[11px] text-[#999]">{problem.stat}</span>
+                            </div>
+                          </div>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((user, index) => (
+                      <tr key={user.id || user.name}>
+                        <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-1.5 py-3 text-center text-sm font-bold text-gray-500">{index + 1}</td>
+                        <td className="sticky left-[55px] z-10 w-[300px] truncate whitespace-nowrap bg-white py-3 pl-5 pr-1.5 text-left text-sm font-medium text-[#444]">{user.name}</td>
+                        <td className="whitespace-nowrap bg-white px-1.5 py-3 text-center text-sm font-bold">{user.passCount || 0}</td>
+                        <td className="whitespace-nowrap bg-white px-1.5 py-3 text-center text-sm text-gray-500">{formatBoardTime(user.penaltyTime || 0)}</td>
+                        {problemHeaders.map((problem, problemIndex) => {
+                          const result = user.problems?.[problemIndex];
+                          return (
+                            <td key={`${user.id || user.name}-${problem.id}`} className={getProblemCellClassName(result)}>
+                              {renderProblemCell(result)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
-          </div>
+          </>
         ) : (
           <div className="gemini-card text-center py-12">
             <Text style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看排行榜</Text>
@@ -295,7 +373,6 @@ const CompetitionRanklist: React.FC = () => {
         )}
       </div>
 
-      {/* 密码验证Modal */}
       <Modal
         title={
           <Space>

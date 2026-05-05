@@ -186,26 +186,11 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 problem=this.getOne(problemQueryWrapper);
             }
         } else {
-            String cacheKey = "competition:" + cid + ":problems";
-            String problemsJson = redisService.getValueByKey(cacheKey);
-            if (problemsJson != null) {
-                Map<Long, Problem> problemMap = JSON.parseObject(problemsJson,
-                        new TypeReference<>() {
-                        });
-                problem = problemMap.get(pid);
-                if (problem==null) {
-                    problem = getById(pid);
-                    problemMap.put(pid, problem);
-                    Long ttl = redisService.getTTL(cacheKey); // 秒
-                    redisService.setKey(cacheKey, JSON.toJSONString(problemMap), ttl);
-                }
-            } else {
-                if (pid!=null&&pid!=0) problem = getById(pid);
-                else{
-                    QueryWrapper<Problem> problemQueryWrapper=new QueryWrapper<>();
-                    problemQueryWrapper.like("title",name);
-                    problem=this.getOne(problemQueryWrapper);
-                }
+            if (pid!=null&&pid!=0) problem = getById(pid);
+            else{
+                QueryWrapper<Problem> problemQueryWrapper=new QueryWrapper<>();
+                problemQueryWrapper.like("title",name);
+                problem=this.getOne(problemQueryWrapper);
             }
         }
 

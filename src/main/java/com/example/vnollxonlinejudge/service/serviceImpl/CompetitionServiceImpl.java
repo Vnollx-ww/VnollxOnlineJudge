@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
@@ -39,6 +40,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     private final RedisService redisService;
     private final UserSolvedProblemService userSolvedProblemService;
     private final SubmissionService submissionService;
+    private final SubmissionMapper submissionMapper;
 
     @Autowired
     public CompetitionServiceImpl(
@@ -47,7 +49,8 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             ProblemService problemService,
             RedisService redisService,
             UserSolvedProblemService userSolvedProblemService,
-            SubmissionService submissionService
+            SubmissionService submissionService,
+            SubmissionMapper submissionMapper
     ) {
         this.competitionUserService=competitionUserService;
         this.competitionProblemService=competitionProblemService;
@@ -55,6 +58,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         this.redisService=redisService;
         this.userSolvedProblemService=userSolvedProblemService;
         this.submissionService=submissionService;
+        this.submissionMapper=submissionMapper;
     }
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d"; // cid:pid
@@ -148,8 +152,8 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             String timeOutKey = String.format(TIME_OUT_KEY, cid);
             List<ProblemVo> problems = new ArrayList<>();
             if (problemsJson != null&&redisService.getTtl(cacheKey)>600) {
-                TypeReference<Map<Integer, ProblemVo>> typeRef = new TypeReference<Map<Integer, ProblemVo>>() {};
-                Map<Integer, ProblemVo> problemMap = JSON.parseObject(problemsJson, typeRef);
+                TypeReference<Map<Long, ProblemVo>> typeRef = new TypeReference<Map<Long, ProblemVo>>() {};
+                Map<Long, ProblemVo> problemMap = JSON.parseObject(problemsJson, typeRef);
                 // 设置提交和通过次数
                 for (ProblemVo p : problemMap.values()) {
                     String passKey = String.format(PROBLEM_PASS_KEY, cid, p.getId());
@@ -244,6 +248,185 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             return users.stream()
                     .map(UserVo::new)
                     .collect(Collectors.toList());
+    }
+
+    @Override
+    public CompetitionRanklistVo getRanklist(Long cid) {
+        Competition competition = this.baseMapper.selectById(cid);
+        if (competition == null) {
+            throw new BusinessException("比赛不存在");
+        }
+
+        List<ProblemVo> problemList = getRanklistProblemList(cid);
+        List<UserVo> userList = getUserList(cid).stream()
+                .sorted((a, b) -> {
+                    int passCompare = Integer.compare(
+                            b.getPassCount() == null ? 0 : b.getPassCount(),
+                            a.getPassCount() == null ? 0 : a.getPassCount()
+                    );
+                    if (passCompare != 0) {
+                        return passCompare;
+                    }
+                    return Integer.compare(
+                            a.getPenaltyTime() == null ? 0 : a.getPenaltyTime(),
+                            b.getPenaltyTime() == null ? 0 : b.getPenaltyTime()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        CompetitionRanklistVo ranklist = new CompetitionRanklistVo();
+        Map<Long, Integer> problemOrderMap = new HashMap<>();
+        for (int i = 0; i < problemList.size(); i++) {
+            ProblemVo problem = problemList.get(i);
+            CompetitionRanklistVo.ProblemRankVo problemRankVo = new CompetitionRanklistVo.ProblemRankVo();
+            problemRankVo.setId(problem.getId());
+            problemRankVo.setTitle(problem.getTitle());
+            problemRankVo.setLabel(String.valueOf((char) ('A' + i)));
+            problemRankVo.setPassCount(problem.getPassCount() == null ? 0 : problem.getPassCount());
+            problemRankVo.setSubmitCount(problem.getSubmitCount() == null ? 0 : problem.getSubmitCount());
+            ranklist.getProblems().add(problemRankVo);
+            problemOrderMap.put(problem.getId(), i);
+        }
+
+        Map<String, CompetitionRanklistVo.UserRankVo> userMap = new LinkedHashMap<>();
+        for (UserVo user : userList) {
+            CompetitionRanklistVo.UserRankVo userRankVo = new CompetitionRanklistVo.UserRankVo();
+            userRankVo.setId(user.getId());
+            userRankVo.setName(user.getName());
+            userRankVo.setPassCount(user.getPassCount() == null ? 0 : user.getPassCount());
+            userRankVo.setPenaltyTime(user.getPenaltyTime() == null ? 0 : user.getPenaltyTime());
+            for (ProblemVo problem : problemList) {
+                CompetitionRanklistVo.ProblemResultVo resultVo = new CompetitionRanklistVo.ProblemResultVo();
+                resultVo.setProblemId(problem.getId());
+                userRankVo.getProblems().add(resultVo);
+            }
+            userMap.put(user.getName(), userRankVo);
+        }
+
+        QueryWrapper<Submission> submissionWrapper = new QueryWrapper<>();
+        submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("id");
+        List<Submission> submissions = submissionMapper.selectList(submissionWrapper);
+        Map<Long, Submission> firstAcceptedMap = new HashMap<>();
+
+        for (Submission submission : submissions) {
+            if (!problemOrderMap.containsKey(submission.getPid())) {
+                continue;
+            }
+            CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(submission.getUserName());
+            if (userRankVo == null) {
+                userRankVo = new CompetitionRanklistVo.UserRankVo();
+                userRankVo.setId(submission.getUid());
+                userRankVo.setName(submission.getUserName());
+                userRankVo.setPassCount(0);
+                userRankVo.setPenaltyTime(0);
+                for (ProblemVo problem : problemList) {
+                    CompetitionRanklistVo.ProblemResultVo resultVo = new CompetitionRanklistVo.ProblemResultVo();
+                    resultVo.setProblemId(problem.getId());
+                    userRankVo.getProblems().add(resultVo);
+                }
+                userMap.put(submission.getUserName(), userRankVo);
+            }
+
+            CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(submission.getPid()));
+            if (Boolean.TRUE.equals(resultVo.getSolved())) {
+                continue;
+            }
+            if ("答案正确".equals(submission.getStatus())) {
+                int solveMinutes = calculateSolveMinutes(competition.getBeginTime(), submission.getCreateTime());
+                resultVo.setSolved(true);
+                resultVo.setSolveMinutes(solveMinutes);
+                resultVo.setSolveTime(formatSolveTime(solveMinutes));
+                firstAcceptedMap.putIfAbsent(submission.getPid(), submission);
+            } else if (isFinishedWrongSubmission(submission.getStatus())) {
+                resultVo.setWrongCount((resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) + 1);
+            }
+        }
+
+        for (Submission firstAccepted : firstAcceptedMap.values()) {
+            CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(firstAccepted.getUserName());
+            if (userRankVo == null || !problemOrderMap.containsKey(firstAccepted.getPid())) {
+                continue;
+            }
+            CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(firstAccepted.getPid()));
+            resultVo.setFirstSolve(true);
+        }
+
+        List<CompetitionRanklistVo.UserRankVo> rankUsers = new ArrayList<>(userMap.values());
+        for (CompetitionRanklistVo.UserRankVo userRankVo : rankUsers) {
+            int passCount = 0;
+            int penaltyTime = 0;
+            for (CompetitionRanklistVo.ProblemResultVo resultVo : userRankVo.getProblems()) {
+                if (Boolean.TRUE.equals(resultVo.getSolved())) {
+                    passCount++;
+                    penaltyTime += (resultVo.getSolveMinutes() == null ? 0 : resultVo.getSolveMinutes())
+                            + (resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) * 20;
+                }
+            }
+            userRankVo.setPassCount(passCount);
+            userRankVo.setPenaltyTime(penaltyTime);
+        }
+        rankUsers.sort((a, b) -> {
+            int passCompare = Integer.compare(
+                    b.getPassCount() == null ? 0 : b.getPassCount(),
+                    a.getPassCount() == null ? 0 : a.getPassCount()
+            );
+            if (passCompare != 0) {
+                return passCompare;
+            }
+            return Integer.compare(
+                    a.getPenaltyTime() == null ? 0 : a.getPenaltyTime(),
+                    b.getPenaltyTime() == null ? 0 : b.getPenaltyTime()
+            );
+        });
+        ranklist.setUsers(rankUsers);
+        return ranklist;
+    }
+
+    private boolean isFinishedWrongSubmission(String status) {
+        return status != null
+                && !"答案正确".equals(status)
+                && !"等待评测".equals(status)
+                && !"评测中".equals(status);
+    }
+
+    private List<ProblemVo> getRanklistProblemList(Long cid) {
+        List<CompetitionProblem> competitionProblems = competitionProblemService.getProblemList(cid);
+        List<ProblemVo> problemList = new ArrayList<>();
+        for (CompetitionProblem competitionProblem : competitionProblems) {
+            ProblemVo problem = problemService.getProblemInfo(competitionProblem.getProblemId(), 0L, null);
+            String passKey = String.format(PROBLEM_PASS_KEY, cid, problem.getId());
+            String submitKey = String.format(PROBLEM_SUBMIT_KEY, cid, problem.getId());
+            String passCount = redisService.getValueByKey(passKey);
+            String submitCount = redisService.getValueByKey(submitKey);
+            problem.setPassCount(passCount != null ? Integer.parseInt(passCount) : competitionProblem.getPassCount());
+            problem.setSubmitCount(submitCount != null ? Integer.parseInt(submitCount) : competitionProblem.getSubmitCount());
+            if (problem.getPassCount() == null) {
+                problem.setPassCount(0);
+            }
+            if (problem.getSubmitCount() == null) {
+                problem.setSubmitCount(0);
+            }
+            problemList.add(problem);
+        }
+        return problemList;
+    }
+
+    private int calculateSolveMinutes(String beginTime, String submitTime) {
+        if (beginTime == null || submitTime == null) {
+            return 0;
+        }
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime begin = LocalDateTime.parse(beginTime, formatter);
+        LocalDateTime submit = LocalDateTime.parse(submitTime, formatter);
+        long seconds = java.time.Duration.between(begin, submit).getSeconds();
+        return (int) Math.max(0, seconds / 60);
+    }
+
+    private String formatSolveTime(Integer minutes) {
+        if (minutes == null) {
+            return "";
+        }
+        return (minutes / 60) + ":" + String.format("%02d", minutes % 60);
     }
 
     @Override
