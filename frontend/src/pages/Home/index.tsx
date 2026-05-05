@@ -128,7 +128,7 @@ const Home: React.FC = () => {
               className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight"
               style={{ color: 'var(--gemini-text-primary)' }}
             >
-              在线算法训练平台
+              在线编程题练习平台
               <br />
 
             </h1>

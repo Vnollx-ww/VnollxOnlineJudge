@@ -39,7 +39,7 @@ const About: React.FC = () => {
           关于 Vnollx OJ
         </h1>
         <p className="max-w-2xl mx-auto leading-relaxed" style={{ color: 'var(--gemini-text-secondary)' }}>
-          Vnollx Online Judge 是一个专为程序员打造的在线算法训练平台。
+          Vnollx Online Judge 是一个专为程序员打造的在线编程题练习平台。
           我们致力于提供优质的刷题体验，帮助每一位开发者提升算法能力。
         </p>
       </div>
