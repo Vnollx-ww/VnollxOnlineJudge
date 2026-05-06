@@ -850,7 +850,7 @@ const CompetitionProblemDetail: React.FC = () => {
                     onChange={(e) => handleTestInputChange(e.target.value)}
                     placeholder="默认已填入当前样例输入，可修改后点击「测试样例」"
                     rows={4}
-                    className="!rounded-xl font-mono text-sm"
+                    className="!rounded-xl font-mono text-sm focus:ring-0 focus:border-blue-400"
                     style={{ paddingBottom: 36 }}
                   />
                   <Button
