@@ -70,6 +70,27 @@ const balloonColors = [
   '#4c0519',
 ];
 
+const BalloonIcon = ({ color }: { color: string }) => (
+  <svg className="h-9 w-9 shrink-0" viewBox="0 0 48 48" fill="none">
+    <path
+      d="M34 16C35 8 31.1274 4 24.1274 4C17.1274 4 13 9 14 16C15 23 21.2548 28 24.1274 28C27 28 33 24 34 16Z"
+      fill={color}
+      stroke="#888"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M25 28C23 28.9697 20 31.8889 20 35C20 38.1111 30 36.4444 30 39.5556C30 42.6667 19 44 19 44"
+      fill="none"
+      stroke="#888"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const CompetitionRanklist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -229,7 +250,7 @@ const CompetitionRanklist: React.FC = () => {
   };
 
   const renderProblemCell = (result?: ProblemResult) => {
-    if (!result) return null;
+    if (!result) return <span className="text-base font-bold text-[#bdbdbd]">·</span>;
     if (result.solved) {
       return (
         <>
@@ -241,7 +262,7 @@ const CompetitionRanklist: React.FC = () => {
     if ((result.wrongCount || 0) > 0) {
       return <span className="text-base font-bold text-[#b91c1c]">-{result.wrongCount}</span>;
     }
-    return null;
+    return <span className="text-base font-bold text-[#bdbdbd]">·</span>;
   };
 
   if (loading && !competition) {
@@ -266,13 +287,10 @@ const CompetitionRanklist: React.FC = () => {
         {passwordVerified ? (
           <div className="rounded-3xl bg-white p-5">
             <div className="mb-6 flex items-center justify-between gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center">
-                <svg viewBox="0 0 100 100" className="h-14 w-14">
-                  <circle cx="35" cy="35" r="18" fill="none" stroke="#e11d48" strokeWidth="5" />
-                  <circle cx="65" cy="35" r="18" fill="none" stroke="#2563eb" strokeWidth="5" />
-                  <circle cx="35" cy="65" r="18" fill="none" stroke="#f59e0b" strokeWidth="5" />
-                  <circle cx="65" cy="65" r="18" fill="none" stroke="#16a34a" strokeWidth="5" />
-                </svg>
+              <div
+                className="h-14 w-[13.25rem] shrink-0 bg-contain bg-left bg-no-repeat"
+                style={{ backgroundImage: 'url("https://images.ptausercontent.com/6b1e0341-7a1c-4bbb-9716-015f86c00cd1.png")' }}
+              >
               </div>
               <div className="min-w-0 flex-1 text-center">
                 <Title level={1} className="!mb-0 !text-3xl !font-bold !tracking-[0.25em] !text-gray-800">
@@ -299,22 +317,19 @@ const CompetitionRanklist: React.FC = () => {
                 <table className="w-max table-fixed border-separate border-spacing-[1px]">
                   <thead>
                     <tr>
-                      <th className="sticky left-0 z-20 w-[55px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">排名</th>
-                      <th className="sticky left-[55px] z-20 w-[300px] bg-white py-2.5 pl-5 text-left text-[13px] font-normal text-[#777]">队伍</th>
-                      <th className="w-20 bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">过题数</th>
-                      <th className="w-20 bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">总用时</th>
+                      <th className="sticky left-0 z-20 w-[55px] bg-white/75 py-2.5 text-center text-[13px] font-normal text-[#777] backdrop-blur-[2px]">排名</th>
+                      <th className="sticky left-[55px] z-20 w-[300px] bg-white/75 py-2.5 pl-5 text-left text-[13px] font-normal text-[#777] backdrop-blur-[2px]">队伍</th>
+                      <th className="sticky left-[355px] z-20 w-20 bg-white/75 py-2.5 text-center text-[13px] font-normal text-[#777] backdrop-blur-[2px]">过题数</th>
+                      <th className="sticky left-[435px] z-20 w-20 bg-white/75 py-2.5 text-center text-[13px] font-normal text-[#777] backdrop-blur-[2px]">总用时</th>
                       {problemHeaders.map((problem) => (
                         <th key={problem.id} className="w-[85px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <svg className="h-[30px] w-[18px]" viewBox="0 0 20 34">
-                              <path fill={problem.color} d="M10 0 C4.5 0 0 4.5 0 10 C0 15.5 4.5 22 10 24 C15.5 22 20 15.5 20 10 C20 4.5 15.5 0 10 0" />
-                              <path fill={problem.color} d="M8 23 L12 23 L10 27 Z" />
-                              <path d="M10 27 C8.5 29 11.5 31 10 34" fill="none" stroke="#777" strokeWidth="1" strokeLinecap="round" />
-                            </svg>
-                            <div className="flex flex-col items-start leading-tight">
+                          <div className="flex items-center justify-center -space-x-1">
+                            <BalloonIcon color={problem.color} />
+                            <div className="flex flex-col items-center leading-tight">
                               <span className="text-base font-bold text-gray-700">{problem.label}</span>
                               <span className="block text-[11px] text-[#999]">{problem.stat}</span>
                             </div>
+                            <div className="w-2"></div>
                           </div>
                         </th>
                       ))}
@@ -323,10 +338,10 @@ const CompetitionRanklist: React.FC = () => {
                   <tbody>
                     {users.map((user, index) => (
                       <tr key={user.id || user.name}>
-                        <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-1.5 py-3 text-center text-sm font-bold text-gray-500">{index + 1}</td>
-                        <td className="sticky left-[55px] z-10 w-[300px] truncate whitespace-nowrap bg-white py-3 pl-5 pr-1.5 text-left text-sm font-medium text-[#444]">{user.name}</td>
-                        <td className="whitespace-nowrap bg-white px-1.5 py-3 text-center text-sm font-bold">{user.passCount || 0}</td>
-                        <td className="whitespace-nowrap bg-white px-1.5 py-3 text-center text-sm text-gray-500">{formatBoardTime(user.penaltyTime || 0)}</td>
+                        <td className="sticky left-0 z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center text-sm font-bold text-gray-500 backdrop-blur-[2px]">{index + 1}</td>
+                        <td className="sticky left-[55px] z-10 w-[300px] truncate whitespace-nowrap bg-white/75 py-3 pl-5 pr-1.5 text-left text-sm font-medium text-[#444] backdrop-blur-[2px]">{user.name}</td>
+                        <td className="sticky left-[355px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center text-sm font-bold backdrop-blur-[2px]">{user.passCount || 0}</td>
+                        <td className="sticky left-[435px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center text-sm text-gray-500 backdrop-blur-[2px]">{formatBoardTime(user.penaltyTime || 0)}</td>
                         {problemHeaders.map((problem, problemIndex) => {
                           const result = user.problems?.[problemIndex];
                           return (

@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
     String login(String email, String password);
@@ -26,6 +27,7 @@ public interface UserService {
     Long getCountByAdmin(String keyword,String identity);
     Long getCount();
     List<UserVo> getAllUser();
+    Map<String, Object> getAllUserPage(int pageNum, int pageSize);
     List<Integer> getUserIdList(Long uid);
     List<User> getUserByName(String name);
     List<User> searchByName(String keyword, int pageNum, int pageSize);

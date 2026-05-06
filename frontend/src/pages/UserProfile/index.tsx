@@ -17,7 +17,7 @@ import {
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from 'recharts';
 import api from '../../utils/api';
-import { isAuthenticated } from '../../utils/auth';
+import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { PermissionCode } from '../../constants/permissions';
 import Select from '../../components/Select';
 import { usePermission } from '../../contexts/PermissionContext';
@@ -66,6 +66,8 @@ const UserProfile: React.FC = () => {
   const [learningData, setLearningData] = useState<LearningData | null>(null);
   const [learningLoading, setLearningLoading] = useState(false);
   const [learningDays, setLearningDays] = useState(30);
+  const currentUserId = getUserInfo()?.id;
+  const isOwnProfile = currentUserId === userId;
   useEffect(() => {
     if (!isAuthenticated()) {
       toast.error('请先登录！', { duration: 3000 });
@@ -115,8 +117,12 @@ const UserProfile: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user) loadLearningData();
-  }, [user, learningDays]);
+    if (user && isOwnProfile) {
+      loadLearningData();
+    } else {
+      setLearningData(null);
+    }
+  }, [user, learningDays, isOwnProfile]);
 
   // 打开 AI 对话弹窗并自动创建新会话、用学习建议提示词发起提问（固定使用 modelId=1）
   const handleOpenAiLearningAdvice = () => {
@@ -253,7 +259,7 @@ const UserProfile: React.FC = () => {
                 ]}
                 style={{ width: 130 }}
               />
-              {hasPermission(PermissionCode.AI_CHAT) && (
+              {isOwnProfile && hasPermission(PermissionCode.AI_CHAT) && (
                 <>
                   <Button
                     type="primary"

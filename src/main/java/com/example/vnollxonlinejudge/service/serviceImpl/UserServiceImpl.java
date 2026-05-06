@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -340,11 +341,33 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public List<UserVo> getAllUser() {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.select("id", "name", "submit_count", "pass_count","last_login_time", "avatar", "signature");
+        wrapper.orderByDesc("pass_count").orderByAsc("submit_count").orderByAsc("name");
 
         return this.baseMapper.selectList(wrapper)
                 .stream()
                 .map(UserVo::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getAllUserPage(int pageNum, int pageSize) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.select("id", "name", "submit_count", "pass_count", "last_login_time", "avatar", "signature");
+        wrapper.orderByDesc("pass_count").orderByAsc("submit_count").orderByAsc("name");
+
+        Page<User> page = new Page<>(pageNum, pageSize);
+        Page<User> result = this.page(page, wrapper);
+        List<UserVo> records = result.getRecords()
+                .stream()
+                .map(UserVo::new)
+                .collect(Collectors.toList());
+
+        return Map.of(
+                "records", records,
+                "total", result.getTotal(),
+                "pageNum", result.getCurrent(),
+                "pageSize", result.getSize()
+        );
     }
 
     @Override

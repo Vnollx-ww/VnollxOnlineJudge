@@ -22,9 +22,17 @@ interface DisplayRankUser extends RankUser {
   passRate: string;
 }
 
+interface UserPageData {
+  records: RankUser[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
 const Ranklist: React.FC = () => {
   const navigate = useNavigate();
-  const [allUsers, setAllUsers] = useState<DisplayRankUser[]>([]);
+  const [users, setUsers] = useState<DisplayRankUser[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,33 +48,29 @@ const Ranklist: React.FC = () => {
     if (user?.id) {
       setCurrentUserId(parseInt(user.id));
     }
-    loadRanking();
   }, [navigate]);
 
-  const loadRanking = async () => {
+  useEffect(() => {
+    loadRanking(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  const loadRanking = async (page = currentPage, size = pageSize) => {
     setLoading(true);
     try {
-      const data = await api.get('/user/list') as ApiResponse<RankUser[]>;
+      const data = await api.get('/user/list', {
+        params: { pageNum: page, pageSize: size },
+      }) as ApiResponse<UserPageData>;
       if (data.code === 200) {
-        const sorted = [...data.data].sort((a, b) => {
-          if (b.passCount !== a.passCount) {
-            return b.passCount - a.passCount;
-          }
-          if (a.submitCount !== b.submitCount) {
-            return a.submitCount - b.submitCount;
-          }
-          return a.name.localeCompare(b.name);
-        });
-
-        const ranked = sorted.map((user, index) => ({
+        const ranked = (data.data.records || []).map((user, index) => ({
           ...user,
-          rank: index + 1,
+          rank: (page - 1) * size + index + 1,
           passRate: user.submitCount > 0 
             ? ((user.passCount / user.submitCount) * 100).toFixed(2) + '%'
             : '0.00%',
         }));
 
-        setAllUsers(ranked);
+        setUsers(ranked);
+        setTotal(data.data.total || 0);
       }
     } catch (error) {
       toast.error('加载排行榜失败');
@@ -77,24 +81,20 @@ const Ranklist: React.FC = () => {
   };
 
   const chartData = useMemo(() => {
-    return allUsers.slice(0, 10).map(user => ({
+    return users.slice(0, 10).map(user => ({
       name: user.name,
       AC: user.passCount,
       总数: user.submitCount,
     }));
-  }, [allUsers]);
-
-  const paginatedUsers = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return allUsers.slice(start, start + pageSize);
-  }, [allUsers, currentPage, pageSize]);
+  }, [users]);
 
   const handlePageChange = (page: number, size?: number) => {
-    setCurrentPage(page);
     if (size && size !== pageSize) {
       setPageSize(size);
       setCurrentPage(1);
+      return;
     }
+    setCurrentPage(page);
   };
 
   const handleUserClick = (userId: number) => {
@@ -131,7 +131,7 @@ const Ranklist: React.FC = () => {
                 <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-500"></div>
                 <p style={{ color: 'var(--gemini-text-secondary)' }}>榜单加载中...</p>
               </div>
-            ) : allUsers.length === 0 ? (
+            ) : users.length === 0 ? (
               <div className="py-20 text-center">
                 <Trophy className="mx-auto mb-4 h-10 w-10" style={{ color: 'var(--gemini-text-disabled)' }} />
                 <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无排行榜数据</p>
@@ -188,7 +188,7 @@ const Ranklist: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedUsers.map((user) => (
+                      {users.map((user) => (
                         <tr 
                           key={user.id}
                           className="transition-colors cursor-pointer"
@@ -234,7 +234,7 @@ const Ranklist: React.FC = () => {
                     </tbody>
                   </table>
 
-                  {paginatedUsers.length === 0 && (
+                  {users.length === 0 && (
                     <div className="py-8 text-center" style={{ color: 'var(--gemini-text-secondary)' }}>
                       暂无筛选结果
                     </div>
@@ -246,7 +246,7 @@ const Ranklist: React.FC = () => {
                   <Pagination
                     current={currentPage}
                     pageSize={pageSize}
-                    total={allUsers.length}
+                    total={total}
                     onChange={handlePageChange}
                     showSizeChanger
                     pageSizeOptions={['10', '30', '50', '100', '200']}
