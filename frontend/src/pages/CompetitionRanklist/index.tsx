@@ -283,7 +283,7 @@ const CompetitionRanklist: React.FC = () => {
             <div className="mb-6 flex items-center justify-between gap-4">
               <div
                 className="h-14 w-[13.25rem] shrink-0 bg-contain bg-left bg-no-repeat"
-                style={{ backgroundImage: 'url("https://images.ptausercontent.com/6b1e0341-7a1c-4bbb-9716-015f86c00cd1.png")' }}
+                style={{ backgroundImage: 'url("http://111.230.105.54:9000/cover/6b1e0341-7a1c-4bbb-9716-015f86c00cd1.png")' }}
               >
               </div>
               <div className="min-w-0 flex-1 text-center">
