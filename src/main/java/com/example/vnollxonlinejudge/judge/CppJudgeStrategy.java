@@ -2,391 +2,72 @@ package com.example.vnollxonlinejudge.judge;
 
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.service.TestCaseCacheService;
-import io.minio.MinioClient;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Component
-public class CppJudgeStrategy implements JudgeStrategy {
-    private final TestCaseCacheService testCaseCacheService;
-    private final RestTemplate restTemplate; // 注入配置了连接池的 RestTemplate
-    private final String COMPILE_URL ;
-    private final String RUN_URL  ;
-    private final String DELETE_URL ;
-    private static final Logger logger = LoggerFactory.getLogger(CppJudgeStrategy.class);
-
-    private static final String COMPILE_ERROR="编译错误";
-    private static final String TIME_LIMIT_EXCEED="时间超出限制";
-    private static final String MEMORY_LIMIT_EXCEED="内存超出限制";
-
-    private static final String WRONG_ANSWER="答案错误";
-    private static final String ACCEPTED="答案正确";
-    private static final int BATCH_SIZE = 20; // 每批最多处理的测试用例数
-
-    // 用于在编译失败时保存错误信息
-    private String lastCompileError = null;
+public class CppJudgeStrategy extends AbstractJudgeStrategy {
 
     @Autowired
-    public CppJudgeStrategy(
-            TestCaseCacheService testCaseCacheService,
-            String goJudgeEndpoint,
-            RestTemplate restTemplate) {
-        this.testCaseCacheService = testCaseCacheService;
-        this.restTemplate=restTemplate;
-        this.COMPILE_URL = goJudgeEndpoint + "/run";
-        this.RUN_URL = goJudgeEndpoint + "/run";
-        this.DELETE_URL = goJudgeEndpoint + "/file/{fileId}";
+    public CppJudgeStrategy(TestCaseCacheService testCaseCacheService,
+                            SpecialJudgeSupport specialJudgeSupport,
+                            String goJudgeEndpoint,
+                            RestTemplate restTemplate) {
+        super(testCaseCacheService, specialJudgeSupport, restTemplate, goJudgeEndpoint);
     }
 
     @Override
-    public RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
-        return getJudgeRunResult(code, dataZipUrl, timeLimit, memoryLimit,null,null);
-    }
-
-    @Override
-    public RunResult testJudge(String code, String inputExample, String outputExample, Long timeLimit, Long memoryLimit) {
-        return getJudgeRunResult(code, null, timeLimit, memoryLimit,inputExample,outputExample);
-    }
-
-    private RunResult getJudgeRunResult(String code, String dataZipUrl,Long timeLimit, Long memoryLimit,String inputExample, String outputExample) {
-        RunResult result = judgeCode(code, dataZipUrl, timeLimit, memoryLimit,inputExample,outputExample);
-        result.setRunTime(result.getTime() / 1000000);
-        result.setMemory(result.getMemory()/1048576);
-        switch (result.getStatus()) {
-            case "Accepted" -> result.setStatus(ACCEPTED);
-            case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
-            case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
-        }
-        return result;
-    }
-    private RunResult standardError(String status,String error){
-        RunResult result = new RunResult();
-        result.setStatus(status);
-        result.setExitStatus(1);
-        result.setFiles(new RunResult.Files());
-        result.getFiles().setStderr(error);
-        return result;
-    }
-    private RunResult judgeCode(
-            String submittedCode, String zipFilePath,
-            Long timeLimitMs, Long memoryLimitMB,
-            String inputExample,String outExample
-    ) {
-        // 1. 编译代码
-        lastCompileError = null;
-        String binaryFileId = compileCode(submittedCode);
-        if (binaryFileId == null) {
-            return standardError(COMPILE_ERROR, lastCompileError != null ? lastCompileError : COMPILE_ERROR);
-        }
-        else if (binaryFileId.equals("超出内存限制")){
-            return standardError("超出内存限制","超出内存限制");
-        }
-
-        try {
-            List<String[]> testCases =new ArrayList<>();
-
-            if (inputExample!=null&&outExample!=null){
-                testCases.add(new String[]{inputExample,outExample});
-            }else{
-                //从缓存或MinIO获取测试用例
-                testCases =testCaseCacheService.getTestCases(zipFilePath);
-            }
-
-            if (testCases.isEmpty()) {
-                return standardError("判题错误，测试用例为空","无法获取测试用例");
-            }
-
-            // 2. 批量执行测试用例
-            RunResult finalResult = new RunResult();
-            finalResult.setStatus("Accepted");
-            finalResult.setFiles(new RunResult.Files());
-            finalResult.getFiles().setStdout("");
-            finalResult.getFiles().setStderr("");
-            finalResult.setRunTime(0L);
-            finalResult.setTime(0L);
-            finalResult.setMemory(0L);
-            finalResult.setTestCount(testCases.size());
-            finalResult.setPassCount(0);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            // 分批处理测试用例
-            int totalBatches = (int) Math.ceil((double) testCases.size() / BATCH_SIZE);
-            //logger.info("开始批量评测: 共 {} 个测试用例, 分 {} 批处理", testCases.size(), totalBatches);
-
-            for (int batchStart = 0; batchStart < testCases.size(); batchStart += BATCH_SIZE) {
-                int batchEnd = Math.min(batchStart + BATCH_SIZE, testCases.size());
-                List<String[]> batch = testCases.subList(batchStart, batchEnd);
-                int currentBatch = batchStart / BATCH_SIZE + 1;
-
-                //logger.info("执行第 {}/{} 批, 包含 {} 个测试用例", currentBatch, totalBatches, batch.size());
-
-                // 构建批量请求
-                String jsonPayload = buildBatchRunPayload(batch, binaryFileId, timeLimitMs * 1000000L, memoryLimitMB * 1024 * 1024);
-                HttpEntity<String> entity = new HttpEntity<>(jsonPayload, headers);
-
-                long startTime = System.currentTimeMillis();
-                // 一次请求执行整批测试用例
-                ResponseEntity<List<RunResult>> response = restTemplate.exchange(
-                        RUN_URL,
-                        HttpMethod.POST,
-                        entity,
-                        new ParameterizedTypeReference<List<RunResult>>() {}
-                );
-
-                if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-                    finalResult.setStatus("判题错误");
-                    logger.error("批量判题请求失败");
-                    finalResult.getFiles().setStderr("Failed to execute batch test cases");
-                    return finalResult;
-                }
-
-                List<RunResult> results = response.getBody();
-                long elapsed = System.currentTimeMillis() - startTime;
-                //logger.info("第 {} 批执行完成, 耗时 {}ms, 返回 {} 个结果", currentBatch, elapsed, results.size());
-
-                // 处理批量返回的结果
-                for (int i = 0; i < results.size(); i++) {
-                    RunResult result = results.get(i);
-                    String[] testCase = batch.get(i);
-
-                    // 更新最大时间和内存
-                    finalResult.setTime(Math.max(finalResult.getTime(), result.getTime()));
-                    finalResult.setMemory(Math.max(finalResult.getMemory(), result.getMemory()));
-                    finalResult.setRunTime(Math.max(finalResult.getRunTime(), result.getRunTime()));
-
-                    // 检查运行状态
-                    if (!"Accepted".equals(result.getStatus())) {
-                        if ("Signalled".equals(result.getStatus())) {
-                            finalResult.setMemory(memoryLimitMB * 1024 * 1024);
-                        }
-                        finalResult.setStatus(result.getStatus());
-                        if (result.getFiles() != null) {
-                            finalResult.getFiles().setStdout(result.getFiles().getStdout());
-                            finalResult.getFiles().setStderr(result.getFiles().getStderr());
-                        }
-                        deleteBinaryFile(binaryFileId);
-                        return finalResult;
-                    }
-
-                    // 检验输出结果
-                    try {
-                        String expectedOutput = JudgeOutputComparator.normalizeLineEndings(testCase[1]);
-                        String actualOutput = JudgeOutputComparator.normalizeLineEndings(
-                                result.getFiles() != null ? result.getFiles().getStdout() : ""
-                        );
-
-                        if (!JudgeOutputComparator.equalsIgnoringWhitespace(expectedOutput, actualOutput)) {
-                            String errorMessage = String.format(
-                                    "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
-                                    truncateString(testCase[0], 100),
-                                    truncateString(expectedOutput, 200),
-                                    truncateString(actualOutput, 200)
-                            );
-                            finalResult.setStatus(WRONG_ANSWER);
-                            finalResult.getFiles().setStdout(result.getFiles().getStdout());
-                            finalResult.getFiles().setStderr(errorMessage);
-                            deleteBinaryFile(binaryFileId);
-                            return finalResult;
-                        }
-                        finalResult.setPassCount(finalResult.getPassCount() + 1);
-                    } catch (Exception e) {
-                        finalResult.setStatus(WRONG_ANSWER);
-                        finalResult.getFiles().setStdout(result.getFiles() != null ? result.getFiles().getStdout() : "");
-                        finalResult.getFiles().setStderr("比较输出出错: " + e.getMessage());
-                        deleteBinaryFile(binaryFileId);
-                        return finalResult;
-                    }
-                }
-            }
-
-            // 3. 删除编译产物
-            deleteBinaryFile(binaryFileId);
-            logger.info("评测完成: 全部 {} 个测试用例通过", testCases.size());
-            return finalResult;
-
-        } catch (Exception e) {
-            logger.error("判题过程中出错: ", e);
-            return standardError("判题错误","判题过程中出错: " + e.getMessage());
-        }
-    }
-
-    private String truncateString(String str, int maxLength) {
-        if (str == null) return "null";
-        if (str.length() <= maxLength) return str;
-        return str.substring(0, maxLength) + "...";
-    }
-
-    private String compileCode(String code) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String compilePayload = buildCompilePayload(code);
-        HttpEntity<String> entity = new HttpEntity<>(compilePayload, headers);
-
-        try {
-            ResponseEntity<List<RunResult>> response = restTemplate.exchange(
-                    COMPILE_URL,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<List<RunResult>>() {}
-            );
-
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                RunResult result = response.getBody().getFirst();
-                if ("Accepted".equals(result.getStatus()) && result.getFileIds() != null) {
-                    return result.getFileIds().getA();
-                } else if ("Memory Limit Exceeded".equals(result.getStatus())) {
-                    return MEMORY_LIMIT_EXCEED;
-                } else {
-                    lastCompileError = result.getFiles().getStderr();
-                    logger.error("编译失败: " + lastCompileError);
-                }
-            } else {
-                logger.error("编译请求响应异常: " + response.getStatusCode());
-            }
-        } catch (Exception e) {
-            logger.error("编译请求发生异常: " + e.getMessage());
-        }
-
-        return null;
-    }
-    /**
-     * 构建编译请求的 JSON payload
-     */
-    private String buildCompilePayload(String code) {
-        // 使用 StringEscapeUtils 或手动替换，确保 JSON 转义安全
-        String escapedCode = escapeJsonRaw(code);
-
-        return String.format("""
-    {
-        "cmd": [{
+    protected String compile(String userCode, StringBuilder errorOut) {
+        String payload = String.format("""
+        {"cmd": [{
             "args": ["/usr/bin/g++", "a.cc", "-o", "a"],
             "env": ["PATH=/usr/bin:/bin"],
-            "files": [{
-                "content": ""
-            }, {
-                "name": "stdout",
-                "max": 10485760
-            }, {
-                "name": "stderr",
-                "max": 10485760
-            }],
+            "files": [{"content": ""},
+                      {"name": "stdout", "max": 10485760},
+                      {"name": "stderr", "max": 10485760}],
             "cpuLimit": 10000000000,
             "memoryLimit": 536870912,
             "procLimit": 50,
-            "copyIn": {
-                "a.cc": {
-                    "content": "%s"
-                }
-            },
+            "copyIn": {"a.cc": {"content": "%s"}},
             "copyOut": ["stdout", "stderr"],
             "copyOutCached": ["a"]
-        }]
-    }
-    """, escapedCode);
-    }
-
-    /**
-     * 构建批量运行请求的 JSON payload
-     */
-    private String buildBatchRunPayload(List<String[]> testCases, String fileId, Long cpuLimit, Long memoryLimit) {
-        // 增加防御性编程：如果 fileId 看起来不对劲，直接抛异常，别发给 go-judge
-        if (fileId == null || fileId.length() < 2 || fileId.contains("限制")) {
-            throw new IllegalArgumentException("无效的 FileId: " + fileId);
+        }]}
+        """, escapeJson(userCode));
+        RunResult result = invokeCompile(payload);
+        if (result == null) return null;
+        if ("Accepted".equals(result.getStatus()) && result.getFileIds() != null) {
+            return result.getFileIds().getA();
         }
-
-        StringBuilder cmds = new StringBuilder();
-        for (int i = 0; i < testCases.size(); i++) {
-            if (i > 0) {
-                cmds.append(",");
-            }
-            String input = testCases.get(i)[0];
-            cmds.append(buildSingleCmd(input, fileId, cpuLimit, memoryLimit));
+        if ("Memory Limit Exceeded".equals(result.getStatus())) return MEMORY_LIMIT_EXCEED;
+        if (result.getFiles() != null && result.getFiles().getStderr() != null) {
+            errorOut.append(result.getFiles().getStderr());
         }
-        return "{\"cmd\": [" + cmds + "]}";
+        return null;
     }
 
-    /**
-     * 构建单个测试用例的 cmd 对象
-     * 已调大 stdout 限制，防止 Output Limit Exceeded
-     */
-    private String buildSingleCmd(String input, String fileId, Long cpuLimit, Long memoryLimit) {
-        String escapedInput = escapeJsonRaw(input);
-
-        // 重点：这里的 stdout max 从 10240 改成了 67108864 (64MB)
-        // 如果是十万个数据，输出量可能巨大，必须给足空间
-        long outputLimit = 64 * 1024 * 1024L;
-
+    @Override
+    protected String buildRunCmd(String input, String artifactId, long cpuLimitNs, long memoryLimitBytes) {
         return String.format("""
         {
             "args": ["a"],
             "env": ["PATH=/usr/bin:/bin"],
-            "files": [{
-                "content": "%s"
-            }, {
-                "name": "stdout",
-                "max": %d
-            }, {
-                "name": "stderr",
-                "max": 1048576
-            }],
+            "files": [{"content": "%s"},
+                      {"name": "stdout", "max": 67108864},
+                      {"name": "stderr", "max": 1048576}],
             "cpuLimit": %d,
             "memoryLimit": %d,
             "procLimit": 50,
-            "copyIn": {
-                "a": {
-                    "fileId": "%s"
-                }
-            }
-        }""", escapedInput, outputLimit, cpuLimit, memoryLimit, fileId);
+            "copyIn": {"a": {"fileId": "%s"}}
+        }""", escapeJson(input), cpuLimitNs, memoryLimitBytes, artifactId);
     }
 
-    /**
-     * 辅助方法：处理特殊的转义，防止 JSON 报错
-     */
-    private String escapeJsonRaw(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
-    }
-
-    private void deleteBinaryFile(String fileId) {
-        if (fileId == null || fileId.isEmpty()) {
-            return;
-        }
-
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("fileId", fileId);
-
-            ResponseEntity<Void> response = restTemplate.exchange(
-                    DELETE_URL,
-                    HttpMethod.DELETE,
-                    null,
-                    Void.class,
-                    params
-            );
-
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                logger.error("删除二进制文件失败，状态码: " + response.getStatusCode());
-            }
-        } catch (Exception e) {
-            logger.error("删除二进制文件时发生异常: " + e.getMessage());
+    @Override
+    protected void translateStatus(RunResult result) {
+        switch (result.getStatus()) {
+            case "Accepted" -> result.setStatus(ACCEPTED);
+            case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
+            case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
         }
     }
 }

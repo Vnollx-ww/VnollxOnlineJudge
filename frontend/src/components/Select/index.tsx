@@ -172,7 +172,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
               />
             </div>
           )}
-          <div className="max-h-72 overflow-auto p-1.5">
+          <div className="select-dropdown-scroll max-h-72 overflow-auto p-1.5">
             {groupedOptions.length ? (
               groupedOptions.map((group, groupIndex) => (
                 <div key={`${group.group ?? 'default'}-${groupIndex}`}>

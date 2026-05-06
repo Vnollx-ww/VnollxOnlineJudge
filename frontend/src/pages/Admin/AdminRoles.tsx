@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Tag, Spin, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Tag, Spin, Popconfirm } from 'antd';
 import toast from 'react-hot-toast';
 import { RefreshCw, Shield, Plus, Trash2, Edit, X, Key } from 'lucide-react';
 import api from '@/utils/api';
 import Select from '@/components/Select';
+import Input from '@/components/Input';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';

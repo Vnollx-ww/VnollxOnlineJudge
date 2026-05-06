@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Input, Modal, Form, Tag, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Tag, Popconfirm } from 'antd';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
 import Select from '@/components/Select';
+import Input from '@/components/Input';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -205,11 +206,11 @@ const AdminUsers: React.FC = () => {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-row items-center justify-between gap-3 mb-4">
         <Input.Search
           placeholder="搜索用户..."
           allowClear
-          className="w-72"
+          className="w-72 shrink-0"
           onSearch={(value) => {
             setKeyword(value);
             setCurrentPage(1);

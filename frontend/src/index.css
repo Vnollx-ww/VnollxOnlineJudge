@@ -92,6 +92,15 @@ body {
   background-color: rgba(68, 71, 70, 0.5);
 }
 
+.select-dropdown-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.select-dropdown-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* 选中文字样式 */
 ::selection {
   background-color: var(--gemini-accent);

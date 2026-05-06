@@ -5,7 +5,6 @@ import {
   Button,
   Spin,
   Alert,
-  Input,
   Avatar,
   Popconfirm,
   App,
@@ -13,6 +12,7 @@ import {
 } from 'antd';
 import toast from 'react-hot-toast';
 import Select from '../../components/Select';
+import Input from '../../components/Input';
 import {
   ArrowLeft,
   Code2,

@@ -20,4 +20,6 @@ public class JudgeInfo {
     private String uname;
     private String createTime;
     private Long snowflakeId;
+    private String judgeMode;
+    private String checkerFile;
 }

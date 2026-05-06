@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   Table,
   Button,
-  Input,
   Modal,
   Form,
   Switch,
@@ -15,6 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
 import api from '@/utils/api';
+import Input from '@/components/Input';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';

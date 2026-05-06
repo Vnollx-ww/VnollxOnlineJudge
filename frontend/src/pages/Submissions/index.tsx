@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Table, Input, Button, Tag, Pagination, Switch } from 'antd';
+import { Modal, Table, Button, Tag, Pagination, Switch } from 'antd';
 import toast from 'react-hot-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -10,6 +10,7 @@ import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import type { ApiResponse, JudgeMessage } from '../../types';
 import Select from '../../components/Select';
+import Input from '../../components/Input';
 
 interface Submission {
   id: number;
@@ -293,8 +294,8 @@ const Submissions: React.FC = () => {
         >
           <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--gemini-text-primary)' }}>提交记录</h1>
 
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-            <div className="flex flex-wrap gap-3">
+          <div className="flex flex-row items-center justify-between gap-4 mb-6 overflow-visible pb-1">
+            <div className="flex flex-none flex-row items-center gap-3">
               <Input
                   placeholder="题目标题或ID"
                   value={problemId}
@@ -329,7 +330,7 @@ const Submissions: React.FC = () => {
                   ]}
               />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <Button
                   onClick={() => {
                     setProblemId('');

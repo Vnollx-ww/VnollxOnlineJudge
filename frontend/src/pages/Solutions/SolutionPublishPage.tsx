@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button,
   Typography,
-  Input,
   Space,
   Modal,
 } from 'antd';
@@ -15,6 +14,7 @@ import hljs from 'highlight.js';
 import katex from 'katex';
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
+import Input from '../../components/Input';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 

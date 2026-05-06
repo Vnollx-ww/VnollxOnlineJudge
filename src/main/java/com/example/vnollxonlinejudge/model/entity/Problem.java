@@ -42,6 +42,12 @@ public class Problem {
     @Column(name = "datazip")
     private String datazip;
 
+    @Column(name = "judge_mode")
+    private String judgeMode;
+
+    @Column(name = "checker_file")
+    private String checkerFile;
+
     @Column(name = "hint")
     private String hint;
 

@@ -7,7 +7,6 @@ import {
   Space,
   Button,
   Modal,
-  Input,
   Spin,
   Empty,
 } from 'antd';
@@ -21,6 +20,7 @@ import {
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import Select from '../../components/Select';
+import Input from '../../components/Input';
 
 const { Title, Text } = Typography;
 

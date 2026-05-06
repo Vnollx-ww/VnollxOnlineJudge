@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Input, Pagination, Button } from 'antd';
+import { Table, Pagination, Button } from 'antd';
 import toast from 'react-hot-toast';
 import { CheckCircle, Circle } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
 import Select from '../../components/Select';
+import Input from '../../components/Input';
 
 interface Problem {
   id: number;
@@ -262,19 +263,19 @@ const Problems: React.FC = () => {
         </h1>
 
         {/* 搜索栏 - Gemini 风格 */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex flex-row items-center gap-3 mb-6">
           <Input
             placeholder="输入题目编号或名称和标签"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
-            className="flex-1"
+            className="min-w-0 flex-1"
             size="large"
           />
           <Select
             placeholder="选择标签"
             value={selectedTag}
             onChange={setSelectedTag}
-            className="w-full sm:w-48"
+            className="w-48 shrink-0"
             size="large"
             allowClear
             options={[

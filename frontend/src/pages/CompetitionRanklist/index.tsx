@@ -5,7 +5,6 @@ import {
   Space,
   Button,
   Modal,
-  Input,
   Spin,
   Empty,
 } from 'antd';
@@ -18,6 +17,7 @@ import {
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
+import Input from '../../components/Input';
 
 const { Title, Text } = Typography;
 

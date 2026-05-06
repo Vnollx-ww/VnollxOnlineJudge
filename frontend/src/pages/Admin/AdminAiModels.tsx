@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, Popconfirm, Upload } from 'antd';
+import { Table, Button, Modal, Form, InputNumber, Popconfirm, Upload } from 'antd';
 import type { UploadProps } from 'antd';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon } from 'lucide-react';
 import api from '@/utils/api';
 import Select from '@/components/Select';
+import Input from '@/components/Input';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';

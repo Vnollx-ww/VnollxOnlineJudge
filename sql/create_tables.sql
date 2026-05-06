@@ -167,6 +167,8 @@ create table problem
     input_example  varchar(255)         null,
     output_example varchar(255)         null,
     datazip        varchar(255)         null,
+    judge_mode     varchar(20) default 'standard' null,
+    checker_file   varchar(255)         null,
     hint           text                 null,
     input_format   text                 null,
     output_format  text                 null,

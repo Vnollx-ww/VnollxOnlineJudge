@@ -71,10 +71,19 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
+    public Problem getById(Long id) {
+        return super.getById((java.io.Serializable) id);
+    }
+
+    @Override
     @Transactional
     public void createProblem(AdminSaveProblemDTO dto) {
         if (dto.getTestCaseFile() == null || dto.getTestCaseFile().isEmpty()) {
             throw new BusinessException("新建题目必须上传测试数据文件");
+        }
+        String judgeMode = dto.getJudgeMode() == null || dto.getJudgeMode().isBlank() ? "standard" : dto.getJudgeMode();
+        if (Objects.equals(judgeMode, "special") && (dto.getCheckerFile() == null || dto.getCheckerFile().isEmpty())) {
+            throw new BusinessException("构造题必须上传 checker 代码文件");
         }
         Problem problem=Problem.builder()
                 .title(dto.getTitle())
@@ -84,6 +93,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 .difficulty(dto.getDifficulty())
                 .inputFormat(dto.getInputFormat())
                 .outputFormat(dto.getOutputFormat())
+                .judgeMode(judgeMode)
                 .inputExample(dto.getInputExample())
                 .outputExample(dto.getOutputExample())
                 .hint(dto.getHint())
@@ -111,10 +121,15 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
                 ossService.uploadFile(problem.getId() + ".zip", dto.getTestCaseFile());
             }
+            if (dto.getCheckerFile() != null && !dto.getCheckerFile().isEmpty()) {
+                ossService.uploadFile(problem.getId() + "_checker.cpp", dto.getCheckerFile());
+                problem.setCheckerFile(problem.getId() + "_checker.cpp");
+            }
         } catch (IOException e) {
             throw new BusinessException("测试用例文件上传失败");
         }
         problem.setDatazip(problem.getId()+".zip");
+        updateById(problem);
     }
 
     @Override
@@ -126,6 +141,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         }
         try {
             ossService.deleteFile(problem.getId()+".zip");
+            if (problem.getCheckerFile() != null && !problem.getCheckerFile().isBlank()) {
+                ossService.deleteFile(problem.getCheckerFile());
+            }
         }catch (IOException e){
             throw new BusinessException("文件删除失败，服务器异常");
         }
@@ -150,6 +168,13 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         problem.setDifficulty(dto.getDifficulty());
         problem.setInputFormat(dto.getInputFormat());
         problem.setOutputFormat(dto.getOutputFormat());
+        String judgeMode = dto.getJudgeMode() == null || dto.getJudgeMode().isBlank() ? "standard" : dto.getJudgeMode();
+        problem.setJudgeMode(judgeMode);
+        if (Objects.equals(judgeMode, "special")
+                && (problem.getCheckerFile() == null || problem.getCheckerFile().isBlank())
+                && (dto.getCheckerFile() == null || dto.getCheckerFile().isEmpty())) {
+            throw new BusinessException("构造题必须上传 checker 代码文件");
+        }
         problem.setHint(dto.getHint());
         problem.setOpen(Objects.equals(dto.getOpen(), "true"));
         List<ProblemExampleItemDTO> exampleList = dto.getExamplesList();
@@ -168,6 +193,10 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 ossService.uploadFile(dto.getId() + ".zip", dto.getTestCaseFile());
                 // 清除测试用例缓存，确保下次评测使用最新的测试用例
                 testCaseCacheService.evictFromCache(dto.getId() + ".zip");
+            }
+            if (dto.getCheckerFile() != null && !dto.getCheckerFile().isEmpty()) {
+                ossService.uploadFile(dto.getId() + "_checker.cpp", dto.getCheckerFile());
+                problem.setCheckerFile(dto.getId() + "_checker.cpp");
             }
         } catch (IOException e) {
             throw new BusinessException("文件上传失败，服务器异常");

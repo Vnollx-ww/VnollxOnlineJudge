@@ -38,6 +38,9 @@ public class AdminSaveProblemDTO {
     @NotBlank(message = "输出格式不能为空")
     private String outputFormat;
 
+    @Pattern(regexp = "^(standard|special)$", message = "判题模式格式不正确")
+    private String judgeMode;
+
     /** 多组样例，表单传入时为 JSON 字符串，如 [{"input":"...","output":"...","sortOrder":0}] */
     private String examples;
 
@@ -68,5 +71,6 @@ public class AdminSaveProblemDTO {
 
     /** 新建时必传，更新时可选（不传则保留原测试数据） */
     private MultipartFile testCaseFile;
+    private MultipartFile checkerFile;
     private List<String> tags;
 }

@@ -1,20 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Modal,
-  Tabs,
-  Form,
-  Input,
-  Button,
-  Typography,
-  message,
-  Space,
-} from 'antd';
-import { Mail, Lock, User } from 'lucide-react';
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { Lock, Mail, User } from 'lucide-react';
 import api from '@/utils/api';
+import { Button, FormItem, Input, Modal, Tabs, Toast, type TabItem, type ToastState } from '@/components';
 import { setToken } from '@/utils/auth';
 import type { ApiResponse } from '@/types';
-
-const { Text } = Typography;
 
 type AuthMode = 'login' | 'register' | 'forget';
 
@@ -45,20 +34,40 @@ interface ForgotFormValues {
   confirmPassword: string;
 }
 
-const emailRules = [
-  { required: true, message: '请输入邮箱地址' },
-  { type: 'email' as const, message: '请输入有效的邮箱地址' },
-];
+type FormErrors<T> = Partial<Record<keyof T, string>>;
 
-const passwordRules = [
-  { required: true, message: '请输入密码' },
-  { min: 6, message: '密码长度不能少于6位' },
-];
+const initialLoginForm: LoginFormValues = {
+  email: '',
+  password: '',
+};
+
+const initialRegisterForm: RegisterFormValues = {
+  name: '',
+  email: '',
+  verifyCode: '',
+  password: '',
+  repassword: '',
+};
+
+const initialForgotForm: ForgotFormValues = {
+  email: '',
+  verifyCode: '',
+  newPassword: '',
+  confirmPassword: '',
+};
+
+const iconClassName = 'h-4 w-4 text-slate-400';
+const inputStyle = { backgroundColor: 'var(--gemini-bg)', border: 'none' };
+
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, onModeChange }) => {
-  const [loginForm] = Form.useForm<LoginFormValues>();
-  const [registerForm] = Form.useForm<RegisterFormValues>();
-  const [forgotForm] = Form.useForm<ForgotFormValues>();
+  const [loginForm, setLoginForm] = useState<LoginFormValues>(initialLoginForm);
+  const [registerForm, setRegisterForm] = useState<RegisterFormValues>(initialRegisterForm);
+  const [forgotForm, setForgotForm] = useState<ForgotFormValues>(initialForgotForm);
+  const [loginErrors, setLoginErrors] = useState<FormErrors<LoginFormValues>>({});
+  const [registerErrors, setRegisterErrors] = useState<FormErrors<RegisterFormValues>>({});
+  const [forgotErrors, setForgotErrors] = useState<FormErrors<ForgotFormValues>>({});
   const [loginLoading, setLoginLoading] = useState(false);
   const [registerLoading, setRegisterLoading] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -66,17 +75,26 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
   const [forgotCodeLoading, setForgotCodeLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [forgotCountdown, setForgotCountdown] = useState(0);
-  const [messageApi, messageContextHolder] = message.useMessage();
+  const [toast, setToast] = useState<ToastState | null>(null);
 
   useEffect(() => {
     if (!open) {
-      loginForm.resetFields();
-      registerForm.resetFields();
-      forgotForm.resetFields();
+      setLoginForm(initialLoginForm);
+      setRegisterForm(initialRegisterForm);
+      setForgotForm(initialForgotForm);
+      setLoginErrors({});
+      setRegisterErrors({});
+      setForgotErrors({});
       setCountdown(0);
       setForgotCountdown(0);
     }
-  }, [open, loginForm, registerForm, forgotForm]);
+  }, [open]);
+
+  useEffect(() => {
+    if (!toast) return undefined;
+    const timer = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     if (!countdown) return undefined;
@@ -106,420 +124,307 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
     return () => window.clearInterval(timer);
   }, [forgotCountdown]);
 
-  const handleLogin = async (values: LoginFormValues) => {
+  const notify = (type: ToastState['type'], content: string) => setToast({ type, content });
+
+  const validateEmail = (email: string) => {
+    if (!email.trim()) return '请输入邮箱地址';
+    if (!isValidEmail(email)) return '请输入有效的邮箱地址';
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return '请输入密码';
+    if (password.length < 6) return '密码长度不能少于6位';
+    return '';
+  };
+
+  const updateLogin = (field: keyof LoginFormValues) => (event: ChangeEvent<HTMLInputElement>) => {
+    setLoginForm((current) => ({ ...current, [field]: event.target.value }));
+    setLoginErrors((current) => ({ ...current, [field]: '' }));
+  };
+
+  const updateRegister = (field: keyof RegisterFormValues) => (event: ChangeEvent<HTMLInputElement>) => {
+    setRegisterForm((current) => ({ ...current, [field]: event.target.value }));
+    setRegisterErrors((current) => ({ ...current, [field]: '' }));
+  };
+
+  const updateForgot = (field: keyof ForgotFormValues) => (event: ChangeEvent<HTMLInputElement>) => {
+    setForgotForm((current) => ({ ...current, [field]: event.target.value }));
+    setForgotErrors((current) => ({ ...current, [field]: '' }));
+  };
+
+  const validateLogin = () => {
+    const errors: FormErrors<LoginFormValues> = {
+      email: validateEmail(loginForm.email),
+      password: loginForm.password ? '' : '请输入密码',
+    };
+    setLoginErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const validateRegister = () => {
+    const trimmedName = registerForm.name.trim();
+    const errors: FormErrors<RegisterFormValues> = {
+      name: !trimmedName ? '请输入姓名' : trimmedName.length < 2 || trimmedName.length > 20 ? '姓名长度应在2-20个字符之间' : '',
+      email: validateEmail(registerForm.email),
+      verifyCode: registerForm.verifyCode.trim() ? '' : '请输入验证码',
+      password: validatePassword(registerForm.password),
+      repassword: registerForm.repassword ? '' : '请再次输入密码',
+    };
+    setRegisterErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const validateForgot = () => {
+    const errors: FormErrors<ForgotFormValues> = {
+      email: validateEmail(forgotForm.email),
+      verifyCode: forgotForm.verifyCode.trim() ? '' : '请输入验证码',
+      newPassword: validatePassword(forgotForm.newPassword),
+      confirmPassword: forgotForm.confirmPassword ? '' : '请再次输入密码',
+    };
+    setForgotErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!validateLogin()) return;
     setLoginLoading(true);
     try {
-      const data = await api.post('/user/login', values) as ApiResponse<string>;
+      const data = await api.post('/user/login', loginForm) as ApiResponse<string>;
       if (data.code === 200) {
         setToken(data.data);
-        messageApi.success('登录成功');
+        notify('success', '登录成功');
         onClose?.();
         setTimeout(() => {
           window.location.reload();
         }, 1000);
       } else {
-        messageApi.error((data as any).msg || '登录失败');
+        notify('error', (data as any).msg || '登录失败');
       }
     } catch (error: any) {
-      messageApi.error(error.response?.data?.msg || '网络请求失败，请重试');
+      notify('error', error.response?.data?.msg || '网络请求失败，请重试');
     } finally {
       setLoginLoading(false);
     }
   };
 
-  const handleForgotPassword = async (values: ForgotFormValues) => {
-    if (values.newPassword !== values.confirmPassword) {
-      messageApi.error('两次输入的密码不一致');
+  const handleForgotPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!validateForgot()) return;
+    if (forgotForm.newPassword !== forgotForm.confirmPassword) {
+      notify('error', '两次输入的密码不一致');
       return;
     }
     setForgotLoading(true);
     try {
       const data = await api.put('/user/forget', {
-        email: values.email,
-        verifyCode: values.verifyCode,
-        newPassword: values.newPassword,
+        email: forgotForm.email,
+        verifyCode: forgotForm.verifyCode,
+        newPassword: forgotForm.newPassword,
       }) as ApiResponse;
       if (data.code === 200) {
-        messageApi.success('密码重置成功，请重新登录');
-        forgotForm.resetFields();
+        notify('success', '密码重置成功，请重新登录');
+        setForgotForm(initialForgotForm);
+        setForgotErrors({});
         onModeChange?.('login');
       } else {
-        messageApi.error((data as any).msg || '密码重置失败');
+        notify('error', (data as any).msg || '密码重置失败');
       }
     } catch (error: any) {
-      messageApi.error(error.response?.data?.msg || '网络请求失败，请重试');
+      notify('error', error.response?.data?.msg || '网络请求失败，请重试');
     } finally {
       setForgotLoading(false);
     }
   };
 
   const handleSendForgotCode = async () => {
-    const email = forgotForm.getFieldValue('email');
-    try {
-      await forgotForm.validateFields(['email']);
-    } catch {
+    const emailError = validateEmail(forgotForm.email);
+    if (emailError) {
+      setForgotErrors((current) => ({ ...current, email: emailError }));
       return;
     }
 
     setForgotCodeLoading(true);
     try {
       const data = await api.post('/email/send', {
-        email,
+        email: forgotForm.email,
         option: 'forget',
       }) as ApiResponse;
       if (data.code === 200) {
-        messageApi.success('验证码已发送，请注意查收');
+        notify('success', '验证码已发送，请注意查收');
         setForgotCountdown(60);
       } else {
-        messageApi.error((data as any).msg || '发送验证码失败');
+        notify('error', (data as any).msg || '发送验证码失败');
       }
     } catch (error: any) {
-      messageApi.error(error.response?.data?.msg || '网络请求失败，请重试');
+      notify('error', error.response?.data?.msg || '网络请求失败，请重试');
     } finally {
       setForgotCodeLoading(false);
     }
   };
 
-  const handleRegister = async (values: RegisterFormValues) => {
-    if (values.password !== values.repassword) {
-      messageApi.error('两次输入的密码不一致');
+  const handleRegister = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!validateRegister()) return;
+    if (registerForm.password !== registerForm.repassword) {
+      notify('error', '两次输入的密码不一致');
       return;
     }
     setRegisterLoading(true);
     try {
       const data = await api.post('/user/register', {
-        name: values.name,
-        email: values.email,
-        verifyCode: values.verifyCode,
-        password: values.password,
+        name: registerForm.name,
+        email: registerForm.email,
+        verifyCode: registerForm.verifyCode,
+        password: registerForm.password,
       }) as ApiResponse;
       if (data.code === 200) {
-        messageApi.success('注册成功，请登录');
+        notify('success', '注册成功，请登录');
         onModeChange?.('login');
       } else {
-        messageApi.error((data as any).msg || '注册失败');
+        notify('error', (data as any).msg || '注册失败');
       }
     } catch (error: any) {
-      messageApi.error(error.response?.data?.msg || '网络请求失败，请重试');
+      notify('error', error.response?.data?.msg || '网络请求失败，请重试');
     } finally {
       setRegisterLoading(false);
     }
   };
 
   const handleSendCode = async () => {
-    const email = registerForm.getFieldValue('email');
-    try {
-      await registerForm.validateFields(['email']);
-    } catch {
+    const emailError = validateEmail(registerForm.email);
+    if (emailError) {
+      setRegisterErrors((current) => ({ ...current, email: emailError }));
       return;
     }
 
     setCodeLoading(true);
     try {
       const data = await api.post('/email/send', {
-        email,
+        email: registerForm.email,
         option: 'register',
       }) as ApiResponse;
       if (data.code === 200) {
-        messageApi.success('验证码已发送，请注意查收');
+        notify('success', '验证码已发送，请注意查收');
         setCountdown(60);
       } else {
-        messageApi.error((data as any).msg || '发送验证码失败');
+        notify('error', (data as any).msg || '发送验证码失败');
       }
     } catch (error: any) {
-      messageApi.error(error.response?.data?.msg || '网络请求失败，请重试');
+      notify('error', error.response?.data?.msg || '网络请求失败，请重试');
     } finally {
       setCodeLoading(false);
     }
   };
 
-  const tabItems = useMemo(
+  const tabItems = useMemo<TabItem<AuthMode>[]>(
     () => [
       {
         key: 'login',
         label: '登录',
         children: (
-          <Form
-            layout="vertical"
-            form={loginForm}
-            onFinish={handleLogin}
-            autoComplete="off"
-            className="pt-4"
-          >
-            <Form.Item name="email" rules={emailRules}>
-              <Input
-                prefix={<Mail className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="邮箱地址"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
-              <Input.Password
-                prefix={<Lock className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="登录密码"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                size="large"
-                loading={loginLoading}
-                className="h-12 rounded-full font-semibold hover:-translate-y-0.5 transition-all duration-300"
-                style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-              >
-                立即登录
-              </Button>
-            </Form.Item>
+          <form onSubmit={handleLogin} autoComplete="off" className="space-y-4 pt-5">
+            <FormItem error={loginErrors.email}>
+              <Input prefix={<Mail className={iconClassName} />} placeholder="邮箱地址" size="large" className="rounded-full" style={inputStyle} value={loginForm.email} onChange={updateLogin('email')} />
+            </FormItem>
+            <FormItem error={loginErrors.password}>
+              <Input.Password prefix={<Lock className={iconClassName} />} placeholder="登录密码" size="large" className="rounded-full" style={inputStyle} value={loginForm.password} onChange={updateLogin('password')} />
+            </FormItem>
+            <Button type="submit" variant="filled" size="large" block loading={loginLoading} className="font-semibold hover:-translate-y-0.5">
+              立即登录
+            </Button>
             <div className="text-center">
-              <Button
-                type="link"
-                size="small"
-                onClick={() => onModeChange?.('forget')}
-                style={{ color: 'var(--gemini-text-secondary)' }}
-              >
+              <Button type="button" variant="text" size="small" onClick={() => onModeChange?.('forget')}>
                 忘记密码？
               </Button>
             </div>
-          </Form>
+          </form>
         ),
       },
       {
         key: 'register',
         label: '注册',
         children: (
-          <Form
-            layout="vertical"
-            form={registerForm}
-            onFinish={handleRegister}
-            autoComplete="off"
-            className="pt-4"
-          >
-            <Form.Item
-              name="name"
-              rules={[
-                { required: true, message: '请输入姓名' },
-                { min: 2, max: 20, message: '姓名长度应在2-20个字符之间' },
-              ]}
-            >
-              <Input
-                prefix={<User className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="姓名"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item name="email" rules={emailRules}>
-              <Input
-                prefix={<Mail className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="邮箱地址"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item name="verifyCode" rules={[{ required: true, message: '请输入验证码' }]}>
-              <Space.Compact className="w-full">
-                <Input 
-                  placeholder="邮箱验证码" 
-                  size="large" 
-                  className="rounded-l-full"
-                  style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-                />
-                <Button
-                  size="large"
-                  onClick={handleSendCode}
-                  disabled={countdown > 0}
-                  loading={codeLoading}
-                  className="rounded-r-full"
-                  style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-                >
+          <form onSubmit={handleRegister} autoComplete="off" className="space-y-4 pt-5">
+            <FormItem error={registerErrors.name}>
+              <Input prefix={<User className={iconClassName} />} placeholder="姓名" size="large" className="rounded-full" style={inputStyle} value={registerForm.name} onChange={updateRegister('name')} />
+            </FormItem>
+            <FormItem error={registerErrors.email}>
+              <Input prefix={<Mail className={iconClassName} />} placeholder="邮箱地址" size="large" className="rounded-full" style={inputStyle} value={registerForm.email} onChange={updateRegister('email')} />
+            </FormItem>
+            <FormItem error={registerErrors.verifyCode}>
+              <div className="flex w-full gap-2">
+                <Input placeholder="邮箱验证码" size="large" className="rounded-full" style={inputStyle} value={registerForm.verifyCode} onChange={updateRegister('verifyCode')} />
+                <Button type="button" size="large" variant="filled" loading={codeLoading} disabled={countdown > 0} onClick={handleSendCode} className="shrink-0 px-5">
                   {countdown > 0 ? `${countdown}s` : '获取验证码'}
                 </Button>
-              </Space.Compact>
-            </Form.Item>
-            <Form.Item name="password" rules={passwordRules}>
-              <Input.Password
-                prefix={<Lock className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="登录密码"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="repassword"
-              rules={[{ required: true, message: '请再次输入密码' }]}
-            >
-              <Input.Password
-                prefix={<Lock className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="重复密码"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                size="large"
-                loading={registerLoading}
-                className="h-12 rounded-full font-semibold hover:-translate-y-0.5 transition-all duration-300"
-                style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-              >
-                立即注册
-              </Button>
-            </Form.Item>
-          </Form>
+              </div>
+            </FormItem>
+            <FormItem error={registerErrors.password}>
+              <Input.Password prefix={<Lock className={iconClassName} />} placeholder="登录密码" size="large" className="rounded-full" style={inputStyle} value={registerForm.password} onChange={updateRegister('password')} />
+            </FormItem>
+            <FormItem error={registerErrors.repassword}>
+              <Input.Password prefix={<Lock className={iconClassName} />} placeholder="重复密码" size="large" className="rounded-full" style={inputStyle} value={registerForm.repassword} onChange={updateRegister('repassword')} />
+            </FormItem>
+            <Button type="submit" variant="filled" size="large" block loading={registerLoading} className="font-semibold hover:-translate-y-0.5">
+              立即注册
+            </Button>
+          </form>
         ),
       },
       {
         key: 'forget',
         label: '忘记密码',
         children: (
-          <Form
-            layout="vertical"
-            form={forgotForm}
-            onFinish={handleForgotPassword}
-            autoComplete="off"
-            className="pt-4"
-          >
-            <Form.Item name="email" rules={emailRules}>
-              <Input
-                prefix={<Mail className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="注册邮箱"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="verifyCode"
-              rules={[{ required: true, message: '请输入验证码' }]}
-            >
-              <Space.Compact className="w-full">
-                <Input 
-                  placeholder="邮箱验证码" 
-                  size="large" 
-                  className="rounded-l-full"
-                  style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-                />
-                <Button
-                  size="large"
-                  onClick={handleSendForgotCode}
-                  disabled={forgotCountdown > 0}
-                  loading={forgotCodeLoading}
-                  className="rounded-r-full"
-                  style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-                >
+          <form onSubmit={handleForgotPassword} autoComplete="off" className="space-y-4 pt-5">
+            <FormItem error={forgotErrors.email}>
+              <Input prefix={<Mail className={iconClassName} />} placeholder="注册邮箱" size="large" className="rounded-full" style={inputStyle} value={forgotForm.email} onChange={updateForgot('email')} />
+            </FormItem>
+            <FormItem error={forgotErrors.verifyCode}>
+              <div className="flex w-full gap-2">
+                <Input placeholder="邮箱验证码" size="large" className="rounded-full" style={inputStyle} value={forgotForm.verifyCode} onChange={updateForgot('verifyCode')} />
+                <Button type="button" size="large" variant="filled" loading={forgotCodeLoading} disabled={forgotCountdown > 0} onClick={handleSendForgotCode} className="shrink-0 px-5">
                   {forgotCountdown > 0 ? `${forgotCountdown}s` : '获取验证码'}
                 </Button>
-              </Space.Compact>
-            </Form.Item>
-            <Form.Item name="newPassword" rules={passwordRules}>
-              <Input.Password
-                prefix={<Lock className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="新密码"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="confirmPassword"
-              dependencies={['newPassword']}
-              rules={[{ required: true, message: '请再次输入密码' }]}
-            >
-              <Input.Password
-                prefix={<Lock className="w-4 h-4" style={{ color: 'var(--gemini-text-disabled)' }} />}
-                placeholder="确认新密码"
-                size="large"
-                className="rounded-full"
-                style={{ backgroundColor: 'var(--gemini-bg)', border: 'none' }}
-              />
-            </Form.Item>
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                size="large"
-                loading={forgotLoading}
-                className="h-12 rounded-full font-semibold hover:-translate-y-0.5 transition-all duration-300"
-                style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-              >
-                重置密码
-              </Button>
-            </Form.Item>
-          </Form>
+              </div>
+            </FormItem>
+            <FormItem error={forgotErrors.newPassword}>
+              <Input.Password prefix={<Lock className={iconClassName} />} placeholder="新密码" size="large" className="rounded-full" style={inputStyle} value={forgotForm.newPassword} onChange={updateForgot('newPassword')} />
+            </FormItem>
+            <FormItem error={forgotErrors.confirmPassword}>
+              <Input.Password prefix={<Lock className={iconClassName} />} placeholder="确认新密码" size="large" className="rounded-full" style={inputStyle} value={forgotForm.confirmPassword} onChange={updateForgot('confirmPassword')} />
+            </FormItem>
+            <Button type="submit" variant="filled" size="large" block loading={forgotLoading} className="font-semibold hover:-translate-y-0.5">
+              重置密码
+            </Button>
+          </form>
         ),
       },
     ],
-    [
-      loginForm,
-      registerForm,
-      forgotForm,
-      loginLoading,
-      registerLoading,
-      forgotLoading,
-      codeLoading,
-      forgotCodeLoading,
-      countdown,
-      forgotCountdown,
-    ]
+    [loginForm, registerForm, forgotForm, loginErrors, registerErrors, forgotErrors, loginLoading, registerLoading, forgotLoading, codeLoading, forgotCodeLoading, countdown, forgotCountdown]
   );
 
   return (
     <>
-      {messageContextHolder}
-      <Modal
-        open={open}
-        onCancel={onClose}
-        footer={null}
-        width={440}
-        centered
-        destroyOnClose
-        title={null}
-        className="auth-modal"
-        styles={{
-          content: {
-            borderRadius: '24px',
-            padding: '24px',
-          }
-        }}
-      >
-        <div className="text-center pt-4 pb-2">
-          <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
+      <Toast toast={toast} />
+      <Modal open={open} onClose={onClose} width={440} destroyOnClose className="auth-modal">
+        <div className="pb-2 pt-3 text-center">
+          <h2 className="mb-2 text-2xl font-bold" style={{ color: 'var(--gemini-text-primary)' }}>
             {mode === 'login' ? '欢迎回来' : mode === 'register' ? '立即加入 Vnollx' : '找回密码'}
           </h2>
-          <Text style={{ color: 'var(--gemini-text-secondary)' }}>
+          <div className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
             {mode === 'login'
               ? '登录后即可同步记录、参与比赛'
               : mode === 'register'
-              ? '注册新账号，解锁完整评测体验'
-              : '通过邮箱验证重置您的密码'}
-          </Text>
+                ? '注册新账号，解锁完整评测体验'
+                : '通过邮箱验证重置您的密码'}
+          </div>
         </div>
-        <Tabs
-          activeKey={mode}
-          onChange={(key) => onModeChange?.(key as AuthMode)}
-          items={tabItems}
-          centered
-          className="auth-tabs"
-        />
+        <Tabs activeKey={mode} onChange={(key) => onModeChange?.(key)} items={tabItems} centered className="auth-tabs" />
       </Modal>
     </>
   );
 };
 
 export default AuthModal;
-

@@ -4,6 +4,7 @@ import com.example.vnollxonlinejudge.judge.JudgeStrategy;
 import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.model.result.RunResult;
+import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.websocket.JudgeWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,18 +27,21 @@ public class JudgeConsumer {
     private final SubmissionService submissionService;
     private final JudgeStrategyFactory judgeStrategyFactory;
     private final JudgeWebSocketHandler judgeWebSocketHandler;
+    private final ProblemService problemService;
 
     @Autowired
     public JudgeConsumer(
             ObjectMapper objectMapper,
             SubmissionService submissionService,
             JudgeStrategyFactory judgeStrategyFactory,
-            JudgeWebSocketHandler judgeWebSocketHandler
+            JudgeWebSocketHandler judgeWebSocketHandler,
+            ProblemService problemService
     ){
         this.objectMapper=objectMapper;
         this.submissionService=submissionService;
         this.judgeStrategyFactory=judgeStrategyFactory;
         this.judgeWebSocketHandler = judgeWebSocketHandler;
+        this.problemService = problemService;
     }
     @RabbitListener(queues = "submissionQueue")
     public void handleSubmission(Message message)  {
@@ -51,6 +55,11 @@ public class JudgeConsumer {
             logger.info("Processing submission: snowflakeId={}, uid={}", judgeInfo.getSnowflakeId(), judgeInfo.getUid());
 
             JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
+            Problem problem = problemService.getById(judgeInfo.getPid());
+            if (problem != null) {
+                judgeInfo.setJudgeMode(problem.getJudgeMode());
+                judgeInfo.setCheckerFile(problem.getCheckerFile());
+            }
             submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(), "评测中", null, null, null, null, null);
             sendUpdate(judgeInfo, "评测中", null, null, null, null, null);
 
@@ -59,7 +68,9 @@ public class JudgeConsumer {
                     judgeInfo.getCode(),
                     judgeInfo.getPid() + ".zip",
                     judgeInfo.getTime(),
-                    judgeInfo.getMemory()
+                    judgeInfo.getMemory(),
+                    judgeInfo.getJudgeMode(),
+                    judgeInfo.getCheckerFile()
             );
             // 获取错误信息（如果有）
             String errorInfo = null;

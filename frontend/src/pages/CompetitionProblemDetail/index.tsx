@@ -10,7 +10,6 @@ import {
   Space,
   Divider,
   Alert,
-  Input,
   Avatar,
   Popconfirm,
 } from 'antd';
@@ -34,7 +33,7 @@ import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import CodeEditor from '../../components/CodeEditor';
-import { JudgeOutcomeCard, mapJudgeStatusToVariant } from '../../components';
+import { Input, JudgeOutcomeCard, mapJudgeStatusToVariant } from '../../components';
 import type { JudgeOutcomeData } from '../../components';
 import SuccessCelebration from '../../components/SuccessCelebration';
 import type { JudgeMessage } from '../../types';

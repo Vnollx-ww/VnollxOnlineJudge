@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Form,
-  Input,
   Button,
   Avatar,
   Typography,
@@ -20,6 +19,7 @@ import {
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
+import Input from '../../components/Input';
 
 const { Title, Text } = Typography;
 

@@ -2,11 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Button,
-  Input,
   Modal,
   Form,
   InputNumber,
-  Select,
   Switch,
   Upload,
   Tag,
@@ -23,6 +21,8 @@ import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
+import Select from '@/components/Select';
+import Input from '@/components/Input';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -47,6 +47,8 @@ interface Problem {
   difficulty: string;
   inputFormat: string;
   outputFormat: string;
+  judgeMode?: string;
+  checkerFile?: string;
   inputExample?: string;
   outputExample?: string;
   hint?: string;
@@ -152,6 +154,7 @@ const AdminProblems: React.FC = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [fileList, setFileList] = useState<any[]>([]);
+  const [checkerFileList, setCheckerFileList] = useState<any[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
   const [examplesList, setExamplesList] = useState<ProblemExampleItem[]>([{ input: '', output: '', sortOrder: 0 }]);
@@ -216,11 +219,13 @@ const AdminProblems: React.FC = () => {
         difficulty: problem.difficulty,
         inputFormat: problem.inputFormat,
         outputFormat: problem.outputFormat,
+        judgeMode: problem.judgeMode || 'standard',
         hint: problem.hint,
         open: problem.open,
       });
       setTags(problem.tags || []);
       setFileList([]);
+      setCheckerFileList([]);
       try {
         const res = await api.get('/admin/problem/examples', { params: { pid: problem.id } }) as ApiResponse<ProblemExampleItem[]>;
         if (res.code === 200 && res.data?.length) {
@@ -235,6 +240,7 @@ const AdminProblems: React.FC = () => {
       form.resetFields();
       setTags([]);
       setFileList([]);
+      setCheckerFileList([]);
       setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
     }
   };
@@ -268,6 +274,7 @@ const AdminProblems: React.FC = () => {
       formData.append('difficulty', values.difficulty);
       formData.append('inputFormat', values.inputFormat);
       formData.append('outputFormat', values.outputFormat);
+      formData.append('judgeMode', values.judgeMode || 'standard');
       const validExamples = examplesList.filter((e) => (e.input ?? '').trim() || (e.output ?? '').trim());
       formData.append('examples', JSON.stringify(validExamples.map((e, i) => ({ input: e.input ?? '', output: e.output ?? '', sortOrder: i }))));
       formData.append('inputExample', validExamples[0]?.input ?? '');
@@ -291,8 +298,23 @@ const AdminProblems: React.FC = () => {
         }
       }
 
+      let hasCheckerFile = false;
+      if (checkerFileList.length > 0) {
+        const fileObj = checkerFileList[0];
+        const file = fileObj.originFileObj || fileObj;
+        if (file && file instanceof File) {
+          formData.append('checkerFile', file);
+          hasCheckerFile = true;
+        }
+      }
+
       if (!editingProblem && !hasFile) {
         toast.error('新建题目必须上传测试数据文件');
+        return;
+      }
+
+      if (values.judgeMode === 'special' && !hasCheckerFile && !editingProblem?.checkerFile) {
+        toast.error('构造题必须上传 checker 代码文件');
         return;
       }
 
@@ -469,6 +491,13 @@ ${aiInput}`;
     { title: '题号', dataIndex: 'id', key: 'id', width: 80 },
     { title: '标题', dataIndex: 'title', key: 'title' },
     { title: '难度', dataIndex: 'difficulty', key: 'difficulty', render: (d: string) => getDifficultyTag(d) },
+    {
+      title: '判题模式',
+      dataIndex: 'judgeMode',
+      key: 'judgeMode',
+      width: 110,
+      render: (mode: string) => <Tag color={mode === 'special' ? 'purple' : 'blue'}>{mode === 'special' ? '构造题' : '普通评测'}</Tag>,
+    },
     { title: '提交数', dataIndex: 'submitCount', key: 'submitCount', width: 100 },
     { title: '通过数', dataIndex: 'passCount', key: 'passCount', width: 100 },
     {
@@ -586,7 +615,7 @@ ${aiInput}`;
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ difficulty: '简单', open: true }}
+          initialValues={{ difficulty: '简单', open: true, judgeMode: 'standard' }}
         >
           {/* AI识别区域 */}
           <Form.Item label="AI智能识别">
@@ -672,11 +701,13 @@ ${aiInput}`;
             </Col>
             <Col span={8}>
               <Form.Item name="difficulty" label="难度" rules={[{ required: true }]}>
-                <Select>
-                  <Select.Option value="简单">简单</Select.Option>
-                  <Select.Option value="中等">中等</Select.Option>
-                  <Select.Option value="困难">困难</Select.Option>
-                </Select>
+                <Select
+                  options={[
+                    { value: '简单', label: '简单' },
+                    { value: '中等', label: '中等' },
+                    { value: '困难', label: '困难' },
+                  ]}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -701,6 +732,15 @@ ${aiInput}`;
               </Form.Item>
             </Col>
           </Row>
+
+          <Form.Item name="judgeMode" label="判题模式" rules={[{ required: true, message: '请选择判题模式' }]}>
+            <Select
+              options={[
+                { value: 'standard', label: '普通评测' },
+                { value: 'special', label: '构造题（Special Judge）' },
+              ]}
+            />
+          </Form.Item>
 
           <Form.Item label="输入/输出样例（可多组）">
             <div className="space-y-4">
@@ -795,6 +835,29 @@ ${aiInput}`;
                 </Upload>
                 <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
                   {editingProblem ? '不选择文件则保留原有测试数据' : '必须上传测试数据文件'}
+                </p>
+              </Form.Item>
+            </Col>
+            <Col span={18}>
+              <Form.Item label="Checker 代码文件">
+                <Upload
+                  fileList={checkerFileList}
+                  onChange={({ fileList }) => setCheckerFileList(fileList)}
+                  beforeUpload={(file) => {
+                    const isValid = ['.cpp', '.cc', '.cxx'].some((ext) => file.name.endsWith(ext));
+                    if (!isValid) {
+                      toast.error('只能上传 .cpp, .cc, .cxx 格式的 checker 文件！');
+                      return Upload.LIST_IGNORE;
+                    }
+                    return false;
+                  }}
+                  maxCount={1}
+                  accept=".cpp,.cc,.cxx"
+                >
+                  <Button icon={<UploadIcon className="w-4 h-4" />}>选择 Checker</Button>
+                </Upload>
+                <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
+                  判题模式为构造题时必传；编辑时不选择则保留原 checker
                 </p>
               </Form.Item>
             </Col>

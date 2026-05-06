@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { Input, Avatar, Badge, Empty, Spin, Modal, Tabs } from 'antd';
+import { Avatar, Badge, Empty, Spin, Modal, Tabs } from 'antd';
 import { Search, Send, UserPlus, Check, X, Trash2, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import toast from 'react-hot-toast';
+import Input from '../../components/Input';
 import api from '@/utils/api';
 import { isAuthenticated } from '@/utils/auth';
 import { useMessageWebSocket } from '@/contexts/MessageWebSocketContext';
