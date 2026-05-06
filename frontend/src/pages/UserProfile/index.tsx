@@ -78,10 +78,8 @@ const UserProfile: React.FC = () => {
   const loadUserData = async () => {
     setLoading(true);
     try {
-      const profileData = await api.get('/user/profile');
-      if (profileData.code === 200 && profileData.data.id === parseInt(userId!)) {
-        setUser(profileData.data);
-      } else {
+      const profileData = await api.get(`/user/${userId}`) as ApiResponse<User>;
+      if (profileData.code === 200) {
         setUser(profileData.data);
       }
 

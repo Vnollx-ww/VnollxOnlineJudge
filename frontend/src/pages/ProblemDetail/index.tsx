@@ -1069,7 +1069,7 @@ const ProblemDetail: React.FC = () => {
                 rows={4}
                 className="rounded-2xl font-mono text-sm"
                 style={{
-                  backgroundColor: 'var(--gemini-bg)',
+                  backgroundColor: '#fff',
                   borderColor: 'var(--gemini-border-light)',
                   paddingBottom: 36,
                 }}

@@ -56,6 +56,11 @@ public class UserController {
         UserVo user = userService.getUserById(userId);
         return Result.Success(user, "获取用户信息成功");
     }
+    @GetMapping("/{id}")
+    public Result<UserVo> getUserById(@PathVariable Long id) {
+        UserVo user = userService.getUserById(id);
+        return Result.Success(user, "获取用户信息成功");
+    }
     @GetMapping("/solved-problems")
     public Result<List<UserSolvedProblem>> getSolveProblem(@RequestParam String uid){
         List<UserSolvedProblem> userSolvedProblems=userService.getSolveProblem(Long.parseLong(uid));

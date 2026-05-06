@@ -8,8 +8,6 @@ import com.example.vnollxonlinejudge.mapper.CompetitionProblemMapper;
 import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.service.*;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +15,12 @@ import java.util.List;
 @Service
 public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProblemMapper,CompetitionProblem>  implements CompetitionProblemService {
     private final ProblemService problemService;
+    private final RedisService redisService;
 
     @Autowired
-    public CompetitionProblemServiceImpl(ProblemService problemService) {
+    public CompetitionProblemServiceImpl(ProblemService problemService, RedisService redisService) {
         this.problemService=problemService;
+        this.redisService=redisService;
     }
     @Override
     public List<CompetitionProblem> getProblemList(Long cid) {
@@ -61,6 +61,7 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
         competitionProblem.setCompetitionId(cid);
         competitionProblem.setProblemId(pid);
         this.save(competitionProblem);
+        redisService.deleteKey("competition:" + cid + ":problems");
     }
 
     @Override
@@ -74,5 +75,6 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
         }
         
         this.baseMapper.delete(wrapper);
+        redisService.deleteKey("competition:" + cid + ":problems");
     }
 }

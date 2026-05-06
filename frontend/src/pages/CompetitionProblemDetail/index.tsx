@@ -611,8 +611,8 @@ const CompetitionProblemDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="space-y-6">
+      <div className="w-full">
         <Space direction="vertical" size="large" className="w-full">
           {/* 题目信息卡片 */}
           <Card className="!rounded-2xl !shadow-lg !border-0">
@@ -851,7 +851,7 @@ const CompetitionProblemDetail: React.FC = () => {
                     placeholder="默认已填入当前样例输入，可修改后点击「测试样例」"
                     rows={4}
                     className="!rounded-xl font-mono text-sm focus:ring-0 focus:border-blue-400"
-                    style={{ paddingBottom: 36 }}
+                    style={{ backgroundColor: '#fff', paddingBottom: 36 }}
                   />
                   <Button
                     type="link"

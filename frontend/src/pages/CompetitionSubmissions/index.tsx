@@ -307,44 +307,26 @@ const CompetitionSubmissions: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      {/* 导航栏 - Gemini 风格 */}
-      <div 
-        className="sticky top-0 z-10"
-        style={{ 
-          backgroundColor: 'var(--gemini-surface)',
-          borderBottom: '1px solid var(--gemini-border-light)'
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <Space size="large">
-            <Link to={`/competition/${id}`}>
-              <Button type="link" style={{ color: 'var(--gemini-text-secondary)' }}>
-                <UnorderedListOutlined /> 比赛详情
-              </Button>
-            </Link>
-            <Link to={`/competition/${id}/ranklist`}>
-              <Button type="link" style={{ color: 'var(--gemini-text-secondary)' }}>
-                <TrophyOutlined /> 比赛排行榜
-              </Button>
-            </Link>
-            <Button type="link" className="!font-medium" style={{ color: 'var(--gemini-accent-strong)' }}>
-              <HistoryOutlined /> 比赛提交记录
-            </Button>
-          </Space>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="w-full" style={{ backgroundColor: 'transparent' }}>
+      <div className="w-full">
         {/* 比赛基本信息 - Gemini 风格 */}
         <div className="gemini-card mb-6">
-          <Title level={2} className="!mb-4" style={{ color: 'var(--gemini-text-primary)' }}>{competition.title}</Title>
-          <Space>
-            <Text strong style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</Text>
-            <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.beginTime)}</Text>
-            <Text strong className="ml-6" style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</Text>
-            <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.endTime)}</Text>
-          </Space>
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div>
+              <Title level={2} className="!mb-4" style={{ color: 'var(--gemini-text-primary)' }}>{competition.title}</Title>
+              <Space>
+                <Text strong style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</Text>
+                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.beginTime)}</Text>
+                <Text strong className="ml-6" style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</Text>
+                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.endTime)}</Text>
+              </Space>
+            </div>
+            <Link to={`/competition/${id}`}>
+              <Button icon={<UnorderedListOutlined />}>
+                返回比赛详情
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* 提交记录 - Gemini 风格 */}

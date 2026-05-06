@@ -261,37 +261,11 @@ const CompetitionRanklist: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] text-[#333]">
-      <div 
-        className="sticky top-0 z-10"
-        style={{ 
-          backgroundColor: 'var(--gemini-surface)',
-          borderBottom: '1px solid var(--gemini-border-light)'
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <Space size="large">
-            <Link to={`/competition/${id}`}>
-              <Button type="link" style={{ color: 'var(--gemini-text-secondary)' }}>
-                <UnorderedListOutlined /> 比赛详情
-              </Button>
-            </Link>
-            <Button type="link" className="!font-medium" style={{ color: 'var(--gemini-accent-strong)' }}>
-              <TrophyOutlined /> 比赛排行榜
-            </Button>
-            <Link to={`/competition/${id}/submissions`}>
-              <Button type="link" style={{ color: 'var(--gemini-text-secondary)' }}>
-                <HistoryOutlined /> 比赛提交记录
-              </Button>
-            </Link>
-          </Space>
-        </div>
-      </div>
-
-      <div className="mx-auto w-full max-w-[1650px] px-5 py-6">
+    <div className="w-full text-[#333]">
+      <div className="w-full">
         {passwordVerified ? (
-          <>
-            <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="rounded-3xl bg-white p-5">
+            <div className="mb-6 flex items-center justify-between gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center">
                 <svg viewBox="0 0 100 100" className="h-14 w-14">
                   <circle cx="35" cy="35" r="18" fill="none" stroke="#e11d48" strokeWidth="5" />
@@ -301,25 +275,27 @@ const CompetitionRanklist: React.FC = () => {
                 </svg>
               </div>
               <div className="min-w-0 flex-1 text-center">
-                <Title level={1} className="!mb-2 !text-3xl !font-bold !tracking-[0.25em] !text-gray-800">
+                <Title level={1} className="!mb-0 !text-3xl !font-bold !tracking-[0.25em] !text-gray-800">
                   {competition.title}
                 </Title>
               </div>
-              <div className="shrink-0 rounded border-4 border-inset border-[#333] bg-black px-3 py-1 font-mono text-[2.8rem] leading-none text-[#00ff00] shadow-[0_0_10px_rgba(0,0,0,0.5)]">
-                {formatCountdown()}
+              <div className="shrink-0 flex flex-col items-end gap-3">
+                <div className="rounded border-4 border-inset border-[#333] bg-black px-3 py-1 font-mono text-[2.8rem] leading-none text-[#00ff00] shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+                  {formatCountdown()}
+                </div>
               </div>
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center rounded-lg bg-white py-16">
+              <div className="flex items-center justify-center rounded-lg py-16">
                 <Spin size="large" tip="榜单加载中..." />
               </div>
             ) : users.length === 0 ? (
-              <div className="rounded-lg bg-white py-16">
+              <div className="rounded-lg py-16">
                 <Empty description="暂无排名数据" />
               </div>
             ) : (
-              <div className="h-[calc(100vh-180px)] overflow-auto">
+              <div className="h-[calc(100vh-220px)] overflow-auto rounded-2xl">
                 <table className="w-max table-fixed border-separate border-spacing-[1px]">
                   <thead>
                     <tr>
@@ -365,7 +341,7 @@ const CompetitionRanklist: React.FC = () => {
                 </table>
               </div>
             )}
-          </>
+          </div>
         ) : (
           <div className="gemini-card text-center py-12">
             <Text style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看排行榜</Text>

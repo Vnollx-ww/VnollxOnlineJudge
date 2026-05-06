@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, ChevronDown, X } from 'lucide-react';
 
 type SelectValue = string | number;
@@ -50,8 +51,11 @@ function CustomSelect<T extends SelectValue = SelectValue>({
   filterOption: _filterOption,
 }: SelectProps<T>) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
   const multiple = mode === 'multiple';
 
   const selectedValues = useMemo<T[]>(() => {
@@ -80,9 +84,37 @@ function CustomSelect<T extends SelectValue = SelectValue>({
     }, []);
   }, [filteredOptions]);
 
+  const updateDropdownPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setDropdownStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left: rect.left,
+      minWidth: rect.width,
+      zIndex: 9999,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) updateDropdownPosition();
+  }, [open, updateDropdownPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleScroll = () => updateDropdownPosition();
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [open, updateDropdownPosition]);
+
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!rootRef.current?.contains(target) && !dropdownRef.current?.contains(target)) {
         setOpen(false);
         setKeyword('');
       }
@@ -123,6 +155,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
   return (
     <div ref={rootRef} className={`relative inline-block align-middle ${className}`} style={style}>
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen((current) => !current)}
@@ -159,8 +192,8 @@ function CustomSelect<T extends SelectValue = SelectValue>({
         <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-full min-w-max overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/70 backdrop-blur-xl">
+      {open && createPortal(
+        <div ref={dropdownRef} className="min-w-max overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/70 backdrop-blur-xl" style={dropdownStyle}>
           {showSearch && (
             <div className="border-b border-slate-100 p-2">
               <input
@@ -206,7 +239,8 @@ function CustomSelect<T extends SelectValue = SelectValue>({
               <div className="px-3 py-8 text-center text-sm text-slate-400">暂无选项</div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

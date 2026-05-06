@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Checkbox, Progress } from 'antd';
+import { Button, Input, Tag } from 'antd';
 import toast from 'react-hot-toast';
-import { Trophy, Play, Clock, Flag, Users, Home } from 'lucide-react';
+import { CalendarDays, Clock, Search, Trophy } from 'lucide-react';
+import { Select } from '../../components';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
@@ -21,7 +22,9 @@ const Competitions: React.FC = () => {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [allCompetitions, setAllCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filterRunning, setFilterRunning] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [ruleFilter, setRuleFilter] = useState('all');
+  const [keyword, setKeyword] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -34,7 +37,7 @@ const Competitions: React.FC = () => {
 
   useEffect(() => {
     filterCompetitions();
-  }, [filterRunning, allCompetitions]);
+  }, [statusFilter, ruleFilter, keyword, allCompetitions]);
 
   const loadCompetitions = async () => {
     setLoading(true);
@@ -56,14 +59,14 @@ const Competitions: React.FC = () => {
   };
 
   const filterCompetitions = () => {
-    if (filterRunning) {
-      const filtered = allCompetitions.filter(
-        (comp) => calculateStatus(comp.beginTime, comp.endTime) === '进行中'
-      );
-      setCompetitions(filtered);
-    } else {
-      setCompetitions(allCompetitions);
-    }
+    const normalizedKeyword = keyword.trim().toLowerCase();
+    const filtered = allCompetitions.filter((comp) => {
+      const status = calculateStatus(comp.beginTime, comp.endTime);
+      const matchStatus = statusFilter === 'all' || status === statusFilter;
+      const matchKeyword = !normalizedKeyword || comp.title.toLowerCase().includes(normalizedKeyword);
+      return matchStatus && matchKeyword;
+    });
+    setCompetitions(filtered);
   };
 
   const calculateStatus = (beginTime: string, endTime: string) => {
@@ -74,16 +77,6 @@ const Competitions: React.FC = () => {
     if (now < begin) return '暂未开始';
     if (now < end) return '进行中';
     return '已结束';
-  };
-
-  const calculateProgress = (beginTime: string, endTime: string) => {
-    const now = Date.now();
-    const start = new Date(beginTime).getTime();
-    const end = new Date(endTime).getTime();
-
-    if (now < start) return 0;
-    if (now > end) return 100;
-    return ((now - start) / (end - start)) * 100;
   };
 
   const formatTime = (timeStr: string) => {
@@ -97,13 +90,22 @@ const Competitions: React.FC = () => {
     });
   };
 
-  const getStatusStyle = (status: string) => {
-    const configs: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
-      '进行中': { color: 'var(--gemini-info)', bg: 'var(--gemini-info-bg)', icon: <Play className="w-4 h-4" /> },
-      '暂未开始': { color: 'var(--gemini-text-secondary)', bg: 'var(--gemini-surface-hover)', icon: <Clock className="w-4 h-4" /> },
-      '已结束': { color: 'var(--gemini-error)', bg: 'var(--gemini-error-bg)', icon: <Flag className="w-4 h-4" /> },
+  const formatDuration = (beginTime: string, endTime: string) => {
+    const diff = Math.max(0, new Date(endTime).getTime() - new Date(beginTime).getTime());
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    if (days > 0) return `${days}天${hours > 0 ? ` ${hours}小时` : ''}`;
+    return `${Math.max(1, hours)}小时`;
+  };
+
+  const getStatusTag = (status: string) => {
+    const configs: Record<string, { color: string; text: string }> = {
+      '进行中': { color: 'green', text: '进行中' },
+      '暂未开始': { color: 'blue', text: '暂未开始' },
+      '已结束': { color: 'red', text: '已结束' },
     };
-    return configs[status] || configs['暂未开始'];
+    const config = configs[status] || configs['暂未开始'];
+    return <Tag color={config.color} className="!rounded-full !px-3">{config.text}</Tag>;
   };
 
   const handleJoin = (id: number, status: string) => {
@@ -115,140 +117,91 @@ const Competitions: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full">
       {/* 标题栏 */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-semibold flex items-center gap-2" style={{ color: 'var(--gemini-text-primary)' }}>
-          <Trophy className="w-7 h-7" style={{ color: '#f59e0b' }} />
-          竞赛练习中心
-        </h1>
-        <div className="flex items-center gap-4">
-          <Checkbox
-            checked={filterRunning}
-            onChange={(e) => setFilterRunning(e.target.checked)}
-          >
-            <span style={{ color: 'var(--gemini-text-secondary)' }}>只显示进行中的</span>
-          </Checkbox>
-          <Button icon={<Home className="w-4 h-4" />} onClick={() => navigate('/')}>
-            返回主页
-          </Button>
+      <div className="rounded-3xl" style={{ backgroundColor: 'var(--gemini-surface)', boxShadow: 'var(--shadow-gemini)' }}>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-4" style={{ borderBottom: '1px solid var(--gemini-border-light)' }}>
+          <h1 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
+            全部比赛
+          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+  
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              className="w-40"
+              options={[
+                { value: 'all', label: '全部' },
+                { value: '进行中', label: '进行中' },
+                { value: '暂未开始', label: '暂未开始' },
+                { value: '已结束', label: '已结束' },
+              ]}
+            />
+            <Input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="搜索比赛"
+              prefix={<Search className="w-4 h-4" />}
+              className="w-56"
+              allowClear
+            />
+          </div>
         </div>
-      </div>
 
-      {/* 比赛列表 - Gemini 卡片风格 */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {competitions.map((comp) => {
+        {/* 比赛列表 - Gemini 卡片风格 */}
+        <ol className="divide-y" style={{ borderColor: 'var(--gemini-border-light)' }}>
+          {competitions.map((comp) => {
           const status = calculateStatus(comp.beginTime, comp.endTime);
-          const progress = calculateProgress(comp.beginTime, comp.endTime);
-          const statusStyle = getStatusStyle(status);
 
           return (
-            <div
+            <li
               key={comp.id}
-              className="rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1"
-              style={{ 
-                backgroundColor: 'var(--gemini-surface)', 
-                boxShadow: 'var(--shadow-gemini)' 
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-gemini-hover)'}
-              onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-gemini)'}
+              className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-6 py-5 transition-colors cursor-pointer"
+              onClick={() => handleJoin(comp.id, status)}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--gemini-bg)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              {/* 头部 */}
-              <div className="flex items-start gap-4 mb-4">
+              <div className="flex items-center gap-5 min-w-0 flex-1">
                 <div 
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
                   style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)' }}
                 >
-                  <Trophy className="w-7 h-7 text-white" />
+                  <Trophy className="w-8 h-8 text-white" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold truncate mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-lg font-semibold truncate mb-3" style={{ color: 'var(--gemini-text-primary)' }}>
                     {comp.title}
                   </h3>
-                  <span 
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium"
-                    style={{ backgroundColor: statusStyle.bg, color: statusStyle.color }}
-                  >
-                    {statusStyle.icon}
-                    {status}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <CalendarDays className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
+                      {formatTime(comp.beginTime)}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
+                      {formatDuration(comp.beginTime, comp.endTime)}
+                    </span>
+                    <Button size="small" shape="round">
+                      ACM
+                    </Button>
+                  </div>
                 </div>
               </div>
-
-              {/* 信息 */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-disabled)' }}>开始时间</div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--gemini-text-primary)' }}>{formatTime(comp.beginTime)}</div>
-                </div>
-                <div>
-                  <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-disabled)' }}>结束时间</div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--gemini-text-primary)' }}>{formatTime(comp.endTime)}</div>
-                </div>
+              <div className="md:w-32 md:text-center">
+                {getStatusTag(status)}
               </div>
-
-              {comp.description && (
-                <p className="text-sm mb-4 line-clamp-2" style={{ color: 'var(--gemini-text-secondary)' }}>
-                  {comp.description}
-                </p>
-              )}
-
-              {/* 进度条 */}
-              <div className="mb-4">
-                <Progress
-                  percent={Math.round(progress)}
-                  strokeColor={{
-                    '0%': '#1a73e8',
-                    '100%': '#34a853',
-                  }}
-                  showInfo={false}
-                  className="mb-1"
-                />
-                <div className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>
-                  {progress === 0
-                    ? '比赛尚未开始'
-                    : progress === 100
-                    ? '比赛已结束'
-                    : `进行中 ${Math.round(progress)}%`}
-                </div>
-              </div>
-
-              {/* 底部操作 */}
-              <div 
-                className="flex items-center justify-between pt-4"
-                style={{ borderTop: '1px solid var(--gemini-border-light)' }}
-              >
-                <div className="flex items-center gap-1 text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>
-                  <Users className="w-4 h-4" />
-                  {comp.number || 0}人已参加
-                </div>
-                <Button
-                  type="primary"
-                  onClick={() => handleJoin(comp.id, status)}
-                  disabled={status === '暂未开始'}
-                  style={{ 
-                    backgroundColor: 'var(--gemini-accent)', 
-                    color: 'var(--gemini-accent-text)', 
-                    border: 'none' 
-                  }}
-                >
-                  {status === '进行中' ? '立即参加' : status === '已结束' ? '查看结果' : '暂未开始'}
-                </Button>
-              </div>
-            </div>
+            </li>
           );
-        })}
-      </div>
+          })}
+        </ol>
 
-      {competitions.length === 0 && !loading && (
-        <div 
-          className="rounded-3xl text-center py-12"
-          style={{ backgroundColor: 'var(--gemini-surface)', boxShadow: 'var(--shadow-gemini)' }}
-        >
-          <Trophy className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
-          <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无比赛数据</p>
-        </div>
-      )}
+        {competitions.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <Trophy className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
+            <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无比赛数据</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

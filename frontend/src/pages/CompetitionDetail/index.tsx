@@ -289,45 +289,8 @@ const CompetitionDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      {/* 导航栏 - Gemini 风格 */}
-      <div 
-        className="sticky top-0 z-10"
-        style={{ 
-          backgroundColor: 'var(--gemini-surface)',
-          borderBottom: '1px solid var(--gemini-border-light)'
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <Space size="large">
-            <Button 
-              type="link" 
-              className="!font-medium"
-              style={{ color: 'var(--gemini-accent-strong)' }}
-            >
-              <UnorderedListOutlined /> 比赛详情
-            </Button>
-            <Link to={`/competition/${id}/ranklist`}>
-              <Button 
-                type="link" 
-                style={{ color: 'var(--gemini-text-secondary)' }}
-              >
-                <TrophyOutlined /> 比赛排行榜
-              </Button>
-            </Link>
-            <Link to={`/competition/${id}/submissions`}>
-              <Button 
-                type="link"
-                style={{ color: 'var(--gemini-text-secondary)' }}
-              >
-                <HistoryOutlined /> 比赛提交记录
-              </Button>
-            </Link>
-          </Space>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="w-full" style={{ backgroundColor: 'transparent' }}>
+      <div className="w-full">
         {/* 比赛基本信息 - Gemini 风格 */}
         <div className="gemini-card mb-6">
           <div className="flex flex-wrap justify-between gap-6">
@@ -346,6 +309,18 @@ const CompetitionDetail: React.FC = () => {
               <Paragraph style={{ color: 'var(--gemini-text-secondary)' }} className="leading-relaxed">
                 {competition.description || '暂无描述'}
               </Paragraph>
+              <Space wrap>
+                <Link to={`/competition/${id}/ranklist`}>
+                  <Button icon={<TrophyOutlined />}>
+                    排行榜
+                  </Button>
+                </Link>
+                <Link to={`/competition/${id}/submissions`}>
+                  <Button icon={<HistoryOutlined />}>
+                    提交记录
+                  </Button>
+                </Link>
+              </Space>
             </div>
             <div className="min-w-[250px]">
               <div className="mb-3">
