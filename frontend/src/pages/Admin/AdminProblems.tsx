@@ -78,6 +78,10 @@ const renderLatex = (text: string) => {
   return text;
 };
 
+// 与 Input.TextArea 外壳一致（见 components/Input），预览区只读但视觉对齐
+const markdownEditorSurfaceClass =
+  'w-full border border-slate-200 bg-white/90 text-slate-800 shadow-sm outline-none backdrop-blur transition-all duration-200 rounded-2xl px-4 py-3 min-h-24 hover:border-blue-300';
+
 // Markdown 编辑器组件 - Gemini 风格
 const MarkdownEditor: React.FC<{
   value?: string;
@@ -92,6 +96,8 @@ const MarkdownEditor: React.FC<{
     const withLatex = renderLatex(content);
     return DOMPurify.sanitize(marked.parse(withLatex) as string);
   }, []);
+
+  const minHeightPx = Math.max(96, rows * 24);
 
   return (
     <Tabs
@@ -124,12 +130,10 @@ const MarkdownEditor: React.FC<{
           ),
           children: (
             <div
-              className="prose prose-sm max-w-none p-3 rounded-2xl min-h-[100px] overflow-auto"
-              style={{ 
-                minHeight: rows * 24,
-                backgroundColor: 'var(--gemini-bg)',
-                border: '1px solid var(--gemini-border-light)'
-              }}
+              className={`${markdownEditorSurfaceClass} prose prose-sm max-w-none overflow-auto cursor-default select-text resize-none`}
+              style={{ minHeight: minHeightPx }}
+              role="document"
+              aria-label="Markdown 预览（只读）"
               dangerouslySetInnerHTML={{ __html: renderMarkdown(value || '') }}
             />
           ),
@@ -274,7 +278,10 @@ const AdminProblems: React.FC = () => {
       formData.append('difficulty', values.difficulty);
       formData.append('inputFormat', values.inputFormat);
       formData.append('outputFormat', values.outputFormat);
-      formData.append('judgeMode', values.judgeMode || 'standard');
+      formData.append(
+        'judgeMode',
+        String(values.judgeMode ?? form.getFieldValue('judgeMode') ?? 'standard')
+      );
       const validExamples = examplesList.filter((e) => (e.input ?? '').trim() || (e.output ?? '').trim());
       formData.append('examples', JSON.stringify(validExamples.map((e, i) => ({ input: e.input ?? '', output: e.output ?? '', sortOrder: i }))));
       formData.append('inputExample', validExamples[0]?.input ?? '');
@@ -617,35 +624,64 @@ ${aiInput}`;
           onFinish={handleSubmit}
           initialValues={{ difficulty: '简单', open: true, judgeMode: 'standard' }}
         >
-          {/* AI识别区域 */}
-          <Form.Item label="AI智能识别">
-            <div className="flex gap-2">
+          {/* 智能解析：全宽输入 + 底部操作，避免侧栏挤压 */}
+          <div className="mb-6">
+            <div
+              className="rounded-2xl p-4 space-y-3"
+              style={{
+                backgroundColor: 'var(--gemini-bg)',
+                border: '1px solid var(--gemini-border-light)',
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                  style={{
+                    background: 'linear-gradient(135deg, color-mix(in srgb, var(--gemini-accent-strong) 22%, transparent), color-mix(in srgb, var(--gemini-accent) 12%, transparent))',
+                  }}
+                >
+                  <Wand2 className="h-[18px] w-[18px]" style={{ color: 'var(--gemini-accent-strong)' }} strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="text-sm font-semibold m-0 leading-snug" style={{ color: 'var(--gemini-text-primary)' }}>
+                    从 Markdown 填入题目
+                  </p>
+                  <p className="text-xs mt-1 mb-0 leading-relaxed" style={{ color: 'var(--gemini-text-tertiary)' }}>
+                    粘贴含标题、描述、输入输出说明与样例的文本；解析结果会写入下方表单（需已配置可用的 AI 接口）。
+                  </p>
+                </div>
+              </div>
               <Input.TextArea
                 value={aiInput}
                 onChange={(e) => setAiInput(e.target.value)}
-                placeholder="粘贴题目的Markdown文本，AI将自动解析并填充到下方各字段..."
-                rows={4}
-                className="flex-1"
+                placeholder="在此粘贴题目全文…"
+                rows={5}
+                className="!rounded-xl"
+                style={{ resize: 'vertical' }}
               />
-              <Button
-                type="primary"
-                icon={<Wand2 className="w-4 h-4" />}
-                loading={aiParsing}
-                onClick={handleAiParse}
-                style={{
-                  backgroundColor: 'var(--gemini-accent)',
-                  color: 'var(--gemini-accent-text)',
-                  border: 'none',
-                  height: 'auto',
-                }}
-              >
-                {aiParsing ? '解析中...' : 'AI识别'}
-              </Button>
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5">
+                <Button
+                  type="primary"
+                  shape="round"
+                  size="middle"
+                  icon={aiParsing ? undefined : <Wand2 className="w-4 h-4" />}
+                  loading={aiParsing}
+                  disabled={!aiInput.trim()}
+                  onClick={handleAiParse}
+                  style={{
+                    backgroundColor: 'var(--gemini-accent)',
+                    color: 'var(--gemini-accent-text)',
+                    border: 'none',
+                    paddingLeft: 18,
+                    paddingRight: 18,
+                    height: 36,
+                  }}
+                >
+                  {aiParsing ? '正在解析…' : '解析并填入表单'}
+                </Button>
+              </div>
             </div>
-            <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
-              支持解析包含标题、描述、输入输出格式、样例等信息的Markdown文本
-            </p>
-          </Form.Item>
+          </div>
 
           <Form.Item name="title" label="题目标题" rules={[{ required: true, message: '请输入题目标题' }]}>
             <Input />
@@ -687,7 +723,13 @@ ${aiInput}`;
                 label="时间限制 (ms)"
                 rules={[{ required: true, message: '请输入时间限制' }]}
               >
-                <InputNumber className="w-full" min={1} max={10000} />
+                <InputNumber
+                  className="w-full"
+                  size="large"
+                  min={1}
+                  max={10000}
+                  style={{ borderRadius: '1rem', overflow: 'hidden' }}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -696,7 +738,12 @@ ${aiInput}`;
                 label="内存限制 (MB)"
                 rules={[{ required: true, message: '请输入内存限制' }]}
               >
-                <InputNumber className="w-full" min={1} />
+                <InputNumber
+                  className="w-full"
+                  size="large"
+                  min={1}
+                  style={{ borderRadius: '1rem', overflow: 'hidden' }}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>

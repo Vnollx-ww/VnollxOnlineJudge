@@ -23,6 +23,10 @@ public class ProblemVo {
     private String hint;
     private String inputFormat;
     private String outputFormat;
+    /** standard / special，与 problem.judge_mode 一致 */
+    private String judgeMode;
+    /** 构造题 checker 在 OSS 上的文件名，可为空 */
+    private String checkerFile;
     private Integer submitCount;
     private Integer passCount;
     private Boolean open;
@@ -46,6 +50,8 @@ public class ProblemVo {
         this.hint = problem.getHint();
         this.inputFormat = problem.getInputFormat();
         this.outputFormat = problem.getOutputFormat();
+        this.judgeMode = problem.getJudgeMode();
+        this.checkerFile = problem.getCheckerFile();
         this.submitCount = problem.getSubmitCount();
         this.passCount = problem.getPassCount();
         this.open = problem.getOpen();

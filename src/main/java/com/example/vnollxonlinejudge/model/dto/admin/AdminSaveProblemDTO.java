@@ -38,6 +38,7 @@ public class AdminSaveProblemDTO {
     @NotBlank(message = "输出格式不能为空")
     private String outputFormat;
 
+    @NotBlank(message = "判题模式不能为空")
     @Pattern(regexp = "^(standard|special)$", message = "判题模式格式不正确")
     private String judgeMode;
 

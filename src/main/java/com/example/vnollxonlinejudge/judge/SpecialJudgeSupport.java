@@ -47,8 +47,12 @@ public class SpecialJudgeSupport {
         );
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && !response.getBody().isEmpty()) {
             RunResult result = response.getBody().getFirst();
+            // 须与 copyOutCached 文件名一致；RunResult.FileIds 仅映射 "a"（与 CppJudgeStrategy 一致）
             if ("Accepted".equals(result.getStatus()) && result.getFileIds() != null) {
-                return result.getFileIds().getA();
+                String id = result.getFileIds().getA();
+                if (id != null && !id.isBlank()) {
+                    return id;
+                }
             }
             String stderr = result.getFiles() != null ? result.getFiles().getStderr() : "";
             throw new IllegalStateException("Checker 编译错误: " + stderr);
@@ -103,7 +107,7 @@ public class SpecialJudgeSupport {
         return String.format("""
     {
         "cmd": [{
-            "args": ["/usr/bin/g++", "checker.cc", "-o", "checker"],
+            "args": ["/usr/bin/g++", "checker.cc", "-o", "a"],
             "env": ["PATH=/usr/bin:/bin"],
             "files": [{
                 "content": ""
@@ -123,19 +127,20 @@ public class SpecialJudgeSupport {
                 }
             },
             "copyOut": ["stdout", "stderr"],
-            "copyOutCached": ["checker"]
+            "copyOutCached": ["a"]
         }]
     }
     """, escapeJson(code));
     }
 
+    /** 与 testlib {@code registerTestlibCmd} / Polygon 一致：参数为 input、output、answer 三个文件名（此处为 input.txt、output.txt、answer.txt）。 */
     private String buildCheckerRunPayload(String checkerFileId, String input, String expected, String actual) {
         return String.format("""
     {"cmd": [{
-        "args": ["checker"],
+        "args": ["a", "input.txt", "output.txt", "answer.txt"],
         "env": ["PATH=/usr/bin:/bin"],
         "files": [{
-            "content": "%s"
+            "content": ""
         }, {
             "name": "stdout",
             "max": 1048576
@@ -147,7 +152,7 @@ public class SpecialJudgeSupport {
         "memoryLimit": 536870912,
         "procLimit": 50,
         "copyIn": {
-            "checker": {
+            "a": {
                 "fileId": "%s"
             },
             "input.txt": {
@@ -162,7 +167,7 @@ public class SpecialJudgeSupport {
         },
         "copyOut": ["stdout", "stderr"]
     }]}
-    """, escapeJson(input + "\n" + expected + "\n" + actual), checkerFileId, escapeJson(input), escapeJson(expected), escapeJson(actual));
+    """, checkerFileId, escapeJson(input), escapeJson(expected), escapeJson(actual));
     }
 
     private String escapeJson(String str) {
