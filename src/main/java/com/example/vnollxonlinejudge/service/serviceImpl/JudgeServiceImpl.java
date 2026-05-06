@@ -5,14 +5,11 @@ import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
 import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
-import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.model.vo.judge.JudgeResultVO;
 import com.example.vnollxonlinejudge.producer.JudgeProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
-import com.example.vnollxonlinejudge.service.RedisService;
-
 import com.example.vnollxonlinejudge.service.SubmissionService;
 import com.example.vnollxonlinejudge.utils.SnowflakeIdGenerator;
 import org.slf4j.Logger;
@@ -25,7 +22,6 @@ import org.springframework.stereotype.Service;
 public class JudgeServiceImpl implements JudgeService {
     private static final Logger logger = LoggerFactory.getLogger(JudgeServiceImpl.class);
     private final JudgeProducer judgeProducer;
-    private final RedisService redisService;
     private final JudgeStrategyFactory judgeStrategyFactory;
     private final SubmissionService submissionService;
     private static final SnowflakeIdGenerator gen =
@@ -33,18 +29,15 @@ public class JudgeServiceImpl implements JudgeService {
     @Autowired
     public JudgeServiceImpl(
             JudgeProducer judgeProducer,
-            RedisService redisService,
             JudgeStrategyFactory judgeStrategyFactory,
             SubmissionService submissionService
     ) {
         this.judgeProducer=judgeProducer;
-        this.redisService=redisService;
         this.judgeStrategyFactory=judgeStrategyFactory;
         this.submissionService=submissionService;
     }
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
-        tryLock(uid, Long.valueOf(req.getPid()));
         Long snowflakeId = gen.nextId();
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
@@ -90,8 +83,6 @@ public class JudgeServiceImpl implements JudgeService {
 
     @Override
     public JudgeResultVO testSubmission(TestCodeDTO req,Long uid) {
-
-        tryLock(uid, Long.valueOf(req.getPid()));
         JudgeStrategy strategy = judgeStrategyFactory.getStrategy(req.getOption());
         boolean customTest = Boolean.TRUE.equals(req.getCustomTest());
 
@@ -126,15 +117,5 @@ public class JudgeServiceImpl implements JudgeService {
             return null;
         }
         return result.getFiles().getStderr();
-    }
-
-    public void tryLock(Long uid,Long pid){
-        String lockKey = "submission:" + "user:"+uid + "_" + pid;
-        // 尝试获取锁（3秒内同一用户对同一题目提交无效）
-        boolean locked = redisService.tryLock(lockKey,3000);
-
-        if (!locked) {
-            throw  new BusinessException("请勿重复提交（3秒内同一题目仅允许一次提交）");
-        }
     }
 }

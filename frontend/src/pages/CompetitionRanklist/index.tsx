@@ -1,20 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography,
   Space,
-  Button,
   Modal,
   Spin,
   Empty,
 } from 'antd';
 import toast from 'react-hot-toast';
-import {
-  TrophyOutlined,
-  LockOutlined,
-  UnorderedListOutlined,
-  HistoryOutlined,
-} from '@ant-design/icons';
+import { LockOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/Input';

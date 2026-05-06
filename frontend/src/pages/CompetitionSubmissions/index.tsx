@@ -12,7 +12,6 @@ import {
 } from 'antd';
 import toast from 'react-hot-toast';
 import {
-  TrophyOutlined,
   LockOutlined,
   UnorderedListOutlined,
   HistoryOutlined,

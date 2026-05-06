@@ -23,7 +23,6 @@ const Competitions: React.FC = () => {
   const [allCompetitions, setAllCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
-  const [ruleFilter, setRuleFilter] = useState('all');
   const [keyword, setKeyword] = useState('');
 
   useEffect(() => {
@@ -37,7 +36,7 @@ const Competitions: React.FC = () => {
 
   useEffect(() => {
     filterCompetitions();
-  }, [statusFilter, ruleFilter, keyword, allCompetitions]);
+  }, [statusFilter, keyword, allCompetitions]);
 
   const loadCompetitions = async () => {
     setLoading(true);
