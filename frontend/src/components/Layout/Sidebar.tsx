@@ -20,6 +20,10 @@ import { usePermission } from '@/contexts/PermissionContext';
 import { PermissionCode } from '@/constants/permissions';
 import type { User as UserType } from '@/types';
 
+const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+  window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: mode }));
+};
+
 interface SidebarProps {
   user: UserType | null;
   notificationCount: number;
@@ -43,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     (path: string, requireAuth = false) => {
       if (requireAuth && !isAuthenticated()) {
         messageApi.warning('请先登录后再访问');
-        navigate('/login');
+        openAuthModal('login');
         return;
       }
       navigate(path);

@@ -890,40 +890,42 @@ const ProblemDetail: React.FC = () => {
         {problem.examples?.length ? (
           problem.examples.map((ex, idx) => (
             <div key={idx} className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="rounded-3xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>输入样例 {idx + 1}</h3>
+              <section>
+                <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>输入样例 {idx + 1}</h2>
+                <div className="relative">
+                  <pre className="rounded-2xl p-3 pr-12 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
+                    {ex.input || '暂无输入样例'}
+                  </pre>
                   <button
                     onClick={() => ex.input && copyToClipboard(ex.input, '输入样例')}
-                    className="transition-colors"
+                    className="absolute top-2 right-2 p-1 rounded-md transition-colors hover:bg-black/5"
                     style={{ color: 'var(--gemini-text-secondary)' }}
+                    title="复制"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
-                <pre className="rounded-2xl p-3 text-sm font-mono overflow-x-auto whitespace-pre-wrap" style={{ backgroundColor: 'var(--gemini-surface)', color: 'var(--gemini-text-primary)' }}>
-                  {ex.input || '暂无输入样例'}
-                </pre>
-              </div>
-              <div className="rounded-3xl p-4" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold" style={{ color: 'var(--gemini-text-primary)' }}>输出样例 {idx + 1}</h3>
+              </section>
+              <section>
+                <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>输出样例 {idx + 1}</h2>
+                <div className="relative">
+                  <pre className="rounded-2xl p-3 pr-12 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
+                    {ex.output || '暂无输出样例'}
+                  </pre>
                   <button
                     onClick={() => ex.output && copyToClipboard(ex.output, '输出样例')}
-                    className="transition-colors"
+                    className="absolute top-2 right-2 p-1 rounded-md transition-colors hover:bg-black/5"
                     style={{ color: 'var(--gemini-text-secondary)' }}
+                    title="复制"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
                 </div>
-                <pre className="rounded-2xl p-3 text-sm font-mono overflow-x-auto whitespace-pre-wrap" style={{ backgroundColor: 'var(--gemini-surface)', color: 'var(--gemini-text-primary)' }}>
-                  {ex.output || '暂无输出样例'}
-                </pre>
-              </div>
+              </section>
             </div>
           ))
         ) : (
-          <div className="rounded-3xl p-4 mb-6" style={{ backgroundColor: 'var(--gemini-bg)', color: 'var(--gemini-text-disabled)' }}>
+          <div className="mb-6" style={{ color: 'var(--gemini-text-disabled)' }}>
             暂无样例
           </div>
         )}

@@ -162,8 +162,8 @@ const SolutionDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-full w-full">
+      <div className="w-full space-y-6">
         {loading ? (
           <div className="gemini-card">
             <Skeleton active paragraph={{ rows: 8 }} />

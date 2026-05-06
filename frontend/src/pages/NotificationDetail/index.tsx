@@ -108,10 +108,10 @@ const NotificationDetail: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+    <div className="min-h-full w-full p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
       {modalContextHolder}
       {messageContextHolder}
-      <div className="max-w-3xl mx-auto">
+      <div className="w-full">
         <div className="gemini-card">
           {loading ? (
             <div className="flex justify-center py-12">

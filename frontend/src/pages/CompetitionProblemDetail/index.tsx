@@ -680,45 +680,43 @@ const CompetitionProblemDetail: React.FC = () => {
             {problem.examples?.length ? (
               problem.examples.map((ex, idx) => (
                 <div key={idx} className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Title level={5} className="!mb-0">输入样例 {idx + 1}</Title>
+                  <div>
+                    <Title level={4}>输入样例 {idx + 1}</Title>
+                    <div className="relative">
+                      <pre className="bg-gray-50 p-3 pr-12 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap border border-gray-200">
+                        {ex.input || '暂无输入样例'}
+                      </pre>
                       <Button
                         type="text"
                         size="small"
                         icon={<CopyOutlined />}
+                        className="!absolute !top-2 !right-2"
                         onClick={async () => {
                           const ok = await copyTextToClipboard(ex.input || '');
                           if (ok) toast.success('已复制输入样例');
                           else toast.error('复制失败，请手动选择文本复制');
                         }}
-                      >
-                        复制
-                      </Button>
+                      />
                     </div>
-                    <pre className="bg-white p-3 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap">
-                      {ex.input || '暂无输入样例'}
-                    </pre>
                   </div>
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Title level={5} className="!mb-0">输出样例 {idx + 1}</Title>
+                  <div>
+                    <Title level={4}>输出样例 {idx + 1}</Title>
+                    <div className="relative">
+                      <pre className="bg-gray-50 p-3 pr-12 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap border border-gray-200">
+                        {ex.output || '暂无输出样例'}
+                      </pre>
                       <Button
                         type="text"
                         size="small"
                         icon={<CopyOutlined />}
+                        className="!absolute !top-2 !right-2"
                         onClick={async () => {
                           const ok = await copyTextToClipboard(ex.output || '');
                           if (ok) toast.success('已复制输出样例');
                           else toast.error('复制失败，请手动选择文本复制');
                         }}
-                      >
-                        复制
-                      </Button>
+                      />
                     </div>
-                    <pre className="bg-white p-3 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap">
-                      {ex.output || '暂无输出样例'}
-                    </pre>
                   </div>
                 </div>
               ))

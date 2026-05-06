@@ -220,7 +220,7 @@ const PracticeDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+      <div className="min-h-full w-full flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
         <Spin size="large" tip="加载中..." />
       </div>
     );
@@ -228,8 +228,8 @@ const PracticeDetail: React.FC = () => {
 
   if (!practice) {
     return (
-      <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-full w-full p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+        <div className="w-full">
           <div className="gemini-card">
             <div className="py-12 text-center">
               <Text style={{ color: 'var(--gemini-text-tertiary)' }}>练习不存在</Text>
@@ -256,8 +256,8 @@ const PracticeDetail: React.FC = () => {
   const progress = calculateProgress();
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-full w-full p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+      <div className="w-full space-y-6">
         {/* 头部信息 - Gemini 风格 */}
         <div className="gemini-card">
           <div className="flex flex-wrap items-start justify-between gap-4">

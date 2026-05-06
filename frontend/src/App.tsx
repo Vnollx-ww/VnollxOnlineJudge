@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { ConfigProvider, App as AntApp } from "antd";
 import { Toaster } from 'react-hot-toast';
 import zhCN from "antd/locale/zh_CN";
@@ -19,9 +19,6 @@ import {
   Practices,
   PracticeDetail,
   Admin,
-  Login,
-  Register,
-  ForgotPassword,
   Settings,
   UserProfile,
   Notifications,
@@ -196,10 +193,9 @@ function App() {
         />
         <Router>
           <Routes>
-            {/* 独立页面 - 不需要布局 */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/register" element={<Navigate to="/" replace />} />
+            <Route path="/forgot-password" element={<Navigate to="/" replace />} />
             <Route path="/vnollx" element={<VnollxHome />} />
 
             {/* 管理后台 - 独立布局，不使用全局导航 */}

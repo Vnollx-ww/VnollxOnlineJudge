@@ -806,15 +806,8 @@ ${aiInput}`;
           <Form.Item label="输入/输出样例（可多组）">
             <div className="space-y-4">
               {examplesList.map((_, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-2xl border border-solid flex flex-col gap-3"
-                  style={{ borderColor: 'var(--gemini-border-light)', backgroundColor: 'var(--gemini-bg)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-                      样例 {index + 1}
-                    </span>
+                <div key={index} className="flex flex-col gap-2">
+                  <div className="flex items-center justify-end">
                     <Button
                       type="text"
                       danger
@@ -825,12 +818,14 @@ ${aiInput}`;
                       }}
                       disabled={examplesList.length <= 1}
                     >
-                      删除
+                      删除样例 {index + 1}
                     </Button>
                   </div>
                   <Row gutter={16}>
                     <Col span={12}>
-                      <div className="text-sm mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输入</div>
+                      <div className="text-sm font-medium mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
+                        输入样例 {index + 1}
+                      </div>
                       <Input.TextArea
                         rows={3}
                         value={examplesList[index]?.input ?? ''}
@@ -839,11 +834,13 @@ ${aiInput}`;
                           next[index] = { ...next[index], input: e.target.value, sortOrder: index };
                           setExamplesList(next);
                         }}
-                        placeholder="输入样例"
+                        placeholder="请输入样例输入"
                       />
                     </Col>
                     <Col span={12}>
-                      <div className="text-sm mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输出</div>
+                      <div className="text-sm font-medium mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
+                        输出样例 {index + 1}
+                      </div>
                       <Input.TextArea
                         rows={3}
                         value={examplesList[index]?.output ?? ''}
@@ -852,7 +849,7 @@ ${aiInput}`;
                           next[index] = { ...next[index], output: e.target.value, sortOrder: index };
                           setExamplesList(next);
                         }}
-                        placeholder="输出样例"
+                        placeholder="请输入样例输出"
                       />
                     </Col>
                   </Row>

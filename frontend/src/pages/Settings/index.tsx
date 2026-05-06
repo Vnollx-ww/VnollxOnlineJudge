@@ -208,8 +208,8 @@ const Settings: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-full w-full p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+      <div className="w-full">
         <div className="flex gap-6">
           {/* 侧边栏 - Gemini 风格 */}
           <div className="w-64 shrink-0">

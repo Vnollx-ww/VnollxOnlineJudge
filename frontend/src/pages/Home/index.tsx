@@ -15,6 +15,10 @@ import { isAuthenticated } from '../../utils/auth';
 import { CountUp, CodeWindow } from '../../components';
 import type { ApiResponse } from '../../types';
 
+const openAuthModal = (mode: 'login' | 'register' = 'login') => {
+  window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: mode }));
+};
+
 interface Stats {
   problemCount: number;
   userCount: number;
@@ -70,7 +74,7 @@ const Home: React.FC = () => {
         icon: '🔐',
         duration: 2000 
       });
-      navigate('/login');
+      openAuthModal('login');
     }
   };
 
@@ -82,7 +86,7 @@ const Home: React.FC = () => {
         icon: '🔐',
         duration: 2000 
       });
-      navigate('/login');
+      openAuthModal('login');
     }
   };
 
@@ -93,7 +97,7 @@ const Home: React.FC = () => {
         duration: 2000 
       });
     } else {
-      navigate('/register');
+      openAuthModal('register');
     }
   };
 

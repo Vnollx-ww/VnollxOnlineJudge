@@ -19,6 +19,7 @@ import {
 import api from '../../utils/api';
 import { isAuthenticated, removeToken } from '../../utils/auth';
 import type { User as UserType, ApiResponse } from '../../types';
+import { AuthModal, type AuthMode } from '../Auth';
 
 interface HeaderProps {
   layoutMode: 'top' | 'left';
@@ -30,8 +31,15 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
   const location = useLocation();
   const [user, setUser] = useState<UserType | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [modal, contextHolder] = Modal.useModal();
   const [messageApi, messageContextHolder] = message.useMessage();
+
+  const openAuthModal = useCallback((mode: AuthMode) => {
+    setAuthMode(mode);
+    setAuthOpen(true);
+  }, []);
 
   const loadUserInfo = useCallback(async () => {
     try {
@@ -96,12 +104,12 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
     (path: string, requireAuth = false) => {
       if (requireAuth && !isAuthenticated()) {
         messageApi.warning('请先登录后再访问');
-        navigate('/login');
+        openAuthModal('login');
         return;
       }
       navigate(path);
     },
-    [messageApi, navigate]
+    [messageApi, navigate, openAuthModal]
   );
 
   const handleLogoutConfirm = () => {
@@ -173,6 +181,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
   ];
 
   return (
+    <>
     <header 
       className="fixed top-0 left-0 right-0 z-50 h-16"
       style={{ 
@@ -313,7 +322,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => openAuthModal('login')}
                 className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
                 style={{ color: 'var(--gemini-text-secondary)' }}
                 onMouseEnter={(e) => {
@@ -328,7 +337,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
                 登录
               </button>
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => openAuthModal('register')}
                 className="px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
                 style={{ 
                   backgroundColor: 'var(--gemini-accent)',
@@ -342,6 +351,13 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
         </div>
       </div>
     </header>
+    <AuthModal
+      open={authOpen}
+      mode={authMode}
+      onClose={() => setAuthOpen(false)}
+      onModeChange={setAuthMode}
+    />
+    </>
   );
 };
 

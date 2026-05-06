@@ -5,6 +5,7 @@ import { MessageCircle, Bell } from 'lucide-react';
 import Sidebar from './Sidebar';
 import AIAssistant from '../AIAssistant';
 import ParticleBackground from '../ParticleBackground';
+import { AuthModal, type AuthMode } from '../Auth';
 import api from '../../utils/api';
 import { isAuthenticated, setUserInfo } from '../../utils/auth';
 import { useNotificationWebSocket, type NotificationMessage } from '../../hooks/useNotificationWebSocket';
@@ -12,6 +13,8 @@ import type { User, ApiResponse } from '../../types';
 
 const { Content, Footer } = Layout;
 const { Title, Paragraph } = Typography;
+
+const AUTH_MODAL_EVENT = 'open-auth-modal';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -23,6 +26,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [contactVisible, setContactVisible] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
 
   const loadUserInfo = useCallback(async () => {
     try {
@@ -59,16 +64,42 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   }, [loadUserInfo, loadNotificationCount]);
 
   useEffect(() => {
+    const handleAuthChange = () => {
+      if (isAuthenticated()) {
+        loadUserInfo();
+        loadNotificationCount();
+      } else {
+        setUser(null);
+        setNotificationCount(0);
+      }
+    };
+
     const notificationHandler = () => {
       if (isAuthenticated()) {
         loadNotificationCount();
       }
     };
+
+    window.addEventListener('auth-changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
     window.addEventListener('notification-updated', notificationHandler);
     return () => {
+      window.removeEventListener('auth-changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
       window.removeEventListener('notification-updated', notificationHandler);
     };
-  }, [loadNotificationCount]);
+  }, [loadUserInfo, loadNotificationCount]);
+
+  useEffect(() => {
+    const handleOpenAuthModal = (event: Event) => {
+      const authEvent = event as CustomEvent<AuthMode>;
+      setAuthMode(authEvent.detail || 'login');
+      setAuthOpen(true);
+    };
+
+    window.addEventListener(AUTH_MODAL_EVENT, handleOpenAuthModal);
+    return () => window.removeEventListener(AUTH_MODAL_EVENT, handleOpenAuthModal);
+  }, []);
 
   // WebSocket 通知处理
   const handleNotificationMessage = useCallback((notification: NotificationMessage) => {
@@ -332,6 +363,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       </Modal>
 
       {/* 认证模态框 */}
+      <AuthModal
+        open={authOpen}
+        mode={authMode}
+        onClose={() => setAuthOpen(false)}
+        onModeChange={setAuthMode}
+      />
       {/* AI 助手 */}
       <AIAssistant />
     </Layout>

@@ -245,10 +245,10 @@ const Notifications: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+    <div className="min-h-full w-full p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
       {modalContextHolder}
       {messageContextHolder}
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         <div className="gemini-card">
           {/* Header - Gemini 风格 */}
           <div className="flex items-center justify-between mb-6">

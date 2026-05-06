@@ -161,7 +161,7 @@ const UserProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+      <div className="min-h-full w-full flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
         <Spin size="large" />
       </div>
     );
@@ -169,7 +169,7 @@ const UserProfile: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+      <div className="min-h-full w-full flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
         <div className="gemini-card">用户不存在</div>
       </div>
     );
@@ -181,8 +181,8 @@ const UserProfile: React.FC = () => {
       : 0;
 
   return (
-    <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-full w-full p-6" style={{ backgroundColor: 'var(--gemini-bg)' }}>
+      <div className="w-full space-y-6">
         {/* 用户信息卡片 - Gemini 风格 */}
         <div className="gemini-card">
           <div className="flex flex-wrap items-start justify-between gap-6">

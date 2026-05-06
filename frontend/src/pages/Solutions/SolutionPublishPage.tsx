@@ -147,8 +147,8 @@ const SolutionPublishPage: React.FC = () => {
   }, [previewVisible, previewContent]);
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-full w-full">
+      <div className="w-full space-y-6">
         {/* Info Card - Gemini 风格 */}
         <div className="gemini-card">
           <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
