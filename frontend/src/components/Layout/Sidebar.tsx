@@ -12,10 +12,7 @@ import {
   Settings,
   LogOut,
   Info,
-  ArrowLeftRight,
   Zap,
-  PanelLeftClose,
-  PanelLeftOpen,
   Users,
 } from 'lucide-react';
 import { isAuthenticated, removeToken } from '@/utils/auth';
@@ -28,18 +25,13 @@ interface SidebarProps {
   notificationCount: number;
   loadUserInfo: () => Promise<void>;
   loadNotificationCount: () => Promise<void>;
-  layoutMode: 'top' | 'left';
-  toggleLayoutMode: () => void;
   collapsed?: boolean;
-  onToggleCollapse?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   user,
   notificationCount,
-  toggleLayoutMode,
   collapsed = false,
-  onToggleCollapse,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -174,21 +166,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             </span>
           )}
         </Link>
-        {!collapsed && (
-          <Tooltip title="切换为顶部导航" placement="right">
-            <button
-              type="button"
-              onClick={toggleLayoutMode}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shrink-0"
-              style={{
-                backgroundColor: 'var(--gemini-bg)',
-                color: 'var(--gemini-text-secondary)',
-              }}
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-            </button>
-          </Tooltip>
-        )}
       </div>
 
       {/* Navigation */}
@@ -197,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.key;
-            return (
+            const menuButton = (
               <button
                 key={item.key}
                 type="button"
@@ -227,6 +204,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </button>
             );
+
+            return collapsed ? (
+              <Tooltip
+                key={item.key}
+                title={<span className="block text-center">{item.label}</span>}
+                placement="right"
+              >
+                {menuButton}
+              </Tooltip>
+            ) : menuButton;
           })}
         </div>
       </nav>
@@ -287,32 +274,36 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
             {collapsed && (
               <div className="flex flex-col items-center gap-2">
-                <Link
-                  to="/notifications"
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                  style={{ backgroundColor: 'var(--gemini-bg)' }}
-                >
-                  <Badge count={notificationCount} size="small" offset={[-2, 2]}>
-                    <Bell className="w-5 h-5" style={{ color: 'var(--gemini-text-secondary)' }} />
-                  </Badge>
-                </Link>
-                <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
-                    style={{
-                      backgroundColor: 'var(--gemini-bg)',
-                      background: user.avatar
-                        ? 'transparent'
-                        : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
-                      color: '#fff',
-                    }}
+                <Tooltip title={<span className="block text-center">通知</span>} placement="right">
+                  <Link
+                    to="/notifications"
+                    className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                    style={{ backgroundColor: 'var(--gemini-bg)' }}
                   >
-                    {user.avatar ? (
-                      <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-                    ) : (
-                      <span className="text-sm font-medium">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-                    )}
-                  </div>
+                    <Badge count={notificationCount} size="small" offset={[-2, 2]}>
+                      <Bell className="w-5 h-5" style={{ color: 'var(--gemini-text-secondary)' }} />
+                    </Badge>
+                  </Link>
+                </Tooltip>
+                <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
+                  <Tooltip title={<span className="block text-center">{user.name || '用户菜单'}</span>} placement="right">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"
+                      style={{
+                        backgroundColor: 'var(--gemini-bg)',
+                        background: user.avatar
+                          ? 'transparent'
+                          : 'linear-gradient(135deg, var(--gemini-accent) 0%, var(--gemini-accent-strong) 100%)',
+                        color: '#fff',
+                      }}
+                    >
+                      {user.avatar ? (
+                        <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-medium">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                      )}
+                    </div>
+                  </Tooltip>
                 </Dropdown>
               </div>
             )}
@@ -345,37 +336,6 @@ const Sidebar: React.FC<SidebarProps> = ({
               </button>
             </div>
           )
-        )}
-
-        {/* 折叠/展开按钮 - 在侧边栏内部底部 */}
-        {onToggleCollapse && (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border border-[var(--gemini-border-light)]"
-            style={{
-              backgroundColor: 'var(--gemini-surface)',
-              color: 'var(--gemini-text-secondary)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--gemini-surface-hover)';
-              e.currentTarget.style.color = 'var(--gemini-text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--gemini-surface)';
-              e.currentTarget.style.color = 'var(--gemini-text-secondary)';
-            }}
-            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4 shrink-0" />
-            ) : (
-              <>
-                <PanelLeftClose className="w-4 h-4 shrink-0" />
-                <span>收起侧边栏</span>
-              </>
-            )}
-          </button>
         )}
       </div>
     </aside>

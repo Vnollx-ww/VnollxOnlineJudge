@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { Layout, Modal, Typography } from 'antd';
 import toast from 'react-hot-toast';
 import { MessageCircle, Bell } from 'lucide-react';
-import Header from './Header';
 import Sidebar from './Sidebar';
 import AIAssistant from '../AIAssistant';
 import ParticleBackground from '../ParticleBackground';
@@ -22,12 +21,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [privacyVisible, setPrivacyVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<'top' | 'left'>(() => {
-    return (localStorage.getItem('layoutMode') as 'top' | 'left') || 'left';
-  });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
-    return localStorage.getItem('sidebarCollapsed') === 'true';
-  });
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
 
@@ -144,59 +137,34 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // 启用 WebSocket 通知连接
   useNotificationWebSocket(handleNotificationMessage);
 
-  const toggleLayoutMode = () => {
-    const newMode = layoutMode === 'top' ? 'left' : 'top';
-    setLayoutMode(newMode);
-    localStorage.setItem('layoutMode', newMode);
-  };
-
-  const toggleSidebarCollapsed = () => {
-    setSidebarCollapsed(prev => {
-      const next = !prev;
-      localStorage.setItem('sidebarCollapsed', String(next));
-      return next;
-    });
-  };
-
   return (
     <Layout 
-      className={`min-h-screen ${layoutMode === 'left' ? 'flex-row' : 'flex-col'}`}
+      className="min-h-screen flex-row"
       style={{ backgroundColor: 'transparent' }}
     >
       {/* 粒子背景 */}
       <ParticleBackground />
       
-      {/* 导航 */}
-      {layoutMode === 'left' ? (
-        <Sidebar
-          user={user}
-          notificationCount={notificationCount}
-          loadUserInfo={loadUserInfo}
-          loadNotificationCount={loadNotificationCount}
-          layoutMode={layoutMode}
-          toggleLayoutMode={toggleLayoutMode}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={toggleSidebarCollapsed}
-        />
-      ) : (
-        <Header
-          layoutMode={layoutMode}
-          toggleLayoutMode={toggleLayoutMode}
-        />
-      )}
+      <Sidebar
+        user={user}
+        notificationCount={notificationCount}
+        loadUserInfo={loadUserInfo}
+        loadNotificationCount={loadNotificationCount}
+        collapsed
+      />
 
       {/* 主内容区 */}
       <Layout 
         className="relative z-10" 
         style={{ 
           background: 'transparent',
-          marginLeft: layoutMode === 'left' ? (sidebarCollapsed ? '80px' : '224px') : '0',
+          marginLeft: '80px',
           transition: 'margin-left 0.3s ease'
         }}
       >
         <Content className={`
           min-h-[calc(100vh-64px-80px)] 
-          ${layoutMode === 'top' ? 'pt-16' : 'pt-6'}
+          pt-6
           px-4 md:px-6 lg:px-8
           py-6
         `}>
