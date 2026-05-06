@@ -20,7 +20,7 @@ import java.util.Map;
 /**
  * 三种语言评测的公共骨架：
  * - 标准评测（standard）：编译 -> 批量运行 -> 输出比对
- * - 构造题评测（special）：编译 -> 编译 checker -> 单个运行 -> checker 判定
+ * - 构造题评测（special）：编译 -> 编译 checker -> 按 .in 运行用户程序 -> 用 checker 校验用户输出（不读 .out）
  * 子类只需提供：编译、单条运行 cmd、状态翻译、可选批大小。
  */
 public abstract class AbstractJudgeStrategy implements JudgeStrategy {
@@ -188,7 +188,8 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
         String checkerFileId = null;
         try {
             checkerFileId = specialJudgeSupport.compileChecker(checkerFile);
-            List<String[]> testCases = testCaseCacheService.getTestCases(zipFilePath);
+            // 构造题仅需 1.in, 2.in, ...；.out 可选（checker 不依赖标答文件）
+            List<String[]> testCases = testCaseCacheService.getTestCases(zipFilePath, false);
             if (testCases.isEmpty()) {
                 return errorResult("判题错误，测试用例为空", "无法获取测试用例");
             }
@@ -212,7 +213,7 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                     return finalResult;
                 }
                 String actual = r.getFiles() != null ? r.getFiles().getStdout() : "";
-                RunResult ck = specialJudgeSupport.runChecker(checkerFileId, tc[0], tc[1], actual);
+                RunResult ck = specialJudgeSupport.runChecker(checkerFileId, tc[0], actual);
                 if (!"Accepted".equals(ck.getStatus()) || ck.getExitStatus() != 0) {
                     finalResult.setStatus(WRONG_ANSWER);
                     finalResult.getFiles().setStdout(actual);

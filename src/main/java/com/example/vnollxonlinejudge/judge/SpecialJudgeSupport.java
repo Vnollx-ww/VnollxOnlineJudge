@@ -60,10 +60,15 @@ public class SpecialJudgeSupport {
         throw new IllegalStateException("Checker 编译请求失败");
     }
 
-    public RunResult runChecker(String checkerFileId, String input, String expected, String actual) {
+    /**
+     * 构造题：用测试输入与用户 stdout 调用 checker。.zip 中的 .out 不参与判题（可为空占位）。
+     * 命令行参数顺序采用 HUSTOJ/Lemon：argv[1]=input，argv[2]=answer（本平台为空占位），argv[3]=选手输出。
+     * （若 checker 按 Polygon/testlib 约定 argv[2]=选手、argv[3]=标答，需自行改参数顺序或换用对应 checker。）
+     */
+    public RunResult runChecker(String checkerFileId, String input, String participantOutput) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> entity = new HttpEntity<>(buildCheckerRunPayload(checkerFileId, input, expected, actual), headers);
+        HttpEntity<String> entity = new HttpEntity<>(buildCheckerRunPayload(checkerFileId, input, participantOutput), headers);
         ResponseEntity<List<RunResult>> response = restTemplate.exchange(
                 runUrl,
                 HttpMethod.POST,
@@ -133,11 +138,13 @@ public class SpecialJudgeSupport {
     """, JudgePayloadJson.escapeString(code));
     }
 
-    /** 与 testlib {@code registerTestlibCmd} / Polygon 一致：参数为 input、output、answer 三个文件名（此处为 input.txt、output.txt、answer.txt）。 */
-    private String buildCheckerRunPayload(String checkerFileId, String input, String expected, String actual) {
+    /**
+     * HUSTOJ/Lemon：a input.txt answer.txt output.txt — answer 为空，output 为选手 stdout。
+     */
+    private String buildCheckerRunPayload(String checkerFileId, String input, String participantOutput) {
         return String.format("""
     {"cmd": [{
-        "args": ["a", "input.txt", "output.txt", "answer.txt"],
+        "args": ["a", "input.txt", "answer.txt", "output.txt"],
         "env": ["PATH=/usr/bin:/bin"],
         "files": [{
             "content": ""
@@ -159,7 +166,7 @@ public class SpecialJudgeSupport {
                 "content": "%s"
             },
             "answer.txt": {
-                "content": "%s"
+                "content": ""
             },
             "output.txt": {
                 "content": "%s"
@@ -167,6 +174,6 @@ public class SpecialJudgeSupport {
         },
         "copyOut": ["stdout", "stderr"]
     }]}
-    """, checkerFileId, JudgePayloadJson.escapeString(input), JudgePayloadJson.escapeString(expected), JudgePayloadJson.escapeString(actual));
+    """, checkerFileId, JudgePayloadJson.escapeString(input), JudgePayloadJson.escapeString(participantOutput));
     }
 }

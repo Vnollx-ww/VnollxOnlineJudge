@@ -128,7 +128,10 @@ export default function JudgeOutcomeCard({ data, onClose }: JudgeOutcomeCardProp
             </div>
 
             {bodyText && !metrics && (
-              <p className="mt-3 text-sm leading-relaxed opacity-70" style={{ color: 'var(--gemini-text-secondary)' }}>
+              <p
+                className="mt-3 whitespace-pre-wrap break-words font-mono text-sm leading-relaxed opacity-70"
+                style={{ color: 'var(--gemini-text-secondary)' }}
+              >
                 {bodyText}
               </p>
             )}

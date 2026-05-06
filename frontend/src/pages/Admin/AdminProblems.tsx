@@ -12,9 +12,20 @@ import {
   Tabs,
   Row,
   Col,
+  Typography,
 } from 'antd';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, Edit, Trash2, Upload as UploadIcon, Eye, Edit3, Wand2 } from 'lucide-react';
+import {
+  Plus,
+  RefreshCw,
+  Edit,
+  Trash2,
+  Upload as UploadIcon,
+  Eye,
+  Edit3,
+  Wand2,
+  BookOpen,
+} from 'lucide-react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
@@ -31,6 +42,8 @@ marked.setOptions({
   gfm: true,
   breaks: true,
 });
+
+const { Title, Paragraph, Text } = Typography;
 
 interface ProblemExampleItem {
   input: string;
@@ -159,6 +172,7 @@ const AdminProblems: React.FC = () => {
   const [tagInput, setTagInput] = useState('');
   const [fileList, setFileList] = useState<any[]>([]);
   const [checkerFileList, setCheckerFileList] = useState<any[]>([]);
+  const [checkerGuideVisible, setCheckerGuideVisible] = useState(false);
   const [aiInput, setAiInput] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
   const [examplesList, setExamplesList] = useState<ProblemExampleItem[]>([{ input: '', output: '', sortOrder: 0 }]);
@@ -887,22 +901,31 @@ ${aiInput}`;
             </Col>
             <Col span={18}>
               <Form.Item label="Checker 代码文件">
-                <Upload
-                  fileList={checkerFileList}
-                  onChange={({ fileList }) => setCheckerFileList(fileList)}
-                  beforeUpload={(file) => {
-                    const isValid = ['.cpp', '.cc', '.cxx'].some((ext) => file.name.endsWith(ext));
-                    if (!isValid) {
-                      toast.error('只能上传 .cpp, .cc, .cxx 格式的 checker 文件！');
-                      return Upload.LIST_IGNORE;
-                    }
-                    return false;
-                  }}
-                  maxCount={1}
-                  accept=".cpp,.cc,.cxx"
-                >
-                  <Button icon={<UploadIcon className="w-4 h-4" />}>选择 Checker</Button>
-                </Upload>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Upload
+                    fileList={checkerFileList}
+                    onChange={({ fileList }) => setCheckerFileList(fileList)}
+                    beforeUpload={(file) => {
+                      const isValid = ['.cpp', '.cc', '.cxx'].some((ext) => file.name.endsWith(ext));
+                      if (!isValid) {
+                        toast.error('只能上传 .cpp, .cc, .cxx 格式的 checker 文件！');
+                        return Upload.LIST_IGNORE;
+                      }
+                      return false;
+                    }}
+                    maxCount={1}
+                    accept=".cpp,.cc,.cxx"
+                  >
+                    <Button icon={<UploadIcon className="w-4 h-4" />}>选择 Checker</Button>
+                  </Upload>
+                  <Button
+                    type="default"
+                    icon={<BookOpen className="w-4 h-4" />}
+                    onClick={() => setCheckerGuideVisible(true)}
+                  >
+                    编写规范
+                  </Button>
+                </div>
                 <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
                   判题模式为构造题时必传；编辑时不选择则保留原 checker
                 </p>
@@ -932,6 +955,103 @@ ${aiInput}`;
             </div>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="OJ Checker 编写规范指南"
+        open={checkerGuideVisible}
+        centered
+        onCancel={() => setCheckerGuideVisible(false)}
+        footer={
+          <Button type="primary" onClick={() => setCheckerGuideVisible(false)}>
+            知道了
+          </Button>
+        }
+        width={760}
+        destroyOnClose
+      >
+        <div className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+          <Paragraph style={{ marginBottom: 16 }}>
+            <Text strong style={{ color: 'var(--gemini-text-primary)' }}>
+              本 OJ 构造题
+            </Text>
+            调用 checker 时使用命令行：程序名后依次为{' '}
+            <Text code>input.txt</Text>、<Text code>answer.txt</Text>（标答占位，可为空）、
+            <Text code>output.txt</Text>（选手输出），即通常{' '}
+            <Text code>argv[1]</Text> 为题面输入、<Text code>argv[2]</Text> 为标准答案文件、
+            <Text code>argv[3]</Text> 为选手输出文件。编写 checker 时请与此保持一致。
+          </Paragraph>
+
+          <Title level={5} style={{ marginTop: 0 }}>
+            1. 命令行参数处理（CLI Arguments）
+          </Title>
+          <Paragraph>
+            Checker 应兼容常见评测插件（如 Lemon、HUSTOJ、Aris 等）的调用习惯。
+          </Paragraph>
+          <ul className="list-disc pl-5 space-y-1 mb-4">
+            <li>
+              <Text strong>参数映射：</Text>通常 <Text code>argv[1]</Text> 为标准输入，
+              <Text code>argv[2]</Text> 为标准答案，<Text code>argv[3]</Text> 为选手输出。
+            </li>
+            <li>
+              <Text strong>兼容性逻辑：</Text>根据 <Text code>argc</Text> 判断参数个数；在仅有 3
+              个有效路径参数（或平台只传入输入与输出）时，仍能正确定位选手输出文件（常见写法：四参时用{' '}
+              <Text code>argv[3]</Text>，三参时用 <Text code>argv[2]</Text>）。
+            </li>
+          </ul>
+
+          <Title level={5}>2. 输入输出流管理（Stream Management）</Title>
+          <ul className="list-disc pl-5 space-y-1 mb-4">
+            <li>
+              <Text strong>文件流：</Text>使用 <Text code>ifstream</Text> 读取输入文件与选手输出文件。
+            </li>
+            <li>
+              <Text strong>异常防护：</Text>打开流后必须检查是否成功，避免缺文件导致 checker 崩溃。
+            </li>
+            <li>
+              <Text strong>Token 化读取：</Text>优先使用 <Text code>{'>>'}</Text> 或自定义{' '}
+              <Text code>readToken</Text>，便于忽略多余空格与换行。
+            </li>
+          </ul>
+
+          <Title level={5}>3. 数据校验逻辑（Validation Logic）</Title>
+          <Paragraph>构造类题目校验建议步骤：</Paragraph>
+          <ul className="list-disc pl-5 space-y-1 mb-4">
+            <li>
+              <Text strong>非法值检查：</Text>输出是否为合法整数、是否在题面范围内（例如不超过 10⁹）。
+            </li>
+            <li>
+              <Text strong>唯一性检查：</Text>若要求「互不相同」，应用比较或集合等方式去重验证。
+            </li>
+            <li>
+              <Text strong>无解判定：</Text>若存在无解情况，需验证选手在恰当时机输出{' '}
+              <Text code>-1</Text>（并与题面约定一致）。
+            </li>
+          </ul>
+
+          <Title level={5}>4. 数值安全性（Numerical Safety）</Title>
+          <ul className="list-disc pl-5 space-y-1 mb-4">
+            <li>
+              <Text strong>精度：</Text>验证分式等式（如{' '}
+              <Text code>1/x + 1/y + 1/z = 2/n</Text>
+              ）时，禁止使用 <Text code>double</Text> / <Text code>float</Text> 直接比较；应通分转化为整数等式再判。
+            </li>
+            <li>
+              <Text strong>溢出：</Text>10⁹ 量级三数相乘可达约 10²⁷，超出 <Text code>long long</Text>{' '}
+              范围。请在 C++ 中对中间量使用 <Text code>__int128</Text>（或等价精确整数）后再比较。
+            </li>
+          </ul>
+
+          <Title level={5}>5. 返回值约定（Exit Codes）</Title>
+          <ul className="list-disc pl-5 space-y-1 mb-0">
+            <li>
+              <Text code>return 0</Text>：答案通过（Accepted）。
+            </li>
+            <li>
+              <Text code>return 1</Text> 或非零：答案错误或输出格式错误（Wrong Answer）。
+            </li>
+          </ul>
+        </div>
       </Modal>
     </div>
   );

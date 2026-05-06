@@ -53,15 +53,20 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
 
         logger.info("Caffeine测试用例缓存初始化完成");
     }
+    private static String cacheKey(String zipFilePath, boolean requireOutput) {
+        return requireOutput ? zipFilePath : zipFilePath + "\0special-input-only";
+    }
+
     /**
      * 获取测试用例，优先从缓存获取，缓存未命中时从MinIO下载
      */
     @Override
-    public List<String[]> getTestCases(String zipFilePath) {
-        return testCaseCache.get(zipFilePath, key -> {
+    public List<String[]> getTestCases(String zipFilePath, boolean requireOutput) {
+        String key = cacheKey(zipFilePath, requireOutput);
+        return testCaseCache.get(key, k -> {
             try {
-                logger.info("缓存未命中，从MinIO下载测试用例: {}", zipFilePath);
-                return downloadAndParseTestCases(zipFilePath);
+                logger.info("缓存未命中，从MinIO下载测试用例: {} (requireOutput={})", zipFilePath, requireOutput);
+                return downloadAndParseTestCases(zipFilePath, requireOutput);
             } catch (Exception e) {
                 logger.error("从MinIO下载测试用例失败: {}", zipFilePath, e);
                 return new ArrayList<>();
@@ -71,7 +76,7 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
     /**
      * 从MinIO下载并解析测试用例
      */
-    private List<String[]> downloadAndParseTestCases(String zipFilePath) throws Exception {
+    private List<String[]> downloadAndParseTestCases(String zipFilePath, boolean requireOutput) throws Exception {
         // 从 MinIO 下载测试用例压缩包
         InputStream zipStream = minioClient.getObject(
                 GetObjectArgs.builder()
@@ -85,7 +90,7 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
             Files.copy(zipStream, tempZipPath, StandardCopyOption.REPLACE_EXISTING);
 
             // 读取测试用例
-            List<String[]> testCases = readTestCasesFromZip(tempZipPath.toString());
+            List<String[]> testCases = readTestCasesFromZip(tempZipPath.toString(), requireOutput);
             logger.info("成功从MinIO下载并解析测试用例: {}, 共{}个测试点", zipFilePath, testCases.size());
 
             return testCases;
@@ -99,7 +104,7 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
         }
     }
 
-    private List<String[]> readTestCasesFromZip(String zipPath) throws IOException {
+    private List<String[]> readTestCasesFromZip(String zipPath, boolean requireOutput) throws IOException {
         List<String[]> testCases = new ArrayList<>();
         try (ZipFile zipFile = new ZipFile(zipPath)) {
             int i = 1;
@@ -110,12 +115,15 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
                 ZipEntry inputEntry = zipFile.getEntry(inputFile);
                 ZipEntry outputEntry = zipFile.getEntry(outputFile);
 
-                if (inputEntry == null || outputEntry == null) {
+                if (inputEntry == null) {
+                    break;
+                }
+                if (requireOutput && outputEntry == null) {
                     break;
                 }
 
                 String input = readFileFromZip(zipFile, inputFile);
-                String output = readFileFromZip(zipFile, outputFile);
+                String output = outputEntry != null ? readFileFromZip(zipFile, outputFile) : "";
 
                 testCases.add(new String[]{input, output});
                 i++;
@@ -172,7 +180,8 @@ public class TestCaseCacheServiceImpl implements TestCaseCacheService {
      */
     @Override
     public void evictFromCache(String zipFilePath) {
-        testCaseCache.invalidate(zipFilePath);
+        testCaseCache.invalidate(cacheKey(zipFilePath, true));
+        testCaseCache.invalidate(cacheKey(zipFilePath, false));
         logger.info("已从缓存中移除测试用例: {}", zipFilePath);
     }
 
