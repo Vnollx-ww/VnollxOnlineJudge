@@ -5,6 +5,7 @@ import com.example.vnollxonlinejudge.model.dto.competition.ConfirmPasswordDTO;
 import com.example.vnollxonlinejudge.model.dto.competition.GetCompetitionStatusDTO;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionProblemBriefVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.service.CompetitionService;
@@ -13,6 +14,8 @@ import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+
+import com.example.vnollxonlinejudge.utils.UserContextHolder;
 
 import java.util.List;
 
@@ -73,9 +76,11 @@ public class CompetitionController {
                 , "获取比赛列表成功！！！");
     }
     @GetMapping("/list-problem")
-    public Result<List<ProblemVo>> getProblemList(@RequestParam String id){
-        return Result.Success(competitionService.getProblemList(Long.parseLong(id))
-                ,"获取比赛题目列表成功");
+    public Result<List<CompetitionProblemBriefVo>> getProblemList(@RequestParam String id) {
+        Long userId = UserContextHolder.getCurrentUserId();
+        return Result.Success(
+                competitionService.getProblemList(Long.parseLong(id), userId),
+                "获取比赛题目列表成功");
     }
     @GetMapping("/list-user")
     public Result<List<UserVo>> getUserList(@RequestParam String id){

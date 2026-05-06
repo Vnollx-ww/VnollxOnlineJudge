@@ -20,6 +20,7 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -99,8 +100,9 @@ public class UserController {
         }
     }
     @GetMapping("/list")
-    public Result<List<UserVo>> getAllUser(){
-            return Result.Success(userService.getAllUser(),"获取用户列表成功");
+    public Result<Map<String, Object>> getAllUser(@RequestParam(defaultValue = "1") int pageNum,
+                                                  @RequestParam(defaultValue = "30") int pageSize){
+            return Result.Success(userService.getAllUserPage(pageNum, pageSize),"获取用户列表成功");
     }
     @GetMapping("/count")
     public Result<Long> getCount(){

@@ -10,6 +10,9 @@ import java.util.List;
 public interface ProblemService {
     Problem getById(Long id);
 
+    /** 仅查询 id、title，避免加载题面与样例 */
+    Problem getProblemTitleRow(Long pid);
+
     void createProblem(AdminSaveProblemDTO dto);
 
     void deleteProblemByAdmin(Long id);

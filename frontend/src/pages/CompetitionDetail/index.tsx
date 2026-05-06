@@ -36,9 +36,9 @@ interface Competition {
 interface Problem {
   id: number;
   title: string;
-  difficulty?: string;
   submitCount: number;
   passCount: number;
+  isSolved?: boolean | null;
 }
 
 interface Countdown {
@@ -54,6 +54,7 @@ const CompetitionDetail: React.FC = () => {
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [problemsLoading, setProblemsLoading] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordVerified, setPasswordVerified] = useState(false);
@@ -144,6 +145,8 @@ const CompetitionDetail: React.FC = () => {
   };
 
   const loadProblems = async () => {
+    setProblems([]);
+    setProblemsLoading(true);
     try {
       const data = await api.get('/competition/list-problem', {
         params: { id: id },
@@ -159,6 +162,8 @@ const CompetitionDetail: React.FC = () => {
         toast.error('加载题目列表失败');
         console.error(error);
       }
+    } finally {
+      setProblemsLoading(false);
     }
   };
 
@@ -210,15 +215,6 @@ const CompetitionDetail: React.FC = () => {
     }
   };
 
-  const getDifficultyTag = (difficulty?: string) => {
-    const colors: Record<string, string> = {
-      "简单": 'green',
-      "中等": 'orange',
-      "困难": 'red',
-    };
-    return <Tag color={colors[difficulty || ''] || 'default'} className="!rounded-full">{difficulty || '未知'}</Tag>;
-  };
-
   const problemColumns = [
     {
       title: '题号',
@@ -241,10 +237,15 @@ const CompetitionDetail: React.FC = () => {
       ),
     },
     {
-      title: '难度',
-      dataIndex: 'difficulty',
-      key: 'difficulty',
-      render: (difficulty: string) => getDifficultyTag(difficulty),
+      title: '状态',
+      key: 'isSolved',
+      width: 100,
+      render: (_: unknown, record: Problem) =>
+        record.isSolved ? (
+          <Tag color="success" className="!rounded-full">已通过</Tag>
+        ) : (
+          <Tag className="!rounded-full">未通过</Tag>
+        ),
     },
     {
       title: '提交数',
@@ -364,7 +365,11 @@ const CompetitionDetail: React.FC = () => {
               <UnorderedListOutlined style={{ color: 'var(--gemini-accent-strong)' }} />
               <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>比赛题目列表</span>
             </div>
-            {problems.length === 0 ? (
+            {problemsLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Spin size="large" tip="题目加载中..." />
+              </div>
+            ) : problems.length === 0 ? (
               <Empty description="暂无题目" />
             ) : (
               <Table

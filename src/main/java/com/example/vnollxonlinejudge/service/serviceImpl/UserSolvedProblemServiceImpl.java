@@ -10,7 +10,10 @@ import com.example.vnollxonlinejudge.service.UserSolvedProblemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 @Service
 public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemMapper, UserSolvedProblem> implements UserSolvedProblemService {
     @Override
@@ -46,6 +49,19 @@ public class UserSolvedProblemServiceImpl extends ServiceImpl<UserSolvedProblemM
                 .eq(UserSolvedProblem::getProblemId, pid)
                 .eq(UserSolvedProblem::getCompetitionId, cid);
         return this.getOne(wrapper);
+    }
+
+    @Override
+    public Set<Long> getSolvedProblemIdsInCompetition(Long uid, Long cid) {
+        if (uid == null) {
+            return new HashSet<>();
+        }
+        LambdaQueryWrapper<UserSolvedProblem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserSolvedProblem::getUserId, uid)
+                .eq(UserSolvedProblem::getCompetitionId, cid);
+        return this.list(wrapper).stream()
+                .map(UserSolvedProblem::getProblemId)
+                .collect(Collectors.toSet());
     }
 
     @Override

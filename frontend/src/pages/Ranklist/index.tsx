@@ -29,6 +29,8 @@ interface UserPageData {
   pageSize: number;
 }
 
+type UserListData = UserPageData | RankUser[];
+
 const Ranklist: React.FC = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<DisplayRankUser[]>([]);
@@ -59,9 +61,10 @@ const Ranklist: React.FC = () => {
     try {
       const data = await api.get('/user/list', {
         params: { pageNum: page, pageSize: size },
-      }) as ApiResponse<UserPageData>;
+      }) as ApiResponse<UserListData>;
       if (data.code === 200) {
-        const ranked = (data.data.records || []).map((user, index) => ({
+        const records = Array.isArray(data.data) ? data.data : data.data.records || [];
+        const ranked = records.map((user, index) => ({
           ...user,
           rank: (page - 1) * size + index + 1,
           passRate: user.submitCount > 0 
@@ -70,7 +73,7 @@ const Ranklist: React.FC = () => {
         }));
 
         setUsers(ranked);
-        setTotal(data.data.total || 0);
+        setTotal(Array.isArray(data.data) ? data.data.length : data.data.total || 0);
       }
     } catch (error) {
       toast.error('加载排行榜失败');
@@ -113,14 +116,14 @@ const Ranklist: React.FC = () => {
       >
         {/* 卡片头部 */}
         <div 
-          className="px-4 py-3 flex items-center justify-between"
+          className="px-6 py-5 flex items-center justify-between"
           style={{ borderBottom: '1px solid var(--gemini-border-light)' }}
         >
-          <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-            <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
+          <div className="flex items-center gap-3">
+            <Trophy className="w-6 h-6" style={{ color: 'var(--gemini-accent-strong)' }} />
+            <h1 className="m-0 text-2xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
               ACM 排名
-            </span>
+            </h1>
           </div>
         </div>
 

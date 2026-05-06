@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionProblemBriefVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
@@ -146,69 +147,97 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     }
 
     @Override
-    public List<ProblemVo> getProblemList(Long cid) {
-            String cacheKey = "competition:" + cid + ":problems";
-            String problemsJson = redisService.getValueByKey(cacheKey);
-            String timeOutKey = String.format(TIME_OUT_KEY, cid);
-            List<ProblemVo> problems = new ArrayList<>();
-            if (problemsJson != null&&redisService.getTtl(cacheKey)>600) {
-                TypeReference<Map<Long, ProblemVo>> typeRef = new TypeReference<Map<Long, ProblemVo>>() {};
-                Map<Long, ProblemVo> problemMap = JSON.parseObject(problemsJson, typeRef);
-                // 设置提交和通过次数
-                for (ProblemVo p : problemMap.values()) {
-                    String passKey = String.format(PROBLEM_PASS_KEY, cid, p.getId());
-                    String submitKey = String.format(PROBLEM_SUBMIT_KEY, cid, p.getId()); // 假设存在提交次数的key
-                    // 获取并设置通过次数和提交次数（增加空值处理）
-                    String passCount = redisService.getValueByKey(passKey);
-                    String submitCount = redisService.getValueByKey(submitKey);
-                    p.setPassCount(passCount != null ? Integer.parseInt(passCount) : 0);
-                    p.setSubmitCount(submitCount != null ? Integer.parseInt(submitCount) : 0);
-                    problems.add(p);
-                }
-                // 将更新后的 Map 重新序列化为 JSON 并存储回 Redis
-                String updatedProblemsJson = JSON.toJSONString(problemMap);
-                String endTimeStr=redisService.getValueByKey(timeOutKey);
-                Long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
-                redisService.setKey(cacheKey,updatedProblemsJson,ttlSeconds+600);
+    public List<CompetitionProblemBriefVo> getProblemList(Long cid, Long userId) {
+        String cacheKey = "competition:" + cid + ":problems";
+        String problemsJson = redisService.getValueByKey(cacheKey);
+        String timeOutKey = String.format(TIME_OUT_KEY, cid);
+        Set<Long> solvedIds = userSolvedProblemService.getSolvedProblemIdsInCompetition(userId, cid);
+        List<CompetitionProblem> ordered = competitionProblemService.getProblemList(cid);
 
-            } else {
-                List<CompetitionProblem> pids = competitionProblemService.getProblemList(cid);
-                problems = new ArrayList<>();
-                QueryWrapper<Competition> wrapper=new QueryWrapper<>();
-                wrapper.eq("id",cid).select("end_time,begin_time");
-                Competition competition=this.baseMapper.selectOne(wrapper);
-                String endTimeStr = competition.getEndTime();
-                String beginTimeStr=competition.getBeginTime();
-                Long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
-                for (CompetitionProblem competitionProblem : pids) {
-                    ProblemVo problem = problemService.getProblemInfo(competitionProblem.getProblemId(),cid,null);
-                    String problemSubmitKey=String.format(PROBLEM_SUBMIT_KEY, cid, problem.getId());
-                    String problemPassKey=String.format(PROBLEM_PASS_KEY, cid, problem.getId());
-                    if (!redisService.IsExists(problemSubmitKey)&&ttlSeconds>0) {
-                        problem.setSubmitCount(0);
-                        problem.setPassCount(0);
-                        redisService.setKey(problemSubmitKey,"0",ttlSeconds+600);
-                        redisService.setKey(problemPassKey,"0",ttlSeconds+600);
-                    }
-                    if(ttlSeconds<0){
-                        problem.setSubmitCount(competitionProblem.getSubmitCount());
-                        problem.setPassCount(competitionProblem.getPassCount());
-                    }
-                    problems.add(problem);
+        if (problemsJson != null && redisService.getTtl(cacheKey) > 600) {
+            TypeReference<Map<Long, CompetitionProblemBriefVo>> typeRef = new TypeReference<>() {};
+            Map<Long, CompetitionProblemBriefVo> problemMap = JSON.parseObject(problemsJson, typeRef);
+            List<CompetitionProblemBriefVo> problems = new ArrayList<>();
+            for (CompetitionProblem cp : ordered) {
+                CompetitionProblemBriefVo p = problemMap.get(cp.getProblemId());
+                if (p == null) {
+                    continue;
                 }
-                if (!problems.isEmpty()&&ttlSeconds>0) {
-                    Map<Long, ProblemVo> problemMap = new HashMap<>();
-                    for (ProblemVo p : problems) {
-                        problemMap.put(p.getId(), p);
-                    }
-                    String updatedProblemsJson = JSON.toJSONString(problemMap);
-                    redisService.setKey(cacheKey,updatedProblemsJson,ttlSeconds+600);
-                    redisService.setKey(timeOutKey,endTimeStr,ttlSeconds);
-                    String timeBeginKey=String.format(TIME_BEGIN_KEY,cid);
-                    redisService.setKey(timeBeginKey,beginTimeStr,ttlSeconds);
-                }
+                attachCompetitionProblemCountsAndSolved(cid, p, solvedIds);
+                problems.add(p);
             }
+            String updatedProblemsJson = JSON.toJSONString(copyBriefMapForCache(problems));
+            String endTimeStr = redisService.getValueByKey(timeOutKey);
+            Long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
+            redisService.setKey(cacheKey, updatedProblemsJson, ttlSeconds + 600);
             return problems;
+        }
+
+        List<CompetitionProblemBriefVo> problems = new ArrayList<>();
+        QueryWrapper<Competition> wrapper = new QueryWrapper<>();
+        wrapper.eq("id", cid).select("end_time,begin_time");
+        Competition competition = this.baseMapper.selectOne(wrapper);
+        String endTimeStr = competition.getEndTime();
+        String beginTimeStr = competition.getBeginTime();
+        Long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
+        for (CompetitionProblem competitionProblem : ordered) {
+            Problem titleRow = problemService.getProblemTitleRow(competitionProblem.getProblemId());
+            if (titleRow == null) {
+                throw new BusinessException("题目不存在或已被删除");
+            }
+            CompetitionProblemBriefVo vo = new CompetitionProblemBriefVo();
+            vo.setId(titleRow.getId());
+            vo.setTitle(titleRow.getTitle());
+            String problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, vo.getId());
+            String problemPassKey = String.format(PROBLEM_PASS_KEY, cid, vo.getId());
+            if (ttlSeconds < 0) {
+                vo.setSubmitCount(competitionProblem.getSubmitCount());
+                vo.setPassCount(competitionProblem.getPassCount());
+            } else {
+                if (!redisService.IsExists(problemSubmitKey)) {
+                    redisService.setKey(problemSubmitKey, "0", ttlSeconds + 600);
+                    redisService.setKey(problemPassKey, "0", ttlSeconds + 600);
+                }
+                String passStr = redisService.getValueByKey(problemPassKey);
+                String submitStr = redisService.getValueByKey(problemSubmitKey);
+                vo.setPassCount(passStr != null ? Integer.parseInt(passStr) : 0);
+                vo.setSubmitCount(submitStr != null ? Integer.parseInt(submitStr) : 0);
+            }
+            vo.setIsSolved(solvedIds.contains(vo.getId()));
+            problems.add(vo);
+        }
+        if (!problems.isEmpty() && ttlSeconds > 0) {
+            String updatedProblemsJson = JSON.toJSONString(copyBriefMapForCache(problems));
+            redisService.setKey(cacheKey, updatedProblemsJson, ttlSeconds + 600);
+            redisService.setKey(timeOutKey, endTimeStr, ttlSeconds);
+            String timeBeginKey = String.format(TIME_BEGIN_KEY, cid);
+            redisService.setKey(timeBeginKey, beginTimeStr, ttlSeconds);
+        }
+        return problems;
+    }
+
+    private void attachCompetitionProblemCountsAndSolved(Long cid, CompetitionProblemBriefVo p, Set<Long> solvedIds) {
+        String passKey = String.format(PROBLEM_PASS_KEY, cid, p.getId());
+        String submitKey = String.format(PROBLEM_SUBMIT_KEY, cid, p.getId());
+        String passCount = redisService.getValueByKey(passKey);
+        String submitCount = redisService.getValueByKey(submitKey);
+        p.setPassCount(passCount != null ? Integer.parseInt(passCount) : 0);
+        p.setSubmitCount(submitCount != null ? Integer.parseInt(submitCount) : 0);
+        p.setIsSolved(solvedIds.contains(p.getId()));
+    }
+
+    /** 写入 Redis 时不带 isSolved，避免不同用户串数据 */
+    private Map<Long, CompetitionProblemBriefVo> copyBriefMapForCache(List<CompetitionProblemBriefVo> list) {
+        Map<Long, CompetitionProblemBriefVo> m = new LinkedHashMap<>();
+        for (CompetitionProblemBriefVo p : list) {
+            CompetitionProblemBriefVo c = new CompetitionProblemBriefVo();
+            c.setId(p.getId());
+            c.setTitle(p.getTitle());
+            c.setSubmitCount(p.getSubmitCount());
+            c.setPassCount(p.getPassCount());
+            m.put(c.getId(), c);
+        }
+        return m;
     }
 
     @Override

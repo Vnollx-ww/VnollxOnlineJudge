@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.service;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionProblemBriefVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 
@@ -15,7 +16,7 @@ public interface CompetitionService {
     Long getCount(String keyword);
     void confirmPassword(Long id,String password);
 
-    List<ProblemVo> getProblemList(Long cid);
+    List<CompetitionProblemBriefVo> getProblemList(Long cid, Long userId);
     List<UserVo> getUserList(Long cid);
     CompetitionRanklistVo getRanklist(Long cid);
     void judgeIsOpenById(String now, Long id);

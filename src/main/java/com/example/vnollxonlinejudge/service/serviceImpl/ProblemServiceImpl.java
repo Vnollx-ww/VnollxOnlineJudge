@@ -76,6 +76,16 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     }
 
     @Override
+    public Problem getProblemTitleRow(Long pid) {
+        if (pid == null) {
+            return null;
+        }
+        QueryWrapper<Problem> w = new QueryWrapper<>();
+        w.eq("id", pid).select("id", "title");
+        return getOne(w);
+    }
+
+    @Override
     @Transactional
     public void createProblem(AdminSaveProblemDTO dto) {
         if (dto.getTestCaseFile() == null || dto.getTestCaseFile().isEmpty()) {
