@@ -9,7 +9,6 @@ import {
   Spin,
   Space,
   Divider,
-  Alert,
   Avatar,
   Popconfirm,
 } from 'antd';
@@ -779,15 +778,6 @@ const CompetitionProblemDetail: React.FC = () => {
               </Button>
             </div>
 
-            {language === 'java' && (
-              <Alert
-                message="暂不支持用Java提交，请等待"
-                type="info"
-                showIcon
-                className="!mb-4"
-              />
-            )}
-
             {isEditorFullscreen && createPortal(
               <div className="fixed inset-0 z-[99999] bg-white">
                 <Button
@@ -876,7 +866,7 @@ const CompetitionProblemDetail: React.FC = () => {
                   type="primary"
                   loading={codeLoading.test}
                   onClick={handleTestCode}
-                  disabled={isCompetitionEnd || language === 'java' || !problem.examples?.length}
+                  disabled={isCompetitionEnd || !problem.examples?.length}
                 >
                   {isCompetitionEnd ? "比赛已结束" : "测试样例"}
                 </Button>
@@ -884,7 +874,7 @@ const CompetitionProblemDetail: React.FC = () => {
                   type="primary"
                   loading={codeLoading.submit}
                   onClick={handleSubmitCode}
-                  disabled={isCompetitionEnd || language === 'java'}
+                  disabled={isCompetitionEnd}
                 >
                   {isCompetitionEnd ? "比赛已结束" : "提交评测"}
                 </Button>

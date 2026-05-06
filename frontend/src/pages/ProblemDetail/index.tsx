@@ -4,7 +4,6 @@ import { useParams, useNavigate, useLocation, useSearchParams } from 'react-rout
 import {
   Button,
   Spin,
-  Alert,
   Avatar,
   Popconfirm,
   App,
@@ -989,15 +988,6 @@ const ProblemDetail: React.FC = () => {
           </button>
         </div>
 
-        {language === 'java' && (
-          <Alert
-            message="暂不支持用Java提交，请等待"
-            type="info"
-            showIcon
-            className="mb-4 rounded-2xl"
-          />
-        )}
-
         {/* 全屏编辑器 */}
         {isEditorFullscreen && createPortal(
           <div className="fixed inset-0 z-[99999]" style={{ backgroundColor: 'var(--gemini-surface)' }}>
@@ -1103,14 +1093,13 @@ const ProblemDetail: React.FC = () => {
               AI分析
             </Button>
           </PermissionGuard>
-          <Button loading={codeLoading.test} onClick={handleTestCode} disabled={language === 'java' || !problem.examples?.length}>
+          <Button loading={codeLoading.test} onClick={handleTestCode} disabled={!problem.examples?.length}>
             测试样例
           </Button>
           <Button
             type="primary"
             loading={codeLoading.submit}
             onClick={handleSubmitCode}
-            disabled={language === 'java'}
             style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
           >
             提交评测
