@@ -130,7 +130,7 @@ public class SpecialJudgeSupport {
             "copyOutCached": ["a"]
         }]
     }
-    """, escapeJson(code));
+    """, JudgePayloadJson.escapeString(code));
     }
 
     /** 与 testlib {@code registerTestlibCmd} / Polygon 一致：参数为 input、output、answer 三个文件名（此处为 input.txt、output.txt、answer.txt）。 */
@@ -167,15 +167,6 @@ public class SpecialJudgeSupport {
         },
         "copyOut": ["stdout", "stderr"]
     }]}
-    """, checkerFileId, escapeJson(input), escapeJson(expected), escapeJson(actual));
-    }
-
-    private String escapeJson(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
+    """, checkerFileId, JudgePayloadJson.escapeString(input), JudgePayloadJson.escapeString(expected), JudgePayloadJson.escapeString(actual));
     }
 }

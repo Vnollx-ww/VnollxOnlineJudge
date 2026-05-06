@@ -38,5 +38,10 @@ public class SubmissionVo {
         this.errorInfo=submission.getErrorInfo();
         this.passCount=submission.getPassCount();
         this.testCount=submission.getTestCount();
+        if (submission.getCid() != null && submission.getCid() != 0) {
+            this.errorInfo = null;
+            this.passCount = null;
+            this.testCount = null;
+        }
     }
 }

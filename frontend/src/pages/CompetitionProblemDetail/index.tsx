@@ -29,6 +29,7 @@ import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '../../utils/api';
+import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import CodeEditor from '../../components/CodeEditor';
@@ -686,9 +687,10 @@ const CompetitionProblemDetail: React.FC = () => {
                         type="text"
                         size="small"
                         icon={<CopyOutlined />}
-                        onClick={() => {
-                          navigator.clipboard.writeText(ex.input || '');
-                          toast.success('已复制输入样例');
+                        onClick={async () => {
+                          const ok = await copyTextToClipboard(ex.input || '');
+                          if (ok) toast.success('已复制输入样例');
+                          else toast.error('复制失败，请手动选择文本复制');
                         }}
                       >
                         复制
@@ -705,9 +707,10 @@ const CompetitionProblemDetail: React.FC = () => {
                         type="text"
                         size="small"
                         icon={<CopyOutlined />}
-                        onClick={() => {
-                          navigator.clipboard.writeText(ex.output || '');
-                          toast.success('已复制输出样例');
+                        onClick={async () => {
+                          const ok = await copyTextToClipboard(ex.output || '');
+                          if (ok) toast.success('已复制输出样例');
+                          else toast.error('复制失败，请手动选择文本复制');
                         }}
                       >
                         复制

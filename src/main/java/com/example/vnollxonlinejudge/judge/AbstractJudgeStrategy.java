@@ -216,8 +216,7 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                 if (!"Accepted".equals(ck.getStatus()) || ck.getExitStatus() != 0) {
                     finalResult.setStatus(WRONG_ANSWER);
                     finalResult.getFiles().setStdout(actual);
-                    finalResult.getFiles().setStderr("测试用例 " + (i + 1) + " 未通过 checker: "
-                            + (ck.getFiles() != null ? ck.getFiles().getStderr() : ""));
+                    finalResult.getFiles().setStderr(friendlySpecialJudgeMessage());
                     return finalResult;
                 }
                 finalResult.setPassCount(i + 1);
@@ -343,6 +342,11 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
         return str.length() <= max ? str : str.substring(0, max) + "...";
     }
 
+    /** 构造题：checker 判负时只给选手这一条统一说明。 */
+    private static String friendlySpecialJudgeMessage() {
+        return "输出的答案未通过检验。";
+    }
+
     private HttpHeaders jsonHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -350,11 +354,6 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     }
 
     protected static String escapeJson(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
+        return JudgePayloadJson.escapeString(str);
     }
 }

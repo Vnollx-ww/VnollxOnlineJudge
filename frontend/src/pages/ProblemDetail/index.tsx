@@ -30,6 +30,7 @@ import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
+import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
 import { CodeEditor, JudgeOutcomeCard, PermissionGuard, mapJudgeStatusToVariant } from '@/components';
@@ -699,18 +700,13 @@ const ProblemDetail: React.FC = () => {
     }));
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+  const copyToClipboard = async (text: string, label: string) => {
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
       toast.success(`已复制${label}`);
-    }).catch(() => {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      toast.success(`已复制${label}`);
-    });
+    } else {
+      toast.error('复制失败，请手动选择文本复制');
+    }
   };
 
   const renderComments = (items: Comment[] = []): React.ReactNode =>

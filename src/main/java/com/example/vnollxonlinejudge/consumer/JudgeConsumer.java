@@ -77,17 +77,21 @@ public class JudgeConsumer {
             if (result.getFiles() != null && result.getFiles().getStderr() != null) {
                 errorInfo = result.getFiles().getStderr();
             }
+            boolean competition = judgeInfo.getCid() != null && judgeInfo.getCid() != 0;
+            String storedError = competition ? null : errorInfo;
+            Integer storedPass = competition ? null : result.getPassCount();
+            Integer storedTest = competition ? null : result.getTestCount();
             submissionService.updateSubmissionJudgeStatusBySnowflake(
                     judgeInfo.getSnowflakeId(),
                     result.getStatus(),
                     result.getRunTime(),
                     result.getMemory(),
-                    errorInfo,
-                    result.getPassCount(),
-                    result.getTestCount()
+                    storedError,
+                    storedPass,
+                    storedTest
             );
             submissionService.processSubmission(judgeInfo,result.getStatus());
-            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), errorInfo, result.getPassCount(), result.getTestCount());
+            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), storedError, storedPass, storedTest);
             logger.info("评测完成: snowflakeId={}", judgeInfo.getSnowflakeId());
 
         } catch (IOException e) {

@@ -2,8 +2,10 @@ package com.example.vnollxonlinejudge.convert;
 
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.vo.submission.SubmissionVo;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
@@ -30,4 +32,14 @@ public interface SubmissionConvert {
     SubmissionVo toVo(Submission submission);
 
     List<SubmissionVo> toVoList(List<Submission> list);
+
+    /** 比赛提交不向选手暴露判题细节（与 {@link SubmissionVo#SubmissionVo(Submission)} 一致） */
+    @AfterMapping
+    default void stripCompetitionJudgeDetail(@MappingTarget SubmissionVo vo, Submission submission) {
+        if (submission.getCid() != null && submission.getCid() != 0) {
+            vo.setErrorInfo(null);
+            vo.setPassCount(null);
+            vo.setTestCount(null);
+        }
+    }
 }
