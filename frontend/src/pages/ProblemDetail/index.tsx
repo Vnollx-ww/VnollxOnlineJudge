@@ -4,7 +4,6 @@ import { useParams, useNavigate, useLocation, useSearchParams } from 'react-rout
 import {
   Button,
   Spin,
-  Select,
   Alert,
   Input,
   Avatar,
@@ -13,6 +12,7 @@ import {
   Tag,
 } from 'antd';
 import toast from 'react-hot-toast';
+import Select from '../../components/Select';
 import {
   ArrowLeft,
   Code2,
@@ -954,13 +954,12 @@ const ProblemDetail: React.FC = () => {
         {/* 工具栏 */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
-            <Select value={language} onChange={setLanguage} className="w-40">
-              {languageOptions.map((opt) => (
-                <Select.Option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </Select.Option>
-              ))}
-            </Select>
+            <Select
+              value={language}
+              onChange={setLanguage}
+              className="w-40"
+              options={languageOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+            />
             <button
               onClick={() => {
                 const template = languageOptions.find((item) => item.value === language)?.template || '';

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Input, Pagination, Select, Button } from 'antd';
+import { Table, Input, Pagination, Button } from 'antd';
 import toast from 'react-hot-toast';
 import { CheckCircle, Circle } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
+import Select from '../../components/Select';
 
 interface Problem {
   id: number;
@@ -276,14 +277,11 @@ const Problems: React.FC = () => {
             className="w-full sm:w-48"
             size="large"
             allowClear
-          >
-            <Select.Option value="">所有标签</Select.Option>
-            {tags.map((tag) => (
-              <Select.Option key={tag.name} value={tag.name}>
-                {tag.name}
-              </Select.Option>
-            ))}
-          </Select>
+            options={[
+              { value: '', label: '所有标签' },
+              ...tags.map((tag) => ({ value: tag.name, label: tag.name })),
+            ]}
+          />
           <Button
             onClick={() => {
               setSearchKeyword('');

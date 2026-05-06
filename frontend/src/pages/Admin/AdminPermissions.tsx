@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Select, Tag, Tabs, Spin, Descriptions, Divider, Empty } from 'antd';
+import { Table, Button, Modal, Tag, Tabs, Spin, Descriptions, Divider, Empty } from 'antd';
 import toast from 'react-hot-toast';
 import { RefreshCw, Users, Shield, Key, Plus, Trash2, RotateCw } from 'lucide-react';
 import api from '@/utils/api';
+import Select from '@/components/Select';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -356,13 +357,11 @@ const AdminPermissions: React.FC = () => {
                 const opt = option as { children?: unknown };
                 return String(opt?.children || '').toLowerCase().includes(input.toLowerCase());
               }}
-            >
-              {users.map((user: User) => (
-                <Select.Option key={user.id} value={user.id}>
-                  {user.name} ({user.email})
-                </Select.Option>
-              ))}
-            </Select>
+              options={users.map((user: User) => ({
+                value: user.id,
+                label: `${user.name} (${user.email})`,
+              }))}
+            />
           </div>
 
           {selectedUser && (
@@ -495,15 +494,18 @@ const AdminPermissions: React.FC = () => {
             为用户 <strong>{selectedUser?.name}</strong> 分配角色：
           </span>
         </div>
-        <Select placeholder="选择角色" className="w-full" value={selectedRoleToAssign} onChange={setSelectedRoleToAssign}>
-          {roles
+        <Select
+          placeholder="选择角色"
+          className="w-full"
+          value={selectedRoleToAssign}
+          onChange={setSelectedRoleToAssign}
+          options={roles
             .filter((r: Role) => !userRoles.find((ur: Role) => ur.id === r.id))
-            .map((role: Role) => (
-              <Select.Option key={role.id} value={role.id}>
-                {role.name} ({role.code})
-              </Select.Option>
-            ))}
-        </Select>
+            .map((role: Role) => ({
+              value: role.id,
+              label: `${role.name} (${role.code})`,
+            }))}
+        />
       </Modal>
 
       {/* 分配权限弹窗 */}
@@ -542,15 +544,13 @@ const AdminPermissions: React.FC = () => {
             const opt = option as { children?: unknown };
             return String(opt?.children || '').toLowerCase().includes(input.toLowerCase());
           }}
-        >
-          {permissions
+          options={permissions
             .filter((p: Permission) => !rolePermissions.find((rp: Permission) => rp.id === p.id))
-            .map((perm: Permission) => (
-              <Select.Option key={perm.id} value={perm.id}>
-                {perm.code} - {perm.name}
-              </Select.Option>
-            ))}
-        </Select>
+            .map((perm: Permission) => ({
+              value: perm.id,
+              label: `${perm.code} - ${perm.name}`,
+            }))}
+        />
       </Modal>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, Table, Input, Button, Tag, Pagination, Switch, Select } from 'antd';
+import { Modal, Table, Input, Button, Tag, Pagination, Switch } from 'antd';
 import toast from 'react-hot-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -9,6 +9,7 @@ import api from '../../utils/api';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import type { ApiResponse, JudgeMessage } from '../../types';
+import Select from '../../components/Select';
 
 interface Submission {
   id: number;
@@ -306,25 +307,27 @@ const Submissions: React.FC = () => {
                   onChange={setStatus}
                   className="w-40"
                   allowClear
-              >
-                <Select.Option value="答案正确">答案正确</Select.Option>
-                <Select.Option value="答案错误">答案错误</Select.Option>
-                <Select.Option value="时间超出限制">时间超出限制</Select.Option>
-                <Select.Option value="内存超出限制">内存超出限制</Select.Option>
-                <Select.Option value="运行时错误">运行时错误</Select.Option>
-                <Select.Option value="编译错误">编译错误</Select.Option>
-              </Select>
+                  options={[
+                    { value: '答案正确', label: '答案正确' },
+                    { value: '答案错误', label: '答案错误' },
+                    { value: '时间超出限制', label: '时间超出限制' },
+                    { value: '内存超出限制', label: '内存超出限制' },
+                    { value: '运行时错误', label: '运行时错误' },
+                    { value: '编译错误', label: '编译错误' },
+                  ]}
+              />
               <Select
                   placeholder="语言"
                   value={language}
                   onChange={setLanguage}
                   className="w-32"
                   allowClear
-              >
-                <Select.Option value="Python">Python</Select.Option>
-                <Select.Option value="Java">Java</Select.Option>
-                <Select.Option value="C++">C++</Select.Option>
-              </Select>
+                  options={[
+                    { value: 'Python', label: 'Python' },
+                    { value: 'Java', label: 'Java' },
+                    { value: 'C++', label: 'C++' },
+                  ]}
+              />
             </div>
             <div className="flex items-center gap-3">
               <Button

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Input, Modal, Form, Select, Tag, Popconfirm } from 'antd';
+import { Table, Button, Input, Modal, Form, Tag, Popconfirm } from 'antd';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
+import Select from '@/components/Select';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -261,11 +262,7 @@ const AdminUsers: React.FC = () => {
             <Input />
           </Form.Item>
           <Form.Item name="identity" label="身份" rules={[{ required: true, message: '请选择身份' }]}>
-            <Select>
-              {identityOptions.map((option) => (
-                <Select.Option key={option.value} value={option.value}>{option.label}</Select.Option>
-              ))}
-            </Select>
+            <Select options={identityOptions} />
           </Form.Item>
           <Form.Item>
             <div className="flex justify-end gap-2">

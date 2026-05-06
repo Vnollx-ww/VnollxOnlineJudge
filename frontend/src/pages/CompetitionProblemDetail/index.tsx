@@ -9,13 +9,13 @@ import {
   Spin,
   Space,
   Divider,
-  Select,
   Alert,
   Input,
   Avatar,
   Popconfirm,
 } from 'antd';
 import toast from 'react-hot-toast';
+import Select from '../../components/Select';
 import { 
   ArrowLeftOutlined, 
   CodeOutlined, 
@@ -40,7 +40,6 @@ import SuccessCelebration from '../../components/SuccessCelebration';
 import type { JudgeMessage } from '../../types';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 const { TextArea } = Input;
 
 interface ProblemExampleItem {
@@ -753,13 +752,8 @@ const CompetitionProblemDetail: React.FC = () => {
                   value={language}
                   onChange={setLanguage}
                   className="w-40"
-                >
-                  {languageOptions.map((option) => (
-                    <Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Option>
-                  ))}
-                </Select>
+                  options={languageOptions.map((option) => ({ value: option.value, label: option.label }))}
+                />
                 <Button
                   type="link"
                   onClick={() => {

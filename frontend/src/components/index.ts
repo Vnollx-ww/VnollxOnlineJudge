@@ -19,6 +19,10 @@ export { default as CodeWindow } from './CodeWindow';
 // Count Up Animation
 export { default as CountUp } from './CountUp';
 
+// Custom Select
+export { default as Select } from './Select';
+export type { SelectOption } from './Select';
+
 // Permission Guard
 export { default as PermissionGuard } from './PermissionGuard';
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Table, Tabs, Spin, Progress, Row, Col, Statistic, Select, Button } from 'antd';
+import { Card, Table, Tabs, Spin, Progress, Row, Col, Statistic, Button } from 'antd';
 import {
   PieChart,
   Pie,
@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, GraduationCap, TrendingUp } from 'lucide-react';
 import api from '@/utils/api';
+import Select from '@/components/Select';
 import type { ApiResponse } from '@/types';
 
 interface SolvedProblemItem {

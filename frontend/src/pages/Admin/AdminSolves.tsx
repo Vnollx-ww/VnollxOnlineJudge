@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Input, Select, Tag, Popconfirm } from 'antd';
+import { Table, Button, Input, Tag, Popconfirm } from 'antd';
 import toast from 'react-hot-toast';
 import { RefreshCw, Check, X, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
+import Select from '@/components/Select';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -159,11 +160,12 @@ const AdminSolves: React.FC = () => {
               setStatusFilter(value);
               setCurrentPage(0);
             }}
-          >
-            <Select.Option value={0}>未审核</Select.Option>
-            <Select.Option value={1}>审核通过</Select.Option>
-            <Select.Option value={2}>审核不通过</Select.Option>
-          </Select>
+            options={[
+              { value: 0, label: '未审核' },
+              { value: 1, label: '审核通过' },
+              { value: 2, label: '审核不通过' },
+            ]}
+          />
         </div>
         <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadSolves}>
           刷新

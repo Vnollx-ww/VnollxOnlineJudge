@@ -10,7 +10,6 @@ import {
   Input,
   Spin,
   Empty,
-  Select,
 } from 'antd';
 import toast from 'react-hot-toast';
 import {
@@ -21,9 +20,9 @@ import {
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
+import Select from '../../components/Select';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 interface Competition {
   id: number;
@@ -363,27 +362,29 @@ const CompetitionSubmissions: React.FC = () => {
                   onChange={setStatus}
                   className="w-36"
                   allowClear
-                >
-                  <Option value="答案正确">答案正确</Option>
-                  <Option value="答案错误">答案错误</Option>
-                  <Option value="时间超出限制">时间超出限制</Option>
-                  <Option value="内存超出限制">内存超出限制</Option>
-                  <Option value="运行时错误">运行时错误</Option>
-                  <Option value="编译错误">编译错误</Option>
-                  <Option value="等待中">等待中</Option>
-                  <Option value="评测中">评测中</Option>
-                </Select>
+                  options={[
+                    { value: '答案正确', label: '答案正确' },
+                    { value: '答案错误', label: '答案错误' },
+                    { value: '时间超出限制', label: '时间超出限制' },
+                    { value: '内存超出限制', label: '内存超出限制' },
+                    { value: '运行时错误', label: '运行时错误' },
+                    { value: '编译错误', label: '编译错误' },
+                    { value: '等待中', label: '等待中' },
+                    { value: '评测中', label: '评测中' },
+                  ]}
+                />
                 <Select
                   placeholder="语言"
                   value={language}
                   onChange={setLanguage}
                   className="w-36"
                   allowClear
-                >
-                  <Option value="Python">Python</Option>
-                  <Option value="Java">Java</Option>
-                  <Option value="C++">C++</Option>
-                </Select>
+                  options={[
+                    { value: 'Python', label: 'Python' },
+                    { value: 'Java', label: 'Java' },
+                    { value: 'C++', label: 'C++' },
+                  ]}
+                />
                 <Button
                   onClick={() => {
                     setStatus(null);

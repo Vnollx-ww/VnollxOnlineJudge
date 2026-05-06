@@ -14,7 +14,6 @@ import {
   List,
   Modal,
   Pagination,
-  Select,
   Space,
   Tag,
   Typography,
@@ -23,9 +22,9 @@ import {
 import dayjs from 'dayjs';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
+import Select from '../../components/Select';
 
 const { Title, Text, Paragraph } = Typography;
-const { Option } = Select;
 
 const PAGE_SIZE = 10;
 
@@ -290,11 +289,12 @@ const Notifications: React.FC = () => {
               value={status ?? 'all'}
               onChange={handleStatusChange}
               className="!w-32"
-            >
-              <Option value="all">全部</Option>
-              <Option value="false">未读</Option>
-              <Option value="true">已读</Option>
-            </Select>
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'false', label: '未读' },
+                { value: 'true', label: '已读' },
+              ]}
+            />
           </div>
 
           {/* List - Gemini 风格 */}

@@ -8,8 +8,6 @@ import {
   Spin,
   Tooltip,
   Button,
-  Progress,
-  Select,
 } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import toast from 'react-hot-toast';
@@ -20,8 +18,9 @@ import {
 } from 'recharts';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
-import { usePermission } from '../../contexts/PermissionContext';
 import { PermissionCode } from '../../constants/permissions';
+import Select from '../../components/Select';
+import { usePermission } from '../../contexts/PermissionContext';
 import type { ApiResponse } from '../../types';
 
 const { Title, Text } = Typography;

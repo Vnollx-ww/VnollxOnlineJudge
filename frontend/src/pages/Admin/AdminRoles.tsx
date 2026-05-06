@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Tag, Spin, Popconfirm } from 'antd';
+import { Table, Button, Modal, Form, Input, Tag, Spin, Popconfirm } from 'antd';
 import toast from 'react-hot-toast';
 import { RefreshCw, Shield, Plus, Trash2, Edit, X, Key } from 'lucide-react';
 import api from '@/utils/api';
+import Select from '@/components/Select';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -423,17 +424,14 @@ const AdminRoles: React.FC = () => {
             value={selectedPermissionsToAssign}
             onChange={setSelectedPermissionsToAssign}
             optionFilterProp="children"
-          >
-            {Object.entries(groupedPermissions).map(([module, perms]) => (
-              <Select.OptGroup key={module} label={module}>
-                {perms.map((p) => (
-                  <Select.Option key={p.id} value={p.id}>
-                    {p.name} ({p.code})
-                  </Select.Option>
-                ))}
-              </Select.OptGroup>
-            ))}
-          </Select>
+            options={Object.entries(groupedPermissions).flatMap(([module, perms]) =>
+              perms.map((p) => ({
+                value: p.id,
+                label: `${p.name} (${p.code})`,
+                group: module,
+              }))
+            )}
+          />
         </div>
       </Modal>
 
