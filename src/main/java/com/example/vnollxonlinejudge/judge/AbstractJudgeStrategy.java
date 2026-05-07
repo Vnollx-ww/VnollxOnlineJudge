@@ -180,6 +180,11 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                         finalResult.setCaseExpected(truncate(expected, 400));
                         return finalResult;
                     }
+                    if (inputExample != null && r.getFiles() != null) {
+                        finalResult.getFiles().setStdout(r.getFiles().getStdout());
+                        finalResult.setCaseInput(truncate(tc[0], 200));
+                        finalResult.setCaseExpected(truncate(expected, 400));
+                    }
                     finalResult.setPassCount(finalResult.getPassCount() + 1);
                 }
             }

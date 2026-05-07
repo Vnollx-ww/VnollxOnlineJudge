@@ -63,10 +63,14 @@ public class RunResult {
     public static class FileIds {
         private String a;  // C++ 编译后的二进制文件 id
 
+        private String main;
+
         @JsonProperty("Main.class")
         private String mainClass;  // Java 编译后的类文件 id
 
         public void setA(String a) { this.a = a; }
+
+        public void setMain(String main) { this.main = main; }
 
         public void setMainClass(String mainClass) { this.mainClass = mainClass; }
     }

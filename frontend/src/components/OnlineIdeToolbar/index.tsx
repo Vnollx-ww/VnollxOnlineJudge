@@ -1,4 +1,4 @@
-import { Download, Maximize2, Minimize2, RotateCcw, WrapText } from 'lucide-react';
+import { Download, Maximize2, Minimize2, Moon, RotateCcw, Sun, WrapText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Select from '../Select';
 import { copyTextToClipboard } from '@/utils/clipboard';
@@ -12,6 +12,7 @@ export interface OnlineIdeLanguageOption {
 export interface OnlineIdeSettings {
   fontSize: number;
   wordWrap: boolean;
+  theme: 'light' | 'dark';
 }
 
 interface OnlineIdeToolbarProps {
@@ -32,6 +33,8 @@ const getFileExtension = (language: string) => {
   if (language === 'cpp') return 'cpp';
   if (language === 'java') return 'java';
   if (language === 'python') return 'py';
+  if (language === 'golang') return 'go';
+  if (language === 'javascript') return 'js';
   return 'txt';
 };
 
@@ -93,6 +96,14 @@ const OnlineIdeToolbar: React.FC<OnlineIdeToolbarProps> = ({
       >
         <WrapText className="w-4 h-4" />
         自动换行
+      </button>
+      <button
+        onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+        className="inline-flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
+        style={{ color: settings.theme === 'dark' ? 'var(--gemini-accent-strong)' : 'var(--gemini-text-secondary)' }}
+      >
+        {settings.theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        {settings.theme === 'dark' ? '深色' : '浅色'}
       </button>
       <button
         onClick={handleResetTemplate}

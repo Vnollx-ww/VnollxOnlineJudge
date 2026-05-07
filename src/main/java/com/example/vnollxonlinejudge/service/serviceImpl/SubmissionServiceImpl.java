@@ -80,6 +80,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         String language = switch (option) {
             case "java" -> "Java";
             case "python" -> "Python";
+            case "golang" -> "Golang";
+            case "javascript" -> "JavaScript";
             default -> "C++";
         };
         submission.setLanguage(language);

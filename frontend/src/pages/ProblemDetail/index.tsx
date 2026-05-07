@@ -127,6 +127,39 @@ public class Main {
 }
 `,
   },
+  {
+    label: 'Go',
+    value: 'golang',
+    template: `package main
+
+import (
+    "bufio"
+    "fmt"
+    "os"
+)
+
+func main() {
+    in := bufio.NewReader(os.Stdin)
+    out := bufio.NewWriter(os.Stdout)
+    defer out.Flush()
+
+    // 请在此处编写你的代码
+    _ = in
+    fmt.Fprintln(out)
+}
+`,
+  },
+  {
+    label: 'JavaScript',
+    value: 'javascript',
+    template: `const fs = require('fs');
+
+const input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);
+let idx = 0;
+
+// 请在此处编写你的代码
+`,
+  },
 ];
 
 const getDifficultyColor = (difficulty: string) => {
@@ -189,7 +222,7 @@ const ProblemDetail: React.FC = () => {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
-  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true });
+  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true, theme: 'dark' });
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -597,8 +630,8 @@ const ProblemDetail: React.FC = () => {
     setRunResult({
       variant: 'info',
       source: 'submit',
-      headline: '评测中',
-      description: '评测中：正在进行评测，请稍候…',
+      headline: '等待评测',
+      description: '等待评测：正在保存提交并加入评测队列…',
     });
     try {
       const payload = {
@@ -1098,7 +1131,7 @@ const ProblemDetail: React.FC = () => {
               代码已在全屏中编辑…
             </div>
           ) : (
-            <CodeEditor value={code} onChange={setCode} language={language} height="100%" options={editorOptions} />
+            <CodeEditor value={code} onChange={setCode} language={language} height="100%" options={editorOptions} theme={ideSettings.theme} />
           )
         }
         bottomTabs={[
@@ -1126,7 +1159,7 @@ const ProblemDetail: React.FC = () => {
             <Minimize2 className="w-4 h-4 inline mr-2" />
             退出全屏
           </button>
-          <CodeEditor value={code} onChange={setCode} language={language} height="100vh" options={editorOptions} />
+          <CodeEditor value={code} onChange={setCode} language={language} height="100vh" options={editorOptions} theme={ideSettings.theme} />
         </div>,
         document.body
       )}

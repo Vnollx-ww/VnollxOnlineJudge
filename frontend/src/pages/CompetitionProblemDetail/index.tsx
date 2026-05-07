@@ -109,6 +109,39 @@ public class Main {
 }
 `,
   },
+  {
+    label: 'Go',
+    value: 'golang',
+    template: `package main
+
+import (
+    "bufio"
+    "fmt"
+    "os"
+)
+
+func main() {
+    in := bufio.NewReader(os.Stdin)
+    out := bufio.NewWriter(os.Stdout)
+    defer out.Flush()
+
+    // 请在此处编写你的代码
+    _ = in
+    fmt.Fprintln(out)
+}
+`,
+  },
+  {
+    label: 'JavaScript',
+    value: 'javascript',
+    template: `const fs = require('fs');
+
+const input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);
+let idx = 0;
+
+// 请在此处编写你的代码
+`,
+  },
 ];
 
 const getDifficultyColor = (difficulty?: string) => {
@@ -144,7 +177,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const [isCompetitionEnd, setIsCompetitionEnd] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
-  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true });
+  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true, theme: 'dark' });
   const [showCelebration, setShowCelebration] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState<'result' | 'input'>('result');
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -467,8 +500,8 @@ const CompetitionProblemDetail: React.FC = () => {
     setRunResult({
       variant: 'info',
       source: 'submit',
-      headline: '评测中',
-      description: '评测中：正在进行评测，请稍候…',
+      headline: '等待评测',
+      description: '等待评测：正在保存提交并加入评测队列…',
     });
     try {
       const payload = {
@@ -886,6 +919,7 @@ const CompetitionProblemDetail: React.FC = () => {
               height="100%"
               storageKey={codeStorageKey}
               options={editorOptions}
+              theme={ideSettings.theme}
             />
           )
         }
@@ -920,6 +954,7 @@ const CompetitionProblemDetail: React.FC = () => {
             height="100vh"
             storageKey={codeStorageKey}
             options={editorOptions}
+            theme={ideSettings.theme}
           />
         </div>,
         document.body

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, Table, Button, Tag, Pagination, Switch } from 'antd';
 import toast from 'react-hot-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Copy, AlertCircle } from 'lucide-react';
+import { Copy, AlertCircle, Clock, HardDrive, Layers, Hash, User, CalendarDays } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
@@ -170,10 +171,35 @@ const Submissions: React.FC = () => {
       Java: 'orange',
       'C++': 'purple',
       C: 'cyan',
-      JavaScript: 'green',
+      Golang: 'cyan',
+      JavaScript: 'gold',
     };
     return langMap[lang] || 'default';
   };
+
+  const getCodeHighlightLanguage = (lang?: string) => {
+    if (!lang) return 'plaintext';
+    if (lang === 'C++') return 'cpp';
+    if (lang === 'Golang') return 'go';
+    if (lang === 'JavaScript') return 'javascript';
+    return lang.toLowerCase();
+  };
+
+  const renderDetailMetric = (icon: ReactNode, label: string, value: ReactNode) => (
+      <div
+          className="rounded-2xl border px-4 py-3"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.72)',
+            borderColor: 'var(--gemini-border-light)',
+          }}
+      >
+        <div className="flex items-center gap-2 text-xs mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>
+          {icon}
+          <span>{label}</span>
+        </div>
+        <div className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>{value}</div>
+      </div>
+  );
 
   const columns = [
     {
@@ -327,6 +353,8 @@ const Submissions: React.FC = () => {
                     { value: 'Python', label: 'Python' },
                     { value: 'Java', label: 'Java' },
                     { value: 'C++', label: 'C++' },
+                    { value: 'Golang', label: 'Golang' },
+                    { value: 'JavaScript', label: 'JavaScript' },
                   ]}
               />
             </div>
@@ -377,11 +405,78 @@ const Submissions: React.FC = () => {
             }}
             footer={null}
             width="80%"
+            centered
+            styles={{ body: { maxHeight: '80vh', overflowY: 'auto' } }}
         >
           <div className="space-y-4">
-            {currentSubmission?.testCount != null && currentSubmission.testCount > 0 && (
-              <div className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-                测试点：<span className="font-mono">{currentSubmission.passCount ?? 0}/{currentSubmission.testCount}</span>
+            {currentSubmission && (
+              <div
+                  className="overflow-hidden rounded-3xl border"
+                  style={{
+                    borderColor: 'var(--gemini-border-light)',
+                    background: 'linear-gradient(135deg, rgba(26,115,232,0.10), rgba(124,58,237,0.08), rgba(255,255,255,0.92))',
+                  }}
+              >
+                <div className="p-5">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
+                        <Hash className="w-3.5 h-3.5" />
+                        <span>提交 #{currentSubmission.id}</span>
+                        {currentSubmission.snowflakeId && (
+                            <span className="font-mono truncate">· {currentSubmission.snowflakeId}</span>
+                        )}
+                      </div>
+                      <div className="text-xl font-bold truncate" style={{ color: 'var(--gemini-text-primary)' }}>
+                        {currentSubmission.problemName || `题目 #${currentSubmission.pid}`}
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                        <span className="inline-flex items-center gap-1.5">
+                          <User className="w-4 h-4" />
+                          {currentSubmission.userName || '未知用户'}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarDays className="w-4 h-4" />
+                          {currentSubmission.createTime || '未知时间'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <span
+                          className="px-3 py-1.5 rounded-full text-sm font-semibold"
+                          style={{
+                            color: getStatusStyle(currentSubmission.status).color,
+                            backgroundColor: getStatusStyle(currentSubmission.status).bg,
+                          }}
+                      >
+                        {currentSubmission.status}
+                      </span>
+                      <Tag color={getLanguageColor(currentSubmission.language)} className="!m-0 !rounded-full !px-3 !py-1">
+                        {currentSubmission.language}
+                      </Tag>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                    {renderDetailMetric(
+                        <Clock className="w-4 h-4" />,
+                        '运行时间',
+                        currentSubmission.time != null ? `${currentSubmission.time}ms` : '暂无'
+                    )}
+                    {renderDetailMetric(
+                        <HardDrive className="w-4 h-4" />,
+                        '占用内存',
+                        currentSubmission.memory != null ? `${currentSubmission.memory}MB` : '暂无'
+                    )}
+                    {renderDetailMetric(
+                        <Layers className="w-4 h-4" />,
+                        '通过测试点',
+                        currentSubmission.testCount != null && currentSubmission.testCount > 0
+                            ? `${currentSubmission.passCount ?? 0} / ${currentSubmission.testCount}`
+                            : '暂无'
+                    )}
+                  </div>
+                </div>
               </div>
             )}
             {/* 错误信息展示区 */}
@@ -434,7 +529,7 @@ const Submissions: React.FC = () => {
 
             <div className="max-h-[60vh] overflow-auto rounded-xl border border-gray-800">
               <SyntaxHighlighter
-                  language={(currentSubmission?.language?.toLowerCase() === 'c++' ? 'cpp' : currentSubmission?.language?.toLowerCase()) || 'plaintext'}
+                  language={getCodeHighlightLanguage(currentSubmission?.language)}
                   style={vscDarkPlus}
                   showLineNumbers
                   customStyle={{ margin: 0, borderRadius: 12, fontSize: 14 }}

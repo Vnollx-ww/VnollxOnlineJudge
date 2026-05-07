@@ -6,6 +6,7 @@ interface Monaco {
   editor: {
     create: (container: HTMLElement, options: Record<string, unknown>) => MonacoEditor;
     setModelLanguage: (model: unknown, language: string) => void;
+    setTheme: (theme: string) => void;
   };
   languages: {
     CompletionItemKind: Record<string, number>;
@@ -52,6 +53,7 @@ interface CodeEditorProps {
   readOnly?: boolean;
   options?: Record<string, unknown>;
   statusBar?: boolean;
+  theme?: 'light' | 'dark';
 }
 
 // 使用 CDN 加载 Monaco Editor
@@ -141,6 +143,8 @@ const normalizeLanguage = (lang?: string): string => {
   if (lang === 'cpp') return 'cpp';
   if (lang === 'python') return 'python';
   if (lang === 'java') return 'java';
+  if (lang === 'golang') return 'go';
+  if (lang === 'javascript') return 'javascript';
   return lang;
 };
 
@@ -218,6 +222,36 @@ const ensureProviders = (monaco: Monaco) => {
     'Queue', 'Deque', 'ArrayDeque', 'PriorityQueue', 'Stack', 'List', 'Map', 'Set',
     'sort', 'binarySearch', 'fill', 'copyOf', 'min', 'max', 'Math', 'abs', 'sqrt', 'pow',
     'StringBuilder', 'append', 'toString', 'length', 'charAt', 'substring',
+  ];
+
+  const goKeywords = [
+    'break', 'default', 'func', 'interface', 'select', 'case', 'defer', 'go', 'map',
+    'struct', 'chan', 'else', 'goto', 'package', 'switch', 'const', 'fallthrough',
+    'if', 'range', 'type', 'continue', 'for', 'import', 'return', 'var',
+  ];
+
+  const goStdlib = [
+    'fmt', 'bufio', 'os', 'sort', 'strings', 'strconv', 'math', 'container/heap',
+    'Print', 'Printf', 'Println', 'Fprint', 'Fprintf', 'Fprintln', 'Scan', 'Scanf', 'Scanln',
+    'NewReader', 'NewWriter', 'Flush', 'Stdin', 'Stdout', 'Atoi', 'Itoa', 'ParseInt', 'ParseFloat',
+    'Ints', 'Slice', 'Search', 'Len', 'Less', 'Swap', 'Append', 'Builder', 'Split', 'TrimSpace',
+    'int', 'int64', 'float64', 'string', 'bool', 'byte', 'rune', 'make', 'new', 'append', 'copy',
+    'delete', 'len', 'cap', 'panic', 'recover', 'true', 'false', 'nil',
+  ];
+
+  const javascriptKeywords = [
+    'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete',
+    'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import',
+    'in', 'instanceof', 'let', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw',
+    'true', 'try', 'typeof', 'undefined', 'var', 'void', 'while', 'with', 'yield', 'async', 'await',
+  ];
+
+  const javascriptStdlib = [
+    'require', 'fs', 'readFileSync', 'console', 'log', 'Number', 'String', 'BigInt', 'Boolean',
+    'Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'Math', 'JSON', 'parseInt', 'parseFloat',
+    'isNaN', 'Infinity', 'push', 'pop', 'shift', 'unshift', 'slice', 'splice', 'sort', 'reverse',
+    'map', 'filter', 'reduce', 'forEach', 'includes', 'indexOf', 'join', 'split', 'trim',
+    'abs', 'max', 'min', 'floor', 'ceil', 'round', 'sqrt', 'pow',
   ];
 
   const snippetItems = (lang: string): CompletionItem[] => {
@@ -415,6 +449,73 @@ const ensureProviders = (monaco: Monaco) => {
         },
       ];
     }
+    if (lang === 'go') {
+      return [
+        {
+          label: 'func main',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'func main() {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'main函数',
+        },
+        {
+          label: 'bufio scanner',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'in := bufio.NewReader(os.Stdin)\nout := bufio.NewWriter(os.Stdout)\ndefer out.Flush()\n$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'Go快速输入输出',
+        },
+        {
+          label: 'for range',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for ${1:i}, ${2:v} := range ${3:arr} {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'range循环',
+        },
+        {
+          label: 'sort.Slice',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'sort.Slice(${1:a}, func(i, j int) bool {\n\treturn ${1:a}[i] < ${1:a}[j]\n})',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '自定义排序',
+        },
+      ];
+    }
+    if (lang === 'javascript') {
+      return [
+        {
+          label: 'read input',
+          kind: CompletionItemKind.Snippet,
+          insertText: `const fs = require('fs');
+const input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);
+let idx = 0;
+$0`,
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'Node.js读取输入',
+        },
+        {
+          label: 'next number',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'const ${1:x} = Number(input[idx++]);',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '读取数字',
+        },
+        {
+          label: 'for loop',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for (let ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'for循环',
+        },
+        {
+          label: 'array sort number',
+          kind: CompletionItemKind.Snippet,
+          insertText: '${1:arr}.sort((a, b) => a - b);',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '数字数组排序',
+        },
+      ];
+    }
     return [];
   };
 
@@ -436,6 +537,8 @@ const ensureProviders = (monaco: Monaco) => {
   registerFor('cpp', cppKeywords, cppStdlib);
   registerFor('python', pythonKeywords, pythonStdlib);
   registerFor('java', javaKeywords, javaStdlib);
+  registerFor('go', goKeywords, goStdlib);
+  registerFor('javascript', javascriptKeywords, javascriptStdlib);
 
   providersInstalled = true;
 };
@@ -477,6 +580,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   readOnly = false,
   options,
   statusBar = true,
+  theme = 'light',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<MonacoEditor | null>(null);
@@ -522,7 +626,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         const editor = monaco.editor.create(containerRef.current, {
           value: value || '',
           language: monacoLanguage,
-          theme: 'vs',
+          theme: theme === 'dark' ? 'vs-dark' : 'vs',
           readOnly,
           ...defaultOptions,
           ...options,
@@ -607,13 +711,20 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   }, [monacoLanguage]);
 
+  useEffect(() => {
+    if (monacoRef.current) {
+      monacoRef.current.editor.setTheme(theme === 'dark' ? 'vs-dark' : 'vs');
+    }
+  }, [theme]);
+
   return (
     <div 
-      className="relative rounded-3xl overflow-hidden"
+      className="relative overflow-hidden"
       style={{ 
         height: typeof height === 'number' ? `${height}px` : height,
         width: '100%',
         backgroundColor: 'var(--gemini-surface)',
+        colorScheme: theme === 'dark' ? 'dark' : 'light',
         border: '1px solid var(--gemini-border-light)',
         boxShadow: 'var(--shadow-gemini)'
       }}
@@ -641,8 +752,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           className="absolute bottom-0 left-0 right-0 h-7 px-3 flex items-center justify-between text-xs border-t"
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            ...(theme === 'dark' ? { backgroundColor: 'rgba(30, 30, 30, 0.92)' } : {}),
             borderColor: 'var(--gemini-border-light)',
-            color: 'var(--gemini-text-secondary)',
+            color: theme === 'dark' ? '#cbd5e1' : 'var(--gemini-text-secondary)',
           }}
         >
           <span>

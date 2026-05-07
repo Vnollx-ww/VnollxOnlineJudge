@@ -219,7 +219,8 @@ const CompetitionSubmissions: React.FC = () => {
       Java: 'orange',
       'C++': 'purple',
       C: 'cyan',
-      JavaScript: 'green',
+      Golang: 'cyan',
+      JavaScript: 'gold',
     };
     return langMap[language] || 'default';
   };
@@ -364,6 +365,8 @@ const CompetitionSubmissions: React.FC = () => {
                     { value: 'Python', label: 'Python' },
                     { value: 'Java', label: 'Java' },
                     { value: 'C++', label: 'C++' },
+                    { value: 'Golang', label: 'Golang' },
+                    { value: 'JavaScript', label: 'JavaScript' },
                   ]}
                 />
                 <Button
