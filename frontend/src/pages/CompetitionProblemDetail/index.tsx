@@ -29,7 +29,7 @@ import api from '../../utils/api';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
-import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
+import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '../../components';
 import SuccessCelebration from '../../components/SuccessCelebration';
 import type { JudgeMessage } from '../../types';
@@ -58,6 +58,14 @@ interface Problem {
   memoryLimit?: number;
   submitCount: number;
   passCount: number;
+}
+
+interface CompetitionProblem {
+  id: number;
+  title: string;
+  submitCount?: number;
+  passCount?: number;
+  isSolved?: boolean | null;
 }
 
 interface Comment {
@@ -181,6 +189,8 @@ const CompetitionProblemDetail: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState<'result' | 'input'>('result');
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [competitionProblems, setCompetitionProblems] = useState<CompetitionProblem[]>([]);
+  const [competitionProblemsLoading, setCompetitionProblemsLoading] = useState(false);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -280,7 +290,11 @@ const CompetitionProblemDetail: React.FC = () => {
     }
     loadProblem();
     loadCompetitionStatus();
-  }, [id, navigate]);
+  }, [id, cid, navigate]);
+
+  useEffect(() => {
+    loadCompetitionProblems();
+  }, [cid]);
 
   useEffect(() => {
     if (problem?.id && !isCompetitionOpen) {
@@ -300,7 +314,9 @@ const CompetitionProblemDetail: React.FC = () => {
   }, [problem?.id, id, cid, language]);
 
   const loadProblem = async () => {
-    setLoading(true);
+    if (!problem) {
+      setLoading(true);
+    }
     try {
       const data = await api.get('/problem/get', { params: { id } });
       if (data.code === 200) {
@@ -325,6 +341,23 @@ const CompetitionProblemDetail: React.FC = () => {
       setIsCompetitionEnd(endRes.code !== 200);
     } catch (err) {
       console.warn("比赛状态判断失败", err);
+    }
+  };
+
+  const loadCompetitionProblems = async () => {
+    if (!cid) return;
+    setCompetitionProblemsLoading(true);
+    try {
+      const data = await api.get('/competition/list-problem', {
+        params: { id: cid },
+      });
+      if (data.code === 200) {
+        setCompetitionProblems(data.data || []);
+      }
+    } catch {
+      toast.error('加载比赛题目列表失败');
+    } finally {
+      setCompetitionProblemsLoading(false);
     }
   };
 
@@ -668,16 +701,21 @@ const CompetitionProblemDetail: React.FC = () => {
         返回题目列表
       </Button>
       <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="font-semibold whitespace-nowrap"
-          style={{ color: 'var(--gemini-text-primary)', fontSize: 15 }}
-          title={`#${problem.id} - ${problem.title}`}
-        >
-          #{problem.id} · {problem.title}
-        </span>
-        <Tag color={getDifficultyColor(problem.difficulty)} style={{ margin: 0, fontSize: 12, padding: '2px 10px' }}>
-          {problem.difficulty || '未设置'}
-        </Tag>
+        <Select
+          value={problem.id}
+          loading={competitionProblemsLoading}
+          placeholder="切换题目"
+          className="w-56"
+          onChange={(targetId) => {
+            if (String(targetId) !== String(problem.id)) {
+              navigate(`/competition/${cid}/problem/${targetId}`);
+            }
+          }}
+          options={competitionProblems.map((item, index) => ({
+            value: item.id,
+            label: `${String.fromCharCode('A'.charCodeAt(0) + index)}. ${item.title}`,
+          }))}
+        />
       </div>
       <div className="hidden lg:flex items-center gap-2 text-xs flex-none">
         <span style={statPillStyle}>时间 {problem.timeLimit || 1000} ms</span>
