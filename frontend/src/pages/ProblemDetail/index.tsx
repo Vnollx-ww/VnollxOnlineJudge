@@ -11,14 +11,12 @@ import {
   Drawer,
 } from 'antd';
 import toast from 'react-hot-toast';
-import Select from '../../components/Select';
 import Input from '../../components/Input';
 import {
   ArrowLeft,
   MessageSquare,
   BookOpen,
   Edit,
-  Maximize2,
   Minimize2,
   Copy,
   Bot,
@@ -33,7 +31,8 @@ import api from '@/utils/api';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
-import { CodeEditor, PermissionGuard, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '@/components';
+import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '@/components';
+import type { OnlineIdeSettings } from '@/components';
 import type { WorkbenchResultData } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
 import SuccessCelebration from '@/components/SuccessCelebration';
@@ -190,6 +189,7 @@ const ProblemDetail: React.FC = () => {
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true });
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -204,6 +204,20 @@ const ProblemDetail: React.FC = () => {
   /** 评论抽屉开关 */
   const [commentsOpen, setCommentsOpen] = useState(false);
   const userInfo = getUserInfo();
+  const editorOptions = useMemo(() => ({
+    fontSize: ideSettings.fontSize,
+    wordWrap: ideSettings.wordWrap ? 'on' : 'off',
+  }), [ideSettings]);
+
+  const toggleEditorFullscreen = useCallback(() => {
+    if (!isEditorFullscreen) {
+      document.documentElement.requestFullscreen();
+      setIsEditorFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsEditorFullscreen(false);
+    }
+  }, [isEditorFullscreen]);
 
   // 监听浏览器全屏状态变化
   useEffect(() => {
@@ -866,11 +880,6 @@ const ProblemDetail: React.FC = () => {
   // ---- 左侧题目描述面板 ----
   const leftPanel = (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
-        <span>时间限制：{problem.timeLimit || 1000} ms</span>
-        <span>·</span>
-        <span>内存限制：{problem.memoryLimit || 256} MB</span>
-      </div>
       {tags.length ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>标签：</span>
@@ -955,41 +964,17 @@ const ProblemDetail: React.FC = () => {
 
   // ---- 编辑器顶部工具栏 ----
   const editorHeader = (
-    <>
-      <Select
-        value={language}
-        onChange={setLanguage}
-        className="w-36"
-        options={languageOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
-      />
-      <button
-        onClick={() => {
-          const template = languageOptions.find((item) => item.value === language)?.template || '';
-          setCode(template);
-        }}
-        className="text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
-        style={{ color: 'var(--gemini-text-secondary)' }}
-      >
-        重置模板
-      </button>
-      <div className="flex-auto" />
-      <button
-        onClick={() => {
-          if (!isEditorFullscreen) {
-            document.documentElement.requestFullscreen();
-            setIsEditorFullscreen(true);
-          } else {
-            document.exitFullscreen();
-            setIsEditorFullscreen(false);
-          }
-        }}
-        className="inline-flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
-        style={{ color: 'var(--gemini-text-secondary)' }}
-      >
-        {isEditorFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        {isEditorFullscreen ? '退出全屏' : '全屏'}
-      </button>
-    </>
+    <OnlineIdeToolbar
+      language={language}
+      languageOptions={languageOptions}
+      code={code}
+      settings={ideSettings}
+      isFullscreen={isEditorFullscreen}
+      onLanguageChange={setLanguage}
+      onCodeChange={setCode}
+      onSettingsChange={setIdeSettings}
+      onToggleFullscreen={toggleEditorFullscreen}
+    />
   );
 
   // 载入指定示例到自测输入
@@ -1113,7 +1098,7 @@ const ProblemDetail: React.FC = () => {
               代码已在全屏中编辑…
             </div>
           ) : (
-            <CodeEditor value={code} onChange={setCode} language={language} height="100%" />
+            <CodeEditor value={code} onChange={setCode} language={language} height="100%" options={editorOptions} />
           )
         }
         bottomTabs={[
@@ -1141,7 +1126,7 @@ const ProblemDetail: React.FC = () => {
             <Minimize2 className="w-4 h-4 inline mr-2" />
             退出全屏
           </button>
-          <CodeEditor value={code} onChange={setCode} language={language} height="100vh" />
+          <CodeEditor value={code} onChange={setCode} language={language} height="100vh" options={editorOptions} />
         </div>,
         document.body
       )}

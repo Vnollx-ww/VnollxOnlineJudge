@@ -168,6 +168,14 @@ const SyncToEditorButton: React.FC<{ code: string; language: string }> = ({ code
 
 const AI_ASSISTANT_MODEL_KEY = 'ai_assistant_model_id';
 const AI_ASSISTANT_SESSION_KEY = 'ai_assistant_session_id';
+const AI_ASSISTANT_BUTTON_POSITION_KEY = 'ai_assistant_button_position';
+const AI_BUTTON_SIZE = 60;
+const AI_BUTTON_MARGIN = 16;
+
+interface FloatingButtonPosition {
+  x: number;
+  y: number;
+}
 
 interface AiChatSession {
   id: string;
@@ -236,6 +244,30 @@ ${context.code || ''}
 
 const AIAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState<FloatingButtonPosition>(() => {
+    const fallback = {
+      x: typeof window !== 'undefined' ? window.innerWidth - AI_BUTTON_SIZE - 40 : 0,
+      y: typeof window !== 'undefined' ? window.innerHeight - AI_BUTTON_SIZE - 48 : 0,
+    };
+    try {
+      const cached = localStorage.getItem(AI_ASSISTANT_BUTTON_POSITION_KEY);
+      if (!cached) return fallback;
+      const parsed = JSON.parse(cached) as FloatingButtonPosition;
+      if (!Number.isFinite(parsed.x) || !Number.isFinite(parsed.y)) return fallback;
+      return {
+        x: Math.min(Math.max(AI_BUTTON_MARGIN, parsed.x), window.innerWidth - AI_BUTTON_SIZE - AI_BUTTON_MARGIN),
+        y: Math.min(Math.max(AI_BUTTON_MARGIN, parsed.y), window.innerHeight - AI_BUTTON_SIZE - AI_BUTTON_MARGIN),
+      };
+    } catch (_) {
+      return fallback;
+    }
+  });
+  const dragStateRef = useRef<{
+    dragging: boolean;
+    moved: boolean;
+    offsetX: number;
+    offsetY: number;
+  }>({ dragging: false, moved: false, offsetX: 0, offsetY: 0 });
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
@@ -287,6 +319,77 @@ const AIAssistant: React.FC = () => {
   const scrollToBottom = (smooth = true) => {
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
+
+  const clampButtonPosition = useCallback((x: number, y: number): FloatingButtonPosition => {
+    return {
+      x: Math.min(Math.max(AI_BUTTON_MARGIN, x), window.innerWidth - AI_BUTTON_SIZE - AI_BUTTON_MARGIN),
+      y: Math.min(Math.max(AI_BUTTON_MARGIN, y), window.innerHeight - AI_BUTTON_SIZE - AI_BUTTON_MARGIN),
+    };
+  }, []);
+
+  const persistButtonPosition = useCallback((position: FloatingButtonPosition) => {
+    try {
+      localStorage.setItem(AI_ASSISTANT_BUTTON_POSITION_KEY, JSON.stringify(position));
+    } catch (_) {}
+  }, []);
+
+  const handleButtonMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    dragStateRef.current = {
+      dragging: true,
+      moved: false,
+      offsetX: e.clientX - buttonPosition.x,
+      offsetY: e.clientY - buttonPosition.y,
+    };
+  }, [buttonPosition]);
+
+  const handleButtonClick = useCallback(() => {
+    if (dragStateRef.current.moved) {
+      dragStateRef.current.moved = false;
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('open-ai-assistant', {
+      detail: {
+        forceNewSession: true,
+      },
+    }));
+  }, []);
+
+  useEffect(() => {
+    const handleMove = (e: MouseEvent) => {
+      if (!dragStateRef.current.dragging) return;
+      dragStateRef.current.moved = true;
+      setButtonPosition(clampButtonPosition(
+        e.clientX - dragStateRef.current.offsetX,
+        e.clientY - dragStateRef.current.offsetY
+      ));
+    };
+
+    const handleUp = () => {
+      if (!dragStateRef.current.dragging) return;
+      dragStateRef.current.dragging = false;
+      setButtonPosition((prev) => {
+        persistButtonPosition(prev);
+        return prev;
+      });
+    };
+
+    const handleResize = () => {
+      setButtonPosition((prev) => {
+        const next = clampButtonPosition(prev.x, prev.y);
+        persistButtonPosition(next);
+        return next;
+      });
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [clampButtonPosition, persistButtonPosition]);
 
   useEffect(() => {
     if (open) {
@@ -972,15 +1075,11 @@ const AIAssistant: React.FC = () => {
       {/* 悬浮按钮 - 需要AI使用权限 */}
       {hasPermission(PermissionCode.AI_CHAT) && (
         <button
-          onClick={() => {
-            window.dispatchEvent(new CustomEvent('open-ai-assistant', {
-              detail: {
-                forceNewSession: true,
-              },
-            }));
-          }}
+          onMouseDown={handleButtonMouseDown}
+          onClick={handleButtonClick}
           title="AI 助手"
-          className="fixed right-10 bottom-12 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[22px] border border-white/60 bg-white/75 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_rgba(15,23,42,0.24)]"
+          className="fixed z-50 flex h-[60px] w-[60px] cursor-grab select-none items-center justify-center rounded-[22px] border border-white/60 bg-white/75 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-shadow duration-300 hover:shadow-[0_24px_48px_rgba(15,23,42,0.24)] active:cursor-grabbing"
+          style={{ left: buttonPosition.x, top: buttonPosition.y }}
         >
           <div className="relative flex h-[44px] w-[44px] items-center justify-center rounded-[16px] bg-gradient-to-br from-slate-900 via-slate-700 to-blue-500 shadow-[0_10px_24px_rgba(37,99,235,0.22)]">
             <div className="absolute inset-[1.5px] rounded-[15px] bg-white/88 backdrop-blur-xl" />

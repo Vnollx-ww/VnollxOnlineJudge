@@ -23,7 +23,11 @@ interface MonacoEditor {
   getModel: () => unknown;
   dispose: () => void;
   trigger: (source: string, handlerId: string, payload: unknown) => void;
+  addCommand: (keybinding: number, handler: () => void) => void;
+  updateOptions: (options: Record<string, unknown>) => void;
+  getPosition: () => { lineNumber: number; column: number } | null;
   onDidChangeModelContent: (callback: () => void) => void;
+  onDidChangeCursorPosition: (callback: () => void) => void;
 }
 
 interface CompletionProvider {
@@ -47,6 +51,7 @@ interface CodeEditorProps {
   storageKey?: string;
   readOnly?: boolean;
   options?: Record<string, unknown>;
+  statusBar?: boolean;
 }
 
 // 使用 CDN 加载 Monaco Editor
@@ -166,11 +171,16 @@ const ensureProviders = (monaco: Monaco) => {
 
   const cppStdlib = [
     'cin', 'cout', 'cerr', 'endl', 'string', 'vector', 'map', 'set', 'unordered_map', 'unordered_set',
-    'pair', 'queue', 'priority_queue', 'stack', 'deque', 'list', 'array', 'bitset',
-    'sort', 'reverse', 'find', 'lower_bound', 'upper_bound', 'binary_search',
-    'min', 'max', 'swap', 'abs', 'pow', 'sqrt', 'ceil', 'floor', 'round',
+    'multiset', 'unordered_multiset', 'multimap', 'unordered_multimap', 'pair', 'tuple', 'queue',
+    'priority_queue', 'stack', 'deque', 'list', 'array', 'bitset', 'optional',
+    'sort', 'stable_sort', 'reverse', 'find', 'lower_bound', 'upper_bound', 'binary_search',
+    'next_permutation', 'prev_permutation', 'unique', 'merge', 'inplace_merge',
+    'min', 'max', 'min_element', 'max_element', 'swap', 'abs', 'pow', 'sqrt', 'ceil', 'floor', 'round',
+    'gcd', 'lcm', 'accumulate', 'iota', 'partial_sum', 'nth_element',
     'push_back', 'pop_back', 'push', 'pop', 'front', 'back', 'begin', 'end', 'size', 'empty', 'clear',
-    'first', 'second', 'insert', 'erase', 'count', 'memset', 'memcpy',
+    'first', 'second', 'insert', 'erase', 'count', 'find', 'emplace', 'emplace_back', 'resize', 'assign',
+    'memset', 'memcpy', 'ios', 'sync_with_stdio', 'tie', 'fixed', 'setprecision',
+    'long long', 'const int', 'const long long', 'INT_MAX', 'INT_MIN', 'LLONG_MAX', 'LLONG_MIN', 'MOD',
   ];
 
   const pythonKeywords = [
@@ -183,7 +193,11 @@ const ensureProviders = (monaco: Monaco) => {
   const pythonStdlib = [
     'print', 'input', 'int', 'str', 'float', 'list', 'dict', 'set', 'tuple', 'bool',
     'len', 'range', 'enumerate', 'zip', 'map', 'filter', 'sorted', 'reversed',
-    'sum', 'min', 'max', 'abs', 'round', 'pow', 'divmod',
+    'sum', 'min', 'max', 'abs', 'round', 'pow', 'divmod', 'open',
+    'sys', 'stdin', 'stdout', 'readline', 'split', 'strip', 'append', 'extend', 'pop',
+    'deque', 'Counter', 'defaultdict', 'heapq', 'heappush', 'heappop', 'bisect_left', 'bisect_right',
+    'math', 'gcd', 'lcm', 'sqrt', 'ceil', 'floor', 'inf', 'itertools', 'permutations', 'combinations',
+    'product', 'accumulate', 'lru_cache',
   ];
 
   const javaKeywords = [
@@ -199,6 +213,11 @@ const ensureProviders = (monaco: Monaco) => {
     'String', 'Integer', 'Long', 'Double', 'Float', 'Boolean', 'Character',
     'System', 'out', 'in', 'println', 'print', 'printf',
     'Scanner', 'nextInt', 'nextLong', 'nextDouble', 'nextLine', 'next', 'hasNext', 'hasNextInt',
+    'BufferedReader', 'InputStreamReader', 'StringTokenizer', 'PrintWriter', 'IOException',
+    'Arrays', 'Collections', 'ArrayList', 'LinkedList', 'HashMap', 'TreeMap', 'HashSet', 'TreeSet',
+    'Queue', 'Deque', 'ArrayDeque', 'PriorityQueue', 'Stack', 'List', 'Map', 'Set',
+    'sort', 'binarySearch', 'fill', 'copyOf', 'min', 'max', 'Math', 'abs', 'sqrt', 'pow',
+    'StringBuilder', 'append', 'toString', 'length', 'charAt', 'substring',
   ];
 
   const snippetItems = (lang: string): CompletionItem[] => {
@@ -226,6 +245,62 @@ const ensureProviders = (monaco: Monaco) => {
           detail: 'for循环',
         },
         {
+          label: 'while loop',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'while (${1:condition}) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'while循环',
+        },
+        {
+          label: 'fast io',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'ios::sync_with_stdio(false);\ncin.tie(nullptr);',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'C++快速输入输出',
+        },
+        {
+          label: 'vector<int>',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'vector<int> ${1:a}(${2:n});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'vector数组',
+        },
+        {
+          label: 'sort vector',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'sort(${1:a}.begin(), ${1:a}.end());',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '排序容器',
+        },
+        {
+          label: 'binary search',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'int ${1:l} = ${2:0}, ${3:r} = ${4:n - 1};\nwhile (${1:l} <= ${3:r}) {\n\tint mid = ${1:l} + (${3:r} - ${1:l}) / 2;\n\tif (${5:check(mid)}) {\n\t\t$0\n\t} else {\n\t\t\n\t}\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '二分查找模板',
+        },
+        {
+          label: 'bfs queue',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'queue<${1:int}> q;\nq.push(${2:start});\nwhile (!q.empty()) {\n\tauto u = q.front();\n\tq.pop();\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'BFS队列模板',
+        },
+        {
+          label: 'lambda dfs',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'auto dfs = [&](auto&& self, int u) -> void {\n\t$0\n};\ndfs(dfs, ${1:root});',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '递归DFS lambda模板',
+        },
+        {
+          label: 'dsu union find',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'vector<int> fa(${1:n});\niota(fa.begin(), fa.end(), 0);\nauto find = [&](auto&& self, int x) -> int {\n\treturn fa[x] == x ? x : fa[x] = self(self, fa[x]);\n};\nauto unite = [&](int a, int b) {\n\ta = find(find, a);\n\tb = find(find, b);\n\tif (a != b) fa[a] = b;\n};',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '并查集模板',
+        },
+        {
           label: '#include<bits/stdc++.h>',
           kind: CompletionItemKind.Snippet,
           insertText: '#include<bits/stdc++.h>\nusing namespace std;\n\nint main() {\n\t$0\n\treturn 0;\n}',
@@ -250,6 +325,48 @@ const ensureProviders = (monaco: Monaco) => {
           insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
           detail: '定义函数',
         },
+        {
+          label: 'fast input',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'import sys\ninput = sys.stdin.readline',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'Python快速输入',
+        },
+        {
+          label: 'read ints',
+          kind: CompletionItemKind.Snippet,
+          insertText: '${1:a} = list(map(int, input().split()))',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '读取整数列表',
+        },
+        {
+          label: 'for _ in range(t)',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for _ in range(int(input())):\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '多组测试',
+        },
+        {
+          label: 'deque bfs',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'from collections import deque\nq = deque([${1:start}])\nwhile q:\n\tu = q.popleft()\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'BFS队列模板',
+        },
+        {
+          label: 'heapq priority queue',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'import heapq\npq = []\nheapq.heappush(pq, ${1:item})\nwhile pq:\n\tx = heapq.heappop(pq)\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '优先队列模板',
+        },
+        {
+          label: 'lru_cache dfs',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'from functools import lru_cache\n\n@lru_cache(None)\ndef dfs(${1:state}):\n\t$0',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '记忆化搜索模板',
+        },
       ];
     }
     if (lang === 'java') {
@@ -261,6 +378,41 @@ const ensureProviders = (monaco: Monaco) => {
           insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
           detail: 'main方法',
         },
+        {
+          label: 'FastScanner',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'static class FastScanner {\n\tprivate final BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n\tprivate StringTokenizer st;\n\tString next() throws IOException {\n\t\twhile (st == null || !st.hasMoreElements()) st = new StringTokenizer(br.readLine());\n\t\treturn st.nextToken();\n\t}\n\tint nextInt() throws IOException { return Integer.parseInt(next()); }\n\tlong nextLong() throws IOException { return Long.parseLong(next()); }\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'Java快速输入类',
+        },
+        {
+          label: 'BufferedReader main',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'public class Main {\n\tpublic static void main(String[] args) throws Exception {\n\t\tBufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n\t\tStringTokenizer st = new StringTokenizer(br.readLine());\n\t\t$0\n\t}\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'Java竞赛主类模板',
+        },
+        {
+          label: 'for loop',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ${1:i}++) {\n\t$0\n}',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'for循环',
+        },
+        {
+          label: 'ArrayList',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'List<${1:Integer}> ${2:list} = new ArrayList<>();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: 'ArrayList声明',
+        },
+        {
+          label: 'PriorityQueue',
+          kind: CompletionItemKind.Snippet,
+          insertText: 'PriorityQueue<${1:Integer}> ${2:pq} = new PriorityQueue<>();',
+          insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+          detail: '优先队列',
+        },
       ];
     }
     return [];
@@ -268,7 +420,7 @@ const ensureProviders = (monaco: Monaco) => {
 
   const registerFor = (lang: string, keywords: string[], stdlib: string[] = []) => {
     monaco.languages.registerCompletionItemProvider(lang, {
-      triggerCharacters: ['.', ':'],
+      triggerCharacters: ['.', ':', '#', '<', '>', '_'],
       provideCompletionItems: () => {
         return {
           suggestions: [
@@ -324,11 +476,13 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   storageKey,
   readOnly = false,
   options,
+  statusBar = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<MonacoEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [editorStats, setEditorStats] = useState({ line: 1, column: 1, lines: 1, characters: 0 });
 
   const monacoLanguage = useMemo(() => normalizeLanguage(language), [language]);
 
@@ -376,11 +530,27 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
         editorRef.current = editor;
 
+        const refreshStats = () => {
+          const text = editor.getValue();
+          const position = editor.getPosition();
+          setEditorStats({
+            line: position?.lineNumber ?? 1,
+            column: position?.column ?? 1,
+            lines: text ? text.split('\n').length : 1,
+            characters: text.length,
+          });
+        };
+
         editor.onDidChangeModelContent(() => {
           if (onChange) {
             onChange(editor.getValue());
           }
+          refreshStats();
         });
+        editor.onDidChangeCursorPosition(refreshStats);
+        editor.addCommand(2048 | 49, () => editor.trigger('keyboard', 'editor.action.formatDocument', {}));
+        editor.addCommand(2048 | 42, () => editor.trigger('keyboard', 'editor.action.quickCommand', {}));
+        refreshStats();
 
         handleClickOutside = (e: MouseEvent) => {
           if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -417,6 +587,15 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       editorRef.current.setValue(value || '');
     }
   }, [value]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({
+        readOnly,
+        ...options,
+      });
+    }
+  }, [readOnly, options]);
 
   // 更新编辑器语言
   useEffect(() => {
@@ -455,6 +634,20 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
             <Loader2 className="w-8 h-8 mx-auto animate-spin" style={{ color: 'var(--gemini-accent-strong)' }} />
             <div className="mt-3 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>正在加载代码编辑器...</div>
           </div>
+        </div>
+      )}
+      {statusBar && !isLoading && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-7 px-3 flex items-center justify-between text-xs border-t"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+            borderColor: 'var(--gemini-border-light)',
+            color: 'var(--gemini-text-secondary)',
+          }}
+        >
+          <span>
+            {monacoLanguage.toUpperCase()} · {editorStats.lines} 行 · {editorStats.characters} 字符
+          </span>
         </div>
       )}
     </div>

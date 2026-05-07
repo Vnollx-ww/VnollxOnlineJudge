@@ -13,11 +13,9 @@ import {
   Drawer,
 } from 'antd';
 import toast from 'react-hot-toast';
-import Select from '../../components/Select';
 import {
   ArrowLeftOutlined,
   CommentOutlined,
-  FullscreenOutlined,
   FullscreenExitOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
@@ -31,9 +29,8 @@ import api from '../../utils/api';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
-import CodeEditor from '../../components/CodeEditor';
-import { Input, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
-import type { WorkbenchResultData } from '../../components';
+import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
+import type { OnlineIdeSettings, WorkbenchResultData } from '../../components';
 import SuccessCelebration from '../../components/SuccessCelebration';
 import type { JudgeMessage } from '../../types';
 
@@ -147,6 +144,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const [isCompetitionEnd, setIsCompetitionEnd] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true });
   const [showCelebration, setShowCelebration] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState<'result' | 'input'>('result');
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -162,6 +160,20 @@ const CompetitionProblemDetail: React.FC = () => {
   }, []);
 
   const userInfo = getUserInfo();
+  const editorOptions = useMemo(() => ({
+    fontSize: ideSettings.fontSize,
+    wordWrap: ideSettings.wordWrap ? 'on' : 'off',
+  }), [ideSettings]);
+
+  const toggleEditorFullscreen = useCallback(() => {
+    if (!isEditorFullscreen) {
+      document.documentElement.requestFullscreen();
+      setIsEditorFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsEditorFullscreen(false);
+    }
+  }, [isEditorFullscreen]);
 
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
     if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
@@ -660,11 +672,6 @@ const CompetitionProblemDetail: React.FC = () => {
   // ---- 左侧题目描述面板 ----
   const leftPanel = (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
-        <span>时间限制：{problem.timeLimit || 1000} ms</span>
-        <span>·</span>
-        <span>内存限制：{problem.memoryLimit || 256} MB</span>
-      </div>
       <section>
         <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>题目描述</h2>
         <div
@@ -745,41 +752,17 @@ const CompetitionProblemDetail: React.FC = () => {
 
   // ---- 编辑器顶部工具栏 ----
   const editorHeader = (
-    <>
-      <Select
-        value={language}
-        onChange={setLanguage}
-        className="w-36"
-        options={languageOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
-      />
-      <button
-        onClick={() => {
-          const template = languageOptions.find((item) => item.value === language)?.template || '';
-          setCode(template);
-        }}
-        className="text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
-        style={{ color: 'var(--gemini-text-secondary)' }}
-      >
-        重置模板
-      </button>
-      <div className="flex-auto" />
-      <button
-        onClick={() => {
-          if (!isEditorFullscreen) {
-            document.documentElement.requestFullscreen();
-            setIsEditorFullscreen(true);
-          } else {
-            document.exitFullscreen();
-            setIsEditorFullscreen(false);
-          }
-        }}
-        className="inline-flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
-        style={{ color: 'var(--gemini-text-secondary)' }}
-      >
-        {isEditorFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-        {isEditorFullscreen ? '退出全屏' : '全屏'}
-      </button>
-    </>
+    <OnlineIdeToolbar
+      language={language}
+      languageOptions={languageOptions}
+      code={code}
+      settings={ideSettings}
+      isFullscreen={isEditorFullscreen}
+      onLanguageChange={setLanguage}
+      onCodeChange={setCode}
+      onSettingsChange={setIdeSettings}
+      onToggleFullscreen={toggleEditorFullscreen}
+    />
   );
 
   // 载入指定示例到自测输入
@@ -902,6 +885,7 @@ const CompetitionProblemDetail: React.FC = () => {
               language={language}
               height="100%"
               storageKey={codeStorageKey}
+              options={editorOptions}
             />
           )
         }
@@ -935,6 +919,7 @@ const CompetitionProblemDetail: React.FC = () => {
             language={language}
             height="100vh"
             storageKey={codeStorageKey}
+            options={editorOptions}
           />
         </div>,
         document.body

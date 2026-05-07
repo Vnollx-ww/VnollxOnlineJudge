@@ -13,6 +13,10 @@ export { default as ParticleBackground } from './ParticleBackground';
 // Code Editor
 export { default as CodeEditor } from './CodeEditor';
 
+// Online IDE Toolbar
+export { default as OnlineIdeToolbar } from './OnlineIdeToolbar';
+export type { OnlineIdeLanguageOption, OnlineIdeSettings } from './OnlineIdeToolbar';
+
 // Code Window (for demo)
 export { default as CodeWindow } from './CodeWindow';
 
