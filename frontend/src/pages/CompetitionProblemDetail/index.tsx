@@ -152,19 +152,6 @@ let idx = 0;
   },
 ];
 
-const getDifficultyColor = (difficulty?: string) => {
-  switch (difficulty?.toLowerCase()) {
-    case '简单':
-      return 'green';
-    case '中等':
-      return 'orange';
-    case '困难':
-      return 'red';
-    default:
-      return 'default';
-  }
-};
-
 const CompetitionProblemDetail: React.FC = () => {
   const { cid, id } = useParams<{ cid: string; id: string }>();
   const navigate = useNavigate();
