@@ -48,6 +48,9 @@ public class Problem {
     @Column(name = "checker_file")
     private String checkerFile;
 
+    @Column(name = "float_tolerance")
+    private Double floatTolerance;
+
     @Column(name = "hint")
     private String hint;
 

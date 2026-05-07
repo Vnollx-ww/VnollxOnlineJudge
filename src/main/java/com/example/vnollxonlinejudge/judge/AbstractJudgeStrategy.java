@@ -32,6 +32,7 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     protected static final String WRONG_ANSWER = "答案错误";
     protected static final String ACCEPTED = "答案正确";
     protected static final String JUDGE_ERROR = "判题错误";
+    protected static final double DEFAULT_FLOAT_TOLERANCE = 1e-4;
 
     protected final TestCaseCacheService testCaseCacheService;
     protected final SpecialJudgeSupport specialJudgeSupport;
@@ -93,15 +94,22 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
 
     @Override
     public final RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit) {
-        return judge(code, dataZipUrl, timeLimit, memoryLimit, "standard", null);
+        return judge(code, dataZipUrl, timeLimit, memoryLimit, "standard", null, null);
     }
 
     @Override
     public final RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit,
                                  String judgeMode, String checkerFile) {
+        return judge(code, dataZipUrl, timeLimit, memoryLimit, judgeMode, checkerFile, null);
+    }
+
+    @Override
+    public final RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit,
+                                 String judgeMode, String checkerFile, Double floatTolerance) {
         RunResult raw = "special".equals(judgeMode)
                 ? specialJudge(code, dataZipUrl, timeLimit, memoryLimit, checkerFile)
-                : standardJudge(code, dataZipUrl, timeLimit, memoryLimit, null, null);
+                : standardJudge(code, dataZipUrl, timeLimit, memoryLimit, null, null, judgeMode, floatTolerance);
+        applyTimeLimitOnTimeout(raw, timeLimit);
         normalizeMetrics(raw);
         translateStatus(raw);
         translateFallbackStatus(raw);
@@ -111,7 +119,8 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     @Override
     public final RunResult testJudge(String code, String inputExample, String outputExample,
                                      Long timeLimit, Long memoryLimit) {
-        RunResult raw = standardJudge(code, null, timeLimit, memoryLimit, inputExample, outputExample);
+        RunResult raw = standardJudge(code, null, timeLimit, memoryLimit, inputExample, outputExample, "standard", null);
+        applyTimeLimitOnTimeout(raw, timeLimit);
         normalizeMetrics(raw);
         translateStatus(raw);
         translateFallbackStatus(raw);
@@ -122,7 +131,8 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
 
     private RunResult standardJudge(String userCode, String zipFilePath,
                                     Long timeLimitMs, Long memoryLimitMB,
-                                    String inputExample, String outputExample) {
+                                    String inputExample, String outputExample,
+                                    String judgeMode, Double floatTolerance) {
         StringBuilder errorOut = new StringBuilder();
         String artifactId = compile(userCode, errorOut);
         if (artifactId == null) {
@@ -171,7 +181,7 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                     String expected = JudgeOutputComparator.normalizeLineEndings(tc[1]);
                     String actual = JudgeOutputComparator.normalizeLineEndings(
                             r.getFiles() != null ? r.getFiles().getStdout() : "");
-                    if (!JudgeOutputComparator.equalsIgnoringWhitespace(expected, actual)) {
+                    if (!matchesOutput(expected, actual, judgeMode, floatTolerance)) {
                         finalResult.setStatus(WRONG_ANSWER);
                         if (r.getFiles() != null) {
                             finalResult.getFiles().setStdout(r.getFiles().getStdout());
@@ -354,6 +364,24 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     private void normalizeMetrics(RunResult result) {
         if (result.getTime() != null) result.setRunTime(result.getTime() / 1_000_000);
         if (result.getMemory() != null) result.setMemory(result.getMemory() / 1_048_576);
+    }
+
+    private void applyTimeLimitOnTimeout(RunResult result, Long timeLimitMs) {
+        if (result == null || result.getStatus() == null || timeLimitMs == null) {
+            return;
+        }
+        if ("Time Limit Exceeded".equals(result.getStatus()) || TIME_LIMIT_EXCEED.equals(result.getStatus())) {
+            result.setTime(timeLimitMs * 1_000_000L);
+            result.setRunTime(timeLimitMs);
+        }
+    }
+
+    private boolean matchesOutput(String expected, String actual, String judgeMode, Double floatTolerance) {
+        if ("float".equals(judgeMode)) {
+            double tolerance = floatTolerance != null ? floatTolerance : DEFAULT_FLOAT_TOLERANCE;
+            return JudgeOutputComparator.equalsWithFloatTolerance(expected, actual, tolerance);
+        }
+        return JudgeOutputComparator.equalsIgnoringWhitespace(expected, actual);
     }
 
     protected RunResult errorResult(String status, String stderr) {

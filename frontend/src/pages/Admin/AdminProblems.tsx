@@ -62,6 +62,7 @@ interface Problem {
   outputFormat: string;
   judgeMode?: string;
   checkerFile?: string;
+  floatTolerance?: number;
   inputExample?: string;
   outputExample?: string;
   hint?: string;
@@ -238,6 +239,7 @@ const AdminProblems: React.FC = () => {
         inputFormat: problem.inputFormat,
         outputFormat: problem.outputFormat,
         judgeMode: problem.judgeMode || 'standard',
+        floatTolerance: problem.floatTolerance ?? 0.0001,
         hint: problem.hint,
         open: problem.open,
       });
@@ -296,6 +298,9 @@ const AdminProblems: React.FC = () => {
         'judgeMode',
         String(values.judgeMode ?? form.getFieldValue('judgeMode') ?? 'standard')
       );
+      if (values.judgeMode === 'float') {
+        formData.append('floatTolerance', String(values.floatTolerance ?? 0.0001));
+      }
       const validExamples = examplesList.filter((e) => (e.input ?? '').trim() || (e.output ?? '').trim());
       formData.append('examples', JSON.stringify(validExamples.map((e, i) => ({ input: e.input ?? '', output: e.output ?? '', sortOrder: i }))));
       formData.append('inputExample', validExamples[0]?.input ?? '');
@@ -517,7 +522,15 @@ ${aiInput}`;
       dataIndex: 'judgeMode',
       key: 'judgeMode',
       width: 110,
-      render: (mode: string) => <Tag color={mode === 'special' ? 'purple' : 'blue'}>{mode === 'special' ? '构造题' : '普通评测'}</Tag>,
+      render: (mode: string) => {
+        const meta: Record<string, { color: string; label: string }> = {
+          standard: { color: 'blue', label: '普通评测' },
+          float: { color: 'cyan', label: '浮点误差' },
+          special: { color: 'purple', label: '构造题' },
+        };
+        const current = meta[mode] || meta.standard;
+        return <Tag color={current.color}>{current.label}</Tag>;
+      },
     },
     { title: '提交数', dataIndex: 'submitCount', key: 'submitCount', width: 100 },
     { title: '通过数', dataIndex: 'passCount', key: 'passCount', width: 100 },
@@ -798,9 +811,35 @@ ${aiInput}`;
             <Select
               options={[
                 { value: 'standard', label: '普通评测' },
+                { value: 'float', label: '浮点误差评测' },
                 { value: 'special', label: '构造题（Special Judge）' },
               ]}
             />
+          </Form.Item>
+
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.judgeMode !== cur.judgeMode}>
+            {({ getFieldValue }) =>
+              getFieldValue('judgeMode') === 'float' ? (
+                <Form.Item
+                  name="floatTolerance"
+                  label="浮点误差容忍值"
+                  initialValue="0.0001"
+                  rules={[
+                    { required: true, message: '请输入浮点误差容忍值' },
+                    {
+                      validator: (_, value) => {
+                        const tolerance = Number(value);
+                        return Number.isFinite(tolerance) && tolerance > 0
+                          ? Promise.resolve()
+                          : Promise.reject(new Error('浮点误差必须是大于0的数字'));
+                      },
+                    },
+                  ]}
+                >
+                  <Input placeholder="例如 0.0001 或 1e-4" />
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
 
           <Form.Item label="输入/输出样例（可多组）">

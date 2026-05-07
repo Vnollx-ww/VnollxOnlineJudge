@@ -1,3 +1,2 @@
 alter table problem
-    add column judge_mode varchar(20) default 'standard' null after datazip,
-    add column checker_file varchar(255) null after judge_mode;
+    add column float_tolerance double null comment '浮点误差容忍值' after checker_file;
