@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
+import com.example.vnollxonlinejudge.judge.JudgeStatusDescriber;
 import com.example.vnollxonlinejudge.judge.JudgeStrategy;
 import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
@@ -68,17 +69,33 @@ public class JudgeServiceImpl implements JudgeService {
                 .build();
 
         submissionService.addSubmission(submission);
+        Integer queueAhead = null;
         try {
             int priority = 1;
-            judgeProducer.sendJudge(priority, judgeInfo);
-            logger.info("消息发送到MQ成功: snowflakeId={}, uid={}, pid={}", snowflakeId, uid, req.getPid());
+            queueAhead = judgeProducer.sendJudge(priority, judgeInfo);
+            logger.info("消息发送到MQ成功: snowflakeId={}, uid={}, pid={}, queueAhead={}",
+                    snowflakeId, uid, req.getPid(), queueAhead);
         } catch (Exception e) {
             logger.error("发送提交记录消息到MQ失败： judgeInfo={}, error=", judgeInfo, e);
             // 可以在这里接入监控告警，让开发者知道MQ出了问题
         }
         JudgeResultVO vo = new JudgeResultVO();
         vo.setSnowflakeId(snowflakeId);
+        vo.setStatus("等待评测");
+        vo.setQueueAhead(queueAhead);
+        vo.setDescription(buildWaitingDescription(queueAhead));
         return vo;
+    }
+
+    /** 根据队列前方等待数量生成等待评测的中文描述。 */
+    private String buildWaitingDescription(Integer queueAhead) {
+        if (queueAhead == null) {
+            return JudgeStatusDescriber.describe("等待评测", "submit");
+        }
+        if (queueAhead <= 0) {
+            return "等待评测：已加入评测队列，即将开始评测。";
+        }
+        return "等待评测：队列前方还有 " + queueAhead + " 位，请稍候…";
     }
 
     @Override
@@ -98,6 +115,13 @@ public class JudgeServiceImpl implements JudgeService {
             vo.setActualOutput(extractStdout(result));
         } else {
             vo.setStatus(result.getStatus());
+            // 面向用户的中文描述，前端直接展示
+            vo.setDescription(JudgeStatusDescriber.describe(result.getStatus(), "test"));
+            // 结构化字段：失败用例的输入 / 期望输出 / 程序实际输出
+            vo.setInput(result.getCaseInput());
+            vo.setExpectedOutput(result.getCaseExpected());
+            vo.setActualOutput(extractStdout(result));
+            // errorInfo 仅承载非结构化诊断（编译错误日志、运行时 stderr 等）
             vo.setErrorInfo(extractStderr(result));
         }
         vo.setPassCount(result.getPassCount());

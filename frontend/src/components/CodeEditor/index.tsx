@@ -432,6 +432,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     <div 
       className="relative rounded-3xl overflow-hidden"
       style={{ 
+        height: typeof height === 'number' ? `${height}px` : height,
+        width: '100%',
         backgroundColor: 'var(--gemini-surface)',
         border: '1px solid var(--gemini-border-light)',
         boxShadow: 'var(--shadow-gemini)'
@@ -440,7 +442,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       {/* Monaco Editor 容器 */}
       <div 
         ref={containerRef} 
-        style={{ height: typeof height === 'number' ? `${height}px` : height, width: '100%' }} 
+        style={{ height: '100%', width: '100%' }} 
       />
       
       {/* 加载覆盖层 */}

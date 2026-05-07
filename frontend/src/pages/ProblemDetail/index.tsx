@@ -8,13 +8,13 @@ import {
   Popconfirm,
   App,
   Tag,
+  Drawer,
 } from 'antd';
 import toast from 'react-hot-toast';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
 import {
   ArrowLeft,
-  Code2,
   MessageSquare,
   BookOpen,
   Edit,
@@ -33,8 +33,8 @@ import api from '@/utils/api';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
-import { CodeEditor, JudgeOutcomeCard, PermissionGuard, mapJudgeStatusToVariant } from '@/components';
-import type { JudgeOutcomeData } from '@/components';
+import { CodeEditor, PermissionGuard, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '@/components';
+import type { WorkbenchResultData } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
 import SuccessCelebration from '@/components/SuccessCelebration';
 import type { ApiResponse, JudgeMessage } from '@/types';
@@ -181,8 +181,7 @@ const ProblemDetail: React.FC = () => {
       return null;
     }
   }, [getCodeCacheKey]);
-  const [testResult, setTestResult] = useState<JudgeOutcomeData | null>(null);
-  const [submitResult, setSubmitResult] = useState<JudgeOutcomeData | null>(null);
+  const [runResult, setRunResult] = useState<WorkbenchResultData | null>(null);
   const [codeLoading, setCodeLoading] = useState({ test: false, submit: false });
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentLoading, setCommentLoading] = useState(false);
@@ -200,6 +199,10 @@ const ProblemDetail: React.FC = () => {
   const [activeExampleTab, setActiveExampleTab] = useState(0);
   /** 记录每个样例是否被修改过（用于显示"自定义"标识） */
   const [modifiedExamples, setModifiedExamples] = useState<Record<number, boolean>>({});
+  /** 工作台底部 Tab：运行结果 / 自测输入 */
+  const [activeBottomTab, setActiveBottomTab] = useState<'result' | 'input'>('result');
+  /** 评论抽屉开关 */
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const userInfo = getUserInfo();
 
   // 监听浏览器全屏状态变化
@@ -241,7 +244,7 @@ const ProblemDetail: React.FC = () => {
     if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
       const status = msg.status || '未知状态';
       if (status === '评测中') {
-        setSubmitResult({
+        setRunResult({
           variant: 'info',
           source: 'submit',
           headline: status,
@@ -249,10 +252,11 @@ const ProblemDetail: React.FC = () => {
         });
       } else {
         const hasTests = msg.testCount != null && msg.testCount > 0;
-        setSubmitResult({
+        setRunResult({
           variant: mapJudgeStatusToVariant(status),
           source: 'submit',
           headline: status,
+          description: msg.description || status,
           metrics: {
             timeMs: msg.time ?? 0,
             memoryMb: msg.memory ?? 0,
@@ -421,22 +425,6 @@ const ProblemDetail: React.FC = () => {
     }
   };
 
-  const infoItems = useMemo(() => {
-    const submitCount = problem?.submitCount ?? 0;
-    const passCount = problem?.passCount ?? 0;
-
-    return [
-      { label: '时间限制', value: problem?.timeLimit ? `${problem.timeLimit} ms` : '无限制' },
-      { label: '内存限制', value: problem?.memoryLimit ? `${problem.memoryLimit} MB` : '无限制' },
-      { label: '提交', value: submitCount },
-      { label: '通过', value: passCount },
-      {
-        label: '通过率',
-        value: submitCount > 0 ? `${Math.round((passCount / submitCount) * 10000) / 100}%` : '0%',
-      },
-    ];
-  }, [problem]);
-
   // 当前选中的样例（用于测试）
   const currentExample = useMemo(() => {
     if (problem?.examples?.length && activeExampleTab < problem.examples.length) {
@@ -482,12 +470,6 @@ const ProblemDetail: React.FC = () => {
     }
   }, [problem?.id]);
 
-  // 切换样例 Tab 时保留各自输入内容
-  const handleExampleTabChange = useCallback((index: number) => {
-    if (!problem?.examples?.length) return;
-    setActiveExampleTab(index);
-  }, [problem?.examples]);
-
   // 输入内容变化时，检查是否被修改
   const handleTestInputChange = useCallback((value: string) => {
     setExampleInputs((prev) => ({ ...prev, [activeExampleTab]: value }));
@@ -499,16 +481,8 @@ const ProblemDetail: React.FC = () => {
     }
   }, [currentExample, activeExampleTab, normalizeTestText]);
 
-  const handleResetCurrentExample = useCallback(() => {
-    if (!currentExample) return;
-    setExampleInputs((prev) => ({
-      ...prev,
-      [activeExampleTab]: currentExample.input || '',
-    }));
-    setModifiedExamples((prev) => ({ ...prev, [activeExampleTab]: false }));
-  }, [currentExample, activeExampleTab]);
-
   const handleTestCode = async () => {
+    setActiveBottomTab('result');
     if (!code.trim()) {
       toast('请先输入代码');
       return;
@@ -518,7 +492,12 @@ const ProblemDetail: React.FC = () => {
       return;
     }
     setCodeLoading((prev) => ({ ...prev, test: true }));
-    setTestResult(null);
+    setRunResult({
+      variant: 'info',
+      source: 'test',
+      headline: '评测中',
+      description: '评测中：正在执行自测运行，请稍候…',
+    });
     try {
       const payload = {
         code,
@@ -532,40 +511,57 @@ const ProblemDetail: React.FC = () => {
       };
       const data = await api.post('/judge/test', payload) as ApiResponse<{
         status?: string;
+        description?: string;
         errorInfo?: string;
+        input?: string;
+        expectedOutput?: string;
         actualOutput?: string;
         passCount?: number | null;
         testCount?: number | null;
       }>;
       if (data.code === 200) {
         if (isCustomTest) {
-          setTestResult({
+          setRunResult({
             variant: 'info',
             source: 'test',
             headline: '自定义测试完成',
-            bodyText: `程序输出:\n${data.data.actualOutput || '无输出'}`,
+            description: '已使用自定义输入运行你的程序，下方为程序实际输出。',
+            diff: {
+              input: currentTestInput,
+              actual: data.data.actualOutput || '',
+            },
           });
         } else {
           const hasTests = data.data.testCount != null && data.data.testCount > 0;
-          setTestResult({
-            variant: data.data.status === '答案正确' ? 'success' : 'warning',
+          const status = data.data.status || '测试完成';
+          const isCompileError = status === '编译错误' || status === 'Compile Error';
+          setRunResult({
+            variant: mapJudgeStatusToVariant(status),
             source: 'test',
-            headline: data.data.status || '测试完成',
+            headline: status,
+            description: data.data.description || status,
             metrics: hasTests
               ? { passCount: data.data.passCount ?? 0, testCount: data.data.testCount! }
               : undefined,
             errorInfo: data.data.errorInfo || undefined,
+            diff: isCompileError
+              ? undefined
+              : {
+                  input: data.data.input ?? currentTestInput,
+                  expected: data.data.expectedOutput ?? (matchedExample?.output ?? currentExample.output ?? ''),
+                  actual: data.data.actualOutput ?? '',
+                },
           });
         }
       } else {
-        setTestResult({
+        setRunResult({
           variant: 'error',
           source: 'test',
           headline: (data as any).msg || '测试失败',
         });
       }
     } catch (error: any) {
-      setTestResult({
+      setRunResult({
         variant: 'error',
         source: 'test',
         headline: error?.response?.data?.msg || '测试失败，请稍后重试',
@@ -576,6 +572,7 @@ const ProblemDetail: React.FC = () => {
   };
 
   const handleSubmitCode = async () => {
+    setActiveBottomTab('result');
     if (!code.trim()) {
       toast('请先输入代码');
       return;
@@ -583,7 +580,12 @@ const ProblemDetail: React.FC = () => {
     if (!problem) return;
     
     setCodeLoading((prev) => ({ ...prev, submit: true }));
-    setSubmitResult(null);
+    setRunResult({
+      variant: 'info',
+      source: 'submit',
+      headline: '评测中',
+      description: '评测中：正在进行评测，请稍候…',
+    });
     try {
       const payload = {
         code,
@@ -596,27 +598,32 @@ const ProblemDetail: React.FC = () => {
         time: String(problem.timeLimit || 1000),
         memory: String(problem.memoryLimit || 256),
       };
-      const data = await api.post('/judge/submit', payload) as ApiResponse<{ snowflakeId?: string }>;
+      const data = await api.post('/judge/submit', payload) as ApiResponse<{
+        snowflakeId?: string;
+        status?: string;
+        description?: string;
+        queueAhead?: number | null;
+      }>;
       if (data.code === 200) {
         if (data.data.snowflakeId) {
           setCurrentSnowflakeId(data.data.snowflakeId);
         }
-        setSubmitResult({
+        setRunResult({
           variant: 'info',
           source: 'submit',
-          headline: '等待评测',
-          bodyText: '已提交，等待评测...',
+          headline: data.data.status || '等待评测',
+          description: data.data.description || '等待评测：已加入评测队列。',
         });
         window.dispatchEvent(new Event('notification-updated'));
       } else {
-        setSubmitResult({
+        setRunResult({
           variant: 'error',
           source: 'submit',
           headline: (data as any).msg || '提交失败',
         });
       }
     } catch (error: any) {
-      setSubmitResult({
+      setRunResult({
         variant: 'error',
         source: 'submit',
         headline: error?.response?.data?.msg || '提交失败，请稍后重试',
@@ -785,390 +792,419 @@ const ProblemDetail: React.FC = () => {
 
   const locationState = location.state as { from?: string; practiceId?: string } | null;
 
-  return (
-    <div className="space-y-6">
-      {/* 题目信息卡片 */}
-      <div className="gemini-card">
-        {/* 标题和操作 */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--gemini-text-primary)' }}>
-            #{problem.id} - {problem.title}
-          </h1>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              icon={<ArrowLeft className="w-4 h-4" />}
-              onClick={() => {
-                if (locationState?.from === 'practice' && locationState?.practiceId) {
-                  navigate(`/practice/${locationState.practiceId}`);
-                } else {
-                  navigate('/problems');
-                }
-              }}
-            >
-              {locationState?.from === 'practice' ? '返回练习' : '返回题目列表'}
-            </Button>
-            <Button
-              icon={<BookOpen className="w-4 h-4" />}
-              onClick={() => navigate(`/problem/${problem.id}/solutions`, { state: { title: problem.title } })}
-            >
-              查看题解
-            </Button>
-            <Button
-              type="primary"
-              icon={<Edit className="w-4 h-4" />}
-              onClick={() => navigate(`/problem/${problem.id}/solutions/publish`, { state: { title: problem.title } })}
-              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-            >
-              发布题解
-            </Button>
-          </div>
-        </div>
+  // ---- 顶部操作栏 ----
+  const statPillStyle: React.CSSProperties = {
+    backgroundColor: 'var(--gemini-bg)',
+    border: '1px solid var(--gemini-border-light)',
+    borderRadius: 9999,
+    padding: '4px 12px',
+    color: 'var(--gemini-text-secondary)',
+  };
+  const topBar = (
+    <>
+      <Button
+        icon={<ArrowLeft className="w-4 h-4" />}
+        onClick={() => {
+          if (locationState?.from === 'practice' && locationState?.practiceId) {
+            navigate(`/practice/${locationState.practiceId}`);
+          } else {
+            navigate('/problems');
+          }
+        }}
+      >
+        {locationState?.from === 'practice' ? '返回练习' : '返回'}
+      </Button>
+      <div className="flex items-center gap-3 min-w-0">
+        <span
+          className="font-semibold whitespace-nowrap"
+          style={{ color: 'var(--gemini-text-primary)', fontSize: 15 }}
+          title={`#${problem.id} - ${problem.title}`}
+        >
+          #{problem.id} · {problem.title}
+        </span>
+        <Tag color={getDifficultyColor(problem.difficulty)} style={{ margin: 0, fontSize: 12, padding: '2px 10px' }}>
+          {problem.difficulty}
+        </Tag>
+      </div>
+      <div
+        className="hidden lg:flex items-center gap-2 text-xs flex-none"
+      >
+        <span style={statPillStyle}>时间 {problem.timeLimit || 1000} ms</span>
+        <span style={statPillStyle}>内存 {problem.memoryLimit || 256} MB</span>
+        <span style={statPillStyle}>提交 {problem.submitCount ?? 0}</span>
+        <span style={statPillStyle}>通过 {problem.passCount ?? 0}</span>
+      </div>
+      <div className="flex-auto" />
+      <div className="flex items-center gap-2 flex-none">
+        <PermissionGuard permission={PermissionCode.AI_CHAT}>
+          <Button icon={<Bot className="w-4 h-4" />} onClick={handleOpenAiAnalysis}>
+            AI分析
+          </Button>
+        </PermissionGuard>
+        <Button
+          icon={<BookOpen className="w-4 h-4" />}
+          onClick={() => navigate(`/problem/${problem.id}/solutions`, { state: { title: problem.title } })}
+        >
+          题解
+        </Button>
+        <Button
+          icon={<Edit className="w-4 h-4" />}
+          onClick={() => navigate(`/problem/${problem.id}/solutions/publish`, { state: { title: problem.title } })}
+        >
+          发布题解
+        </Button>
+        <Button
+          icon={<MessageSquare className="w-4 h-4" />}
+          onClick={() => setCommentsOpen(true)}
+        >
+          评论 {comments.length ? `(${comments.length})` : ''}
+        </Button>
+      </div>
+    </>
+  );
 
-        {/* 题目元信息 */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-          {infoItems.map((item) => (
-            <div key={item.label} className="rounded-3xl p-4 text-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-              <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-disabled)' }}>{item.label}</div>
-              <div className="text-lg font-bold" style={{ color: 'var(--gemini-text-primary)' }}>{item.value}</div>
-            </div>
+  // ---- 左侧题目描述面板 ----
+  const leftPanel = (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
+        <span>时间限制：{problem.timeLimit || 1000} ms</span>
+        <span>·</span>
+        <span>内存限制：{problem.memoryLimit || 256} MB</span>
+      </div>
+      {tags.length ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>标签：</span>
+          {tags.map((tag) => (
+            <Tag key={tag}>{tag}</Tag>
           ))}
         </div>
-
-        {/* 难度和标签 */}
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <span style={{ color: 'var(--gemini-text-secondary)' }}>难度：</span>
-            <Tag color={getDifficultyColor(problem.difficulty)}>{problem.difficulty}</Tag>
-          </div>
-          <div className="flex items-center gap-2">
-            <span style={{ color: 'var(--gemini-text-secondary)' }}>标签：</span>
-            {tags.length ? (
-              <div className="flex flex-wrap gap-1">
-                {tags.map((tag) => (
-                  <Tag key={tag}>{tag}</Tag>
-                ))}
+      ) : null}
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>题目描述</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          style={{ color: 'var(--gemini-text-primary)' }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.description) }}
+        />
+      </section>
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>输入格式</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          style={{ color: 'var(--gemini-text-primary)' }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.inputFormat, '暂无输入格式说明') }}
+        />
+      </section>
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>输出格式</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          style={{ color: 'var(--gemini-text-primary)' }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.outputFormat, '暂无输出格式说明') }}
+        />
+      </section>
+      {problem.examples?.length ? (
+        problem.examples.map((ex, idx) => (
+          <section key={idx} className="space-y-3">
+            <h2 className="text-base font-bold" style={{ color: 'var(--gemini-text-primary)' }}>示例 {idx + 1}</h2>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输入</div>
+              <div className="relative">
+                <pre className="rounded-xl p-3 pr-10 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
+{ex.input || '暂无输入样例'}
+                </pre>
+                <button
+                  onClick={() => ex.input && copyToClipboard(ex.input, '输入样例')}
+                  className="absolute top-2 right-2 p-1 rounded-md transition-colors hover:bg-black/5"
+                  style={{ color: 'var(--gemini-text-secondary)' }}
+                  title="复制"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
               </div>
-            ) : (
-              <span style={{ color: 'var(--gemini-text-disabled)' }}>无标签</span>
-            )}
-          </div>
-        </div>
-
-        <hr style={{ border: 'none', borderTop: '1px solid var(--gemini-border-light)', margin: '1.5rem 0' }} />
-
-        {/* 题目描述 */}
-        <section className="mb-6">
-          <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>题目描述</h2>
-          <div
-            className="prose prose-sm max-w-none"
-            style={{ color: 'var(--gemini-text-primary)' }}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.description) }}
-          />
-        </section>
-
-        {/* 输入输出格式 */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <section>
-            <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>输入格式</h2>
-            <div
-              className="prose prose-sm max-w-none"
-              style={{ color: 'var(--gemini-text-primary)' }}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.inputFormat, '暂无输入格式说明') }}
-            />
-          </section>
-          <section>
-            <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>输出格式</h2>
-            <div
-              className="prose prose-sm max-w-none"
-              style={{ color: 'var(--gemini-text-primary)' }}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.outputFormat, '暂无输出格式说明') }}
-            />
-          </section>
-        </div>
-
-        {/* 样例：仅来自 problem_example 多组 */}
-        {problem.examples?.length ? (
-          problem.examples.map((ex, idx) => (
-            <div key={idx} className="grid md:grid-cols-2 gap-6 mb-6">
-              <section>
-                <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>输入样例 {idx + 1}</h2>
-                <div className="relative">
-                  <pre className="rounded-2xl p-3 pr-12 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
-                    {ex.input || '暂无输入样例'}
-                  </pre>
-                  <button
-                    onClick={() => ex.input && copyToClipboard(ex.input, '输入样例')}
-                    className="absolute top-2 right-2 p-1 rounded-md transition-colors hover:bg-black/5"
-                    style={{ color: 'var(--gemini-text-secondary)' }}
-                    title="复制"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-              </section>
-              <section>
-                <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>输出样例 {idx + 1}</h2>
-                <div className="relative">
-                  <pre className="rounded-2xl p-3 pr-12 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
-                    {ex.output || '暂无输出样例'}
-                  </pre>
-                  <button
-                    onClick={() => ex.output && copyToClipboard(ex.output, '输出样例')}
-                    className="absolute top-2 right-2 p-1 rounded-md transition-colors hover:bg-black/5"
-                    style={{ color: 'var(--gemini-text-secondary)' }}
-                    title="复制"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                </div>
-              </section>
             </div>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输出</div>
+              <div className="relative">
+                <pre className="rounded-xl p-3 pr-10 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
+{ex.output || '暂无输出样例'}
+                </pre>
+                <button
+                  onClick={() => ex.output && copyToClipboard(ex.output, '输出样例')}
+                  className="absolute top-2 right-2 p-1 rounded-md transition-colors hover:bg-black/5"
+                  style={{ color: 'var(--gemini-text-secondary)' }}
+                  title="复制"
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </section>
+        ))
+      ) : null}
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>提示</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          style={{ color: 'var(--gemini-text-primary)' }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.hint, '暂无提示') }}
+        />
+      </section>
+    </div>
+  );
+
+  // ---- 编辑器顶部工具栏 ----
+  const editorHeader = (
+    <>
+      <Select
+        value={language}
+        onChange={setLanguage}
+        className="w-36"
+        options={languageOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+      />
+      <button
+        onClick={() => {
+          const template = languageOptions.find((item) => item.value === language)?.template || '';
+          setCode(template);
+        }}
+        className="text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
+        style={{ color: 'var(--gemini-text-secondary)' }}
+      >
+        重置模板
+      </button>
+      <div className="flex-auto" />
+      <button
+        onClick={() => {
+          if (!isEditorFullscreen) {
+            document.documentElement.requestFullscreen();
+            setIsEditorFullscreen(true);
+          } else {
+            document.exitFullscreen();
+            setIsEditorFullscreen(false);
+          }
+        }}
+        className="inline-flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
+        style={{ color: 'var(--gemini-text-secondary)' }}
+      >
+        {isEditorFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        {isEditorFullscreen ? '退出全屏' : '全屏'}
+      </button>
+    </>
+  );
+
+  // 载入指定示例到自测输入
+  const loadExampleInput = (i: number) => {
+    if (!problem.examples?.[i]) return;
+    setActiveExampleTab(i);
+    setExampleInputs((prev) => ({ ...prev, [i]: problem.examples![i].input || '' }));
+    setModifiedExamples((prev) => ({ ...prev, [i]: false }));
+  };
+
+  // ---- 自测输入区域 ----
+  const inputArea = (
+    <div className="flex flex-col h-full min-h-0">
+      <Input.TextArea
+        value={currentTestInput}
+        onChange={(e) => handleTestInputChange(e.target.value)}
+        placeholder="请输入示例或载入测试用例"
+        className="!flex-auto !rounded-xl font-mono text-sm"
+        style={{
+          backgroundColor: '#fff',
+          borderColor: 'var(--gemini-border-light)',
+          resize: 'none',
+          minHeight: 80,
+        }}
+      />
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
+        {problem.examples?.length ? (
+          problem.examples.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => loadExampleInput(i)}
+              className="px-3 py-1 text-xs rounded-md transition-colors"
+              style={{
+                backgroundColor: activeExampleTab === i && !modifiedExamples[i]
+                  ? 'var(--gemini-accent)'
+                  : 'var(--gemini-bg)',
+                color: activeExampleTab === i && !modifiedExamples[i]
+                  ? 'var(--gemini-accent-text)'
+                  : 'var(--gemini-text-secondary)',
+                border: `1px solid ${activeExampleTab === i && !modifiedExamples[i]
+                  ? 'transparent'
+                  : 'var(--gemini-border-light)'}`,
+              }}
+            >
+              载入示例 {i + 1}
+            </button>
           ))
         ) : (
-          <div className="mb-6" style={{ color: 'var(--gemini-text-disabled)' }}>
-            暂无样例
-          </div>
+          <span className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>该题目未提供示例</span>
         )}
-
-        {/* 提示 */}
-        <section>
-          <h2 className="text-lg font-bold mb-3" style={{ color: 'var(--gemini-text-primary)' }}>提示</h2>
-          <div
-            className="prose prose-sm max-w-none"
-            style={{ color: 'var(--gemini-text-primary)' }}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.hint, '暂无提示') }}
-          />
-        </section>
+        {isCustomTest && (
+          <span className="text-xs ml-2" style={{ color: 'var(--gemini-warning)' }}>
+            自定义输入
+          </span>
+        )}
       </div>
+    </div>
+  );
 
-      {/* 代码编辑器 */}
-      <div className="gemini-card">
-        <div className="flex items-center gap-2 mb-4">
-          <Code2 className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-          <h2 className="text-lg font-bold" style={{ color: 'var(--gemini-text-primary)' }}>在线代码编辑器</h2>
-        </div>
+  // ---- 运行结果区域 ----
+  const resultsArea = runResult ? (
+    <WorkbenchResult data={runResult} />
+  ) : (
+    <div className="text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>
+      点击右上角「自测运行」或「保存并提交」后，结果将显示在此处。
+    </div>
+  );
 
-        {/* 工具栏 */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <Select
-              value={language}
-              onChange={setLanguage}
-              className="w-40"
-              options={languageOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
-            />
-            <button
-              onClick={() => {
-                const template = languageOptions.find((item) => item.value === language)?.template || '';
-                setCode(template);
-              }}
-              className="text-sm transition-colors"
-              style={{ color: 'var(--gemini-text-secondary)' }}
-            >
-              重置模板
-            </button>
-          </div>
+  // ---- Tab 右侧次级操作（自测运行） ----
+  const tabActions = (
+    <Button
+      loading={codeLoading.test}
+      onClick={handleTestCode}
+      disabled={!problem.examples?.length}
+      style={{ padding: '0 16px', height: 32, fontSize: 14 }}
+    >
+      自测运行
+    </Button>
+  );
+
+  // ---- 最右主操作（保存并提交） ----
+  const primaryAction = (
+    <Button
+      type="primary"
+      loading={codeLoading.submit}
+      onClick={handleSubmitCode}
+      style={{
+        padding: '0 18px',
+        height: 34,
+        fontSize: 14,
+        fontWeight: 500,
+        backgroundColor: 'var(--gemini-accent)',
+        color: 'var(--gemini-accent-text)',
+        border: 'none',
+      }}
+    >
+      保存并提交
+    </Button>
+  );
+
+  return (
+    <div
+      className="fixed z-[20]"
+      style={{
+        top: 0,
+        left: 80,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'var(--gemini-bg, #f7f8fa)',
+      }}
+    >
+      <ProblemWorkbench
+        storageKey={`problem-workbench:${problem.id}`}
+        topBar={topBar}
+        leftPanel={leftPanel}
+        editorHeader={editorHeader}
+        editor={
+          isEditorFullscreen ? (
+            <div className="w-full h-full flex items-center justify-center text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>
+              代码已在全屏中编辑…
+            </div>
+          ) : (
+            <CodeEditor value={code} onChange={setCode} language={language} height="100%" />
+          )
+        }
+        bottomTabs={[
+          { key: 'result', label: '运行结果' },
+          { key: 'input', label: '自测输入' },
+        ]}
+        activeBottomTab={activeBottomTab}
+        onBottomTabChange={(k) => setActiveBottomTab(k as 'result' | 'input')}
+        bottomContent={activeBottomTab === 'result' ? resultsArea : inputArea}
+        tabActions={tabActions}
+        primaryAction={primaryAction}
+      />
+
+      {/* 全屏编辑器（保留原全屏行为） */}
+      {isEditorFullscreen && createPortal(
+        <div className="fixed inset-0 z-[99999]" style={{ backgroundColor: 'var(--gemini-surface)' }}>
           <button
             onClick={() => {
-              if (!isEditorFullscreen) {
-                document.documentElement.requestFullscreen();
-                setIsEditorFullscreen(true);
-              } else {
-                document.exitFullscreen();
-                setIsEditorFullscreen(false);
-              }
+              document.exitFullscreen();
+              setIsEditorFullscreen(false);
             }}
-            className="inline-flex items-center gap-1 text-sm transition-colors"
-            style={{ color: 'var(--gemini-text-secondary)' }}
+            className="absolute bottom-4 right-4 z-[100000] px-4 py-2 rounded-full transition-colors"
+            style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)' }}
           >
-            {isEditorFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            {isEditorFullscreen ? '退出全屏' : '全屏编辑'}
+            <Minimize2 className="w-4 h-4 inline mr-2" />
+            退出全屏
           </button>
-        </div>
+          <CodeEditor value={code} onChange={setCode} language={language} height="100vh" />
+        </div>,
+        document.body
+      )}
 
-        {/* 全屏编辑器 */}
-        {isEditorFullscreen && createPortal(
-          <div className="fixed inset-0 z-[99999]" style={{ backgroundColor: 'var(--gemini-surface)' }}>
-            <button
-              onClick={() => {
-                document.exitFullscreen();
-                setIsEditorFullscreen(false);
-              }}
-              className="absolute bottom-4 right-4 z-[100000] px-4 py-2 rounded-full transition-colors"
-              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)' }}
-            >
-              <Minimize2 className="w-4 h-4 inline mr-2" />
-              退出全屏
-            </button>
-            <CodeEditor value={code} onChange={setCode} language={language} height="100vh" />
-          </div>,
-          document.body
+      {/* 评论抽屉 */}
+      <Drawer
+        title={(
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
+            <span>评论讨论</span>
+            <Tag color="blue">{comments.length}</Tag>
+          </div>
         )}
-
-        {/* 普通编辑器 */}
-        {!isEditorFullscreen && (
-          <CodeEditor value={code} onChange={setCode} language={language} height={420} />
-        )}
-
-        {/* 调试输入：支持 Tab 切换多组样例 */}
-        {problem.examples?.length ? (
-          <div className="mt-4">
-            {/* 样例 Tab 切换 */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {problem.examples.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleExampleTabChange(index)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    activeExampleTab === index
-                      ? 'shadow-sm'
-                      : 'hover:opacity-80'
-                  }`}
-                  style={{
-                    backgroundColor: activeExampleTab === index 
-                      ? 'var(--gemini-accent)' 
-                      : 'var(--gemini-bg)',
-                    color: activeExampleTab === index 
-                      ? 'var(--gemini-accent-text)' 
-                      : 'var(--gemini-text-secondary)',
-                    border: `1px solid ${activeExampleTab === index ? 'transparent' : 'var(--gemini-border-light)'}`,
-                  }}
-                >
-                  样例 {index + 1}
-                  {modifiedExamples[index] && (
-                    <span 
-                      className="ml-1 px-1.5 py-0.5 text-xs rounded"
-                      style={{ 
-                        backgroundColor: 'var(--gemini-warning)', 
-                        color: '#fff' 
-                      }}
-                    >
-                      已修改
-                    </span>
-                  )}
+        placement="right"
+        width={Math.min(560, typeof window !== 'undefined' ? window.innerWidth : 560)}
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        destroyOnClose={false}
+      >
+        <div className="flex flex-col h-full">
+          <div className="mb-4">
+            {replyTarget && (
+              <div className="flex items-center gap-2 mb-2 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                回复 @{replyTarget.username}
+                <button onClick={() => setReplyTarget(null)} style={{ color: 'var(--gemini-error)' }}>
+                  取消
                 </button>
-              ))}
-            </div>
-            <div className="relative">
-              <Input.TextArea
-                value={currentTestInput}
-                onChange={(e) => handleTestInputChange(e.target.value)}
-                placeholder="默认已填入当前样例输入，可修改后点击「测试样例」"
-                rows={4}
-                className="rounded-2xl font-mono text-sm"
-                style={{
-                  backgroundColor: '#fff',
-                  borderColor: 'var(--gemini-border-light)',
-                  paddingBottom: 36,
-                }}
-              />
-              <button
-                onClick={handleResetCurrentExample}
-                className="absolute bottom-3 right-3 text-xs transition-colors"
-                style={{
-                  color: 'var(--gemini-text-secondary)',
-                  backgroundColor: 'var(--gemini-surface)',
-                  border: '1px solid var(--gemini-border-light)',
-                  borderRadius: 9999,
-                  padding: '2px 8px',
-                }}
-              >
-                重置当前样例
-              </button>
-            </div>
-            {isCustomTest && (
-              <div className="mt-2 text-xs" style={{ color: 'var(--gemini-warning)' }}>
-                输入已修改，测试时将使用自定义输入，结果只显示程序实际输出
               </div>
             )}
-          </div>
-        ) : null}
-
-        {/* 操作按钮 */}
-        <div className="flex flex-wrap items-center gap-3 mt-4">
-          <PermissionGuard permission={PermissionCode.AI_CHAT}>
-            <Button icon={<Bot className="w-4 h-4" />} onClick={handleOpenAiAnalysis}>
-              AI分析
-            </Button>
-          </PermissionGuard>
-          <Button loading={codeLoading.test} onClick={handleTestCode} disabled={!problem.examples?.length}>
-            测试样例
-          </Button>
-          <Button
-            type="primary"
-            loading={codeLoading.submit}
-            onClick={handleSubmitCode}
-            style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-          >
-            提交评测
-          </Button>
-        </div>
-
-        {/* 结果显示 */}
-        {(testResult || submitResult) && (
-          <div className="mt-4 space-y-3">
-            {testResult && (
-              <JudgeOutcomeCard data={testResult} onClose={() => setTestResult(null)} />
-            )}
-            {submitResult && (
-              <JudgeOutcomeCard data={submitResult} onClose={() => setSubmitResult(null)} />
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 评论区 */}
-      <div className="gemini-card">
-        <div className="flex items-center gap-2 mb-4">
-          <MessageSquare className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-          <h2 className="text-lg font-bold" style={{ color: 'var(--gemini-text-primary)' }}>评论讨论</h2>
-          <Tag color="blue">{comments.length}</Tag>
-        </div>
-
-        {/* 评论输入 */}
-        <div className="mb-6">
-          {replyTarget && (
-            <div className="flex items-center gap-2 mb-2 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-              回复 @{replyTarget.username}
-              <button onClick={() => setReplyTarget(null)} style={{ color: 'var(--gemini-error)' }}>
-                取消
-              </button>
+            <TextArea
+              rows={4}
+              placeholder="分享你的想法、解题思路或遇到的问题..."
+              value={commentContent}
+              onChange={(e) => setCommentContent(e.target.value)}
+              maxLength={500}
+              className="rounded-2xl"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>{commentContent.length}/500</span>
+              <Button
+                type="primary"
+                onClick={handleSubmitComment}
+                loading={commentSubmitting}
+                style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+              >
+                发表评论
+              </Button>
             </div>
-          )}
-          <TextArea
-            rows={4}
-            placeholder="分享你的想法、解题思路或遇到的问题..."
-            value={commentContent}
-            onChange={(e) => setCommentContent(e.target.value)}
-            maxLength={500}
-            className="rounded-3xl"
-          />
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>{commentContent.length}/500</span>
-            <Button 
-              type="primary" 
-              onClick={handleSubmitComment} 
-              loading={commentSubmitting}
-              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-            >
-              发表评论
-            </Button>
+          </div>
+          <hr style={{ border: 'none', borderTop: '1px solid var(--gemini-border-light)', margin: '0.75rem 0' }} />
+          <div className="flex-auto overflow-auto">
+            {commentLoading ? (
+              <div className="flex justify-center py-8">
+                <Spin />
+              </div>
+            ) : comments.length ? (
+              renderComments(comments)
+            ) : (
+              <p className="text-center py-8" style={{ color: 'var(--gemini-text-disabled)' }}>还没有评论，快来抢沙发吧！</p>
+            )}
           </div>
         </div>
-
-        <hr style={{ border: 'none', borderTop: '1px solid var(--gemini-border-light)', margin: '1.5rem 0' }} />
-
-        {/* 评论列表 */}
-        {commentLoading ? (
-          <div className="flex justify-center py-8">
-            <Spin />
-          </div>
-        ) : comments.length ? (
-          renderComments(comments)
-        ) : (
-          <p className="text-center py-8" style={{ color: 'var(--gemini-text-disabled)' }}>还没有评论，快来抢沙发吧！</p>
-        )}
-      </div>
+      </Drawer>
 
       {/* 答案正确庆祝动画 */}
       <SuccessCelebration
@@ -1182,4 +1218,3 @@ const ProblemDetail: React.FC = () => {
 };
 
 export default ProblemDetail;
-

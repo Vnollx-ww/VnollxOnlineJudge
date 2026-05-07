@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card,
-  Typography,
   Tag,
   Button,
   Spin,
@@ -11,16 +10,16 @@ import {
   Divider,
   Avatar,
   Popconfirm,
+  Drawer,
 } from 'antd';
 import toast from 'react-hot-toast';
 import Select from '../../components/Select';
-import { 
-  ArrowLeftOutlined, 
-  CodeOutlined, 
-  CommentOutlined, 
-  FullscreenOutlined, 
-  FullscreenExitOutlined, 
-  CopyOutlined 
+import {
+  ArrowLeftOutlined,
+  CommentOutlined,
+  FullscreenOutlined,
+  FullscreenExitOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
@@ -33,12 +32,11 @@ import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import CodeEditor from '../../components/CodeEditor';
-import { Input, JudgeOutcomeCard, mapJudgeStatusToVariant } from '../../components';
-import type { JudgeOutcomeData } from '../../components';
+import { Input, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
+import type { WorkbenchResultData } from '../../components';
 import SuccessCelebration from '../../components/SuccessCelebration';
 import type { JudgeMessage } from '../../types';
 
-const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface ProblemExampleItem {
@@ -138,8 +136,7 @@ const CompetitionProblemDetail: React.FC = () => {
   void setTags; // Reserved for future use
   const [language, setLanguage] = useState(languageOptions[0].value);
   const [code, setCode] = useState(languageOptions[0].template);
-  const [testResult, setTestResult] = useState<JudgeOutcomeData | null>(null);
-  const [submitResult, setSubmitResult] = useState<JudgeOutcomeData | null>(null);
+  const [runResult, setRunResult] = useState<WorkbenchResultData | null>(null);
   const [codeLoading, setCodeLoading] = useState({ test: false, submit: false });
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentLoading, setCommentLoading] = useState(false);
@@ -151,6 +148,8 @@ const CompetitionProblemDetail: React.FC = () => {
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [activeBottomTab, setActiveBottomTab] = useState<'result' | 'input'>('result');
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -168,7 +167,7 @@ const CompetitionProblemDetail: React.FC = () => {
     if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
       const status = msg.status || '未知状态';
       if (status === '评测中') {
-        setSubmitResult({
+        setRunResult({
           variant: 'info',
           source: 'submit',
           headline: status,
@@ -176,10 +175,12 @@ const CompetitionProblemDetail: React.FC = () => {
         });
       } else {
         const hasTests = msg.testCount != null && msg.testCount > 0;
-        setSubmitResult({
-          variant: mapJudgeStatusToVariant(String(status)),
+        const s = String(status);
+        setRunResult({
+          variant: mapJudgeStatusToVariant(s),
           source: 'submit',
-          headline: String(status),
+          headline: s,
+          description: msg.description || s,
           metrics: {
             timeMs: msg.time ?? 0,
             memoryMb: msg.memory ?? 0,
@@ -302,22 +303,6 @@ const CompetitionProblemDetail: React.FC = () => {
     }
   };
 
-  const infoItems = useMemo(() => {
-    const submitCount = problem?.submitCount ?? 0;
-    const passCount = problem?.passCount ?? 0;
-
-    return [
-      { label: '时间限制', value: problem?.timeLimit ? `${problem.timeLimit} ms` : '无限制' },
-      { label: '内存限制', value: problem?.memoryLimit ? `${problem.memoryLimit} MB` : '无限制' },
-      { label: '提交', value: submitCount },
-      { label: '通过', value: passCount },
-      {
-        label: '通过率',
-        value: submitCount > 0 ? `${Math.round((passCount / submitCount) * 10000) / 100}%` : '0%',
-      },
-    ];
-  }, [problem]);
-
   /** 当前选中的样例 Tab 索引 */
   const [activeExampleTab, setActiveExampleTab] = useState(0);
   /** 记录每个样例是否被修改过（用于显示"自定义"标识） */
@@ -368,12 +353,6 @@ const CompetitionProblemDetail: React.FC = () => {
     }
   }, [problem?.id]);
 
-  // 切换样例 Tab 时保留各自输入内容
-  const handleExampleTabChange = useCallback((index: number) => {
-    if (!problem?.examples?.length) return;
-    setActiveExampleTab(index);
-  }, [problem?.examples]);
-
   // 输入内容变化时，检查是否被修改
   const handleTestInputChange = useCallback((value: string) => {
     setExampleInputs((prev) => ({ ...prev, [activeExampleTab]: value }));
@@ -385,16 +364,8 @@ const CompetitionProblemDetail: React.FC = () => {
     }
   }, [currentExample, activeExampleTab, normalizeTestText]);
 
-  const handleResetCurrentExample = useCallback(() => {
-    if (!currentExample) return;
-    setExampleInputs((prev) => ({
-      ...prev,
-      [activeExampleTab]: currentExample.input || '',
-    }));
-    setModifiedExamples((prev) => ({ ...prev, [activeExampleTab]: false }));
-  }, [currentExample, activeExampleTab]);
-
   const handleTestCode = async () => {
+    setActiveBottomTab('result');
     if (!code.trim()) {
       toast('请先输入代码', { icon: '⚠️' });
       return;
@@ -404,7 +375,12 @@ const CompetitionProblemDetail: React.FC = () => {
       return;
     }
     setCodeLoading((prev) => ({ ...prev, test: true }));
-    setTestResult(null);
+    setRunResult({
+      variant: 'info',
+      source: 'test',
+      headline: '评测中',
+      description: '评测中：正在执行自测运行，请稍候…',
+    });
     try {
       const payload = {
         code,
@@ -419,33 +395,47 @@ const CompetitionProblemDetail: React.FC = () => {
       const data = await api.post('/judge/test', payload);
       if (data.code === 200) {
         if (isCustomTest) {
-          setTestResult({
+          setRunResult({
             variant: 'info',
             source: 'test',
             headline: '自定义测试完成',
-            bodyText: `程序输出:\n${data.data.actualOutput || '无输出'}`,
+            description: '已使用自定义输入运行你的程序，下方为程序实际输出。',
+            diff: {
+              input: currentTestInput,
+              actual: data.data.actualOutput || '',
+            },
           });
         } else {
           const hasTests = data.data.testCount != null && data.data.testCount > 0;
-          setTestResult({
-            variant: data.data.status === '答案正确' ? 'success' : 'warning',
+          const status = data.data.status || '测试完成';
+          const isCompileError = status === '编译错误' || status === 'Compile Error';
+          setRunResult({
+            variant: mapJudgeStatusToVariant(status),
             source: 'test',
-            headline: data.data.status || '测试完成',
+            headline: status,
+            description: data.data.description || status,
             metrics: hasTests
               ? { passCount: data.data.passCount ?? 0, testCount: data.data.testCount! }
               : undefined,
             errorInfo: data.data.errorInfo || undefined,
+            diff: isCompileError
+              ? undefined
+              : {
+                  input: data.data.input ?? currentTestInput,
+                  expected: data.data.expectedOutput ?? (matchedExample?.output ?? currentExample.output ?? ''),
+                  actual: data.data.actualOutput ?? '',
+                },
           });
         }
       } else {
-        setTestResult({
+        setRunResult({
           variant: 'error',
           source: 'test',
           headline: data.msg || '测试失败',
         });
       }
     } catch (error: any) {
-      setTestResult({
+      setRunResult({
         variant: 'error',
         source: 'test',
         headline: error?.response?.data?.msg || '测试失败，请稍后重试',
@@ -456,12 +446,18 @@ const CompetitionProblemDetail: React.FC = () => {
   };
 
   const handleSubmitCode = async () => {
+    setActiveBottomTab('result');
     if (!code.trim()) {
       toast('请先输入代码', { icon: '⚠️' });
       return;
     }
     setCodeLoading((prev) => ({ ...prev, submit: true }));
-    setSubmitResult(null);
+    setRunResult({
+      variant: 'info',
+      source: 'submit',
+      headline: '评测中',
+      description: '评测中：正在进行评测，请稍候…',
+    });
     try {
       const payload = {
         code,
@@ -479,22 +475,22 @@ const CompetitionProblemDetail: React.FC = () => {
         if (data.data.snowflakeId) {
           setCurrentSnowflakeId(data.data.snowflakeId);
         }
-        setSubmitResult({
+        setRunResult({
           variant: 'info',
           source: 'submit',
-          headline: '等待评测',
-          bodyText: '已提交，等待评测...',
+          headline: data.data.status || '等待评测',
+          description: data.data.description || '等待评测：已加入评测队列。',
         });
         window.dispatchEvent(new Event('notification-updated'));
       } else {
-        setSubmitResult({
+        setRunResult({
           variant: 'error',
           source: 'submit',
           headline: data.msg || '提交失败',
         });
       }
     } catch (error: any) {
-      setSubmitResult({
+      setRunResult({
         variant: 'error',
         source: 'submit',
         headline: error?.response?.data?.msg || '提交失败，请稍后重试',
@@ -610,344 +606,398 @@ const CompetitionProblemDetail: React.FC = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="w-full">
-        <Space direction="vertical" size="large" className="w-full">
-          {/* 题目信息卡片 */}
-          <Card className="!rounded-2xl !shadow-lg !border-0">
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <Title level={2} className="!mb-2">
-                  #{problem.id} - {problem.title}
-                </Title>
-                <Button
-                  icon={<ArrowLeftOutlined />}
-                  onClick={() => navigate(`/competition/${cid}`)}
-                >
-                  返回比赛题目列表
-                </Button>
-              </div>
-              <div className="flex items-center gap-4 text-gray-500">
-                <Tag color={getDifficultyColor(problem.difficulty)}>
-                  {problem.difficulty}
-                </Tag>
-                <span>提交: {problem.submitCount}</span>
-                <span>通过: {problem.passCount}</span>
-                <span>
-                  通过率: {problem.submitCount > 0
-                    ? Math.round((problem.passCount / problem.submitCount) * 10000) / 100
-                    : 0}%
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-5 gap-4 mb-6">
-              {infoItems.map((item) => (
-                <div className="bg-gray-50 rounded-xl p-4 text-center" key={item.label}>
-                  <Text type="secondary" className="text-xs">{item.label}</Text>
-                  <Title level={4} className="!mb-0 !mt-1">{item.value}</Title>
-                </div>
-              ))}
-            </div>
-
-            <Divider />
-
-            <div className="mb-6">
-              <Title level={4}>题目描述</Title>
-              <div
-                className="prose prose-blue max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.description) }}
-              />
-            </div>
-
-            <div className="mb-6">
-              <Title level={4}>输入格式</Title>
-              <div
-                className="prose prose-blue max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.inputFormat || '', '暂无输入格式说明') }}
-              />
-            </div>
-
-            <div className="mb-6">
-              <Title level={4}>输出格式</Title>
-              <div
-                className="prose prose-blue max-w-none"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.outputFormat || '', '暂无输出格式说明') }}
-              />
-            </div>
-
-            {problem.examples?.length ? (
-              problem.examples.map((ex, idx) => (
-                <div key={idx} className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <Title level={4}>输入样例 {idx + 1}</Title>
-                    <div className="relative">
-                      <pre className="bg-gray-50 p-3 pr-12 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap border border-gray-200">
-                        {ex.input || '暂无输入样例'}
-                      </pre>
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<CopyOutlined />}
-                        className="!absolute !top-2 !right-2"
-                        onClick={async () => {
-                          const ok = await copyTextToClipboard(ex.input || '');
-                          if (ok) toast.success('已复制输入样例');
-                          else toast.error('复制失败，请手动选择文本复制');
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Title level={4}>输出样例 {idx + 1}</Title>
-                    <div className="relative">
-                      <pre className="bg-gray-50 p-3 pr-12 rounded-lg overflow-auto text-sm font-mono whitespace-pre-wrap border border-gray-200">
-                        {ex.output || '暂无输出样例'}
-                      </pre>
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<CopyOutlined />}
-                        className="!absolute !top-2 !right-2"
-                        onClick={async () => {
-                          const ok = await copyTextToClipboard(ex.output || '');
-                          if (ok) toast.success('已复制输出样例');
-                          else toast.error('复制失败，请手动选择文本复制');
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="mb-6 text-gray-500">暂无样例</div>
-            )}
-
-            {problem.hint && (
-              <div>
-                <Title level={4}>提示</Title>
-                <div
-                  className="prose prose-blue max-w-none"
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.hint, '暂无提示') }}
-                />
-              </div>
-            )}
-          </Card>
-
-          {/* 代码编辑器卡片 */}
-          <Card
-            className="!rounded-2xl !shadow-lg !border-0"
-            title={
-              <Space>
-                <CodeOutlined />
-                <span>在线代码编辑器</span>
-              </Space>
-            }
-          >
-            <div className="flex items-center justify-between mb-4">
-              <Space size="small" wrap>
-                <Select
-                  value={language}
-                  onChange={setLanguage}
-                  className="w-40"
-                  options={languageOptions.map((option) => ({ value: option.value, label: option.label }))}
-                />
-                <Button
-                  type="link"
-                  onClick={() => {
-                    const template = languageOptions.find((item) => item.value === language)?.template || '';
-                    setCode(template);
-                  }}
-                >
-                  重置模板
-                </Button>
-              </Space>
-              <Button
-                icon={isEditorFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                onClick={() => {
-                  if (!isEditorFullscreen) {
-                    document.documentElement.requestFullscreen();
-                    setIsEditorFullscreen(true);
-                  } else {
-                    document.exitFullscreen();
-                    setIsEditorFullscreen(false);
-                  }
-                }}
-              >
-                {isEditorFullscreen ? '退出全屏' : '全屏编辑'}
-              </Button>
-            </div>
-
-            {isEditorFullscreen && createPortal(
-              <div className="fixed inset-0 z-[99999] bg-white">
-                <Button
-                  icon={<FullscreenExitOutlined />}
-                  onClick={() => {
-                    document.exitFullscreen();
-                    setIsEditorFullscreen(false);
-                  }}
-                  className="absolute bottom-4 right-6 z-[100000]"
-                >
-                  退出全屏
-                </Button>
-                <CodeEditor
-                  value={code}
-                  onChange={setCode}
-                  language={language}
-                  height="100vh"
-                  storageKey={codeStorageKey}
-                />
-              </div>,
-              document.body
-            )}
-
-            {!isEditorFullscreen && (
-              <CodeEditor
-                value={code}
-                onChange={setCode}
-                language={language}
-                height={420}
-                storageKey={codeStorageKey}
-              />
-            )}
-
-            {problem.examples?.length ? (
-              <div className="mt-4">
-                {/* 样例 Tab 切换 */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {problem.examples.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleExampleTabChange(index)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        activeExampleTab === index
-                          ? 'bg-blue-500 text-white shadow-sm'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      样例 {index + 1}
-                      {modifiedExamples[index] && (
-                        <span className="ml-1 px-1.5 py-0.5 text-xs bg-orange-500 text-white rounded">
-                          已修改
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <div className="relative">
-                  <Input.TextArea
-                    value={currentTestInput}
-                    onChange={(e) => handleTestInputChange(e.target.value)}
-                    placeholder="默认已填入当前样例输入，可修改后点击「测试样例」"
-                    rows={4}
-                    className="!rounded-xl font-mono text-sm focus:ring-0 focus:border-blue-400"
-                    style={{ backgroundColor: '#fff', paddingBottom: 36 }}
-                  />
-                  <Button
-                    type="link"
-                    size="small"
-                    className="!absolute !bottom-2 !right-3 !px-2"
-                    onClick={handleResetCurrentExample}
-                  >
-                    重置当前样例
-                  </Button>
-                </div>
-                {isCustomTest && (
-                  <div className="mt-2 text-xs text-orange-500">
-                    输入已修改，测试时将使用自定义输入，结果只显示程序实际输出
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            <div className="mt-4">
-              <Space>
-                <Button
-                  type="primary"
-                  loading={codeLoading.test}
-                  onClick={handleTestCode}
-                  disabled={isCompetitionEnd || !problem.examples?.length}
-                >
-                  {isCompetitionEnd ? "比赛已结束" : "测试样例"}
-                </Button>
-                <Button
-                  type="primary"
-                  loading={codeLoading.submit}
-                  onClick={handleSubmitCode}
-                  disabled={isCompetitionEnd}
-                >
-                  {isCompetitionEnd ? "比赛已结束" : "提交评测"}
-                </Button>
-              </Space>
-            </div>
-
-            {(testResult || submitResult) && (
-              <div className="mt-4 space-y-3">
-                {testResult && (
-                  <JudgeOutcomeCard data={testResult} onClose={() => setTestResult(null)} />
-                )}
-                {submitResult && (
-                  <JudgeOutcomeCard data={submitResult} onClose={() => setSubmitResult(null)} />
-                )}
-              </div>
-            )}
-          </Card>
-
-          {/* 评论区 - 仅比赛结束后显示 */}
-          {!isCompetitionOpen && (
-            <Card
-              className="!rounded-2xl !shadow-lg !border-0"
-              title={
-                <Space>
-                  <CommentOutlined />
-                  <span>评论讨论</span>
-                  <Tag color="blue">{comments.length}</Tag>
-                </Space>
-              }
-            >
-              <div className="mb-4">
-                {replyTarget && (
-                  <div className="bg-blue-50 px-3 py-2 rounded-lg mb-2 flex items-center justify-between">
-                    <span>回复 @{replyTarget.username}</span>
-                    <Button type="link" size="small" onClick={() => setReplyTarget(null)}>
-                      取消
-                    </Button>
-                  </div>
-                )}
-                <TextArea
-                  rows={4}
-                  placeholder="分享你的想法、解题思路或遇到的问题..."
-                  value={commentContent}
-                  onChange={(e) => setCommentContent(e.target.value)}
-                  maxLength={500}
-                  className="!rounded-lg"
-                />
-                <div className="flex items-center justify-between mt-2">
-                  <Text type="secondary">{commentContent.length}/500</Text>
-                  <Button
-                    type="primary"
-                    onClick={handleSubmitComment}
-                    loading={commentSubmitting}
-                  >
-                    发表评论
-                  </Button>
-                </div>
-              </div>
-              <Divider />
-              <div>
-                {commentLoading ? (
-                  <Spin />
-                ) : comments.length ? (
-                  renderComments(comments)
-                ) : (
-                  <Text type="secondary">还没有评论，快来抢沙发吧！</Text>
-                )}
-              </div>
-            </Card>
-          )}
-        </Space>
+  // ---- 顶部操作栏 ----
+  const statPillStyle: React.CSSProperties = {
+    backgroundColor: 'var(--gemini-bg)',
+    border: '1px solid var(--gemini-border-light)',
+    borderRadius: 9999,
+    padding: '4px 12px',
+    color: 'var(--gemini-text-secondary)',
+  };
+  const topBar = (
+    <>
+      <Button
+        icon={<ArrowLeftOutlined />}
+        onClick={() => navigate(`/competition/${cid}`)}
+      >
+        返回题目列表
+      </Button>
+      <div className="flex items-center gap-3 min-w-0">
+        <span
+          className="font-semibold whitespace-nowrap"
+          style={{ color: 'var(--gemini-text-primary)', fontSize: 15 }}
+          title={`#${problem.id} - ${problem.title}`}
+        >
+          #{problem.id} · {problem.title}
+        </span>
+        <Tag color={getDifficultyColor(problem.difficulty)} style={{ margin: 0, fontSize: 12, padding: '2px 10px' }}>
+          {problem.difficulty || '未设置'}
+        </Tag>
       </div>
+      <div className="hidden lg:flex items-center gap-2 text-xs flex-none">
+        <span style={statPillStyle}>时间 {problem.timeLimit || 1000} ms</span>
+        <span style={statPillStyle}>内存 {problem.memoryLimit || 256} MB</span>
+        <span style={statPillStyle}>提交 {problem.submitCount ?? 0}</span>
+        <span style={statPillStyle}>通过 {problem.passCount ?? 0}</span>
+      </div>
+      <div className="flex-auto" />
+      <div className="flex items-center gap-2 flex-none">
+        {isCompetitionEnd && (
+          <Tag color="red" style={{ margin: 0 }}>比赛已结束</Tag>
+        )}
+        {!isCompetitionOpen && (
+          <Button
+            icon={<CommentOutlined />}
+            onClick={() => setCommentsOpen(true)}
+          >
+            评论 {comments.length ? `(${comments.length})` : ''}
+          </Button>
+        )}
+      </div>
+    </>
+  );
+
+  // ---- 左侧题目描述面板 ----
+  const leftPanel = (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
+        <span>时间限制：{problem.timeLimit || 1000} ms</span>
+        <span>·</span>
+        <span>内存限制：{problem.memoryLimit || 256} MB</span>
+      </div>
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>题目描述</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.description) }}
+        />
+      </section>
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>输入格式</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.inputFormat || '', '暂无输入格式说明') }}
+        />
+      </section>
+      <section>
+        <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>输出格式</h2>
+        <div
+          className="prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.outputFormat || '', '暂无输出格式说明') }}
+        />
+      </section>
+      {problem.examples?.length ? (
+        problem.examples.map((ex, idx) => (
+          <section key={idx} className="space-y-3">
+            <h2 className="text-base font-bold" style={{ color: 'var(--gemini-text-primary)' }}>示例 {idx + 1}</h2>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输入</div>
+              <div className="relative">
+                <pre className="rounded-xl p-3 pr-10 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
+{ex.input || '暂无输入样例'}
+                </pre>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  className="!absolute !top-2 !right-2"
+                  onClick={async () => {
+                    const ok = await copyTextToClipboard(ex.input || '');
+                    if (ok) toast.success('已复制输入样例');
+                    else toast.error('复制失败，请手动选择文本复制');
+                  }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs mb-1" style={{ color: 'var(--gemini-text-secondary)' }}>输出</div>
+              <div className="relative">
+                <pre className="rounded-xl p-3 pr-10 text-sm font-mono overflow-x-auto whitespace-pre-wrap border" style={{ backgroundColor: 'var(--gemini-bg)', borderColor: 'var(--gemini-border-light)', color: 'var(--gemini-text-primary)' }}>
+{ex.output || '暂无输出样例'}
+                </pre>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  className="!absolute !top-2 !right-2"
+                  onClick={async () => {
+                    const ok = await copyTextToClipboard(ex.output || '');
+                    if (ok) toast.success('已复制输出样例');
+                    else toast.error('复制失败，请手动选择文本复制');
+                  }}
+                />
+              </div>
+            </div>
+          </section>
+        ))
+      ) : null}
+      {problem.hint && (
+        <section>
+          <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>提示</h2>
+          <div
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.hint, '暂无提示') }}
+          />
+        </section>
+      )}
+    </div>
+  );
+
+  // ---- 编辑器顶部工具栏 ----
+  const editorHeader = (
+    <>
+      <Select
+        value={language}
+        onChange={setLanguage}
+        className="w-36"
+        options={languageOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
+      />
+      <button
+        onClick={() => {
+          const template = languageOptions.find((item) => item.value === language)?.template || '';
+          setCode(template);
+        }}
+        className="text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
+        style={{ color: 'var(--gemini-text-secondary)' }}
+      >
+        重置模板
+      </button>
+      <div className="flex-auto" />
+      <button
+        onClick={() => {
+          if (!isEditorFullscreen) {
+            document.documentElement.requestFullscreen();
+            setIsEditorFullscreen(true);
+          } else {
+            document.exitFullscreen();
+            setIsEditorFullscreen(false);
+          }
+        }}
+        className="inline-flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded hover:bg-black/5"
+        style={{ color: 'var(--gemini-text-secondary)' }}
+      >
+        {isEditorFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+        {isEditorFullscreen ? '退出全屏' : '全屏'}
+      </button>
+    </>
+  );
+
+  // 载入指定示例到自测输入
+  const loadExampleInput = (i: number) => {
+    if (!problem.examples?.[i]) return;
+    setActiveExampleTab(i);
+    setExampleInputs((prev) => ({ ...prev, [i]: problem.examples![i].input || '' }));
+    setModifiedExamples((prev) => ({ ...prev, [i]: false }));
+  };
+
+  // ---- 自测输入区域 ----
+  const inputArea = (
+    <div className="flex flex-col h-full min-h-0">
+      <Input.TextArea
+        value={currentTestInput}
+        onChange={(e) => handleTestInputChange(e.target.value)}
+        placeholder="请输入示例或载入测试用例"
+        className="!flex-auto !rounded-xl font-mono text-sm"
+        style={{
+          backgroundColor: '#fff',
+          borderColor: 'var(--gemini-border-light)',
+          resize: 'none',
+          minHeight: 80,
+        }}
+      />
+      <div className="flex items-center gap-2 mt-2 flex-wrap">
+        {problem.examples?.length ? (
+          problem.examples.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => loadExampleInput(i)}
+              className="px-3 py-1 text-xs rounded-md transition-colors"
+              style={{
+                backgroundColor: activeExampleTab === i && !modifiedExamples[i]
+                  ? 'var(--gemini-accent)'
+                  : 'var(--gemini-bg)',
+                color: activeExampleTab === i && !modifiedExamples[i]
+                  ? 'var(--gemini-accent-text)'
+                  : 'var(--gemini-text-secondary)',
+                border: `1px solid ${activeExampleTab === i && !modifiedExamples[i]
+                  ? 'transparent'
+                  : 'var(--gemini-border-light)'}`,
+              }}
+            >
+              载入示例 {i + 1}
+            </button>
+          ))
+        ) : (
+          <span className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>该题目未提供示例</span>
+        )}
+        {isCustomTest && (
+          <span className="text-xs ml-2" style={{ color: 'var(--gemini-warning)' }}>
+            自定义输入
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
+  // ---- 运行结果区域 ----
+  const resultsArea = runResult ? (
+    <WorkbenchResult data={runResult} />
+  ) : (
+    <div className="text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>
+      点击右上角「自测运行」或「保存并提交」后，结果将显示在此处。
+    </div>
+  );
+
+  // ---- Tab 右侧次级操作（自测运行） ----
+  const tabActions = (
+    <Button
+      loading={codeLoading.test}
+      onClick={handleTestCode}
+      disabled={isCompetitionEnd || !problem.examples?.length}
+      style={{ padding: '0 16px', height: 32, fontSize: 14 }}
+    >
+      {isCompetitionEnd ? '比赛已结束' : '自测运行'}
+    </Button>
+  );
+
+  // ---- 最右主操作（保存并提交） ----
+  const primaryAction = (
+    <Button
+      type="primary"
+      loading={codeLoading.submit}
+      onClick={handleSubmitCode}
+      disabled={isCompetitionEnd}
+      style={{ padding: '0 18px', height: 34, fontSize: 14, fontWeight: 500 }}
+    >
+      {isCompetitionEnd ? '比赛已结束' : '保存并提交'}
+    </Button>
+  );
+
+  return (
+    <div
+      className="fixed z-[20]"
+      style={{
+        top: 0,
+        left: 80,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'var(--gemini-bg, #f7f8fa)',
+      }}
+    >
+      <ProblemWorkbench
+        storageKey={`competition-problem-workbench:${cid}:${problem.id}`}
+        topBar={topBar}
+        leftPanel={leftPanel}
+        editorHeader={editorHeader}
+        editor={
+          isEditorFullscreen ? (
+            <div className="w-full h-full flex items-center justify-center text-sm" style={{ color: 'var(--gemini-text-disabled)' }}>
+              代码已在全屏中编辑…
+            </div>
+          ) : (
+            <CodeEditor
+              value={code}
+              onChange={setCode}
+              language={language}
+              height="100%"
+              storageKey={codeStorageKey}
+            />
+          )
+        }
+        bottomTabs={[
+          { key: 'result', label: '运行结果' },
+          { key: 'input', label: '自测输入' },
+        ]}
+        activeBottomTab={activeBottomTab}
+        onBottomTabChange={(k) => setActiveBottomTab(k as 'result' | 'input')}
+        bottomContent={activeBottomTab === 'result' ? resultsArea : inputArea}
+        tabActions={tabActions}
+        primaryAction={primaryAction}
+      />
+
+      {/* 全屏编辑器（保留原全屏行为） */}
+      {isEditorFullscreen && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-white">
+          <Button
+            icon={<FullscreenExitOutlined />}
+            onClick={() => {
+              document.exitFullscreen();
+              setIsEditorFullscreen(false);
+            }}
+            className="absolute bottom-4 right-6 z-[100000]"
+          >
+            退出全屏
+          </Button>
+          <CodeEditor
+            value={code}
+            onChange={setCode}
+            language={language}
+            height="100vh"
+            storageKey={codeStorageKey}
+          />
+        </div>,
+        document.body
+      )}
+
+      {/* 评论抽屉 — 仅比赛结束后可用 */}
+      {!isCompetitionOpen && (
+        <Drawer
+          title={(
+            <Space>
+              <CommentOutlined />
+              <span>评论讨论</span>
+              <Tag color="blue">{comments.length}</Tag>
+            </Space>
+          )}
+          placement="right"
+          width={Math.min(560, typeof window !== 'undefined' ? window.innerWidth : 560)}
+          open={commentsOpen}
+          onClose={() => setCommentsOpen(false)}
+          destroyOnClose={false}
+        >
+          <div className="flex flex-col h-full">
+            <div className="mb-4">
+              {replyTarget && (
+                <div className="bg-blue-50 px-3 py-2 rounded-lg mb-2 flex items-center justify-between">
+                  <span>回复 @{replyTarget.username}</span>
+                  <Button type="link" size="small" onClick={() => setReplyTarget(null)}>
+                    取消
+                  </Button>
+                </div>
+              )}
+              <TextArea
+                rows={4}
+                placeholder="分享你的想法、解题思路或遇到的问题..."
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                maxLength={500}
+                className="!rounded-lg"
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs" style={{ color: 'var(--gemini-text-disabled)' }}>{commentContent.length}/500</span>
+                <Button
+                  type="primary"
+                  onClick={handleSubmitComment}
+                  loading={commentSubmitting}
+                >
+                  发表评论
+                </Button>
+              </div>
+            </div>
+            <Divider />
+            <div className="flex-auto overflow-auto">
+              {commentLoading ? (
+                <Spin />
+              ) : comments.length ? (
+                renderComments(comments)
+              ) : (
+                <span style={{ color: 'var(--gemini-text-disabled)' }}>还没有评论，快来抢沙发吧！</span>
+              )}
+            </div>
+          </div>
+        </Drawer>
+      )}
 
       {/* 答案正确庆祝动画 */}
       <SuccessCelebration
@@ -961,4 +1011,3 @@ const CompetitionProblemDetail: React.FC = () => {
 };
 
 export default CompetitionProblemDetail;
-

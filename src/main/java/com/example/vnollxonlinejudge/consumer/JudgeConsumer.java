@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.consumer;
 
+import com.example.vnollxonlinejudge.judge.JudgeStatusDescriber;
 import com.example.vnollxonlinejudge.judge.JudgeStrategy;
 import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.entity.*;
@@ -105,6 +106,7 @@ public class JudgeConsumer {
             Map<String, Object> data = new HashMap<>();
             data.put("snowflakeId", String.valueOf(judgeInfo.getSnowflakeId())); // Ensure it's a string for JS
             data.put("status", status);
+            data.put("description", JudgeStatusDescriber.describe(status, "submit"));
             data.put("time", time);
             data.put("memory", memory);
             data.put("errorInfo", errorInfo);

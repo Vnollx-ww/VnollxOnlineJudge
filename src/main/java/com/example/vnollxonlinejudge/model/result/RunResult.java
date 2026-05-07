@@ -1,5 +1,6 @@
 package com.example.vnollxonlinejudge.model.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
@@ -19,11 +20,20 @@ public class RunResult {
     @JsonProperty("fileIds")
     private FileIds fileIds;
 
+    /** 评测内部使用：失败用例的输入（不参与 sandbox JSON 解析） */
+    @JsonIgnore
+    private String caseInput;
+    /** 评测内部使用：失败用例的期望输出（不参与 sandbox JSON 解析） */
+    @JsonIgnore
+    private String caseExpected;
+
     public RunResult() {
     }
     public void setPassCount(Integer passCount){this.passCount=passCount;}
     public void setTestCount(Integer testCount){this.testCount=testCount;}
     public void setStatus(String status) { this.status = status; }
+    public void setCaseInput(String caseInput) { this.caseInput = caseInput; }
+    public void setCaseExpected(String caseExpected) { this.caseExpected = caseExpected; }
 
     public void setExitStatus(int exitStatus) { this.exitStatus = exitStatus; }
 

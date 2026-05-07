@@ -49,6 +49,14 @@ export type { ToastState, ToastType } from './Toast';
 // Permission Guard
 export { default as PermissionGuard } from './PermissionGuard';
 
-// Judge outcome (submit / sample test)
-export { default as JudgeOutcomeCard, mapJudgeStatusToVariant } from './JudgeOutcomeCard';
-export type { JudgeOutcomeData, JudgeOutcomeMetrics, JudgeOutcomeVariant } from './JudgeOutcomeCard';
+// Problem Workbench Layout
+export { default as ProblemWorkbench } from './ProblemWorkbench';
+export type { ProblemWorkbenchProps, WorkbenchTab } from './ProblemWorkbench/index';
+
+// Workbench Result View (inline, borderless)
+export { default as WorkbenchResult, mapJudgeStatusToVariant } from './WorkbenchResult';
+export type {
+  WorkbenchResultData,
+  WorkbenchResultMetrics,
+  WorkbenchResultVariant,
+} from './WorkbenchResult/index';

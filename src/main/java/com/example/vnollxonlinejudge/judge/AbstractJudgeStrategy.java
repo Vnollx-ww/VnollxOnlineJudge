@@ -66,6 +66,24 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     /** 把 go-judge 原始 status 翻译为面向用户的中文 status；未识别保持原样。 */
     protected abstract void translateStatus(RunResult result);
 
+    /**
+     * 兜底翻译：把子类没覆盖到的 go-judge 英文 status 统一映射到中文，
+     * 避免 "Internal Error" 等原始字符串直接透出到前端。
+     */
+    private void translateFallbackStatus(RunResult result) {
+        if (result == null || result.getStatus() == null) return;
+        String s = result.getStatus();
+        switch (s) {
+            case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
+            case "Memory Limit Exceeded" -> result.setStatus(MEMORY_LIMIT_EXCEED);
+            case "Output Limit Exceeded" -> result.setStatus("输出超出限制");
+            case "Signalled", "Nonzero Exit Status", "Runtime Error" -> result.setStatus("运行时错误");
+            case "Dangerous Syscall" -> result.setStatus("非法系统调用");
+            case "File Error", "Internal Error", "Invalid", "Unknown" -> result.setStatus(JUDGE_ERROR);
+            default -> { /* 已是中文或其它已识别状态，保持不变 */ }
+        }
+    }
+
     /** 一批包含的测试点数量，默认 20。 */
     protected int batchSize() {
         return 20;
@@ -86,6 +104,7 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                 : standardJudge(code, dataZipUrl, timeLimit, memoryLimit, null, null);
         normalizeMetrics(raw);
         translateStatus(raw);
+        translateFallbackStatus(raw);
         return raw;
     }
 
@@ -95,6 +114,7 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
         RunResult raw = standardJudge(code, null, timeLimit, memoryLimit, inputExample, outputExample);
         normalizeMetrics(raw);
         translateStatus(raw);
+        translateFallbackStatus(raw);
         return raw;
     }
 
@@ -143,6 +163,9 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                         }
                         finalResult.setStatus(r.getStatus());
                         copyOutputs(finalResult, r);
+                        // 把当前失败用例的输入与期望输出以结构化字段返回，供前端做 diff 展示
+                        finalResult.setCaseInput(truncate(tc[0], 200));
+                        finalResult.setCaseExpected(truncate(JudgeOutputComparator.normalizeLineEndings(tc[1]), 400));
                         return finalResult;
                     }
                     String expected = JudgeOutputComparator.normalizeLineEndings(tc[1]);
@@ -153,9 +176,8 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
                         if (r.getFiles() != null) {
                             finalResult.getFiles().setStdout(r.getFiles().getStdout());
                         }
-                        finalResult.getFiles().setStderr(String.format(
-                                "测试用例执行失败%n输入: %s%n期待输出: %s%n实际输出: %s",
-                                truncate(tc[0], 100), truncate(expected, 200), truncate(actual, 200)));
+                        finalResult.setCaseInput(truncate(tc[0], 200));
+                        finalResult.setCaseExpected(truncate(expected, 400));
                         return finalResult;
                     }
                     finalResult.setPassCount(finalResult.getPassCount() + 1);

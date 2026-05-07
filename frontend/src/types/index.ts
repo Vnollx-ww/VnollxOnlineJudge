@@ -178,6 +178,8 @@ export interface JudgeMessage {
   submissionId?: number;
   snowflakeId?: string;
   status?: SubmissionStatus | string;
+  /** 后端根据 status 生成的面向用户的中文描述，前端直接展示 */
+  description?: string;
   testcaseId?: number;
   time?: number;
   memory?: number;
