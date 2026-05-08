@@ -1,26 +1,19 @@
 import { Children, isValidElement, useState, type ReactElement, type ReactNode } from 'react';
 
-export interface TabItem<T extends string = string> {
-  key: T;
-  label: ReactNode;
-  children?: ReactNode;
-}
-
 interface TabsProps<T extends string = string> {
   activeKey?: T;
   defaultActiveKey?: T;
-  items?: TabItem<T>[];
   onChange?: (key: T) => void;
   centered?: boolean;
   className?: string;
   children?: ReactNode;
 }
 
-function TabsRoot<T extends string = string>({ activeKey, defaultActiveKey, items, onChange, centered = false, className = '', children }: TabsProps<T>) {
+function TabsRoot<T extends string = string>({ activeKey, defaultActiveKey, onChange, centered = false, className = '', children }: TabsProps<T>) {
   const panels = Children.toArray(children)
     .filter(isValidElement)
     .map((child) => (child as ReactElement<TabPanelProps<T>>).props);
-  const tabItems = items || panels.map((panel) => ({ key: panel.id, label: panel.label, children: panel.children }));
+  const tabItems = panels.map((panel) => ({ key: panel.id, label: panel.label, children: panel.children }));
   const [internalActiveKey, setInternalActiveKey] = useState<T | undefined>(defaultActiveKey || tabItems[0]?.key);
   const currentKey = activeKey || internalActiveKey || tabItems[0]?.key;
   const activeItem = tabItems.find((item) => item.key === currentKey);

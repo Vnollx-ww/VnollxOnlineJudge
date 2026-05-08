@@ -89,7 +89,7 @@ export function DataTable<T extends Record<string, any>>({
   );
 }
 
-export function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey, loading = false, pagination = false, size = 'middle', className = '' }: TableProps<T>) {
+function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey, loading = false, pagination = false, size = 'middle', className = '' }: TableProps<T>) {
   const current = pagination && pagination.current ? pagination.current : 1;
   const pageSize = pagination && pagination.pageSize ? pagination.pageSize : dataSource.length || 10;
   const total = pagination && pagination.total !== undefined ? pagination.total : dataSource.length;
@@ -188,16 +188,6 @@ export function Card({ title, size: _size, className = '', children }: { title?:
   return <section className={`rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm shadow-slate-200/70 ${className}`}>{title ? <h3 className="mb-4 text-base font-semibold text-slate-800">{title}</h3> : null}{children}</section>;
 }
 
-export function Row({ gutter, className = '', children }: { gutter?: number | [number, number]; className?: string; children?: ReactNode }) {
-  const gap = Array.isArray(gutter) ? gutter[1] : gutter || 16;
-  return <div className={`grid grid-cols-12 ${className}`} style={{ gap }}>{children}</div>;
-}
-
-export function Col({ xs = 12, sm, md, lg, span, children }: { xs?: number; sm?: number; md?: number; lg?: number; span?: number; children?: ReactNode }) {
-  const value = lg || md || sm || span || xs;
-  return <div className="col-span-12" style={{ gridColumn: `span ${Math.min(12, Math.ceil(value / 2))} / span ${Math.min(12, Math.ceil(value / 2))}` }}>{children}</div>;
-}
-
 function GridRoot({ columns = 1, mediumColumns, largeColumns, className = '', children }: { columns?: number; mediumColumns?: number; largeColumns?: number; className?: string; children?: ReactNode }) {
   const classes = [
     'grid gap-4',
@@ -236,11 +226,6 @@ function DescriptionItem({ label, children }: { label?: ReactNode; children?: Re
   return <div className="border-b border-r border-slate-100 p-4"><div className="mb-1 text-xs font-semibold text-slate-500">{label}</div><div className="text-sm text-slate-800">{children}</div></div>;
 }
 export const Descriptions = Object.assign(DescriptionsRoot, { Item: DescriptionItem });
-
-export function Popconfirm({ title, onConfirm, children }: { title?: ReactNode; onConfirm?: () => void; children: ReactElement }) {
-  if (!isValidElement(children)) return children;
-  return cloneElement(children, { onClick: () => { if (window.confirm(String(title || '确认操作？'))) onConfirm?.(); } } as any);
-}
 
 export function ConfirmButton({ message, onConfirm, children }: { message?: ReactNode; onConfirm?: () => void; children: ReactElement }) {
   if (!isValidElement(children)) return children;

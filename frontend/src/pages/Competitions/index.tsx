@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, Tag } from 'antd';
 import toast from 'react-hot-toast';
-import { CalendarDays, Clock, Search, Trophy } from 'lucide-react';
+import { CalendarDays, Clock, Search } from 'lucide-react';
 import { Select } from '../../components';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
@@ -161,12 +161,11 @@ const Competitions: React.FC = () => {
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <div className="flex items-center gap-5 min-w-0 flex-1">
-                <div 
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)' }}
-                >
-                  <Trophy className="w-8 h-8 text-white" />
-                </div>
+                <img
+                  src="http://111.230.105.54:9000/markdown/ODF.png"
+                  alt="比赛"
+                  className="h-16 w-16 flex-shrink-0 rounded-2xl object-cover"
+                />
                 <div className="min-w-0 flex-1">
                   <h3 className="text-lg font-semibold truncate mb-3" style={{ color: 'var(--gemini-text-primary)' }}>
                     {comp.title}
@@ -196,7 +195,7 @@ const Competitions: React.FC = () => {
 
         {competitions.length === 0 && !loading && (
           <div className="text-center py-12">
-            <Trophy className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--gemini-text-disabled)' }} />
+            <img src="http://111.230.105.54:9000/markdown/ODF.png" alt="比赛" className="mx-auto mb-4 h-12 w-12 rounded-2xl object-cover opacity-60" />
             <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无比赛数据</p>
           </div>
         )}

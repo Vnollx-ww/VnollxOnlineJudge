@@ -40,7 +40,6 @@ export type { ModalProps } from './Modal';
 
 // Custom Tabs
 export { default as Tabs } from './Tabs';
-export type { TabItem } from './Tabs';
 
 // Custom Form Item
 export { default as FormItem } from './FormItem';
