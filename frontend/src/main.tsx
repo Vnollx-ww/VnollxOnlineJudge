@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import 'github-markdown-css/github-markdown.css';
 import './index.css';
 import { preloadMonacoEditor } from './components/CodeEditor';
 

@@ -237,7 +237,7 @@ const SolutionPublishPage: React.FC = () => {
           width={900}
         >
           <div 
-            className="preview-content prose prose-blue max-w-none" 
+            className="preview-content markdown-body" 
             dangerouslySetInnerHTML={{ __html: previewContent }} 
           />
         </Modal>

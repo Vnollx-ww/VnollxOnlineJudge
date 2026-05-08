@@ -1322,7 +1322,7 @@ const AIAssistant: React.FC = () => {
                                   }`}
                                 >
                                   <div className="pl-4 border-l-2 border-blue-200">
-                                    <div className="prose prose-sm max-w-none text-[#5f6368] italic prose-pre:bg-gray-900 prose-pre:rounded-lg prose-p:my-2 prose-headings:not-italic prose-headings:text-[#1f1f1f] prose-strong:not-italic prose-strong:text-[#1f1f1f]">
+                                    <div className="markdown-body text-[#5f6368] italic">
                                       <ReactMarkdown
                                         remarkPlugins={[remarkGfm]}
                                         rehypePlugins={[rehypeRaw]}
@@ -1361,7 +1361,7 @@ const AIAssistant: React.FC = () => {
                             )}
                             {msg.content != null && msg.content.trim() !== '' && (
                               <ReactMarkdown
-                                className="prose prose-sm max-w-none text-[#1f1f1f] prose-pre:bg-gray-900 prose-pre:rounded-xl"
+                                className="markdown-body text-[#1f1f1f]"
                                 remarkPlugins={[remarkGfm]}
                                 rehypePlugins={[rehypeRaw]}
                                 components={{

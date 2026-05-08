@@ -873,7 +873,7 @@ const ProblemDetail: React.FC = () => {
           </div>
         </div>
         <div
-          className="mt-2 pl-11 prose prose-sm max-w-none"
+          className="markdown-body mt-2 pl-11"
           style={{ color: 'var(--gemini-text-primary)' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(item.content) }}
         />
@@ -1065,7 +1065,7 @@ const ProblemDetail: React.FC = () => {
       <section>
         <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>题目描述</h2>
         <div
-          className="prose prose-sm max-w-none"
+          className="markdown-body"
           style={{ color: 'var(--gemini-text-primary)' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.description) }}
         />
@@ -1073,7 +1073,7 @@ const ProblemDetail: React.FC = () => {
       <section>
         <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>输入格式</h2>
         <div
-          className="prose prose-sm max-w-none"
+          className="markdown-body"
           style={{ color: 'var(--gemini-text-primary)' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.inputFormat, '暂无输入格式说明') }}
         />
@@ -1081,7 +1081,7 @@ const ProblemDetail: React.FC = () => {
       <section>
         <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>输出格式</h2>
         <div
-          className="prose prose-sm max-w-none"
+          className="markdown-body"
           style={{ color: 'var(--gemini-text-primary)' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.outputFormat, '暂无输出格式说明') }}
         />
@@ -1128,7 +1128,7 @@ const ProblemDetail: React.FC = () => {
       <section>
         <h2 className="text-base font-bold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>提示</h2>
         <div
-          className="prose prose-sm max-w-none"
+          className="markdown-body"
           style={{ color: 'var(--gemini-text-primary)' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(problem.hint, '暂无提示') }}
         />

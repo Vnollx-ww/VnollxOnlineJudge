@@ -234,7 +234,7 @@ const SolutionDetailPage: React.FC = () => {
                 </div>
               </div>
               <div 
-                className="prose prose-blue max-w-none" 
+                className="markdown-body" 
                 ref={contentRef} 
                 dangerouslySetInnerHTML={{ __html: renderedContent }} 
               />

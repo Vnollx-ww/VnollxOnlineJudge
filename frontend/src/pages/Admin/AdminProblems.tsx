@@ -152,7 +152,7 @@ const MarkdownEditor: React.FC<{
       </Tabs.Panel>
       <Tabs.Panel id="preview" label={<span className="flex items-center gap-1"><Eye className="w-3 h-3" /> 预览</span>}>
         <div
-          className={`${markdownEditorSurfaceClass} prose prose-sm max-w-none overflow-auto cursor-default select-text resize-none`}
+          className={`${markdownEditorSurfaceClass} markdown-body overflow-auto cursor-default select-text resize-none`}
           style={{ minHeight: minHeightPx }}
           role="document"
           aria-label="Markdown 预览（只读）"

@@ -1311,3 +1311,92 @@ body {
 .prose td {
   color: var(--gemini-text-primary);
 }
+
+.markdown-body {
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--gemini-text-primary);
+  font-family: inherit;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  color: var(--gemini-text-primary);
+  border-bottom-color: var(--gemini-border-light);
+}
+
+.markdown-body p,
+.markdown-body li,
+.markdown-body td {
+  color: var(--gemini-text-secondary);
+}
+
+.markdown-body ul {
+  list-style: disc;
+}
+
+.markdown-body ol {
+  list-style: decimal;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 2em;
+}
+
+.markdown-body li::marker {
+  color: var(--gemini-text-secondary);
+}
+
+.markdown-body a {
+  color: var(--gemini-accent-strong);
+}
+
+.markdown-body code {
+  background-color: var(--gemini-surface-hover);
+  color: var(--gemini-error);
+}
+
+.markdown-body pre {
+  background-color: var(--gemini-bg);
+  border: 1px solid var(--gemini-border-light);
+  border-radius: 12px;
+  box-shadow: var(--shadow-input);
+}
+
+.markdown-body pre code {
+  background-color: transparent;
+  color: var(--gemini-text-primary);
+}
+
+.markdown-body blockquote {
+  color: var(--gemini-text-tertiary);
+  border-left-color: var(--gemini-accent);
+}
+
+.markdown-body table tr {
+  background-color: transparent;
+  border-top-color: var(--gemini-border-light);
+}
+
+.markdown-body table tr:nth-child(2n) {
+  background-color: var(--gemini-bg-alt);
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  border-color: var(--gemini-border-light);
+}
+
+.markdown-body table th {
+  color: var(--gemini-text-primary);
+  background-color: var(--gemini-bg);
+}
+
+.markdown-body hr {
+  background-color: var(--gemini-border-light);
+}

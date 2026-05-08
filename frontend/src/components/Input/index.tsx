@@ -1,4 +1,4 @@
-import { forwardRef, type ChangeEvent, type CSSProperties, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useEffect, useRef, type ChangeEvent, type CSSProperties, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
 import { Eye, EyeOff, Search, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,6 +19,7 @@ interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 interface SearchProps extends BaseInputProps {
   onSearch?: (value: string) => void;
+  debounceDelay?: number;
 }
 
 const sizeClassMap: Record<Size, string> = {
@@ -136,8 +137,50 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(({
 
 TextArea.displayName = 'TextArea';
 
-const SearchInput = forwardRef<HTMLInputElement, SearchProps>(({ onSearch, onPressEnter, suffix, ...props }, ref) => {
-  const triggerSearch = () => onSearch?.(String(props.value ?? ''));
+const SearchInput = forwardRef<HTMLInputElement, SearchProps>(({
+  onSearch,
+  onPressEnter,
+  suffix,
+  value,
+  defaultValue,
+  onChange,
+  debounceDelay = 500,
+  ...props
+}, ref) => {
+  const [innerValue, setInnerValue] = useState(String(defaultValue ?? ''));
+  const searchValue = value !== undefined ? String(value) : innerValue;
+  const mountedRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSearch = (nextValue = searchValue) => onSearch?.(nextValue);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      triggerSearch(searchValue);
+    }, debounceDelay);
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [searchValue, debounceDelay]);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (value === undefined) {
+      setInnerValue(event.target.value);
+    }
+    onChange?.(event);
+  };
 
   return (
     <InputBase
@@ -145,9 +188,14 @@ const SearchInput = forwardRef<HTMLInputElement, SearchProps>(({ onSearch, onPre
       prefix={<Search className="h-4 w-4" />}
       suffix={suffix}
       onPressEnter={() => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
         onPressEnter?.();
-        triggerSearch();
+        triggerSearch(searchValue);
       }}
+      value={searchValue}
+      onChange={handleChange}
       {...props}
     />
   );

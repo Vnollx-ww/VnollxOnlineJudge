@@ -16,6 +16,7 @@
     "dayjs": "^1.11.19",
     "dompurify": "^3.1.7",
     "emoji-picker-react": "^4.17.1",
+    "github-markdown-css": "^5.9.0",
     "highlight.js": "^11.11.1",
     "katex": "^0.16.27",
     "lucide-react": "^0.555.0",
@@ -26,8 +27,8 @@
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.26.0",
-    "recharts": "^2.15.0",
     "react-syntax-highlighter": "^15.5.0",
+    "recharts": "^2.15.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "three": "^0.181.2"
