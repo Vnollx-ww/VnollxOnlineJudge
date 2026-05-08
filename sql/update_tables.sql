@@ -1,6 +1,3 @@
-alter table problem
-    add column float_tolerance double null comment '浮点误差容忍值' after checker_file;
-
 alter table competition_problem
     add column problem_order int default 0 null comment '比赛内题目顺序' after pass_count;
 
