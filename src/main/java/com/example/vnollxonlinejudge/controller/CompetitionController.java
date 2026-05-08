@@ -1,15 +1,20 @@
 package com.example.vnollxonlinejudge.controller;
 
 import com.example.vnollxonlinejudge.model.result.Result;
+import com.example.vnollxonlinejudge.model.dto.competition.AntiCheatReportDTO;
 import com.example.vnollxonlinejudge.model.dto.competition.ConfirmPasswordDTO;
 import com.example.vnollxonlinejudge.model.dto.competition.GetCompetitionStatusDTO;
+import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionRanklistVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionProblemBriefVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
+import com.example.vnollxonlinejudge.service.CompetitionAntiCheatService;
 import com.example.vnollxonlinejudge.service.CompetitionService;
 import com.example.vnollxonlinejudge.service.ProblemService;
+import com.example.vnollxonlinejudge.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,14 +29,47 @@ import java.util.List;
 public class CompetitionController {
     private final CompetitionService competitionService;
     private final ProblemService problemService;
+    private final CompetitionAntiCheatService antiCheatService;
+    private final UserService userService;
     
     @Autowired
     public CompetitionController(
             CompetitionService competitionService,
-            ProblemService problemService
+            ProblemService problemService,
+            CompetitionAntiCheatService antiCheatService,
+            UserService userService
     ) {
         this.competitionService = competitionService;
         this.problemService = problemService;
+        this.antiCheatService = antiCheatService;
+        this.userService = userService;
+    }
+
+    /** 比赛防作弊事件上报：用户侧调用 */
+    @PostMapping("/anti-cheat/report")
+    public Result<Void> reportAntiCheat(@RequestBody AntiCheatReportDTO req, HttpServletRequest request) {
+        Long userId = UserContextHolder.getCurrentUserId();
+        String userName = null;
+        if (userId != null) {
+            User u = userService.getUserEntityById(userId);
+            if (u != null) userName = u.getName();
+        }
+        String ip = extractIp(request);
+        String ua = request.getHeader("User-Agent");
+        antiCheatService.reportEvents(userId, userName, ip, ua, req);
+        return Result.Success("上报成功");
+    }
+
+    private String extractIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip != null && !ip.isEmpty()) {
+            int comma = ip.indexOf(',');
+            if (comma > 0) ip = ip.substring(0, comma);
+            return ip.trim();
+        }
+        ip = request.getHeader("X-Real-IP");
+        if (ip != null && !ip.isEmpty()) return ip;
+        return request.getRemoteAddr();
     }
     @GetMapping("/ranklist/{id}")
     public ModelAndView competitionRankListDetail(@PathVariable Long id) {

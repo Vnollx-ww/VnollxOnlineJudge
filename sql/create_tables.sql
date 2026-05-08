@@ -504,7 +504,7 @@ INSERT INTO `role` (`id`, `code`, `name`, `description`) VALUES
 (4, 'TEACHER', '教师', '教师角色，可管理题目/比赛/练习、查看学生提交与数据统计');
 
 -- =====================================================
--- 初始化权限数据（id 从 1 开始，1-5 用户 6-10 题目 11-15 比赛 16-20 练习 21-24 提交 25-29 题解 30-33 标签 34-36 通知 37-39 社交 40-42 AI 43-45 系统 46-50 角色）
+-- 初始化权限数据（id 从 1 开始，1-5 用户 6-10 题目 11-17 比赛 18-22 练习 23-26 提交 27-31 题解 32-35 标签 36-38 通知 39-41 社交 42-44 AI 45-47 系统 48-52 角色）
 -- =====================================================
 INSERT INTO `permission` (`id`, `code`, `name`, `description`, `module`) VALUES
 (1, 'user:view', '查看用户', '查看用户列表和详情', 'user'),
@@ -522,64 +522,67 @@ INSERT INTO `permission` (`id`, `code`, `name`, `description`, `module`) VALUES
 (13, 'competition:update', '更新比赛', '更新比赛信息', 'competition'),
 (14, 'competition:delete', '删除比赛', '删除比赛', 'competition'),
 (15, 'competition:manage', '管理比赛', '比赛管理的完整权限', 'competition'),
-(16, 'practice:view', '查看练习', '查看练习列表和详情', 'practice'),
-(17, 'practice:create', '创建练习', '创建新练习', 'practice'),
-(18, 'practice:update', '更新练习', '更新练习信息', 'practice'),
-(19, 'practice:delete', '删除练习', '删除练习', 'practice'),
-(20, 'practice:manage', '管理练习', '练习管理的完整权限', 'practice'),
-(21, 'submission:view', '查看提交', '查看自己的提交记录', 'submission'),
-(22, 'submission:view_all', '查看所有提交', '查看所有用户的提交记录', 'submission'),
-(23, 'submission:rejudge', '重新评测', '重新评测提交', 'submission'),
-(24, 'submission:submit', '提交代码', '提交代码进行评测', 'submission'),
-(25, 'solve:view', '查看题解', '查看题解', 'solve'),
-(26, 'solve:create', '创建题解', '创建新题解', 'solve'),
-(27, 'solve:update', '更新题解', '更新题解', 'solve'),
-(28, 'solve:delete', '删除题解', '删除题解', 'solve'),
-(29, 'solve:audit', '审核题解', '审核题解', 'solve'),
-(30, 'tag:view', '查看标签', '查看标签列表', 'tag'),
-(31, 'tag:create', '创建标签', '创建新标签', 'tag'),
-(32, 'tag:update', '更新标签', '更新标签', 'tag'),
-(33, 'tag:delete', '删除标签', '删除标签', 'tag'),
-(34, 'notification:view', '查看通知', '查看通知', 'notification'),
-(35, 'notification:create', '创建通知', '创建系统通知', 'notification'),
-(36, 'notification:delete', '删除通知', '删除通知', 'notification'),
-(37, 'friend:use', '好友功能', '使用好友功能', 'social'),
-(38, 'comment:create', '发布评论', '发布评论', 'social'),
-(39, 'comment:delete', '删除评论', '删除评论', 'social'),
-(40, 'ai:config_view', '查看AI配置', '查看AI配置', 'ai'),
-(41, 'ai:config_update', '更新AI配置', '更新AI配置', 'ai'),
-(42, 'ai:chat', 'AI对话', '使用AI对话功能', 'ai'),
-(43, 'system:settings', '系统设置', '修改系统设置', 'system'),
-(44, 'system:monitor', '系统监控', '查看系统监控信息', 'system'),
-(45, 'system:log', '系统日志', '查看系统日志', 'system'),
-(46, 'role:view', '查看角色', '查看角色列表', 'role'),
-(47, 'role:create', '创建角色', '创建新角色', 'role'),
-(48, 'role:update', '更新角色', '更新角色信息', 'role'),
-(49, 'role:delete', '删除角色', '删除角色', 'role'),
-(50, 'permission:assign', '分配权限', '为角色分配权限', 'role');
+(16, 'competition:anti_cheat_view', '查看比赛防作弊', '查看比赛防作弊事件、风险汇总和证据链', 'competition'),
+(17, 'competition:anti_cheat_review', '复核比赛防作弊', '人工复核比赛防作弊风险记录', 'competition'),
+(18, 'practice:view', '查看练习', '查看练习列表和详情', 'practice'),
+(19, 'practice:create', '创建练习', '创建新练习', 'practice'),
+(20, 'practice:update', '更新练习', '更新练习信息', 'practice'),
+(21, 'practice:delete', '删除练习', '删除练习', 'practice'),
+(22, 'practice:manage', '管理练习', '练习管理的完整权限', 'practice'),
+(23, 'submission:view', '查看提交', '查看自己的提交记录', 'submission'),
+(24, 'submission:view_all', '查看所有提交', '查看所有用户的提交记录', 'submission'),
+(25, 'submission:rejudge', '重新评测', '重新评测提交', 'submission'),
+(26, 'submission:submit', '提交代码', '提交代码进行评测', 'submission'),
+(27, 'solve:view', '查看题解', '查看题解', 'solve'),
+(28, 'solve:create', '创建题解', '创建新题解', 'solve'),
+(29, 'solve:update', '更新题解', '更新题解', 'solve'),
+(30, 'solve:delete', '删除题解', '删除题解', 'solve'),
+(31, 'solve:audit', '审核题解', '审核题解', 'solve'),
+(32, 'tag:view', '查看标签', '查看标签列表', 'tag'),
+(33, 'tag:create', '创建标签', '创建新标签', 'tag'),
+(34, 'tag:update', '更新标签', '更新标签', 'tag'),
+(35, 'tag:delete', '删除标签', '删除标签', 'tag'),
+(36, 'notification:view', '查看通知', '查看通知', 'notification'),
+(37, 'notification:create', '创建通知', '创建系统通知', 'notification'),
+(38, 'notification:delete', '删除通知', '删除通知', 'notification'),
+(39, 'friend:use', '好友功能', '使用好友功能', 'social'),
+(40, 'comment:create', '发布评论', '发布评论', 'social'),
+(41, 'comment:delete', '删除评论', '删除评论', 'social'),
+(42, 'ai:config_view', '查看AI配置', '查看AI配置', 'ai'),
+(43, 'ai:config_update', '更新AI配置', '更新AI配置', 'ai'),
+(44, 'ai:chat', 'AI对话', '使用AI对话功能', 'ai'),
+(45, 'system:settings', '系统设置', '修改系统设置', 'system'),
+(46, 'system:monitor', '系统监控', '查看系统监控信息', 'system'),
+(47, 'system:log', '系统日志', '查看系统日志', 'system'),
+(48, 'role:view', '查看角色', '查看角色列表', 'role'),
+(49, 'role:create', '创建角色', '创建新角色', 'role'),
+(50, 'role:update', '更新角色', '更新角色信息', 'role'),
+(51, 'role:delete', '删除角色', '删除角色', 'role'),
+(52, 'permission:assign', '分配权限', '为角色分配权限', 'role');
 
 -- =====================================================
 -- 初始化角色-权限关联（仅 role_id、permission_id 数字）
--- 1=超级管理员 全量 1-50；2=管理员 1-42；3=用户 指定；4=教师 指定
+-- 1=超级管理员 全量 1-52；2=管理员 1-44；3=用户 指定；4=教师 指定
 -- =====================================================
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
 SELECT 1, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
     UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15 UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19 UNION SELECT 20
     UNION SELECT 21 UNION SELECT 22 UNION SELECT 23 UNION SELECT 24 UNION SELECT 25 UNION SELECT 26 UNION SELECT 27 UNION SELECT 28 UNION SELECT 29 UNION SELECT 30
     UNION SELECT 31 UNION SELECT 32 UNION SELECT 33 UNION SELECT 34 UNION SELECT 35 UNION SELECT 36 UNION SELECT 37 UNION SELECT 38 UNION SELECT 39 UNION SELECT 40
-    UNION SELECT 41 UNION SELECT 42 UNION SELECT 43 UNION SELECT 44 UNION SELECT 45 UNION SELECT 46 UNION SELECT 47 UNION SELECT 48 UNION SELECT 49 UNION SELECT 50) t;
+    UNION SELECT 41 UNION SELECT 42 UNION SELECT 43 UNION SELECT 44 UNION SELECT 45 UNION SELECT 46 UNION SELECT 47 UNION SELECT 48 UNION SELECT 49 UNION SELECT 50
+    UNION SELECT 51 UNION SELECT 52) t;
 INSERT INTO `role_permission` (`role_id`, `permission_id`)
 SELECT 2, n FROM (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
     UNION SELECT 11 UNION SELECT 12 UNION SELECT 13 UNION SELECT 14 UNION SELECT 15 UNION SELECT 16 UNION SELECT 17 UNION SELECT 18 UNION SELECT 19 UNION SELECT 20
     UNION SELECT 21 UNION SELECT 22 UNION SELECT 23 UNION SELECT 24 UNION SELECT 25 UNION SELECT 26 UNION SELECT 27 UNION SELECT 28 UNION SELECT 29 UNION SELECT 30
     UNION SELECT 31 UNION SELECT 32 UNION SELECT 33 UNION SELECT 34 UNION SELECT 35 UNION SELECT 36 UNION SELECT 37 UNION SELECT 38 UNION SELECT 39 UNION SELECT 40
-    UNION SELECT 41 UNION SELECT 42) t;
+    UNION SELECT 41 UNION SELECT 42 UNION SELECT 43 UNION SELECT 44) t;
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
-(3, 6), (3, 11), (3, 16), (3, 21), (3, 24), (3, 25), (3, 26), (3, 30), (3, 34), (3, 37), (3, 38), (3, 39), (3, 42);
+(3, 6), (3, 11), (3, 18), (3, 23), (3, 26), (3, 27), (3, 28), (3, 32), (3, 36), (3, 39), (3, 40), (3, 41), (3, 44);
 INSERT INTO `role_permission` (`role_id`, `permission_id`) VALUES
 (4, 6), (4, 7), (4, 8), (4, 9), (4, 10), (4, 11), (4, 12), (4, 13), (4, 14), (4, 15), (4, 16), (4, 17), (4, 18), (4, 19), (4, 20),
 (4, 21), (4, 22), (4, 23), (4, 24), (4, 25), (4, 26), (4, 27), (4, 28), (4, 29), (4, 30), (4, 31), (4, 32), (4, 33), (4, 34), (4, 35), (4, 36),
-(4, 37), (4, 38), (4, 39), (4, 42), (4, 44);
+(4, 37), (4, 38), (4, 39), (4, 40), (4, 41), (4, 44), (4, 46);
 
 -- =====================================================
 -- 初始化标签数据（id 从 1 开始）

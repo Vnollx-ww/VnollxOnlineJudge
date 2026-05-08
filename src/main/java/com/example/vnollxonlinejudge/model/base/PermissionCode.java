@@ -26,6 +26,8 @@ public class PermissionCode {
     public static final String COMPETITION_UPDATE = "competition:update";
     public static final String COMPETITION_DELETE = "competition:delete";
     public static final String COMPETITION_MANAGE = "competition:manage";
+    public static final String COMPETITION_ANTI_CHEAT_VIEW = "competition:anti_cheat_view";
+    public static final String COMPETITION_ANTI_CHEAT_REVIEW = "competition:anti_cheat_review";
     
     // ==================== 练习管理权限 ====================
     public static final String PRACTICE_VIEW = "practice:view";

@@ -23,6 +23,8 @@ export const PermissionCode = {
   COMPETITION_UPDATE: 'competition:update',
   COMPETITION_DELETE: 'competition:delete',
   COMPETITION_MANAGE: 'competition:manage',
+  COMPETITION_ANTI_CHEAT_VIEW: 'competition:anti_cheat_view',
+  COMPETITION_ANTI_CHEAT_REVIEW: 'competition:anti_cheat_review',
 
   // 练习管理权限
   PRACTICE_VIEW: 'practice:view',

@@ -35,6 +35,7 @@ import api from '../../utils/api';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
+import { useCompetitionAntiCheat } from '../../hooks/useCompetitionAntiCheat';
 import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '../../components';
 import SuccessCelebration from '../../components/SuccessCelebration';
@@ -289,6 +290,19 @@ const CompetitionProblemDetail: React.FC = () => {
   }, [applyJudgeMessage, currentSnowflakeId]);
 
   useJudgeWebSocket(handleWebSocketMessage);
+
+  // 比赛防作弊采集：仅在比赛进行中启用，比赛结束/未开始不采集
+  const antiCheatEnabled = !!cid && isCompetitionOpen && !isCompetitionEnd;
+  useCompetitionAntiCheat({
+    competitionId: cid ?? null,
+    problemId: problem?.id ?? null,
+    enabled: antiCheatEnabled,
+    onWarn: useCallback((msg: string, level: 'info' | 'warning' | 'critical') => {
+      if (level === 'info') toast(msg, { icon: '⚠️' });
+      else if (level === 'warning') toast(msg, { icon: '⚠️', duration: 4000 });
+      else toast.error(msg, { duration: 5000 });
+    }, []),
+  });
 
   const renderLatex = useCallback((text: string) => {
     text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {

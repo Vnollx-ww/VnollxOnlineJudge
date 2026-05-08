@@ -13,13 +13,14 @@ import {
   Empty,
 } from 'antd';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown, ShieldAlert } from 'lucide-react';
 import dayjs from 'dayjs';
 import api from '@/utils/api';
 import Input from '@/components/Input';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
+import AdminCompetitionAntiCheat from './AdminCompetitionAntiCheat';
 
 interface Competition {
   id: number;
@@ -56,6 +57,9 @@ const AdminCompetitions: React.FC = () => {
   const [selectedProblems, setSelectedProblems] = useState<number[]>([]);
   const [addProblemModalVisible, setAddProblemModalVisible] = useState(false);
   const [problemSearchKeyword, setProblemSearchKeyword] = useState('');
+
+  const [antiCheatOpen, setAntiCheatOpen] = useState(false);
+  const [antiCheatTarget, setAntiCheatTarget] = useState<Competition | null>(null);
 
   useEffect(() => {
     loadCompetitions();
@@ -271,7 +275,7 @@ const AdminCompetitions: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 280,
+      width: 380,
       render: (_: unknown, record: Competition) => (
         <div className="flex gap-2">
           <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
@@ -282,6 +286,18 @@ const AdminCompetitions: React.FC = () => {
           <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
             <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(record)}>
               管理题目
+            </Button>
+          </PermissionGuard>
+          <PermissionGuard permission={PermissionCode.COMPETITION_ANTI_CHEAT_VIEW}>
+            <Button
+              type="link"
+              icon={<ShieldAlert className="w-4 h-4" />}
+              onClick={() => {
+                setAntiCheatTarget(record);
+                setAntiCheatOpen(true);
+              }}
+            >
+              防作弊
             </Button>
           </PermissionGuard>
           <PermissionGuard permission={PermissionCode.COMPETITION_DELETE}>
@@ -574,6 +590,14 @@ const AdminCompetitions: React.FC = () => {
           </Button>
         </div>
       </Modal>
+
+      {/* 防作弊审查面板 */}
+      <AdminCompetitionAntiCheat
+        open={antiCheatOpen}
+        competitionId={antiCheatTarget?.id ?? null}
+        competitionTitle={antiCheatTarget?.title}
+        onClose={() => setAntiCheatOpen(false)}
+      />
     </div>
   );
 };
