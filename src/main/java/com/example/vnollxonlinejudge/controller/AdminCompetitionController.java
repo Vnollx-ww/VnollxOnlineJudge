@@ -4,6 +4,7 @@ import com.example.vnollxonlinejudge.annotation.RequirePermission;
 import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAddProblemDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminBatchAddProblemDTO;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminReorderCompetitionProblemsDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveCompetitionDTO;
 import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
@@ -100,6 +101,13 @@ public class AdminCompetitionController {
     public Result<Void> deleteProblemFromCompetition(@PathVariable Long cid, @PathVariable Long pid){
         competitionProblemService.deleteProblemFromCompetition(pid, cid);
         return Result.Success("从比赛中删除题目成功");
+    }
+
+    @PutMapping("/{cid}/problems/order")
+    @RequirePermission(PermissionCode.COMPETITION_UPDATE)
+    public Result<Void> reorderCompetitionProblems(@PathVariable Long cid, @RequestBody AdminReorderCompetitionProblemsDTO req){
+        competitionProblemService.reorderProblems(cid, req.getProblemIds());
+        return Result.Success("更新比赛题目顺序成功");
     }
     
     @GetMapping("/{cid}/problems")

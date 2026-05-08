@@ -193,13 +193,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           transition: 'margin-left 0.3s ease'
         }}
       >
-        <Content className={`
-          min-h-[calc(100vh-64px-80px)] 
-          pt-6
-          px-4 md:px-6 lg:px-8
-          py-6
-        `}>
-          <div className="max-w-7xl mx-auto animate-fade-in">
+        <Content
+          className="min-h-[calc(100vh-64px-80px)] py-6"
+          style={{ paddingLeft: '4vw', paddingRight: '4vw' }}
+        >
+          <div className="w-full animate-fade-in">
             {children}
           </div>
         </Content>
@@ -212,7 +210,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             borderTop: '1px solid var(--gemini-border-light)' 
           }}
         >
-          <div className="max-w-7xl mx-auto text-center">
+          <div className="w-full text-center">
             <div 
               className="flex flex-wrap items-center justify-center gap-4 text-sm"
               style={{ color: 'var(--gemini-text-secondary)' }}

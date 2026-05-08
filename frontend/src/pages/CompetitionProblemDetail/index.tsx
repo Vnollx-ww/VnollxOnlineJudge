@@ -11,11 +11,15 @@ import {
   Avatar,
   Popconfirm,
   Drawer,
+  Table,
+  Modal,
+  Pagination,
 } from 'antd';
 import toast from 'react-hot-toast';
 import {
   ArrowLeftOutlined,
   CommentOutlined,
+  HistoryOutlined,
   FullscreenExitOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
@@ -25,6 +29,8 @@ import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import api from '../../utils/api';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
@@ -76,6 +82,19 @@ interface Comment {
   createTime: string;
   subcommentList?: Comment[];
   children?: Comment[];
+}
+
+interface Submission {
+  id: number;
+  pid: number;
+  problemName?: string;
+  userName: string;
+  language: string;
+  status: string;
+  createTime: string;
+  time?: number | null;
+  memory?: number | null;
+  code?: string;
 }
 
 const languageOptions = [
@@ -178,7 +197,19 @@ const CompetitionProblemDetail: React.FC = () => {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [competitionProblems, setCompetitionProblems] = useState<CompetitionProblem[]>([]);
   const [competitionProblemsLoading, setCompetitionProblemsLoading] = useState(false);
+  const [mySubmissionsOpen, setMySubmissionsOpen] = useState(false);
+  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
+  const [mySubmissionsLoading, setMySubmissionsLoading] = useState(false);
+  const [mySubmissionsPage, setMySubmissionsPage] = useState(1);
+  const [mySubmissionsTotal, setMySubmissionsTotal] = useState(0);
+  const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
   const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage>>({});
+
+  const codeStorageKey = useMemo(() => {
+    const pid = problem?.id ?? id;
+    if (!pid || !cid) return undefined;
+    return `oj:code:competition:${cid}:problem:${pid}:${language}`;
+  }, [problem?.id, id, cid, language]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -191,10 +222,15 @@ const CompetitionProblemDetail: React.FC = () => {
   }, []);
 
   const userInfo = getUserInfo();
+  const mySubmissionsPageSize = 10;
   const editorOptions = useMemo(() => ({
     fontSize: ideSettings.fontSize,
     wordWrap: ideSettings.wordWrap ? 'on' : 'off',
   }), [ideSettings]);
+  const currentCompetitionProblem = useMemo(() => {
+    if (!problem?.id) return undefined;
+    return competitionProblems.find((item) => String(item.id) === String(problem.id));
+  }, [competitionProblems, problem?.id]);
 
   const toggleEditorFullscreen = useCallback(() => {
     if (!isEditorFullscreen) {
@@ -298,16 +334,34 @@ const CompetitionProblemDetail: React.FC = () => {
     }
   }, [problem?.id, isCompetitionOpen]);
 
+  // 语言/题目切换时，优先使用当前维度的缓存，否则使用模板
   useEffect(() => {
     const template = languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
-    setCode(template);
-  }, [language]);
+    if (!codeStorageKey) {
+      setCode(template);
+      return;
+    }
+    try {
+      const cachedCode = localStorage.getItem(codeStorageKey);
+      setCode(cachedCode ?? template);
+    } catch {
+      setCode(template);
+    }
+  }, [language, codeStorageKey]);
 
-  const codeStorageKey = useMemo(() => {
-    const pid = problem?.id ?? id;
-    if (!pid || !cid) return undefined;
-    return `oj:code:competition:${cid}:problem:${pid}:${language}`;
-  }, [problem?.id, id, cid, language]);
+  // 代码变化时，防抖写入「比赛 + 题目 + 语言」维度的缓存
+  useEffect(() => {
+    if (!codeStorageKey) return;
+    if (typeof code !== 'string') return;
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(codeStorageKey, code);
+      } catch {
+        return;
+      }
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [code, codeStorageKey]);
 
   const loadProblem = async () => {
     if (!problem) {
@@ -355,6 +409,44 @@ const CompetitionProblemDetail: React.FC = () => {
     } finally {
       setCompetitionProblemsLoading(false);
     }
+  };
+
+  const loadMySubmissions = async (page = 1) => {
+    if (!cid || !problem?.id || !userInfo?.id) {
+      setMySubmissions([]);
+      setMySubmissionsTotal(0);
+      return;
+    }
+    setMySubmissionsLoading(true);
+    try {
+      const params = {
+        pageNum: String(page),
+        pageSize: String(mySubmissionsPageSize),
+        cid: String(cid),
+        uid: String(userInfo.id),
+        keyword: String(problem.id),
+      };
+      const data = await api.get('/submission/list', { params });
+      if (data.code === 200) {
+        setMySubmissions(data.data || []);
+      }
+      const countData = await api.get('/submission/count', {
+        params: { cid: params.cid, uid: params.uid, keyword: params.keyword },
+      });
+      if (countData.code === 200) {
+        setMySubmissionsTotal(countData.data || 0);
+      }
+    } catch {
+      toast.error('加载本题提交记录失败');
+    } finally {
+      setMySubmissionsLoading(false);
+    }
+  };
+
+  const openMySubmissions = () => {
+    setMySubmissionsOpen(true);
+    setMySubmissionsPage(1);
+    loadMySubmissions(1);
   };
 
   const formatComments = (list: Comment[] = []): Comment[] =>
@@ -698,6 +790,81 @@ const CompetitionProblemDetail: React.FC = () => {
     padding: '4px 12px',
     color: 'var(--gemini-text-secondary)',
   };
+  const getSubmissionStatusColor = (status: string) => {
+    const statusMap: Record<string, string> = {
+      '答案正确': 'success',
+      '答案错误': 'error',
+      '超时': 'warning',
+      '时间超出限制': 'warning',
+      '内存超限': 'warning',
+      '内存超出限制': 'warning',
+      '运行时错误': 'error',
+      '运行错误': 'error',
+      '编译错误': 'error',
+      '等待中': 'processing',
+      '评测中': 'processing',
+    };
+    return statusMap[status] || 'default';
+  };
+  const getCodeHighlightLanguage = (lang?: string) => {
+    if (!lang) return 'plaintext';
+    if (lang === 'C++') return 'cpp';
+    if (lang === 'Golang') return 'go';
+    if (lang === 'JavaScript') return 'javascript';
+    return lang.toLowerCase();
+  };
+  const mySubmissionColumns = [
+    {
+      title: '提交ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      render: (submissionId: number, record: Submission) => (
+        <Button
+          type="link"
+          size="small"
+          onClick={() => setCurrentSubmission(record)}
+        >
+          {submissionId}
+        </Button>
+      ),
+    },
+    {
+      title: '语言',
+      dataIndex: 'language',
+      key: 'language',
+      width: 110,
+      render: (lang: string) => <Tag>{lang}</Tag>,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 130,
+      render: (status: string) => <Tag color={getSubmissionStatusColor(status)}>{status}</Tag>,
+    },
+    {
+      title: '提交时间',
+      dataIndex: 'createTime',
+      key: 'createTime',
+      width: 180,
+      render: (time: string) => time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-',
+    },
+    {
+      title: '耗时',
+      dataIndex: 'time',
+      key: 'time',
+      width: 90,
+      render: (time?: number | null) => time != null ? `${time} ms` : '-',
+    },
+    {
+      title: '内存',
+      dataIndex: 'memory',
+      key: 'memory',
+      width: 90,
+      render: (memory?: number | null) => memory != null ? `${memory} MB` : '-',
+    },
+  ];
   const topBar = (
     <>
       <Button
@@ -706,12 +873,12 @@ const CompetitionProblemDetail: React.FC = () => {
       >
         返回题目列表
       </Button>
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-3 min-w-0 flex-none" title={`#${problem.id} - ${problem.title}`}>
         <Select
           value={problem.id}
           loading={competitionProblemsLoading}
           placeholder="切换题目"
-          className="w-56"
+          className="w-56 max-w-[min(28vw,224px)]"
           onChange={(targetId) => {
             if (String(targetId) !== String(problem.id)) {
               navigate(`/competition/${cid}/problem/${targetId}`);
@@ -726,14 +893,20 @@ const CompetitionProblemDetail: React.FC = () => {
       <div className="hidden lg:flex items-center gap-2 text-xs flex-none">
         <span style={statPillStyle}>时间 {problem.timeLimit || 1000} ms</span>
         <span style={statPillStyle}>内存 {problem.memoryLimit || 256} MB</span>
-        <span style={statPillStyle}>提交 {problem.submitCount ?? 0}</span>
-        <span style={statPillStyle}>通过 {problem.passCount ?? 0}</span>
+        <span style={statPillStyle}>提交 {currentCompetitionProblem?.submitCount ?? problem.submitCount ?? 0}</span>
+        <span style={statPillStyle}>通过 {currentCompetitionProblem?.passCount ?? problem.passCount ?? 0}</span>
       </div>
       <div className="flex-auto" />
       <div className="flex items-center gap-2 flex-none">
         {isCompetitionEnd && (
           <Tag color="red" style={{ margin: 0 }}>比赛已结束</Tag>
         )}
+        <Button
+          icon={<HistoryOutlined />}
+          onClick={openMySubmissions}
+        >
+          本题我的提交记录
+        </Button>
         {!isCompetitionOpen && (
           <Button
             icon={<CommentOutlined />}
@@ -961,7 +1134,6 @@ const CompetitionProblemDetail: React.FC = () => {
               onChange={setCode}
               language={language}
               height="100%"
-              storageKey={codeStorageKey}
               options={editorOptions}
               theme={ideSettings.theme}
             />
@@ -996,13 +1168,87 @@ const CompetitionProblemDetail: React.FC = () => {
             onChange={setCode}
             language={language}
             height="100vh"
-            storageKey={codeStorageKey}
             options={editorOptions}
             theme={ideSettings.theme}
           />
         </div>,
         document.body
       )}
+
+      <Drawer
+        title="本题我的提交记录"
+        placement="right"
+        width={Math.min(760, typeof window !== 'undefined' ? window.innerWidth : 760)}
+        open={mySubmissionsOpen}
+        onClose={() => setMySubmissionsOpen(false)}
+        destroyOnClose={false}
+      >
+        <Table
+          columns={mySubmissionColumns}
+          dataSource={mySubmissions}
+          loading={mySubmissionsLoading}
+          rowKey="id"
+          pagination={false}
+          scroll={{ x: 700 }}
+        />
+        <div className="flex justify-center mt-4">
+          <Pagination
+            current={mySubmissionsPage}
+            total={mySubmissionsTotal}
+            pageSize={mySubmissionsPageSize}
+            showSizeChanger={false}
+            showTotal={(total) => `共 ${total} 条记录`}
+            onChange={(page) => {
+              setMySubmissionsPage(page);
+              loadMySubmissions(page);
+            }}
+          />
+        </div>
+      </Drawer>
+
+      <Modal
+        title={`提交详情 #${currentSubmission?.id ?? ''}`}
+        open={!!currentSubmission}
+        onCancel={() => setCurrentSubmission(null)}
+        footer={null}
+        width={Math.min(820, typeof window !== 'undefined' ? window.innerWidth - 32 : 820)}
+      >
+        <div className="space-y-3">
+          <Space wrap>
+            <Tag>{currentSubmission?.language || '-'}</Tag>
+            <Tag color={currentSubmission ? getSubmissionStatusColor(currentSubmission.status) : 'default'}>
+              {currentSubmission?.status || '-'}
+            </Tag>
+            <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+              {currentSubmission?.createTime ? dayjs(currentSubmission.createTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
+            </span>
+          </Space>
+          <div className="relative rounded-xl border border-gray-800 overflow-hidden">
+            <Button
+              size="small"
+              type="text"
+              icon={<CopyOutlined />}
+              className="!absolute !top-3 !right-3 !z-10"
+              style={{ backgroundColor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.35)', color: '#0f172a' }}
+              onClick={async () => {
+                const ok = await copyTextToClipboard(currentSubmission?.code || '');
+                if (ok) toast.success('代码已复制');
+                else toast.error('复制失败，请手动复制');
+              }}
+            />
+            <div className="max-h-[60vh] overflow-auto">
+              <SyntaxHighlighter
+                language={getCodeHighlightLanguage(currentSubmission?.language)}
+                style={vscDarkPlus}
+                showLineNumbers
+                customStyle={{ margin: 0, borderRadius: 12, fontSize: 14 }}
+              >
+                {currentSubmission?.code || '（暂无代码）'}
+              </SyntaxHighlighter>
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       {/* 评论抽屉 — 仅比赛结束后可用 */}
       {!isCompetitionOpen && (

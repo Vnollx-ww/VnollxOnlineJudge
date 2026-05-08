@@ -119,6 +119,16 @@ const CompetitionRanklist: React.FC = () => {
   }, [passwordVerified, competition]);
 
   useEffect(() => {
+    if (!passwordVerified || !competition) return;
+
+    const timer = window.setInterval(() => {
+      loadRanklist(false);
+    }, 10000);
+
+    return () => window.clearInterval(timer);
+  }, [passwordVerified, competition, id]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       setNow(Date.now());
     }, 1000);
@@ -182,8 +192,10 @@ const CompetitionRanklist: React.FC = () => {
     }
   };
 
-  const loadRanklist = async () => {
-    setLoading(true);
+  const loadRanklist = async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       const data = await api.get('/competition/ranklist-detail', {
         params: { id: id },
@@ -200,7 +212,9 @@ const CompetitionRanklist: React.FC = () => {
         toast.error('加载排行榜失败');
       }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
