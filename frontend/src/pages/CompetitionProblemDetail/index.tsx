@@ -317,7 +317,7 @@ const CompetitionProblemDetail: React.FC = () => {
   useJudgeWebSocket(handleWebSocketMessage);
 
   // 比赛防作弊采集：仅在比赛进行中启用，比赛结束/未开始不采集
-  const antiCheatEnabled = competition?.antiCheatMode === 'STRICT' && !!cid && isCompetitionOpen && !isCompetitionEnd && !isUserCompetitionEnded;
+  const antiCheatEnabled = competition?.antiCheatMode === 'STRICT' && !!cid && isCompetitionOpen && !isCompetitionEnd && !isUserCompetitionEnded && !mySubmissionsOpen && !currentSubmission;
   useCompetitionAntiCheat({
     competitionId: cid ?? null,
     problemId: problem?.id ?? null,

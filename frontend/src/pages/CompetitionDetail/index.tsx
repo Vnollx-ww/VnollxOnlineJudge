@@ -63,6 +63,7 @@ const CompetitionDetail: React.FC = () => {
   const [countdown, setCountdown] = useState<Countdown | null>(null);
   const [status, setStatus] = useState('');
   const [isUserCompetitionEnded, setIsUserCompetitionEnded] = useState(false);
+  const [finishStatusLoaded, setFinishStatusLoaded] = useState(false);
   const [finishCompetitionLoading, setFinishCompetitionLoading] = useState(false);
   const [finishCompetitionModalOpen, setFinishCompetitionModalOpen] = useState(false);
   const [fullscreenPromptOpen, setFullscreenPromptOpen] = useState(false);
@@ -95,23 +96,23 @@ const CompetitionDetail: React.FC = () => {
   }, [passwordVerified, competition]);
 
   useEffect(() => {
-    if (isStrictAntiCheat && status === 'running' && passwordVerified && !isUserCompetitionEnded && !fullscreenPromptDismissed && !document.fullscreenElement) {
+    if (isStrictAntiCheat && status === 'running' && passwordVerified && finishStatusLoaded && !isUserCompetitionEnded && !fullscreenPromptDismissed && !document.fullscreenElement) {
       setFullscreenPromptOpen(true);
     } else {
       setFullscreenPromptOpen(false);
     }
-  }, [isStrictAntiCheat, status, passwordVerified, isUserCompetitionEnded, fullscreenPromptDismissed]);
+  }, [isStrictAntiCheat, status, passwordVerified, finishStatusLoaded, isUserCompetitionEnded, fullscreenPromptDismissed]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      if (isStrictAntiCheat && !document.fullscreenElement && status === 'running' && passwordVerified && !isUserCompetitionEnded) {
+      if (isStrictAntiCheat && !document.fullscreenElement && status === 'running' && passwordVerified && finishStatusLoaded && !isUserCompetitionEnded) {
         toast.error('你已退出全屏模式，该行为会被记录');
         setFullscreenPromptOpen(true);
       }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [isStrictAntiCheat, status, passwordVerified, isUserCompetitionEnded]);
+  }, [isStrictAntiCheat, status, passwordVerified, finishStatusLoaded, isUserCompetitionEnded]);
 
   const loadCompetition = async () => {
     try {
@@ -197,6 +198,7 @@ const CompetitionDetail: React.FC = () => {
 
   const loadFinishStatus = async () => {
     if (!id) return;
+    setFinishStatusLoaded(false);
     try {
       const data = await api.get(`/competition/${id}/finish/status`);
       if (data.code === 200) {
@@ -204,6 +206,8 @@ const CompetitionDetail: React.FC = () => {
       }
     } catch {
       setIsUserCompetitionEnded(false);
+    } finally {
+      setFinishStatusLoaded(true);
     }
   };
 

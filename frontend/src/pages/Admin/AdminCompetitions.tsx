@@ -475,6 +475,7 @@ const AdminCompetitions: React.FC = () => {
         footer={null}
         width={800}
         centered
+        destroyOnClose
       >
         <div className="mb-4">
           <Button
