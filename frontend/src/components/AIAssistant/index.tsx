@@ -1317,8 +1317,8 @@ const AIAssistant: React.FC = () => {
                                   <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expandedThinking[index] ? 'rotate-180' : ''}`} />
                                 </button>
                                 <div
-                                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                                    expandedThinking[index] ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'
+                                  className={`transition-all duration-300 ease-in-out ${
+                                    expandedThinking[index] ? 'max-h-[60vh] overflow-y-auto gemini-scrollbar-light opacity-100 mt-2' : 'max-h-0 overflow-hidden opacity-0'
                                   }`}
                                 >
                                   <div className="pl-4 border-l-2 border-blue-200">

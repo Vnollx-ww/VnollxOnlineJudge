@@ -26,6 +26,8 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
     public List<CompetitionProblem> getProblemList(Long cid) {
         return lambdaQuery()
                 .eq(CompetitionProblem::getCompetitionId, cid)
+                .orderByAsc(CompetitionProblem::getProblemOrder)
+                .orderByAsc(CompetitionProblem::getId)
                 .list();
     }
 
@@ -60,6 +62,7 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
         CompetitionProblem competitionProblem=new CompetitionProblem();
         competitionProblem.setCompetitionId(cid);
         competitionProblem.setProblemId(pid);
+        competitionProblem.setProblemOrder(getProblemCount(cid) + 1);
         this.save(competitionProblem);
         redisService.deleteKey("competition:" + cid + ":problems");
     }
@@ -76,5 +79,35 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
         
         this.baseMapper.delete(wrapper);
         redisService.deleteKey("competition:" + cid + ":problems");
+    }
+
+    @Override
+    public void reorderProblems(Long cid, List<Long> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            throw new BusinessException("题目顺序不能为空");
+        }
+        List<CompetitionProblem> records = getProblemList(cid);
+        if (records.size() != problemIds.size()) {
+            throw new BusinessException("题目列表不完整，请刷新后重试");
+        }
+        for (Long pid : problemIds) {
+            boolean exists = records.stream().anyMatch(item -> item.getProblemId().equals(pid));
+            if (!exists) {
+                throw new BusinessException("题目不在该比赛中");
+            }
+        }
+        for (int i = 0; i < problemIds.size(); i++) {
+            update(new LambdaUpdateWrapper<CompetitionProblem>()
+                    .set(CompetitionProblem::getProblemOrder, i + 1)
+                    .eq(CompetitionProblem::getCompetitionId, cid)
+                    .eq(CompetitionProblem::getProblemId, problemIds.get(i)));
+        }
+        redisService.deleteKey("competition:" + cid + ":problems");
+    }
+
+    private Integer getProblemCount(Long cid) {
+        QueryWrapper<CompetitionProblem> wrapper = new QueryWrapper<>();
+        wrapper.eq("competition_id", cid);
+        return Math.toIntExact(this.count(wrapper));
     }
 }

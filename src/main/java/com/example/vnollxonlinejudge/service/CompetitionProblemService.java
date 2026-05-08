@@ -10,4 +10,5 @@ public interface CompetitionProblemService {
     void deleteCompetition(Long id);
     void addRecord(Long pid,Long cid);
     void deleteProblemFromCompetition(Long pid, Long cid);
+    void reorderProblems(Long cid, List<Long> problemIds);
 }

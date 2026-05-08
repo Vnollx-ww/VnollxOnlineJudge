@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -178,6 +178,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [competitionProblems, setCompetitionProblems] = useState<CompetitionProblem[]>([]);
   const [competitionProblemsLoading, setCompetitionProblemsLoading] = useState(false);
+  const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage>>({});
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -205,43 +206,51 @@ const CompetitionProblemDetail: React.FC = () => {
     }
   }, [isEditorFullscreen]);
 
-  const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
-    if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
-      const status = msg.status || '未知状态';
-      if (status === '评测中') {
-        setRunResult({
-          variant: 'info',
-          source: 'submit',
-          headline: status,
-          bodyText: '正在进行评测...',
-        });
-      } else {
-        const hasTests = msg.testCount != null && msg.testCount > 0;
-        const s = String(status);
-        setRunResult({
-          variant: mapJudgeStatusToVariant(s),
-          source: 'submit',
-          headline: s,
-          description: msg.description || s,
-          metrics: {
-            timeMs: msg.time ?? 0,
-            memoryMb: msg.memory ?? 0,
-            ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
-          },
-          errorInfo: msg.errorInfo || undefined,
-        });
-      }
-
-      // 答案正确时触发庆祝动画
-      if (status === '答案正确') {
-        setShowCelebration(true);
-      }
-
-      if (status !== '评测中') {
-        window.dispatchEvent(new Event('notification-updated'));
-      }
+  const applyJudgeMessage = useCallback((msg: JudgeMessage) => {
+    const status = msg.status || '未知状态';
+    if (status === '评测中') {
+      setRunResult({
+        variant: 'info',
+        source: 'submit',
+        headline: status,
+        bodyText: '正在进行评测...',
+      });
+    } else {
+      const hasTests = msg.testCount != null && msg.testCount > 0;
+      const s = String(status);
+      setRunResult({
+        variant: mapJudgeStatusToVariant(s),
+        source: 'submit',
+        headline: s,
+        description: msg.description || s,
+        metrics: {
+          timeMs: msg.time ?? 0,
+          memoryMb: msg.memory ?? 0,
+          ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
+        },
+        errorInfo: msg.errorInfo || undefined,
+      });
     }
-  }, [currentSnowflakeId]);
+
+    // 答案正确时触发庆祝动画
+    if (status === '答案正确') {
+      setShowCelebration(true);
+    }
+
+    if (status !== '评测中') {
+      window.dispatchEvent(new Event('notification-updated'));
+    }
+  }, []);
+
+  const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
+    if (!msg?.snowflakeId) return;
+    const messageSnowflakeId = String(msg.snowflakeId);
+    if (!currentSnowflakeId || messageSnowflakeId !== String(currentSnowflakeId)) {
+      pendingJudgeMessagesRef.current[messageSnowflakeId] = msg;
+      return;
+    }
+    applyJudgeMessage(msg);
+  }, [applyJudgeMessage, currentSnowflakeId]);
 
   useJudgeWebSocket(handleWebSocketMessage);
 
@@ -537,15 +546,25 @@ const CompetitionProblemDetail: React.FC = () => {
       };
       const data = await api.post('/judge/submit', payload);
       if (data.code === 200) {
+        let hasAppliedPendingMessage = false;
         if (data.data.snowflakeId) {
-          setCurrentSnowflakeId(data.data.snowflakeId);
+          const snowflakeId = String(data.data.snowflakeId);
+          setCurrentSnowflakeId(snowflakeId);
+          const pendingMessage = pendingJudgeMessagesRef.current[snowflakeId];
+          if (pendingMessage) {
+            delete pendingJudgeMessagesRef.current[snowflakeId];
+            applyJudgeMessage(pendingMessage);
+            hasAppliedPendingMessage = true;
+          }
         }
-        setRunResult({
-          variant: 'info',
-          source: 'submit',
-          headline: data.data.status || '等待评测',
-          description: data.data.description || '等待评测：已加入评测队列。',
-        });
+        if (!hasAppliedPendingMessage) {
+          setRunResult({
+            variant: 'info',
+            source: 'submit',
+            headline: data.data.status || '等待评测',
+            description: data.data.description || '等待评测：已加入评测队列。',
+          });
+        }
         window.dispatchEvent(new Event('notification-updated'));
       } else {
         setRunResult({

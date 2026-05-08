@@ -26,4 +26,7 @@ public class CompetitionProblem {
 
     @Column(name = "competition_id")
     private Long competitionId;
+
+    @Column(name = "problem_order")
+    private Integer problemOrder;
 }

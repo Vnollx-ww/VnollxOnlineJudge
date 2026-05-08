@@ -13,7 +13,7 @@ import {
   Empty,
 } from 'antd';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
+import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown } from 'lucide-react';
 import dayjs from 'dayjs';
 import api from '@/utils/api';
 import Input from '@/components/Input';
@@ -185,6 +185,32 @@ const AdminCompetitions: React.FC = () => {
       }
     } catch {
       toast.error('删除题目失败');
+    }
+  };
+
+  const handleMoveCompetitionProblem = async (index: number, direction: 'up' | 'down') => {
+    if (currentCompetitionId == null) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= competitionProblems.length) return;
+
+    const nextProblems = [...competitionProblems];
+    [nextProblems[index], nextProblems[targetIndex]] = [nextProblems[targetIndex], nextProblems[index]];
+    setCompetitionProblems(nextProblems);
+
+    try {
+      const data = await api.put(`/admin/competition/${currentCompetitionId}/problems/order`, {
+        cid: currentCompetitionId,
+        problemIds: nextProblems.map((problem) => problem.id),
+      }) as ApiResponse;
+      if (data.code === 200) {
+        toast.success('题目顺序已更新');
+      } else {
+        toast.error((data as any).msg || '更新题目顺序失败');
+        loadCompetitionProblems(currentCompetitionId);
+      }
+    } catch {
+      toast.error('更新题目顺序失败');
+      loadCompetitionProblems(currentCompetitionId);
     }
   };
 
@@ -418,9 +444,29 @@ const AdminCompetitions: React.FC = () => {
           dataSource={competitionProblems}
           loading={loading}
           locale={{ emptyText: <Empty description="暂无题目" /> }}
-          renderItem={(problem) => (
+          renderItem={(problem, index) => (
             <List.Item
               actions={[
+                <Button
+                  key="up"
+                  type="link"
+                  size="small"
+                  icon={<ArrowUp className="w-4 h-4" />}
+                  disabled={index === 0}
+                  onClick={() => handleMoveCompetitionProblem(index, 'up')}
+                >
+                  上移
+                </Button>,
+                <Button
+                  key="down"
+                  type="link"
+                  size="small"
+                  icon={<ArrowDown className="w-4 h-4" />}
+                  disabled={index === competitionProblems.length - 1}
+                  onClick={() => handleMoveCompetitionProblem(index, 'down')}
+                >
+                  下移
+                </Button>,
                 <Popconfirm
                   key="delete"
                   title="确定要从比赛中删除这个题目吗？"
@@ -435,6 +481,7 @@ const AdminCompetitions: React.FC = () => {
               <List.Item.Meta
                 title={
                   <span>
+                    <Tag color="blue" className="!mr-2">{String.fromCharCode('A'.charCodeAt(0) + index)}</Tag>
                     <strong>#{problem.id}</strong> {problem.title}
                   </span>
                 }
