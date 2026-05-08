@@ -60,8 +60,8 @@ public class PythonJudgeStrategy extends AbstractJudgeStrategy {
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus(ACCEPTED);
             case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
-            case "Memory Limit Exceeded", "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
-            case "Runtime Error" -> result.setStatus("运行时错误");
+            case "Memory Limit Exceeded" -> result.setStatus(MEMORY_LIMIT_EXCEED);
+            case "Signalled", "Runtime Error", "Nonzero Exit Status" -> result.setStatus("运行时错误");
         }
     }
 }

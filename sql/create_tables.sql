@@ -202,6 +202,7 @@ create table competition_problem
     competition_id int           not null,
     submit_count   int default 0 null,
     pass_count     int default 0 null,
+    problem_order  int default 0 null comment '比赛内题目顺序',
     constraint problem_id
         unique (problem_id, competition_id),
     constraint competition_problem_ibfk_1

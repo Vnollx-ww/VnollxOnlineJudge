@@ -18,6 +18,11 @@ public class CppJudgeStrategy extends AbstractJudgeStrategy {
     }
 
     @Override
+    protected int batchSize() {
+        return 1;
+    }
+
+    @Override
     protected String compile(String userCode, StringBuilder errorOut) {
         String payload = String.format("""
         {"cmd": [{
@@ -57,9 +62,10 @@ public class CppJudgeStrategy extends AbstractJudgeStrategy {
                       {"name": "stderr", "max": 1048576}],
             "cpuLimit": %d,
             "memoryLimit": %d,
+            "stackLimit": %d,
             "procLimit": 50,
             "copyIn": {"a": {"fileId": "%s"}}
-        }""", escapeJson(input), cpuLimitNs, memoryLimitBytes, artifactId);
+        }""", escapeJson(input), cpuLimitNs, memoryLimitBytes, memoryLimitBytes, artifactId);
     }
 
     @Override
@@ -67,7 +73,8 @@ public class CppJudgeStrategy extends AbstractJudgeStrategy {
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus(ACCEPTED);
             case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
-            case "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
+            case "Memory Limit Exceeded" -> result.setStatus(MEMORY_LIMIT_EXCEED);
+            case "Signalled", "Runtime Error", "Nonzero Exit Status" -> result.setStatus("运行时错误");
         }
     }
 }

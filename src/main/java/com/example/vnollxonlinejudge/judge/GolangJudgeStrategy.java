@@ -18,6 +18,11 @@ public class GolangJudgeStrategy extends AbstractJudgeStrategy {
     }
 
     @Override
+    protected int batchSize() {
+        return 1;
+    }
+
+    @Override
     protected String compile(String userCode, StringBuilder errorOut) {
         String payload = String.format("""
         {"cmd": [{
@@ -67,8 +72,8 @@ public class GolangJudgeStrategy extends AbstractJudgeStrategy {
         switch (result.getStatus()) {
             case "Accepted" -> result.setStatus(ACCEPTED);
             case "Time Limit Exceeded" -> result.setStatus(TIME_LIMIT_EXCEED);
-            case "Memory Limit Exceeded", "Signalled" -> result.setStatus(MEMORY_LIMIT_EXCEED);
-            case "Runtime Error" -> result.setStatus("运行时错误");
+            case "Memory Limit Exceeded" -> result.setStatus(MEMORY_LIMIT_EXCEED);
+            case "Signalled", "Runtime Error", "Nonzero Exit Status" -> result.setStatus("运行时错误");
         }
     }
 }
