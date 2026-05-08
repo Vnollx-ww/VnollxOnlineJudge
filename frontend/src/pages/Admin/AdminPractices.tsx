@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import {
-  Table,
   Button,
   Modal,
-  Form,
   Switch,
   Checkbox,
   Tag,
-  Popconfirm,
   List,
   Empty,
-} from 'antd';
+  Field,
+  DataTable,
+  DataColumn,
+  ConfirmButton,
+} from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
 import api from '@/utils/api';
@@ -34,6 +35,18 @@ interface Problem {
   difficulty: string;
 }
 
+interface PracticeFormValues {
+  title: string;
+  description: string;
+  isPublic: boolean;
+}
+
+const defaultPracticeForm: PracticeFormValues = {
+  title: '',
+  description: '',
+  isPublic: true,
+};
+
 const AdminPractices: React.FC = () => {
   const [practices, setPractices] = useState<Practice[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +56,7 @@ const AdminPractices: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingPractice, setEditingPractice] = useState<Practice | null>(null);
-  const [form] = Form.useForm();
+  const [practiceForm, setPracticeForm] = useState<PracticeFormValues>(defaultPracticeForm);
 
   const [problemManageVisible, setProblemManageVisible] = useState(false);
   const [currentPracticeId, setCurrentPracticeId] = useState<number | null>(null);
@@ -84,16 +97,15 @@ const AdminPractices: React.FC = () => {
 
   const handleAdd = () => {
     setEditingPractice(null);
-    form.resetFields();
-    form.setFieldsValue({ isPublic: true });
+    setPracticeForm(defaultPracticeForm);
     setModalVisible(true);
   };
 
   const handleEdit = (practice: Practice) => {
     setEditingPractice(practice);
-    form.setFieldsValue({
+    setPracticeForm({
       title: practice.title,
-      description: practice.description,
+      description: practice.description || '',
       isPublic: practice.isPublic,
     });
     setModalVisible(true);
@@ -181,7 +193,11 @@ const AdminPractices: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const updatePracticeForm = <K extends keyof PracticeFormValues>(key: K, value: PracticeFormValues[K]) => {
+    setPracticeForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (values: PracticeFormValues) => {
     try {
       const submitData = {
         title: values.title,
@@ -226,46 +242,6 @@ const AdminPractices: React.FC = () => {
   const addedProblemIds = new Set(practiceProblems.map((p) => p.id.toString()));
   const availableProblems = filteredProblems.filter((p) => !addedProblemIds.has(p.id.toString()));
 
-  const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '题目数量', dataIndex: 'problemCount', key: 'problemCount', width: 100 },
-    { title: '创建时间', dataIndex: 'createTime', key: 'createTime', render: (t: string) => formatTime(t) },
-    {
-      title: '状态',
-      dataIndex: 'isPublic',
-      key: 'isPublic',
-      width: 100,
-      render: (isPublic: boolean) => <Tag color={isPublic ? 'green' : 'default'}>{isPublic ? '公开' : '私有'}</Tag>,
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 280,
-      render: (_: unknown, record: Practice) => (
-        <div className="flex gap-2">
-          <PermissionGuard permission={PermissionCode.PRACTICE_UPDATE}>
-            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
-              编辑
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.PRACTICE_UPDATE}>
-            <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(record)}>
-              管理题目
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.PRACTICE_DELETE}>
-            <Popconfirm title="确定要删除这个练习吗？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="gemini-card">
       {/* Header - Gemini 风格 */}
@@ -307,9 +283,8 @@ const AdminPractices: React.FC = () => {
       </div>
 
       {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={practices}
+      <DataTable<Practice>
+        rows={practices}
         loading={loading}
         rowKey="id"
         pagination={{
@@ -323,7 +298,39 @@ const AdminPractices: React.FC = () => {
             setPageSize(size);
           },
         }}
-      />
+      >
+        <DataColumn<Practice> header="ID" width={80} cell={(practice) => practice.id} />
+        <DataColumn<Practice> header="标题" cell={(practice) => practice.title} />
+        <DataColumn<Practice> header="题目数量" width={100} cell={(practice) => practice.problemCount} />
+        <DataColumn<Practice> header="创建时间" cell={(practice) => formatTime(practice.createTime)} />
+        <DataColumn<Practice> header="状态" width={100} cell={(practice) => <Tag color={practice.isPublic ? 'green' : 'default'}>{practice.isPublic ? '公开' : '私有'}</Tag>} />
+        <DataColumn<Practice>
+          header="操作"
+          width={320}
+          action
+          cell={(practice) => (
+            <div className="flex gap-2">
+              <PermissionGuard permission={PermissionCode.PRACTICE_UPDATE}>
+                <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(practice)}>
+                  编辑
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.PRACTICE_UPDATE}>
+                <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(practice)}>
+                  管理题目
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.PRACTICE_DELETE}>
+                <ConfirmButton message="确定要删除这个练习吗？" onConfirm={() => handleDelete(practice.id)}>
+                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                    删除
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+            </div>
+          )}
+        />
+      </DataTable>
 
       {/* 新建/编辑练习 Modal */}
       <Modal
@@ -334,17 +341,23 @@ const AdminPractices: React.FC = () => {
         width={600}
         centered
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="title" label="练习标题" rules={[{ required: true, message: '请输入练习标题' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="练习描述">
-            <Input.TextArea rows={4} />
-          </Form.Item>
-          <Form.Item name="isPublic" label="是否公开" valuePropName="checked">
-            <Switch checkedChildren="公开" unCheckedChildren="私有" />
-          </Form.Item>
-          <Form.Item>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit(practiceForm);
+          }}
+        >
+          <Field label="练习标题">
+            <Input value={practiceForm.title} onChange={(event) => updatePracticeForm('title', event.target.value)} />
+          </Field>
+          <Field label="练习描述">
+            <Input.TextArea value={practiceForm.description} onChange={(event) => updatePracticeForm('description', event.target.value)} rows={4} />
+          </Field>
+          <Field label="是否公开">
+            <Switch checked={practiceForm.isPublic} onChange={(checked) => updatePracticeForm('isPublic', checked)} />
+          </Field>
+          <div>
             <div className="flex justify-end gap-2">
               <Button onClick={() => setModalVisible(false)}>取消</Button>
               <Button 
@@ -359,8 +372,8 @@ const AdminPractices: React.FC = () => {
                 保存
               </Button>
             </div>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </Modal>
 
       {/* 管理练习题目 Modal */}
@@ -402,15 +415,15 @@ const AdminPractices: React.FC = () => {
           renderItem={(problem) => (
             <List.Item
               actions={[
-                <Popconfirm
+                <ConfirmButton
                   key="delete"
-                  title="确定要从练习中删除这个题目吗？"
+                  message="确定要从练习中删除这个题目吗？"
                   onConfirm={() => handleDeleteProblemFromPractice(problem.id)}
                 >
                   <Button type="link" danger size="small">
                     删除
                   </Button>
-                </Popconfirm>,
+                </ConfirmButton>,
               ]}
             >
               <List.Item.Meta
@@ -513,3 +526,4 @@ const AdminPractices: React.FC = () => {
 };
 
 export default AdminPractices;
+

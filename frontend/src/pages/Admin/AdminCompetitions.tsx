@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import {
-  Table,
   Button,
   Modal,
-  Form,
   DatePicker,
   Switch,
   Checkbox,
   Tag,
-  Popconfirm,
   List,
   Empty,
-} from 'antd';
+  Field,
+  DataTable,
+  DataColumn,
+  ConfirmButton,
+} from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown, ShieldAlert } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -41,6 +42,26 @@ interface Problem {
   difficulty: string;
 }
 
+interface CompetitionFormValues {
+  title: string;
+  description: string;
+  beginTime: string;
+  endTime: string;
+  password: string;
+  needPassword: boolean;
+  antiCheatMode: string;
+}
+
+const defaultCompetitionForm: CompetitionFormValues = {
+  title: '',
+  description: '',
+  beginTime: '',
+  endTime: '',
+  password: '',
+  needPassword: false,
+  antiCheatMode: 'NORMAL',
+};
+
 const AdminCompetitions: React.FC = () => {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,7 +71,7 @@ const AdminCompetitions: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
-  const [form] = Form.useForm();
+  const [competitionForm, setCompetitionForm] = useState<CompetitionFormValues>(defaultCompetitionForm);
 
   const [problemManageVisible, setProblemManageVisible] = useState(false);
   const [currentCompetitionId, setCurrentCompetitionId] = useState<number | null>(null);
@@ -94,18 +115,17 @@ const AdminCompetitions: React.FC = () => {
 
   const handleAdd = () => {
     setEditingCompetition(null);
-    form.resetFields();
-    form.setFieldsValue({ needPassword: false, antiCheatMode: 'NORMAL' });
+    setCompetitionForm(defaultCompetitionForm);
     setModalVisible(true);
   };
 
   const handleEdit = (competition: Competition) => {
     setEditingCompetition(competition);
-    form.setFieldsValue({
+    setCompetitionForm({
       title: competition.title,
-      description: competition.description,
-      beginTime: competition.beginTime ? dayjs(competition.beginTime) : null,
-      endTime: competition.endTime ? dayjs(competition.endTime) : null,
+      description: competition.description || '',
+      beginTime: competition.beginTime ? dayjs(competition.beginTime).format('YYYY-MM-DDTHH:mm') : '',
+      endTime: competition.endTime ? dayjs(competition.endTime).format('YYYY-MM-DDTHH:mm') : '',
       password: competition.password || '',
       needPassword: competition.needPassword || false,
       antiCheatMode: competition.antiCheatMode || 'NORMAL',
@@ -221,13 +241,19 @@ const AdminCompetitions: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const updateCompetitionForm = <K extends keyof CompetitionFormValues>(key: K, value: CompetitionFormValues[K]) => {
+    setCompetitionForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const formatDateTimeForSubmit = (value: string) => value ? dayjs(value).format('YYYY-MM-DD HH:mm:ss') : '';
+
+  const handleSubmit = async (values: CompetitionFormValues) => {
     try {
       const submitData = {
         title: values.title,
         description: values.description || '',
-        beginTime: values.beginTime.format('YYYY-MM-DD HH:mm:ss'),
-        endTime: values.endTime.format('YYYY-MM-DD HH:mm:ss'),
+        beginTime: formatDateTimeForSubmit(values.beginTime),
+        endTime: formatDateTimeForSubmit(values.endTime),
         password: values.needPassword ? values.password || '' : '',
         needPassword: values.needPassword || false,
         antiCheatMode: values.antiCheatMode || 'NORMAL',
@@ -270,52 +296,6 @@ const AdminCompetitions: React.FC = () => {
   const addedProblemIds = new Set(competitionProblems.map((p) => p.id.toString()));
   const availableProblems = filteredProblems.filter((p) => !addedProblemIds.has(p.id.toString()));
 
-  const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '开始时间', dataIndex: 'beginTime', key: 'beginTime', render: (t: string) => formatTime(t) },
-    { title: '结束时间', dataIndex: 'endTime', key: 'endTime', render: (t: string) => formatTime(t) },
-    { title: '参与人数', dataIndex: 'number', key: 'number', width: 100 },
-    {
-      title: '操作',
-      key: 'action',
-      width: 380,
-      render: (_: unknown, record: Competition) => (
-        <div className="flex gap-2">
-          <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
-            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
-              编辑
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
-            <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(record)}>
-              管理题目
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.COMPETITION_ANTI_CHEAT_VIEW}>
-            <Button
-              type="link"
-              icon={<ShieldAlert className="w-4 h-4" />}
-              onClick={() => {
-                setAntiCheatTarget(record);
-                setAntiCheatOpen(true);
-              }}
-            >
-              防作弊
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.COMPETITION_DELETE}>
-            <Popconfirm title="确定要删除这个比赛吗？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="gemini-card">
       {/* Header - Gemini 风格 */}
@@ -357,9 +337,8 @@ const AdminCompetitions: React.FC = () => {
       </div>
 
       {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={competitions}
+      <DataTable<Competition>
+        rows={competitions}
         loading={loading}
         rowKey="id"
         pagination={{
@@ -373,7 +352,51 @@ const AdminCompetitions: React.FC = () => {
             setPageSize(size);
           },
         }}
-      />
+      >
+        <DataColumn<Competition> header="ID" width={80} cell={(competition) => competition.id} />
+        <DataColumn<Competition> header="标题" cell={(competition) => competition.title} />
+        <DataColumn<Competition> header="开始时间" cell={(competition) => formatTime(competition.beginTime)} />
+        <DataColumn<Competition> header="结束时间" cell={(competition) => formatTime(competition.endTime)} />
+        <DataColumn<Competition> header="参与人数" width={100} cell={(competition) => competition.number ?? '-'} />
+        <DataColumn<Competition>
+          header="操作"
+          width={380}
+          action
+          cell={(competition) => (
+            <div className="flex gap-2">
+              <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
+                <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(competition)}>
+                  编辑
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
+                <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(competition)}>
+                  管理题目
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.COMPETITION_ANTI_CHEAT_VIEW}>
+                <Button
+                  type="link"
+                  icon={<ShieldAlert className="w-4 h-4" />}
+                  onClick={() => {
+                    setAntiCheatTarget(competition);
+                    setAntiCheatOpen(true);
+                  }}
+                >
+                  防作弊
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.COMPETITION_DELETE}>
+                <ConfirmButton message="确定要删除这个比赛吗？" onConfirm={() => handleDelete(competition.id)}>
+                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                    删除
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+            </div>
+          )}
+        />
+      </DataTable>
 
       {/* 新建/编辑比赛 Modal */}
       <Modal
@@ -384,46 +407,44 @@ const AdminCompetitions: React.FC = () => {
         width={600}
         centered
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="title" label="比赛标题" rules={[{ required: true, message: '请输入比赛标题' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="比赛描述">
-            <Input.TextArea rows={4} />
-          </Form.Item>
-          <Form.Item name="beginTime" label="开始时间" rules={[{ required: true, message: '请选择开始时间' }]}>
-            <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" className="w-full" />
-          </Form.Item>
-          <Form.Item name="endTime" label="结束时间" rules={[{ required: true, message: '请选择结束时间' }]}>
-            <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" className="w-full" />
-          </Form.Item>
-          <Form.Item name="needPassword" label="是否需要密码" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-          <Form.Item
-            name="antiCheatMode"
-            label="防作弊模式"
-            initialValue="NORMAL"
-            getValueProps={(value) => ({ value })}
-            getValueFromEvent={(value) => value}
-          >
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit(competitionForm);
+          }}
+        >
+          <Field label="比赛标题">
+            <Input value={competitionForm.title} onChange={(event) => updateCompetitionForm('title', event.target.value)} />
+          </Field>
+          <Field label="比赛描述">
+            <Input.TextArea value={competitionForm.description} onChange={(event) => updateCompetitionForm('description', event.target.value)} rows={4} />
+          </Field>
+          <Field label="开始时间">
+            <DatePicker value={competitionForm.beginTime} onChange={(value) => updateCompetitionForm('beginTime', String(value || ''))} showTime className="w-full" />
+          </Field>
+          <Field label="结束时间">
+            <DatePicker value={competitionForm.endTime} onChange={(value) => updateCompetitionForm('endTime', String(value || ''))} showTime className="w-full" />
+          </Field>
+          <Field label="是否需要密码">
+            <Switch checked={competitionForm.needPassword} onChange={(checked) => updateCompetitionForm('needPassword', checked)} />
+          </Field>
+          <Field label="防作弊模式">
             <Select
+              value={competitionForm.antiCheatMode}
+              onChange={(value) => updateCompetitionForm('antiCheatMode', value)}
               options={[
                 { label: '普通模式（允许本地 IDE，不记录离开/失焦）', value: 'NORMAL' },
                 { label: '严格模式（要求全屏，记录切屏/失焦/退出全屏）', value: 'STRICT' },
               ]}
             />
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.needPassword !== cur.needPassword}>
-            {({ getFieldValue }) =>
-              getFieldValue('needPassword') ? (
-                <Form.Item name="password" label="比赛密码" rules={[{ required: true, message: '请输入比赛密码' }]}>
-                  <Input.Password placeholder="请输入比赛密码" />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
-          <Form.Item>
+          </Field>
+          {competitionForm.needPassword ? (
+            <Field label="比赛密码">
+              <Input.Password value={competitionForm.password} onChange={(event) => updateCompetitionForm('password', event.target.value)} placeholder="请输入比赛密码" />
+            </Field>
+          ) : null}
+          <div>
             <div className="flex justify-end gap-2">
               <Button onClick={() => setModalVisible(false)}>取消</Button>
               <Button 
@@ -438,8 +459,8 @@ const AdminCompetitions: React.FC = () => {
                 保存
               </Button>
             </div>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </Modal>
 
       {/* 管理比赛题目 Modal */}
@@ -501,21 +522,21 @@ const AdminCompetitions: React.FC = () => {
                 >
                   下移
                 </Button>,
-                <Popconfirm
+                <ConfirmButton
                   key="delete"
-                  title="确定要从比赛中删除这个题目吗？"
+                  message="确定要从比赛中删除这个题目吗？"
                   onConfirm={() => handleDeleteProblemFromCompetition(problem.id)}
                 >
                   <Button type="link" danger size="small">
                     删除
                   </Button>
-                </Popconfirm>,
+                </ConfirmButton>,
               ]}
             >
               <List.Item.Meta
                 title={
                   <span>
-                    <Tag color="blue" className="!mr-2">{String.fromCharCode('A'.charCodeAt(0) + index)}</Tag>
+                    <span className="mr-2"><Tag color="blue">{String.fromCharCode('A'.charCodeAt(0) + index)}</Tag></span>
                     <strong>#{problem.id}</strong> {problem.title}
                   </span>
                 }
@@ -621,3 +642,4 @@ const AdminCompetitions: React.FC = () => {
 };
 
 export default AdminCompetitions;
+

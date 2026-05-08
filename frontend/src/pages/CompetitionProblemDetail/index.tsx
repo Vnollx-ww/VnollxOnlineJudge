@@ -23,6 +23,7 @@ import {
   FullscreenExitOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
+import { CheckCircle2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -286,12 +287,22 @@ const CompetitionProblemDetail: React.FC = () => {
     // 答案正确时触发庆祝动画
     if (status === '答案正确') {
       setShowCelebration(true);
+      const solvedProblemId = problem?.id ?? id;
+      if (solvedProblemId) {
+        setCompetitionProblems((prev) =>
+          prev.map((item) =>
+            String(item.id) === String(solvedProblemId)
+              ? { ...item, isSolved: true }
+              : item
+          )
+        );
+      }
     }
 
     if (status !== '评测中') {
       window.dispatchEvent(new Event('notification-updated'));
     }
-  }, []);
+  }, [id, problem?.id]);
 
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
     if (!msg?.snowflakeId) return;
@@ -956,7 +967,25 @@ const CompetitionProblemDetail: React.FC = () => {
           }}
           options={competitionProblems.map((item, index) => ({
             value: item.id,
-            label: `${String.fromCharCode('A'.charCodeAt(0) + index)}. ${item.title}`,
+            label: (
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="min-w-0 flex-1 truncate">
+                  {String.fromCharCode('A'.charCodeAt(0) + index)}. {item.title}
+                </span>
+                {item.isSolved && (
+                  <span
+                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: 'rgba(22, 163, 74, 0.12)',
+                      color: 'var(--gemini-success, #16a34a)',
+                    }}
+                    title="已通过"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.6} />
+                  </span>
+                )}
+              </span>
+            ),
           }))}
         />
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Tag, Popconfirm } from 'antd';
+import { Button, Tag, DataTable, DataColumn, ConfirmButton } from '@/components';
 import toast from 'react-hot-toast';
 import { RefreshCw, Check, X, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
@@ -92,44 +92,6 @@ const AdminSolves: React.FC = () => {
     return <Tag color={item.color}>{item.text}</Tag>;
   };
 
-  const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
-    { title: '题目ID', dataIndex: 'pid', key: 'pid', width: 100 },
-    { title: '作者', dataIndex: 'name', key: 'name' },
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 120, render: (s: number) => getStatusTag(s) },
-    {
-      title: '操作',
-      key: 'action',
-      width: 250,
-      render: (_: unknown, record: Solve) => (
-        <div className="flex gap-2">
-          <PermissionGuard permission={PermissionCode.SOLVE_AUDIT}>
-            <Popconfirm title="确认审核通过该题解？" onConfirm={() => handleAudit(record.id, 1)}>
-              <Button type="primary" size="small" icon={<Check className="w-3 h-3" />} disabled={record.status === 1}>
-                通过
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.SOLVE_AUDIT}>
-            <Popconfirm title="确认审核不通过该题解？" onConfirm={() => handleAudit(record.id, 2)}>
-              <Button danger size="small" icon={<X className="w-3 h-3" />} disabled={record.status === 2}>
-                不通过
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.SOLVE_DELETE}>
-            <Popconfirm title="确定要删除这个题解吗？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <div className="gemini-card">
       {/* Header - Gemini 风格 */}
@@ -174,9 +136,8 @@ const AdminSolves: React.FC = () => {
       </div>
 
       {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={solves}
+      <DataTable<Solve>
+        rows={solves}
         loading={loading}
         rowKey="id"
         pagination={{
@@ -189,9 +150,46 @@ const AdminSolves: React.FC = () => {
             setPageSize(size);
           },
         }}
-      />
+      >
+        <DataColumn<Solve> header="ID" width={80} cell={(solve) => solve.id} />
+        <DataColumn<Solve> header="题目ID" width={100} cell={(solve) => solve.pid} />
+        <DataColumn<Solve> header="作者" cell={(solve) => solve.name} />
+        <DataColumn<Solve> header="标题" cell={(solve) => solve.title} />
+        <DataColumn<Solve> header="状态" width={120} cell={(solve) => getStatusTag(solve.status)} />
+        <DataColumn<Solve>
+          header="操作"
+          width={250}
+          action
+          cell={(solve) => (
+            <div className="flex gap-2">
+              <PermissionGuard permission={PermissionCode.SOLVE_AUDIT}>
+                <ConfirmButton message="确认审核通过该题解？" onConfirm={() => handleAudit(solve.id, 1)}>
+                  <Button type="text" size="small" icon={<Check className="w-3 h-3" />} disabled={solve.status === 1}>
+                    通过
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.SOLVE_AUDIT}>
+                <ConfirmButton message="确认审核不通过该题解？" onConfirm={() => handleAudit(solve.id, 2)}>
+                  <Button danger size="small" icon={<X className="w-3 h-3" />} disabled={solve.status === 2}>
+                    不通过
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.SOLVE_DELETE}>
+                <ConfirmButton message="确定要删除这个题解吗？" onConfirm={() => handleDelete(solve.id)}>
+                  <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
+                    删除
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+            </div>
+          )}
+        />
+      </DataTable>
     </div>
   );
 };
 
 export default AdminSolves;
+

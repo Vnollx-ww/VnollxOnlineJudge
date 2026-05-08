@@ -78,7 +78,7 @@ const InputBase = forwardRef<HTMLInputElement, BaseInputProps>(({
   if (!hasAddon) return input;
 
   return (
-    <div className={`flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 shadow-sm backdrop-blur transition-all duration-200 hover:border-blue-300 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 ${sizeClassMap[size]} ${props.disabled ? 'cursor-not-allowed bg-slate-50 opacity-70' : ''} ${normalizedClassName}`} style={style as CSSProperties}>
+    <div className={`flex items-center gap-2 rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:border-blue-300 focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100 ${sizeClassMap[size]} ${props.disabled ? 'cursor-not-allowed bg-slate-50 opacity-70' : ''} ${normalizedClassName}`} style={style as CSSProperties}>
       {prefix && <span className="shrink-0 text-slate-400">{prefix}</span>}
       {input}
       {allowClear && value ? (

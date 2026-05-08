@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Table, Tabs, Spin, Progress, Row, Col, Statistic, Button } from 'antd';
+import { Card, Tabs, Spin, Progress, Statistic, Button, DataTable, DataColumn, Grid } from '@/components';
 import {
   PieChart,
   Pie,
@@ -231,41 +231,6 @@ const AdminStatistics: React.FC = () => {
     fill: CHART_COLORS[idx % CHART_COLORS.length],
   }));
 
-  const errorColumns = [
-    {
-      title: '判题状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (text: string) => text || '(空)',
-    },
-    {
-      title: '提交数',
-      dataIndex: 'count',
-      key: 'count',
-      width: 120,
-      sorter: (a: ErrorPatternStat, b: ErrorPatternStat) => (a.count || 0) - (b.count || 0),
-    },
-    {
-      title: '占比',
-      key: 'percent',
-      width: 200,
-      render: (_: unknown, record: ErrorPatternStat) => {
-        const p = totalError > 0 ? ((record.count || 0) / totalError) * 100 : 0;
-        return <Progress percent={Math.round(p * 10) / 10} size="small" />;
-      },
-    },
-  ];
-
-  const dailyColumns = [
-    { title: '日期', dataIndex: 'date', key: 'date', width: 140 },
-    { title: '提交数', dataIndex: 'count', key: 'count', width: 120 },
-  ];
-
-  const languageColumns = [
-    { title: '语言', dataIndex: 'language', key: 'language', width: 120 },
-    { title: '提交数', dataIndex: 'count', key: 'count', width: 120 },
-  ];
-
   const languageChartData = (platformStats?.languageDistribution || []).map((item, idx) => ({
     name: item.language || '(空)',
     count: item.count || 0,
@@ -285,19 +250,16 @@ const AdminStatistics: React.FC = () => {
         </h2>
       </div>
 
-      <Tabs
-        defaultActiveKey="error"
-        centered
-        items={[
-          {
-            key: 'error',
-            label: (
+      <Tabs defaultActiveKey="error" centered>
+        <Tabs.Panel
+          id="error"
+          label={
               <span className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4" />
                 常见错误模式统计
               </span>
-            ),
-            children: (
+          }
+        >
               <Card>
                 <div className="flex justify-end mb-4">
                   <RefreshCw
@@ -336,13 +298,18 @@ const AdminStatistics: React.FC = () => {
                       </ResponsiveContainer>
                     </div>
                   )}
-                  <Table
-                    rowKey="status"
-                    columns={errorColumns}
-                    dataSource={errorPatterns}
-                    pagination={false}
-                    size="middle"
-                  />
+                  <DataTable<ErrorPatternStat> rowKey="status" rows={errorPatterns} pagination={false} size="middle">
+                    <DataColumn<ErrorPatternStat> header="判题状态" cell={(pattern) => pattern.status || '(空)'} />
+                    <DataColumn<ErrorPatternStat> header="提交数" width={120} cell={(pattern) => pattern.count || 0} />
+                    <DataColumn<ErrorPatternStat>
+                      header="占比"
+                      width={200}
+                      cell={(pattern) => {
+                        const percent = totalError > 0 ? ((pattern.count || 0) / totalError) * 100 : 0;
+                        return <Progress percent={Math.round(percent * 10) / 10} size="small" />;
+                      }}
+                    />
+                  </DataTable>
                   {!loadingError && errorPatterns.length === 0 && (
                     <div className="text-center py-8" style={{ color: 'var(--gemini-text-secondary)' }}>
                       暂无提交记录
@@ -350,17 +317,16 @@ const AdminStatistics: React.FC = () => {
                   )}
                 </Spin>
               </Card>
-            ),
-          },
-          {
-            key: 'platform',
-            label: (
+        </Tabs.Panel>
+        <Tabs.Panel
+          id="platform"
+          label={
               <span className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 平台数据分析
               </span>
-            ),
-            children: (
+          }
+        >
               <div className="space-y-6">
                 <Card>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -384,47 +350,39 @@ const AdminStatistics: React.FC = () => {
                   <Spin spinning={loadingPlatform}>
                     {platformStats && (
                       <>
-                        <Row gutter={[16, 16]} className="mb-6">
-                          <Col xs={24} sm={12} md={6}>
-                            <Card size="small" className="text-center">
-                              <Statistic
-                                title="题目总数"
-                                value={platformStats.problemCount}
-                                prefix={<BookOpen className="w-5 h-5" style={{ color: 'var(--gemini-accent)' }} />}
-                              />
-                            </Card>
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Card size="small" className="text-center">
-                              <Statistic
-                                title="用户总数"
-                                value={platformStats.userCount}
-                                prefix={<Users className="w-5 h-5" style={{ color: '#34a853' }} />}
-                              />
-                            </Card>
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Card size="small" className="text-center">
-                              <Statistic
-                                title="提交总数"
-                                value={platformStats.submissionCount}
-                                prefix={<Code2 className="w-5 h-5" style={{ color: '#f9ab00' }} />}
-                              />
-                            </Card>
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <Card size="small" className="text-center">
-                              <Statistic
-                                title="比赛场次"
-                                value={platformStats.competitionCount}
-                                prefix={<Trophy className="w-5 h-5" style={{ color: '#9334e6' }} />}
-                              />
-                            </Card>
-                          </Col>
-                        </Row>
+                        <div className="mb-6 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                          <Card size="small" className="text-center">
+                            <Statistic
+                              title="题目总数"
+                              value={platformStats.problemCount}
+                              prefix={<BookOpen className="w-5 h-5" style={{ color: 'var(--gemini-accent)' }} />}
+                            />
+                          </Card>
+                          <Card size="small" className="text-center">
+                            <Statistic
+                              title="用户总数"
+                              value={platformStats.userCount}
+                              prefix={<Users className="w-5 h-5" style={{ color: '#34a853' }} />}
+                            />
+                          </Card>
+                          <Card size="small" className="text-center">
+                            <Statistic
+                              title="提交总数"
+                              value={platformStats.submissionCount}
+                              prefix={<Code2 className="w-5 h-5" style={{ color: '#f9ab00' }} />}
+                            />
+                          </Card>
+                          <Card size="small" className="text-center">
+                            <Statistic
+                              title="比赛场次"
+                              value={platformStats.competitionCount}
+                              prefix={<Trophy className="w-5 h-5" style={{ color: '#9334e6' }} />}
+                            />
+                          </Card>
+                        </div>
 
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} lg={12}>
+                        <Grid largeColumns={2}>
+                          <Grid.Item>
                             <Card size="small" title="每日提交趋势（折线图）" className="mb-4">
                               {dailyChartData.length > 0 ? (
                                 <div style={{ height: 280 }}>
@@ -460,8 +418,8 @@ const AdminStatistics: React.FC = () => {
                                 </div>
                               )}
                             </Card>
-                          </Col>
-                          <Col xs={24} lg={12}>
+                          </Grid.Item>
+                          <Grid.Item>
                             <Card size="small" title="语言分布（饼图）" className="mb-4">
                               {languageChartData.length > 0 ? (
                                 <div style={{ height: 280 }}>
@@ -498,11 +456,11 @@ const AdminStatistics: React.FC = () => {
                                 </div>
                               )}
                             </Card>
-                          </Col>
-                        </Row>
+                          </Grid.Item>
+                        </Grid>
 
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} lg={12}>
+                        <Grid largeColumns={2}>
+                          <Grid.Item>
                             <Card size="small" title="每日提交量（柱状图）" className="mb-4">
                               {dailyChartData.length > 0 ? (
                                 <div style={{ height: 280 }}>
@@ -535,8 +493,8 @@ const AdminStatistics: React.FC = () => {
                                 </div>
                               )}
                             </Card>
-                          </Col>
-                          <Col xs={24} lg={12}>
+                          </Grid.Item>
+                          <Grid.Item>
                             <Card size="small" title="语言分布（柱状图）">
                               {languageChartData.length > 0 ? (
                                 <div style={{ height: 280 }}>
@@ -569,34 +527,27 @@ const AdminStatistics: React.FC = () => {
                                 </div>
                               )}
                             </Card>
-                          </Col>
-                        </Row>
+                          </Grid.Item>
+                        </Grid>
 
-                        <Row gutter={[16, 16]}>
-                          <Col span={24}>
+                        <div className="grid gap-4">
+                          <div>
                             <Card size="small" title="数据明细">
-                              <Table
-                                rowKey="date"
-                                columns={dailyColumns}
-                                dataSource={platformStats.dailySubmissions || []}
-                                pagination={{ pageSize: 10 }}
-                                size="small"
-                                scroll={{ x: 300 }}
-                              />
+                              <DataTable<DailySubmission> rowKey="date" rows={platformStats.dailySubmissions || []} pagination={{ pageSize: 10 }} size="small">
+                                <DataColumn<DailySubmission> header="日期" width={140} cell={(day) => day.date} />
+                                <DataColumn<DailySubmission> header="提交数" width={120} cell={(day) => day.count} />
+                              </DataTable>
                             </Card>
-                          </Col>
-                          <Col span={24}>
+                          </div>
+                          <div>
                             <Card size="small" title="语言分布明细">
-                              <Table
-                                rowKey="language"
-                                columns={languageColumns}
-                                dataSource={platformStats.languageDistribution || []}
-                                pagination={false}
-                                size="small"
-                              />
+                              <DataTable<LanguageStat> rowKey="language" rows={platformStats.languageDistribution || []} pagination={false} size="small">
+                                <DataColumn<LanguageStat> header="语言" width={120} cell={(language) => language.language} />
+                                <DataColumn<LanguageStat> header="提交数" width={120} cell={(language) => language.count} />
+                              </DataTable>
                             </Card>
-                          </Col>
-                        </Row>
+                          </div>
+                        </div>
                       </>
                     )}
                     {!loadingPlatform && !platformStats && (
@@ -607,17 +558,16 @@ const AdminStatistics: React.FC = () => {
                   </Spin>
                 </Card>
               </div>
-            ),
-          },
-          {
-            key: 'learning',
-            label: (
+        </Tabs.Panel>
+        <Tabs.Panel
+          id="learning"
+          label={
               <span className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" />
                 学习数据分析
               </span>
-            ),
-            children: (
+          }
+        >
               <Card>
                 <div className="flex flex-wrap items-center gap-4 mb-4">
                   <span style={{ color: 'var(--gemini-text-secondary)' }}>选择用户</span>
@@ -653,28 +603,28 @@ const AdminStatistics: React.FC = () => {
                 <Spin spinning={loadingLearning}>
                   {learningData && (
                     <>
-                      <Row gutter={[16, 16]} className="mb-4">
-                        <Col span={6}>
+                      <Grid columns={2} mediumColumns={4} className="mb-4">
+                        <Grid.Item>
                           <Card size="small" className="text-center">
                             <Statistic title="用户" value={learningData.userName} />
                           </Card>
-                        </Col>
-                        <Col span={6}>
+                        </Grid.Item>
+                        <Grid.Item>
                           <Card size="small" className="text-center">
                             <Statistic title="通过题数" value={learningData.totalSolved} />
                           </Card>
-                        </Col>
-                        <Col span={6}>
+                        </Grid.Item>
+                        <Grid.Item>
                           <Card size="small" className="text-center">
                             <Statistic title="总提交数" value={learningData.totalSubmit} />
                           </Card>
-                        </Col>
-                        <Col span={6}>
+                        </Grid.Item>
+                        <Grid.Item>
                           <Card size="small" className="text-center">
                             <Statistic title="通过率(%)" value={learningData.passRate} precision={1} suffix="%" />
                           </Card>
-                        </Col>
-                      </Row>
+                        </Grid.Item>
+                      </Grid>
                       {learningData.dailySubmissions && learningData.dailySubmissions.length > 0 && (
                         <Card size="small" title="近期提交趋势" className="mb-4">
                           <div style={{ height: 260 }}>
@@ -691,18 +641,12 @@ const AdminStatistics: React.FC = () => {
                         </Card>
                       )}
                       <Card size="small" title="已通过题目列表">
-                        <Table
-                          rowKey="problemId"
-                          size="small"
-                          pagination={{ pageSize: 10 }}
-                          dataSource={learningData.solvedProblems || []}
-                          columns={[
-                            { title: '题号', dataIndex: 'problemId', width: 90 },
-                            { title: '标题', dataIndex: 'title', ellipsis: true },
-                            { title: '难度', dataIndex: 'difficulty', width: 90 },
-                            { title: '标签', dataIndex: 'tags', width: 180, render: (tags: string[]) => (tags && tags.length) ? tags.join(', ') : '-' },
-                          ]}
-                        />
+                        <DataTable<SolvedProblemItem> rowKey="problemId" size="small" pagination={{ pageSize: 10 }} rows={learningData.solvedProblems || []}>
+                          <DataColumn<SolvedProblemItem> header="题号" width={90} cell={(problem) => problem.problemId} />
+                          <DataColumn<SolvedProblemItem> header="标题" cell={(problem) => problem.title} />
+                          <DataColumn<SolvedProblemItem> header="难度" width={90} cell={(problem) => problem.difficulty || '-'} />
+                          <DataColumn<SolvedProblemItem> header="标签" width={180} cell={(problem) => problem.tags?.length ? problem.tags.join(', ') : '-'} />
+                        </DataTable>
                       </Card>
                     </>
                   )}
@@ -711,17 +655,16 @@ const AdminStatistics: React.FC = () => {
                   )}
                 </Spin>
               </Card>
-            ),
-          },
-          {
-            key: 'teaching',
-            label: (
+        </Tabs.Panel>
+        <Tabs.Panel
+          id="teaching"
+          label={
               <span className="flex items-center gap-2">
                 <GraduationCap className="w-4 h-4" />
                 教学进度跟踪
               </span>
-            ),
-            children: (
+          }
+        >
               <Card>
                 <div className="flex flex-wrap items-center gap-4 mb-4">
                   <span style={{ color: 'var(--gemini-text-secondary)' }}>选择练习</span>
@@ -746,17 +689,11 @@ const AdminStatistics: React.FC = () => {
                     <div className="space-y-4">
                       {teachingProgress.map((p) => (
                         <Card key={p.practiceId} size="small" title={`${p.practiceTitle}（共 ${p.totalProblems} 题）`}>
-                          <Table
-                            rowKey="problemId"
-                            size="small"
-                            pagination={false}
-                            dataSource={p.problemProgressList || []}
-                            columns={[
-                              { title: '题号', dataIndex: 'problemId', width: 90 },
-                              { title: '题目', dataIndex: 'title', ellipsis: true },
-                              { title: '通过人数', dataIndex: 'solvedCount', width: 110 },
-                            ]}
-                          />
+                          <DataTable<PracticeProgressItem> rowKey="problemId" size="small" pagination={false} rows={p.problemProgressList || []}>
+                            <DataColumn<PracticeProgressItem> header="题号" width={90} cell={(problem) => problem.problemId} />
+                            <DataColumn<PracticeProgressItem> header="题目" cell={(problem) => problem.title} />
+                            <DataColumn<PracticeProgressItem> header="通过人数" width={110} cell={(problem) => problem.solvedCount} />
+                          </DataTable>
                         </Card>
                       ))}
                     </div>
@@ -767,12 +704,11 @@ const AdminStatistics: React.FC = () => {
                   )}
                 </Spin>
               </Card>
-            ),
-          },
-        ]}
-      />
+        </Tabs.Panel>
+      </Tabs>
     </div>
   );
 };
 
 export default AdminStatistics;
+

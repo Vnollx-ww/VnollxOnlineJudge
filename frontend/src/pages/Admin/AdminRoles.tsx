@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Tag, Spin, Popconfirm } from 'antd';
+import { Button, Modal, Tag, Spin, Field, DataTable, DataColumn, ConfirmButton } from '@/components';
 import toast from 'react-hot-toast';
 import { RefreshCw, Shield, Plus, Trash2, Edit, X, Key } from 'lucide-react';
 import api from '@/utils/api';
@@ -25,6 +25,22 @@ interface Permission {
   module: string;
 }
 
+interface RoleFormValues {
+  code: string;
+  name: string;
+  description: string;
+}
+
+interface PermissionFormValues {
+  code: string;
+  name: string;
+  module: string;
+  description: string;
+}
+
+const defaultRoleForm: RoleFormValues = { code: '', name: '', description: '' };
+const defaultPermissionForm: PermissionFormValues = { code: '', name: '', module: '', description: '' };
+
 const AdminRoles: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -36,9 +52,9 @@ const AdminRoles: React.FC = () => {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [assignPermissionModalVisible, setAssignPermissionModalVisible] = useState(false);
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
-  const [permissionForm] = Form.useForm();
   const [selectedPermissionsToAssign, setSelectedPermissionsToAssign] = useState<number[]>([]);
-  const [form] = Form.useForm();
+  const [roleForm, setRoleForm] = useState<RoleFormValues>(defaultRoleForm);
+  const [permissionFormValues, setPermissionFormValues] = useState<PermissionFormValues>(defaultPermissionForm);
 
   useEffect(() => {
     loadRoles();
@@ -91,17 +107,25 @@ const AdminRoles: React.FC = () => {
 
   const handleAddRole = () => {
     setEditingRole(null);
-    form.resetFields();
+    setRoleForm(defaultRoleForm);
     setRoleModalVisible(true);
   };
 
   const handleEditRole = (role: Role) => {
     setEditingRole(role);
-    form.setFieldsValue(role);
+    setRoleForm({ code: role.code, name: role.name, description: role.description || '' });
     setRoleModalVisible(true);
   };
 
-  const handleRoleSubmit = async (values: { code: string; name: string; description: string }) => {
+  const updateRoleForm = <K extends keyof RoleFormValues>(key: K, value: RoleFormValues[K]) => {
+    setRoleForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const updatePermissionForm = <K extends keyof PermissionFormValues>(key: K, value: PermissionFormValues[K]) => {
+    setPermissionFormValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleRoleSubmit = async (values: RoleFormValues) => {
     try {
       if (editingRole) {
         const data = await api.put(`/admin/permission/role/${editingRole.id}`, values) as ApiResponse;
@@ -193,13 +217,13 @@ const AdminRoles: React.FC = () => {
     }
   };
 
-  const handleCreatePermission = async (values: { code: string; name: string; description: string; module: string }) => {
+  const handleCreatePermission = async (values: PermissionFormValues) => {
     try {
       const data = await api.post('/admin/permission/permission', values) as ApiResponse;
       if (data.code === 200) {
         toast.success('创建权限成功');
         setPermissionModalVisible(false);
-        permissionForm.resetFields();
+        setPermissionFormValues(defaultPermissionForm);
         loadPermissions();
       } else {
         toast.error((data as any).msg || '创建失败');
@@ -219,53 +243,6 @@ const AdminRoles: React.FC = () => {
     };
     return <Tag color={colorMap[code] || 'default'}>{code}</Tag>;
   };
-
-  const roleColumns = [
-    { title: '角色码', dataIndex: 'code', key: 'code', render: (code: string) => getRoleTag(code) },
-    { title: '角色名称', dataIndex: 'name', key: 'name' },
-    { title: '描述', dataIndex: 'description', key: 'description' },
-    {
-      title: '操作',
-      key: 'action',
-      width: 200,
-      render: (_: unknown, record: Role) => (
-        <div className="flex gap-2">
-          <Button type="link" size="small" onClick={() => handleRoleSelect(record)}>
-            查看权限
-          </Button>
-          <PermissionGuard permission={PermissionCode.ROLE_UPDATE}>
-            <Button type="link" size="small" icon={<Edit className="w-3 h-3" />} onClick={() => handleEditRole(record)}>
-              编辑
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.ROLE_DELETE}>
-            <Popconfirm title="确定要删除这个角色吗？" onConfirm={() => handleDeleteRole(record.id)}>
-              <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-        </div>
-      ),
-    },
-  ];
-
-  const rolePermissionColumns = [
-    { title: '权限码', dataIndex: 'code', key: 'code', render: (code: string) => <Tag color="green">{code}</Tag> },
-    { title: '权限名称', dataIndex: 'name', key: 'name' },
-    { title: '模块', dataIndex: 'module', key: 'module' },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: unknown, record: Permission) => (
-        <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
-          <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(record.id)}>
-            移除
-          </Button>
-        </PermissionGuard>
-      ),
-    },
-  ];
 
   // 过滤掉已分配的权限
   const availablePermissions = permissions.filter(
@@ -318,14 +295,41 @@ const AdminRoles: React.FC = () => {
           <Shield className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
           <span className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>角色列表</span>
         </div>
-        <Table
-          columns={roleColumns}
-          dataSource={roles}
+        <DataTable<Role>
+          rows={roles}
           rowKey="id"
           loading={loading}
           pagination={false}
           size="small"
-        />
+        >
+          <DataColumn<Role> header="角色码" cell={(role) => getRoleTag(role.code)} />
+          <DataColumn<Role> header="角色名称" cell={(role) => role.name} />
+          <DataColumn<Role> header="描述" cell={(role) => role.description} />
+          <DataColumn<Role>
+            header="操作"
+            width={240}
+            action
+            cell={(role) => (
+              <div className="flex gap-2">
+                <Button type="link" size="small" onClick={() => handleRoleSelect(role)}>
+                  查看权限
+                </Button>
+                <PermissionGuard permission={PermissionCode.ROLE_UPDATE}>
+                  <Button type="link" size="small" icon={<Edit className="w-3 h-3" />} onClick={() => handleEditRole(role)}>
+                    编辑
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard permission={PermissionCode.ROLE_DELETE}>
+                  <ConfirmButton message="确定要删除这个角色吗？" onConfirm={() => handleDeleteRole(role.id)}>
+                    <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
+                      删除
+                    </Button>
+                  </ConfirmButton>
+                </PermissionGuard>
+              </div>
+            )}
+          />
+        </DataTable>
       </div>
 
       {/* 选中角色的权限 */}
@@ -355,7 +359,24 @@ const AdminRoles: React.FC = () => {
             </div>
           </div>
           <Spin spinning={rolePermissionsLoading}>
-            <Table columns={rolePermissionColumns} dataSource={rolePermissions} rowKey="id" pagination={false} size="small" />
+            <div className="max-h-80 overflow-y-auto">
+              <DataTable<Permission> rows={rolePermissions} rowKey="id" pagination={false} size="small">
+                <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="green">{permission.code}</Tag>} />
+                <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
+                <DataColumn<Permission> header="模块" cell={(permission) => permission.module} />
+                <DataColumn<Permission>
+                  header="操作"
+                  action
+                  cell={(permission) => (
+                    <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+                      <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(permission.id)}>
+                        移除
+                      </Button>
+                    </PermissionGuard>
+                  )}
+                />
+              </DataTable>
+            </div>
           </Spin>
         </div>
       )}
@@ -369,17 +390,23 @@ const AdminRoles: React.FC = () => {
         width={500}
         centered
       >
-        <Form form={form} layout="vertical" onFinish={handleRoleSubmit}>
-          <Form.Item name="code" label="角色码" rules={[{ required: true, message: '请输入角色码' }]}>
-            <Input placeholder="如: MODERATOR" disabled={!!editingRole} />
-          </Form.Item>
-          <Form.Item name="name" label="角色名称" rules={[{ required: true, message: '请输入角色名称' }]}>
-            <Input placeholder="如: 版主" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea placeholder="角色描述" rows={3} />
-          </Form.Item>
-          <Form.Item className="mb-0">
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleRoleSubmit(roleForm);
+          }}
+        >
+          <Field label="角色码">
+            <Input value={roleForm.code} onChange={(event) => updateRoleForm('code', event.target.value)} placeholder="如: MODERATOR" disabled={!!editingRole} />
+          </Field>
+          <Field label="角色名称">
+            <Input value={roleForm.name} onChange={(event) => updateRoleForm('name', event.target.value)} placeholder="如: 版主" />
+          </Field>
+          <Field label="描述">
+            <Input.TextArea value={roleForm.description} onChange={(event) => updateRoleForm('description', event.target.value)} placeholder="角色描述" rows={3} />
+          </Field>
+          <div className="mb-0">
             <div className="flex justify-end gap-2">
               <Button onClick={() => setRoleModalVisible(false)}>取消</Button>
               <Button
@@ -390,23 +417,20 @@ const AdminRoles: React.FC = () => {
                 {editingRole ? '更新' : '创建'}
               </Button>
             </div>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </Modal>
 
       {/* 分配权限 Modal */}
       <Modal
         title="分配权限"
         open={assignPermissionModalVisible}
-        onOk={handleAssignPermissionToRole}
         centered
         onCancel={() => {
           setAssignPermissionModalVisible(false);
           setSelectedPermissionsToAssign([]);
         }}
-        okText="分配"
-        cancelText="取消"
-        okButtonProps={{ style: { backgroundColor: 'var(--gemini-accent)', border: 'none' } }}
+        footer={null}
       >
         <div className="space-y-3">
           <div className="flex justify-end gap-2">
@@ -433,6 +457,21 @@ const AdminRoles: React.FC = () => {
               }))
             )}
           />
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => {
+              setAssignPermissionModalVisible(false);
+              setSelectedPermissionsToAssign([]);
+            }}>
+              取消
+            </Button>
+            <Button
+              type="primary"
+              onClick={handleAssignPermissionToRole}
+              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+            >
+              分配
+            </Button>
+          </div>
         </div>
       </Modal>
 
@@ -443,29 +482,35 @@ const AdminRoles: React.FC = () => {
         centered
         onCancel={() => {
           setPermissionModalVisible(false);
-          permissionForm.resetFields();
+          setPermissionFormValues(defaultPermissionForm);
         }}
         footer={null}
         width={500}
       >
-        <Form form={permissionForm} layout="vertical" onFinish={handleCreatePermission}>
-          <Form.Item name="code" label="权限码" rules={[{ required: true, message: '请输入权限码' }]}>
-            <Input placeholder="如: problem:export, user:ban" />
-          </Form.Item>
-          <Form.Item name="name" label="权限名称" rules={[{ required: true, message: '请输入权限名称' }]}>
-            <Input placeholder="如: 导出题目, 封禁用户" />
-          </Form.Item>
-          <Form.Item name="module" label="所属模块" rules={[{ required: true, message: '请输入模块名称' }]}>
-            <Input placeholder="如: 题目管理, 用户管理" />
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea placeholder="权限描述" rows={3} />
-          </Form.Item>
-          <Form.Item className="mb-0">
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleCreatePermission(permissionFormValues);
+          }}
+        >
+          <Field label="权限码">
+            <Input value={permissionFormValues.code} onChange={(event) => updatePermissionForm('code', event.target.value)} placeholder="如: problem:export, user:ban" />
+          </Field>
+          <Field label="权限名称">
+            <Input value={permissionFormValues.name} onChange={(event) => updatePermissionForm('name', event.target.value)} placeholder="如: 导出题目, 封禁用户" />
+          </Field>
+          <Field label="所属模块">
+            <Input value={permissionFormValues.module} onChange={(event) => updatePermissionForm('module', event.target.value)} placeholder="如: 题目管理, 用户管理" />
+          </Field>
+          <Field label="描述">
+            <Input.TextArea value={permissionFormValues.description} onChange={(event) => updatePermissionForm('description', event.target.value)} placeholder="权限描述" rows={3} />
+          </Field>
+          <div className="mb-0">
             <div className="flex justify-end gap-2">
               <Button onClick={() => {
                 setPermissionModalVisible(false);
-                permissionForm.resetFields();
+                setPermissionFormValues(defaultPermissionForm);
               }}>取消</Button>
               <Button
                 type="primary"
@@ -475,11 +520,12 @@ const AdminRoles: React.FC = () => {
                 创建
               </Button>
             </div>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </Modal>
     </div>
   );
 };
 
 export default AdminRoles;
+

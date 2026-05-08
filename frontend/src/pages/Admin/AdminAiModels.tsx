@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, InputNumber, Popconfirm, Upload } from 'antd';
-import type { UploadProps } from 'antd';
+import { Button, Modal, InputNumber, FilePicker, Field, DataTable, DataColumn, ConfirmButton } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon } from 'lucide-react';
 import api from '@/utils/api';
@@ -27,13 +26,31 @@ interface AdminAiModelDetail {
   proxyType?: string;
 }
 
+interface AiModelFormValues {
+  name: string;
+  logoUrl: string;
+  apiKey: string;
+  sortOrder: number | string;
+  status: number;
+  proxyType: string;
+}
+
+const defaultModelForm: AiModelFormValues = {
+  name: '',
+  logoUrl: '',
+  apiKey: '',
+  sortOrder: 0,
+  status: 1,
+  proxyType: 'overseas',
+};
+
 const AdminAiModels: React.FC = () => {
   const [list, setList] = useState<AiModelVo[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
-  const [form] = Form.useForm();
+  const [modelForm, setModelForm] = useState<AiModelFormValues>(defaultModelForm);
 
   const loadList = async () => {
     setLoading(true);
@@ -57,12 +74,7 @@ const AdminAiModels: React.FC = () => {
 
   const handleAdd = () => {
     setEditingId(null);
-    form.resetFields();
-    form.setFieldsValue({
-      status: 1,
-      proxyType: 'overseas',
-      sortOrder: 0,
-    });
+    setModelForm(defaultModelForm);
     setModalVisible(true);
   };
 
@@ -72,11 +84,12 @@ const AdminAiModels: React.FC = () => {
       const res = await api.get(`/admin/ai-model/${row.id}`) as ApiResponse<AdminAiModelDetail>;
       if (res.code === 200 && res.data) {
         const d = res.data;
-        form.setFieldsValue({
+        setModelForm({
           name: d.name,
-          logoUrl: d.logoUrl,
-          sortOrder: d.sortOrder,
-          status: d.status,
+          logoUrl: d.logoUrl || '',
+          apiKey: '',
+          sortOrder: d.sortOrder ?? 0,
+          status: d.status ?? 1,
           proxyType: d.proxyType ?? 'overseas',
         });
         setModalVisible(true);
@@ -103,30 +116,32 @@ const AdminAiModels: React.FC = () => {
     }
   };
 
-  const handleLogoUpload: UploadProps['customRequest'] = async (options) => {
-    const { file, onSuccess, onError } = options;
+  const handleLogoUpload = async (files: File[]) => {
+    const file = files[0];
+    if (!file) return;
     setLogoUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file as File);
+      formData.append('file', file);
       const res = await api.post('/user/upload/avatar?prefix=ai-model', formData) as ApiResponse<string>;
       if (res.code === 200 && res.data) {
-        form.setFieldValue('logoUrl', res.data);
+        setModelForm((current) => ({ ...current, logoUrl: res.data }));
         toast.success('Logo 上传成功');
-        onSuccess?.(res.data);
       } else {
         toast.error((res as any).msg || '上传失败');
-        onError?.(new Error((res as any).msg));
       }
-    } catch (e) {
+    } catch {
       toast.error('上传失败');
-      onError?.(e as Error);
     } finally {
       setLogoUploading(false);
     }
   };
 
-  const handleSubmit = async (values: Record<string, unknown>) => {
+  const updateModelForm = <K extends keyof AiModelFormValues>(key: K, value: AiModelFormValues[K]) => {
+    setModelForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (values: AiModelFormValues) => {
     try {
       const payload = {
         id: editingId ?? undefined,
@@ -151,89 +166,69 @@ const AdminAiModels: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--gemini-text-primary)' }}>
-        <Bot className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-        AI 模型管理
-      </h2>
-
-      <div className="gemini-card">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-            配置后可被用户在 AI 助手中选择使用
-          </span>
-          <div className="flex gap-2">
-            <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadList} loading={loading}>
-              刷新
-            </Button>
-            <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
-              <Button
-                type="primary"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={handleAdd}
-                style={{
-                  backgroundColor: 'var(--gemini-accent)',
-                  color: 'var(--gemini-accent-text)',
-                  border: 'none',
-                }}
-              >
-                添加模型
-              </Button>
-            </PermissionGuard>
-          </div>
+    <div className="gemini-card">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>AI 模型管理</h2>
+          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>配置后可被用户在 AI 助手中选择使用</p>
         </div>
-
-        <Table<AiModelVo>
-          rowKey="id"
-          loading={loading}
-          dataSource={list}
-          columns={[
-            {
-              title: '排序',
-              dataIndex: 'sortOrder',
-              width: 72,
-              align: 'center',
-            },
-            {
-              title: '名称',
-              dataIndex: 'name',
-              render: (name, row) => (
-                <span className="flex items-center gap-2">
-                  {row.logoUrl ? (
-                    <img src={row.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
-                  ) : (
-                    <Bot className="w-5 h-5 text-gray-400" />
-                  )}
-                  {name}
-                </span>
-              ),
-            },
-            {
-              title: '操作',
-              key: 'action',
-              align: 'left',
-              render: (_, row) => (
-                <div className="flex gap-2 flex-wrap">
-                  <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
-                    <Button type="link" size="small" icon={<Edit className="w-3.5 h-3.5" />} onClick={() => handleEdit(row)}>
-                      编辑
-                    </Button>
-                    <Popconfirm
-                      title="确定删除该模型？"
-                      onConfirm={() => handleDelete(row.id)}
-                    >
-                      <Button type="link" danger size="small" icon={<Trash2 className="w-3.5 h-3.5" />}>
-                        删除
-                      </Button>
-                    </Popconfirm>
-                  </PermissionGuard>
-                </div>
-              ),
-            },
-          ]}
-          pagination={false}
-        />
+        <div className="flex gap-2">
+          <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadList} loading={loading}>
+            刷新
+          </Button>
+          <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
+            <Button
+              type="primary"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={handleAdd}
+              style={{
+                backgroundColor: 'var(--gemini-accent)',
+                color: 'var(--gemini-accent-text)',
+                border: 'none',
+              }}
+            >
+              添加模型
+            </Button>
+          </PermissionGuard>
+        </div>
       </div>
+
+      {/* Table */}
+      <DataTable<AiModelVo> rowKey="id" loading={loading} rows={list} pagination={false}>
+        <DataColumn<AiModelVo> header="排序" width={72} cell={(model) => model.sortOrder} />
+        <DataColumn<AiModelVo>
+          header="名称"
+          cell={(model) => (
+            <span className="flex items-center gap-2">
+              {model.logoUrl ? (
+                <img src={model.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
+              ) : (
+                <Bot className="w-5 h-5 text-gray-400" />
+              )}
+              {model.name}
+            </span>
+          )}
+        />
+        <DataColumn<AiModelVo>
+          header="操作"
+          action
+          cell={(model) => (
+            <div className="flex gap-2 flex-wrap">
+              <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
+                <Button type="link" size="small" icon={<Edit className="w-3.5 h-3.5" />} onClick={() => handleEdit(model)}>
+                  编辑
+                </Button>
+                <ConfirmButton message="确定删除该模型？" onConfirm={() => handleDelete(model.id)}>
+                  <Button type="link" danger size="small" icon={<Trash2 className="w-3.5 h-3.5" />}>
+                    删除
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+            </div>
+          )}
+        />
+      </DataTable>
 
       <Modal
         title={editingId ? '编辑模型' : '添加模型'}
@@ -242,70 +237,79 @@ const AdminAiModels: React.FC = () => {
         footer={null}
         width={560}
         centered
-        destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="name" label="显示名称" rules={[{ required: true, message: '请输入显示名称' }]}>
-            <Input placeholder="如：GPT-4" />
-          </Form.Item>
-          <Form.Item label="Logo 图片">
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit(modelForm);
+          }}
+        >
+          <Field label="显示名称">
+            <Input value={modelForm.name} onChange={(event) => updateModelForm('name', event.target.value)} placeholder="如：GPT-4" />
+          </Field>
+          <Field label="Logo 图片">
             <div className="flex gap-2 items-center flex-wrap">
-              <Form.Item name="logoUrl" noStyle>
-                <Input placeholder="输入地址或上传图片" className="flex-1 min-w-[200px]" />
-              </Form.Item>
-              <Upload
-                showUploadList={false}
+              <Input value={modelForm.logoUrl} onChange={(event) => updateModelForm('logoUrl', event.target.value)} placeholder="输入地址或上传图片" className="flex-1 min-w-[200px]" />
+              <FilePicker
                 accept="image/*"
-                customRequest={handleLogoUpload}
                 disabled={logoUploading}
+                onFilesSelected={handleLogoUpload}
               >
                 <Button icon={<UploadIcon className="w-4 h-4" />} loading={logoUploading}>
                   上传
                 </Button>
-              </Upload>
+              </FilePicker>
             </div>
-          </Form.Item>
-          <Form.Item name="apiKey" label="API Key" rules={editingId ? [] : [{ required: true, message: '新建时请输入 API Key' }]}>
-            <Input.Password placeholder={editingId ? '不修改请留空' : '必填'} />
-          </Form.Item>
-          <Form.Item name="sortOrder" label="排序(越小越靠前)">
-            <InputNumber min={0} className="w-full" />
-          </Form.Item>
-          <Form.Item name="status" label="状态">
+          </Field>
+          <Field label="API Key">
+            <Input.Password value={modelForm.apiKey} onChange={(event) => updateModelForm('apiKey', event.target.value)} placeholder={editingId ? '不修改请留空' : '必填'} />
+          </Field>
+          <Field label="排序(越小越靠前)">
+            <InputNumber min={0} className="w-full" value={modelForm.sortOrder} onChange={(event: React.ChangeEvent<HTMLInputElement>) => updateModelForm('sortOrder', event.target.value)} />
+          </Field>
+          <Field label="状态">
             <Select
+              value={modelForm.status}
+              onChange={(value) => updateModelForm('status', value)}
               options={[
                 { value: 1, label: '启用' },
                 { value: 0, label: '禁用' },
               ]}
             />
-          </Form.Item>
-          <Form.Item name="proxyType" label="代理类型">
+          </Field>
+          <Field label="代理类型">
             <Select
+              value={modelForm.proxyType}
+              onChange={(value) => updateModelForm('proxyType', value)}
               options={[
                 { value: 'domestic', label: '国内代理' },
                 { value: 'overseas', label: '国外代理' },
               ]}
               placeholder="国内模型选国内代理，国外模型选国外代理"
             />
-          </Form.Item>
-          <Form.Item className="mb-0 flex justify-end gap-2">
-            <Button onClick={() => setModalVisible(false)}>取消</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              style={{
-                backgroundColor: 'var(--gemini-accent)',
-                color: 'var(--gemini-accent-text)',
-                border: 'none',
-              }}
-            >
-              保存
-            </Button>
-          </Form.Item>
-        </Form>
+          </Field>
+          <div className="mb-0">
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => setModalVisible(false)}>取消</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                style={{
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                  border: 'none',
+                }}
+              >
+                保存
+              </Button>
+            </div>
+          </div>
+        </form>
       </Modal>
     </div>
   );
 };
 
 export default AdminAiModels;
+

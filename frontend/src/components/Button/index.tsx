@@ -19,7 +19,7 @@ const variantClassMap: Record<ButtonVariant, string> = {
   filled: 'bg-blue-50 text-blue-700 hover:bg-blue-100 active:scale-[0.98]',
   outlined: 'border border-slate-200 bg-white/80 text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-[0.98]',
   text: 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98]',
-  danger: 'bg-red-50 text-red-700 hover:bg-red-100 active:scale-[0.98]',
+  danger: 'bg-transparent text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-[0.98]',
 };
 
 const sizeClassMap: Record<ButtonSize, string> = {
@@ -49,7 +49,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
       ref={ref}
       type={htmlType}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-full border border-transparent font-semibold outline-none transition-all duration-200 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 ${variantClassMap[actualVariant]} ${sizeClassMap[size]} ${block ? 'w-full' : ''} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-transparent font-semibold outline-none transition-all duration-200 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 ${variantClassMap[actualVariant]} ${sizeClassMap[size]} ${block ? 'w-full' : ''} ${className}`}
       {...props}
     >
       {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}

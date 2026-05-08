@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Tag, Popconfirm } from 'antd';
+import { Button, Modal, Tag, Field, DataTable, DataColumn, ConfirmButton } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import api from '@/utils/api';
@@ -25,6 +25,18 @@ interface Role {
   name: string;
 }
 
+interface UserFormValues {
+  name: string;
+  email: string;
+  identity: string;
+}
+
+const defaultUserForm: UserFormValues = {
+  name: '',
+  email: '',
+  identity: '',
+};
+
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -35,7 +47,7 @@ const AdminUsers: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [form] = Form.useForm();
+  const [userForm, setUserForm] = useState<UserFormValues>(defaultUserForm);
 
   useEffect(() => {
     loadUsers();
@@ -83,13 +95,13 @@ const AdminUsers: React.FC = () => {
 
   const handleAdd = () => {
     setEditingUser(null);
-    form.resetFields();
+    setUserForm(defaultUserForm);
     setModalVisible(true);
   };
 
   const handleEdit = (user: User) => {
     setEditingUser(user);
-    form.setFieldsValue({ name: user.name, email: user.email, identity: user.identity });
+    setUserForm({ name: user.name, email: user.email, identity: user.identity });
     setModalVisible(true);
   };
 
@@ -107,7 +119,11 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const updateUserForm = <K extends keyof UserFormValues>(key: K, value: UserFormValues[K]) => {
+    setUserForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (values: UserFormValues) => {
     try {
       if (editingUser) {
         const data = await api.put('/admin/user/update', { id: editingUser.id, ...values }) as ApiResponse;
@@ -146,40 +162,6 @@ const AdminUsers: React.FC = () => {
     value: role.code,
     label: role.name,
   }));
-
-  const columns = [
-    { title: '用户名', dataIndex: 'name', key: 'name' },
-    { title: '邮箱', dataIndex: 'email', key: 'email' },
-    { title: '身份', dataIndex: 'identity', key: 'identity', render: (identity: string) => getIdentityTag(identity) },
-    { title: '提交次数', dataIndex: 'submitCount', key: 'submitCount' },
-    { title: '通过数', dataIndex: 'passCount', key: 'passCount' },
-    {
-      title: '上次登录',
-      dataIndex: 'lastLoginTime',
-      key: 'lastLoginTime',
-      render: (text: string) => (text ? text.replace('T', ' ') : '-'),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: unknown, record: User) => (
-        <div className="flex gap-2">
-          <PermissionGuard permission={PermissionCode.USER_UPDATE}>
-            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(record)}>
-              编辑
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.USER_DELETE}>
-            <Popconfirm title="确定要删除这个用户吗？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className="gemini-card">
@@ -222,9 +204,8 @@ const AdminUsers: React.FC = () => {
       </div>
 
       {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={users}
+      <DataTable<User>
+        rows={users}
         loading={loading}
         rowKey="id"
         pagination={{
@@ -238,7 +219,34 @@ const AdminUsers: React.FC = () => {
             setPageSize(size);
           },
         }}
-      />
+      >
+        <DataColumn<User> header="用户名" cell={(user) => user.name} />
+        <DataColumn<User> header="邮箱" cell={(user) => user.email} />
+        <DataColumn<User> header="身份" cell={(user) => getIdentityTag(user.identity)} />
+        <DataColumn<User> header="提交次数" cell={(user) => user.submitCount} />
+        <DataColumn<User> header="通过数" cell={(user) => user.passCount} />
+        <DataColumn<User> header="上次登录" cell={(user) => user.lastLoginTime ? user.lastLoginTime.replace('T', ' ') : '-'} />
+        <DataColumn<User>
+          header="操作"
+          action
+          cell={(user) => (
+            <div className="flex gap-2">
+              <PermissionGuard permission={PermissionCode.USER_UPDATE}>
+                <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(user)}>
+                  编辑
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.USER_DELETE}>
+                <ConfirmButton message="确定要删除这个用户吗？" onConfirm={() => handleDelete(user.id)}>
+                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                    删除
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+            </div>
+          )}
+        />
+      </DataTable>
 
       {/* Modal */}
       <Modal
@@ -248,24 +256,23 @@ const AdminUsers: React.FC = () => {
         footer={null}
         centered
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="name" label="用户名" rules={[{ required: true, message: '请输入用户名' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label="邮箱"
-            rules={[
-              { required: true, message: '请输入邮箱' },
-              { type: 'email', message: '请输入有效的邮箱地址' },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item name="identity" label="身份" rules={[{ required: true, message: '请选择身份' }]}>
-            <Select options={identityOptions} />
-          </Form.Item>
-          <Form.Item>
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit(userForm);
+          }}
+        >
+          <Field label="用户名">
+            <Input value={userForm.name} onChange={(event) => updateUserForm('name', event.target.value)} />
+          </Field>
+          <Field label="邮箱">
+            <Input value={userForm.email} onChange={(event) => updateUserForm('email', event.target.value)} />
+          </Field>
+          <Field label="身份">
+            <Select value={userForm.identity} onChange={(value) => updateUserForm('identity', value)} options={identityOptions} />
+          </Field>
+          <div>
             <div className="flex justify-end gap-2">
               <Button onClick={() => setModalVisible(false)}>取消</Button>
               <Button 
@@ -280,11 +287,12 @@ const AdminUsers: React.FC = () => {
                 保存
               </Button>
             </div>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </Modal>
     </div>
   );
 };
 
 export default AdminUsers;
+

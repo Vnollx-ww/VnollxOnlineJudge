@@ -87,14 +87,28 @@ function CustomSelect<T extends SelectValue = SelectValue>({
   const updateDropdownPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
+    const viewportPadding = 12;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const maxDropdownWidth = Math.min(640, viewportWidth - viewportPadding * 2);
+    const dropdownWidth = Math.min(Math.max(rect.width, 320), maxDropdownWidth);
+    const left = Math.min(Math.max(rect.left, viewportPadding), viewportWidth - dropdownWidth - viewportPadding);
+    const availableBelow = viewportHeight - rect.bottom - viewportPadding;
+    const availableAbove = rect.top - viewportPadding;
+    const openAbove = availableBelow < 280 && availableAbove > availableBelow;
+    const maxDropdownHeight = Math.max(180, Math.min(360, openAbove ? availableAbove - 8 : availableBelow - 8));
     setDropdownStyle({
       position: 'fixed',
-      top: rect.bottom + 8,
-      left: rect.left,
-      minWidth: rect.width,
+      top: openAbove ? undefined : rect.bottom + 8,
+      bottom: openAbove ? viewportHeight - rect.top + 8 : undefined,
+      left,
+      width: dropdownWidth,
+      maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
+      maxHeight: maxDropdownHeight,
+      '--select-dropdown-list-max-height': `${showSearch ? maxDropdownHeight - 58 : maxDropdownHeight - 12}px`,
       zIndex: 9999,
-    });
-  }, []);
+    } as CSSProperties);
+  }, [showSearch]);
 
   useLayoutEffect(() => {
     if (open) updateDropdownPosition();
@@ -149,7 +163,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
   };
 
   const displayText = multiple
-    ? selectedOptions.map((item) => item.label).join('、')
+    ? `已选择 ${selectedOptions.length} 项`
     : selectedOptions[0]?.label;
 
   return (
@@ -193,7 +207,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
       </button>
 
       {open && createPortal(
-        <div ref={dropdownRef} className="min-w-max overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/70 backdrop-blur-xl" style={dropdownStyle}>
+        <div ref={dropdownRef} className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/70 backdrop-blur-xl" style={dropdownStyle}>
           {showSearch && (
             <div className="border-b border-slate-100 p-2">
               <input
@@ -201,11 +215,10 @@ function CustomSelect<T extends SelectValue = SelectValue>({
                 onChange={(event) => setKeyword(event.target.value)}
                 placeholder="搜索..."
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-                autoFocus
               />
             </div>
           )}
-          <div className="select-dropdown-scroll max-h-72 overflow-auto p-1.5">
+          <div className="select-dropdown-scroll overflow-auto p-1.5" style={{ maxHeight: 'var(--select-dropdown-list-max-height)' }}>
             {groupedOptions.length ? (
               groupedOptions.map((group, groupIndex) => (
                 <div key={`${group.group ?? 'default'}-${groupIndex}`}>
@@ -228,7 +241,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
                             : 'text-slate-700 hover:bg-slate-50 hover:text-blue-700'
                         } ${option.disabled ? 'cursor-not-allowed opacity-50' : ''}`}
                       >
-                        <span className="min-w-0 truncate">{option.label}</span>
+                        <span className="min-w-0 whitespace-normal break-words leading-5">{option.label}</span>
                         {active && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     );

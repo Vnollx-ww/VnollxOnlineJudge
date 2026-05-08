@@ -50,6 +50,9 @@ export type { FormItemProps } from './FormItem';
 export { default as Toast } from './Toast';
 export type { ToastState, ToastType } from './Toast';
 
+// Admin UI primitives
+export * from './AdminUI';
+
 // Permission Guard
 export { default as PermissionGuard } from './PermissionGuard';
 

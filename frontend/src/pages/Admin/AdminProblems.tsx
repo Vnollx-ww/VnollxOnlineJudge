@@ -3,17 +3,17 @@ import {
   Table,
   Button,
   Modal,
-  Form,
   InputNumber,
   Switch,
-  Upload,
+  FilePicker,
+  Field,
   Tag,
-  Popconfirm,
   Tabs,
-  Row,
-  Col,
   Typography,
-} from 'antd';
+  DataTable,
+  DataColumn,
+  ConfirmButton,
+} from '@/components';
 import toast from 'react-hot-toast';
 import {
   Plus,
@@ -72,6 +72,34 @@ interface Problem {
   tags?: string[];
 }
 
+interface ProblemFormValues {
+  title: string;
+  description: string;
+  timeLimit: number | string;
+  memoryLimit: number | string;
+  difficulty: string;
+  inputFormat: string;
+  outputFormat: string;
+  judgeMode: string;
+  floatTolerance: string;
+  hint: string;
+  open: boolean;
+}
+
+const defaultProblemForm: ProblemFormValues = {
+  title: '',
+  description: '',
+  timeLimit: 1000,
+  memoryLimit: 128,
+  difficulty: '简单',
+  inputFormat: '',
+  outputFormat: '',
+  judgeMode: 'standard',
+  floatTolerance: '0.00001',
+  hint: '',
+  open: true,
+};
+
 // 渲染 LaTeX 公式
 const renderLatex = (text: string) => {
   if (!text) return text;
@@ -114,46 +142,25 @@ const MarkdownEditor: React.FC<{
   const minHeightPx = Math.max(96, rows * 24);
 
   return (
-    <Tabs
-      activeKey={activeTab}
-      onChange={setActiveTab}
-      size="small"
-      items={[
-        {
-          key: 'edit',
-          label: (
-            <span className="flex items-center gap-1">
-              <Edit3 className="w-3 h-3" /> 编辑
-            </span>
-          ),
-          children: (
-            <Input.TextArea
-              value={value}
-              onChange={onChange}
-              rows={rows}
-              placeholder={placeholder || '支持 Markdown 格式'}
-            />
-          ),
-        },
-        {
-          key: 'preview',
-          label: (
-            <span className="flex items-center gap-1">
-              <Eye className="w-3 h-3" /> 预览
-            </span>
-          ),
-          children: (
-            <div
-              className={`${markdownEditorSurfaceClass} prose prose-sm max-w-none overflow-auto cursor-default select-text resize-none`}
-              style={{ minHeight: minHeightPx }}
-              role="document"
-              aria-label="Markdown 预览（只读）"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(value || '') }}
-            />
-          ),
-        },
-      ]}
-    />
+    <Tabs activeKey={activeTab} onChange={setActiveTab}>
+      <Tabs.Panel id="edit" label={<span className="flex items-center gap-1"><Edit3 className="w-3 h-3" /> 编辑</span>}>
+        <Input.TextArea
+          value={value}
+          onChange={onChange}
+          rows={rows}
+          placeholder={placeholder || '支持 Markdown 格式'}
+        />
+      </Tabs.Panel>
+      <Tabs.Panel id="preview" label={<span className="flex items-center gap-1"><Eye className="w-3 h-3" /> 预览</span>}>
+        <div
+          className={`${markdownEditorSurfaceClass} prose prose-sm max-w-none overflow-auto cursor-default select-text resize-none`}
+          style={{ minHeight: minHeightPx }}
+          role="document"
+          aria-label="Markdown 预览（只读）"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(value || '') }}
+        />
+      </Tabs.Panel>
+    </Tabs>
   );
 };
 
@@ -168,11 +175,11 @@ const AdminProblems: React.FC = () => {
   const [tagOptions, setTagOptions] = useState<{ id: number; name: string }[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
-  const [form] = Form.useForm();
+  const [problemForm, setProblemForm] = useState<ProblemFormValues>(defaultProblemForm);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [fileList, setFileList] = useState<any[]>([]);
-  const [checkerFileList, setCheckerFileList] = useState<any[]>([]);
+  const [testCaseFiles, setTestCaseFiles] = useState<File[]>([]);
+  const [checkerFiles, setCheckerFiles] = useState<File[]>([]);
   const [checkerGuideVisible, setCheckerGuideVisible] = useState(false);
   const [aiInput, setAiInput] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
@@ -230,7 +237,7 @@ const AdminProblems: React.FC = () => {
     setEditingProblem(problem);
     setModalVisible(true);
     if (problem) {
-      form.setFieldsValue({
+      setProblemForm({
         title: problem.title,
         description: problem.description,
         timeLimit: problem.timeLimit,
@@ -239,13 +246,13 @@ const AdminProblems: React.FC = () => {
         inputFormat: problem.inputFormat,
         outputFormat: problem.outputFormat,
         judgeMode: problem.judgeMode || 'standard',
-        floatTolerance: problem.floatTolerance ?? 0.0001,
-        hint: problem.hint,
+        floatTolerance: String(problem.floatTolerance ?? 0.0001),
+        hint: problem.hint || '',
         open: problem.open,
       });
       setTags(problem.tags || []);
-      setFileList([]);
-      setCheckerFileList([]);
+      setTestCaseFiles([]);
+      setCheckerFiles([]);
       try {
         const res = await api.get('/admin/problem/examples', { params: { pid: problem.id } }) as ApiResponse<ProblemExampleItem[]>;
         if (res.code === 200 && res.data?.length) {
@@ -257,10 +264,10 @@ const AdminProblems: React.FC = () => {
         setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
       }
     } else {
-      form.resetFields();
+      setProblemForm(defaultProblemForm);
       setTags([]);
-      setFileList([]);
-      setCheckerFileList([]);
+      setTestCaseFiles([]);
+      setCheckerFiles([]);
       setExamplesList([{ input: '', output: '', sortOrder: 0 }]);
     }
   };
@@ -279,7 +286,11 @@ const AdminProblems: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const updateProblemForm = <K extends keyof ProblemFormValues>(key: K, value: ProblemFormValues[K]) => {
+    setProblemForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (values: ProblemFormValues) => {
     try {
       const formData = new FormData();
 
@@ -296,7 +307,7 @@ const AdminProblems: React.FC = () => {
       formData.append('outputFormat', values.outputFormat);
       formData.append(
         'judgeMode',
-        String(values.judgeMode ?? form.getFieldValue('judgeMode') ?? 'standard')
+        String(values.judgeMode || 'standard')
       );
       if (values.judgeMode === 'float') {
         formData.append('floatTolerance', String(values.floatTolerance ?? 0.0001));
@@ -315,23 +326,15 @@ const AdminProblems: React.FC = () => {
       }
 
       let hasFile = false;
-      if (fileList.length > 0) {
-        const fileObj = fileList[0];
-        const file = fileObj.originFileObj || fileObj;
-        if (file && file instanceof File) {
-          formData.append('testCaseFile', file);
-          hasFile = true;
-        }
+      if (testCaseFiles.length > 0) {
+        formData.append('testCaseFile', testCaseFiles[0]);
+        hasFile = true;
       }
 
       let hasCheckerFile = false;
-      if (checkerFileList.length > 0) {
-        const fileObj = checkerFileList[0];
-        const file = fileObj.originFileObj || fileObj;
-        if (file && file instanceof File) {
-          formData.append('checkerFile', file);
-          hasCheckerFile = true;
-        }
+      if (checkerFiles.length > 0) {
+        formData.append('checkerFile', checkerFiles[0]);
+        hasCheckerFile = true;
       }
 
       if (!editingProblem && !hasFile) {
@@ -446,14 +449,15 @@ ${aiInput}`;
       const parsed = JSON.parse(jsonMatch[0]);
 
       // 填充表单
-      form.setFieldsValue({
+      setProblemForm((current) => ({
+        ...current,
         title: parsed.title || '',
         description: parsed.description || '',
         inputFormat: parsed.inputFormat || '',
         outputFormat: parsed.outputFormat || '',
         hint: parsed.hint || '',
         difficulty: parsed.difficulty || '简单',
-      });
+      }));
 
       // 多组样例：优先使用 examples 数组，否则用单组 inputExample/outputExample
       if (parsed.examples && Array.isArray(parsed.examples) && parsed.examples.length > 0) {
@@ -513,56 +517,15 @@ ${aiInput}`;
     return <Tag color={colors[difficulty] || 'default'}>{difficulty || '未知'}</Tag>;
   };
 
-  const columns = [
-    { title: '题号', dataIndex: 'id', key: 'id', width: 80 },
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '难度', dataIndex: 'difficulty', key: 'difficulty', render: (d: string) => getDifficultyTag(d) },
-    {
-      title: '判题模式',
-      dataIndex: 'judgeMode',
-      key: 'judgeMode',
-      width: 110,
-      render: (mode: string) => {
-        const meta: Record<string, { color: string; label: string }> = {
-          standard: { color: 'blue', label: '普通评测' },
-          float: { color: 'cyan', label: '浮点误差' },
-          special: { color: 'purple', label: '构造题' },
-        };
-        const current = meta[mode] || meta.standard;
-        return <Tag color={current.color}>{current.label}</Tag>;
-      },
-    },
-    { title: '提交数', dataIndex: 'submitCount', key: 'submitCount', width: 100 },
-    { title: '通过数', dataIndex: 'passCount', key: 'passCount', width: 100 },
-    {
-      title: '公开',
-      dataIndex: 'open',
-      key: 'open',
-      width: 80,
-      render: (open: boolean) => <Tag color={open ? 'green' : 'red'}>{open ? '公开' : '私有'}</Tag>,
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 150,
-      render: (_: unknown, record: Problem) => (
-        <div className="flex gap-2">
-          <PermissionGuard permission={PermissionCode.PROBLEM_UPDATE}>
-            <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => showModal(record)}>
-              编辑
-            </Button>
-          </PermissionGuard>
-          <PermissionGuard permission={PermissionCode.PROBLEM_DELETE}>
-            <Popconfirm title="确定要删除这道题目吗？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                删除
-              </Button>
-            </Popconfirm>
-          </PermissionGuard>
-        </div>
-      ),
-    },
-  ];
+  const getJudgeModeTag = (mode?: string) => {
+    const meta: Record<string, { color: string; label: string }> = {
+      standard: { color: 'blue', label: '普通评测' },
+      float: { color: 'cyan', label: '浮点误差' },
+      special: { color: 'purple', label: '构造题' },
+    };
+    const current = meta[mode || 'standard'] || meta.standard;
+    return <Tag color={current.color}>{current.label}</Tag>;
+  };
 
   return (
     <div className="gemini-card">
@@ -618,9 +581,8 @@ ${aiInput}`;
       </div>
 
       {/* Table */}
-      <Table
-        columns={columns}
-        dataSource={problems}
+      <DataTable<Problem>
+        rows={problems}
         loading={loading}
         rowKey="id"
         pagination={{
@@ -634,7 +596,36 @@ ${aiInput}`;
             setPageSize(size);
           },
         }}
-      />
+      >
+        <DataColumn<Problem> header="题号" width={80} cell={(problem) => problem.id} />
+        <DataColumn<Problem> header="标题" cell={(problem) => problem.title} />
+        <DataColumn<Problem> header="难度" cell={(problem) => getDifficultyTag(problem.difficulty)} />
+        <DataColumn<Problem> header="判题模式" width={110} cell={(problem) => getJudgeModeTag(problem.judgeMode)} />
+        <DataColumn<Problem> header="提交数" width={100} cell={(problem) => problem.submitCount} />
+        <DataColumn<Problem> header="通过数" width={100} cell={(problem) => problem.passCount} />
+        <DataColumn<Problem> header="公开" width={80} cell={(problem) => <Tag color={problem.open ? 'green' : 'red'}>{problem.open ? '公开' : '私有'}</Tag>} />
+        <DataColumn<Problem>
+          header="操作"
+          width={180}
+          action
+          cell={(problem) => (
+            <div className="flex gap-2">
+              <PermissionGuard permission={PermissionCode.PROBLEM_UPDATE}>
+                <Button type="link" className="text-blue-600 hover:text-blue-700" icon={<Edit className="w-4 h-4" />} onClick={() => showModal(problem)}>
+                  编辑
+                </Button>
+              </PermissionGuard>
+              <PermissionGuard permission={PermissionCode.PROBLEM_DELETE}>
+                <ConfirmButton message="确定要删除这道题目吗？" onConfirm={() => handleDelete(problem.id)}>
+                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
+                    删除
+                  </Button>
+                </ConfirmButton>
+              </PermissionGuard>
+            </div>
+          )}
+        />
+      </DataTable>
 
       {/* Modal */}
       <Modal
@@ -645,11 +636,12 @@ ${aiInput}`;
         width={1100}
         centered
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{ difficulty: '简单', open: true, judgeMode: 'standard' }}
+        <form
+          className="space-y-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSubmit(problemForm);
+          }}
         >
           {/* 智能解析：全宽输入 + 底部操作，避免侧栏挤压 */}
           <div className="mb-6">
@@ -689,7 +681,6 @@ ${aiInput}`;
               <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5">
                 <Button
                   type="primary"
-                  shape="round"
                   size="middle"
                   icon={aiParsing ? undefined : <Wand2 className="w-4 h-4" />}
                   loading={aiParsing}
@@ -710,11 +701,11 @@ ${aiInput}`;
             </div>
           </div>
 
-          <Form.Item name="title" label="题目标题" rules={[{ required: true, message: '请输入题目标题' }]}>
-            <Input />
-          </Form.Item>
+          <Field label="题目标题">
+            <Input value={problemForm.title} onChange={(event) => updateProblemForm('title', event.target.value)} />
+          </Field>
 
-          <Form.Item label="标签">
+          <Field label="标签">
             <div className="flex gap-2 mb-2">
               <Input
                 value={tagInput}
@@ -733,116 +724,85 @@ ${aiInput}`;
               ))}
             </div>
             <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>最多5个标签，每个不超过10个字符</p>
-          </Form.Item>
+          </Field>
 
-          <Form.Item
-            name="description"
-            label="题目描述（支持 Markdown）"
-            rules={[{ required: true, message: '请输入题目描述' }]}
-          >
-            <MarkdownEditor rows={6} placeholder="请输入题目描述" />
-          </Form.Item>
+          <Field label="题目描述（支持 Markdown）">
+            <MarkdownEditor value={problemForm.description} onChange={(event) => updateProblemForm('description', event.target.value)} rows={6} placeholder="请输入题目描述" />
+          </Field>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="timeLimit"
-                label="时间限制 (ms)"
-                rules={[{ required: true, message: '请输入时间限制' }]}
-              >
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <Field label="时间限制 (ms)">
                 <InputNumber
                   className="w-full"
                   size="large"
                   min={1}
                   max={10000}
+                  value={problemForm.timeLimit}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => updateProblemForm('timeLimit', event.target.value)}
                   style={{ borderRadius: '1rem', overflow: 'hidden' }}
                 />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="memoryLimit"
-                label="内存限制 (MB)"
-                rules={[{ required: true, message: '请输入内存限制' }]}
-              >
+              </Field>
+            </div>
+            <div>
+              <Field label="内存限制 (MB)">
                 <InputNumber
                   className="w-full"
                   size="large"
                   min={1}
+                  value={problemForm.memoryLimit}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => updateProblemForm('memoryLimit', event.target.value)}
                   style={{ borderRadius: '1rem', overflow: 'hidden' }}
                 />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="difficulty" label="难度" rules={[{ required: true }]}>
+              </Field>
+            </div>
+            <div>
+              <Field label="难度">
                 <Select
+                  value={problemForm.difficulty}
+                  onChange={(value) => updateProblemForm('difficulty', value)}
                   options={[
                     { value: '简单', label: '简单' },
                     { value: '中等', label: '中等' },
                     { value: '困难', label: '困难' },
                   ]}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
+              </Field>
+            </div>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="inputFormat"
-                label="输入格式"
-                rules={[{ required: true, message: '请输入输入格式' }]}
-              >
-                <MarkdownEditor rows={4} placeholder="请输入输入格式说明" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="outputFormat"
-                label="输出格式"
-                rules={[{ required: true, message: '请输入输出格式' }]}
-              >
-                <MarkdownEditor rows={4} placeholder="请输入输出格式说明" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Field label="输入格式">
+                <MarkdownEditor value={problemForm.inputFormat} onChange={(event) => updateProblemForm('inputFormat', event.target.value)} rows={4} placeholder="请输入输入格式说明" />
+              </Field>
+            </div>
+            <div>
+              <Field label="输出格式">
+                <MarkdownEditor value={problemForm.outputFormat} onChange={(event) => updateProblemForm('outputFormat', event.target.value)} rows={4} placeholder="请输入输出格式说明" />
+              </Field>
+            </div>
+          </div>
 
-          <Form.Item name="judgeMode" label="判题模式" rules={[{ required: true, message: '请选择判题模式' }]}>
+          <Field label="判题模式">
             <Select
+              value={problemForm.judgeMode}
+              onChange={(value) => updateProblemForm('judgeMode', value)}
               options={[
                 { value: 'standard', label: '普通评测' },
                 { value: 'float', label: '浮点误差评测' },
                 { value: 'special', label: '构造题（Special Judge）' },
               ]}
             />
-          </Form.Item>
+          </Field>
 
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.judgeMode !== cur.judgeMode}>
-            {({ getFieldValue }) =>
-              getFieldValue('judgeMode') === 'float' ? (
-                <Form.Item
-                  name="floatTolerance"
-                  label="浮点误差容忍值"
-                  initialValue="0.0001"
-                  rules={[
-                    { required: true, message: '请输入浮点误差容忍值' },
-                    {
-                      validator: (_, value) => {
-                        const tolerance = Number(value);
-                        return Number.isFinite(tolerance) && tolerance > 0
-                          ? Promise.resolve()
-                          : Promise.reject(new Error('浮点误差必须是大于0的数字'));
-                      },
-                    },
-                  ]}
-                >
-                  <Input placeholder="例如 0.0001 或 1e-4" />
-                </Form.Item>
-              ) : null
-            }
-          </Form.Item>
+          {problemForm.judgeMode === 'float' ? (
+            <Field label="浮点误差容忍值">
+              <Input value={problemForm.floatTolerance} onChange={(event) => updateProblemForm('floatTolerance', event.target.value)} placeholder="例如 0.0001 或 1e-4" />
+            </Field>
+          ) : null}
 
-          <Form.Item label="输入/输出样例（可多组）">
+          <Field label="输入/输出样例（可多组）">
             <div className="space-y-4">
               {examplesList.map((_, index) => (
                 <div key={index} className="flex flex-col gap-2">
@@ -860,8 +820,8 @@ ${aiInput}`;
                       删除样例 {index + 1}
                     </Button>
                   </div>
-                  <Row gutter={16}>
-                    <Col span={12}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
                       <div className="text-sm font-medium mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
                         输入样例 {index + 1}
                       </div>
@@ -875,8 +835,8 @@ ${aiInput}`;
                         }}
                         placeholder="请输入样例输入"
                       />
-                    </Col>
-                    <Col span={12}>
+                    </div>
+                    <div>
                       <div className="text-sm font-medium mb-2" style={{ color: 'var(--gemini-text-primary)' }}>
                         输出样例 {index + 1}
                       </div>
@@ -890,12 +850,12 @@ ${aiInput}`;
                         }}
                         placeholder="请输入样例输出"
                       />
-                    </Col>
-                  </Row>
+                    </div>
+                  </div>
                 </div>
               ))}
               <Button
-                type="dashed"
+                variant="outlined"
                 onClick={() => setExamplesList([...examplesList, { input: '', output: '', sortOrder: examplesList.length }])}
                 className="w-full"
               >
@@ -905,55 +865,57 @@ ${aiInput}`;
             <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
               至少保留一组样例；多组将按顺序展示给用户
             </p>
-          </Form.Item>
+          </Field>
 
-          <Form.Item name="hint" label="提示">
-            <MarkdownEditor rows={4} placeholder="请输入提示信息" />
-          </Form.Item>
+          <Field label="提示">
+            <MarkdownEditor value={problemForm.hint} onChange={(event) => updateProblemForm('hint', event.target.value)} rows={4} placeholder="请输入提示信息" />
+          </Field>
 
-          <Row gutter={16}>
-            <Col span={18}>
-              <Form.Item label="测试数据文件">
-                <Upload
-                  fileList={fileList}
-                  onChange={({ fileList }) => setFileList(fileList)}
-                  beforeUpload={(file) => {
-                    const isValid = ['.zip', '.rar', '.7z'].some((ext) => file.name.endsWith(ext));
-                    if (!isValid) {
-                      toast.error('只能上传 .zip, .rar, .7z 格式的文件！');
-                      return Upload.LIST_IGNORE;
-                    }
-                    return false;
-                  }}
-                  maxCount={1}
-                  accept=".zip,.rar,.7z"
-                >
-                  <Button icon={<UploadIcon className="w-4 h-4" />}>选择文件</Button>
-                </Upload>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="md:col-span-3">
+              <Field label="测试数据文件">
+                <div className="flex flex-wrap items-center gap-2">
+                  <FilePicker
+                    accept=".zip,.rar,.7z"
+                    onFilesSelected={(files) => {
+                      const file = files[0];
+                      if (!file) return;
+                      const isValid = ['.zip', '.rar', '.7z'].some((ext) => file.name.endsWith(ext));
+                      if (!isValid) {
+                        toast.error('只能上传 .zip, .rar, .7z 格式的文件！');
+                        return;
+                      }
+                      setTestCaseFiles([file]);
+                    }}
+                  >
+                    <Button icon={<UploadIcon className="w-4 h-4" />}>选择文件</Button>
+                  </FilePicker>
+                  {testCaseFiles[0] ? <span className="text-sm text-slate-600">{testCaseFiles[0].name}</span> : null}
+                </div>
                 <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
                   {editingProblem ? '不选择文件则保留原有测试数据' : '必须上传测试数据文件'}
                 </p>
-              </Form.Item>
-            </Col>
-            <Col span={18}>
-              <Form.Item label="Checker 代码文件">
+              </Field>
+            </div>
+            <div className="md:col-span-3">
+              <Field label="Checker 代码文件">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Upload
-                    fileList={checkerFileList}
-                    onChange={({ fileList }) => setCheckerFileList(fileList)}
-                    beforeUpload={(file) => {
+                  <FilePicker
+                    accept=".cpp,.cc,.cxx"
+                    onFilesSelected={(files) => {
+                      const file = files[0];
+                      if (!file) return;
                       const isValid = ['.cpp', '.cc', '.cxx'].some((ext) => file.name.endsWith(ext));
                       if (!isValid) {
                         toast.error('只能上传 .cpp, .cc, .cxx 格式的 checker 文件！');
-                        return Upload.LIST_IGNORE;
+                        return;
                       }
-                      return false;
+                      setCheckerFiles([file]);
                     }}
-                    maxCount={1}
-                    accept=".cpp,.cc,.cxx"
                   >
                     <Button icon={<UploadIcon className="w-4 h-4" />}>选择 Checker</Button>
-                  </Upload>
+                  </FilePicker>
+                  {checkerFiles[0] ? <span className="text-sm text-slate-600">{checkerFiles[0].name}</span> : null}
                   <Button
                     type="default"
                     icon={<BookOpen className="w-4 h-4" />}
@@ -965,16 +927,16 @@ ${aiInput}`;
                 <p className="text-xs mt-1" style={{ color: 'var(--gemini-text-tertiary)' }}>
                   判题模式为构造题时必传；编辑时不选择则保留原 checker
                 </p>
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="open" label="是否公开" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
+              </Field>
+            </div>
+            <div>
+              <Field label="是否公开">
+                <Switch checked={problemForm.open} onChange={(checked) => updateProblemForm('open', checked)} />
+              </Field>
+            </div>
+          </div>
 
-          <Form.Item>
+          <div>
             <div className="flex justify-end gap-2">
               <Button onClick={() => setModalVisible(false)}>取消</Button>
               <Button 
@@ -989,8 +951,8 @@ ${aiInput}`;
                 保存
               </Button>
             </div>
-          </Form.Item>
-        </Form>
+          </div>
+        </form>
       </Modal>
 
       <Modal
@@ -1004,7 +966,6 @@ ${aiInput}`;
           </Button>
         }
         width={760}
-        destroyOnClose
       >
         <div className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
           <Paragraph style={{ marginBottom: 16 }}>
@@ -1094,3 +1055,4 @@ ${aiInput}`;
 };
 
 export default AdminProblems;
+

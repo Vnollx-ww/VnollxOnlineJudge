@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Drawer, Table, Tag, Button, Modal, Form, Tooltip, Empty } from 'antd';
+import { Drawer, Tag, Button, Modal, Tooltip, Empty, Field, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
 import { Download, Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -63,6 +63,18 @@ interface Props {
   competitionTitle?: string;
   onClose: () => void;
 }
+
+interface ReviewFormValues {
+  reviewStatus: string;
+  reviewResult?: string;
+  reviewNote: string;
+}
+
+const defaultReviewForm: ReviewFormValues = {
+  reviewStatus: 'PENDING',
+  reviewResult: undefined,
+  reviewNote: '',
+};
 
 const RISK_COLOR: Record<string, string> = {
   LOW: 'default',
@@ -133,8 +145,8 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
 
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewForm] = Form.useForm();
   const [reviewTarget, setReviewTarget] = useState<AntiCheatSummary | null>(null);
+  const [reviewFormValues, setReviewFormValues] = useState<ReviewFormValues>(defaultReviewForm);
 
   const loadAll = useCallback(async () => {
     if (!competitionId) return;
@@ -190,7 +202,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
 
   const openReviewModal = (record: AntiCheatSummary) => {
     setReviewTarget(record);
-    reviewForm.setFieldsValue({
+    setReviewFormValues({
       reviewStatus: record.reviewStatus || 'PENDING',
       reviewResult: record.reviewResult || undefined,
       reviewNote: record.reviewNote || '',
@@ -201,11 +213,10 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
   const submitReview = async () => {
     if (!competitionId || !reviewTarget) return;
     try {
-      const values = await reviewForm.validateFields();
       setReviewSubmitting(true);
       const data = await api.put(
         `/admin/competition/${competitionId}/anti-cheat/users/${reviewTarget.userId}/review`,
-        values,
+        reviewFormValues,
       ) as ApiResponse;
       if (data.code === 200) {
         toast.success('复核已保存');
@@ -218,12 +229,15 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
       } else {
         toast.error((data as any).msg || '保存失败');
       }
-    } catch (err: any) {
-      if (err?.errorFields) return; // 表单校验失败
+    } catch {
       toast.error('保存失败');
     } finally {
       setReviewSubmitting(false);
     }
+  };
+
+  const updateReviewForm = <K extends keyof ReviewFormValues>(key: K, value: ReviewFormValues[K]) => {
+    setReviewFormValues((current) => ({ ...current, [key]: value }));
   };
 
   /** 一键标记 */
@@ -278,93 +292,11 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
     }
   };
 
-  const columns = [
-    {
-      title: '排名',
-      key: 'rank',
-      width: 60,
-      render: (_: unknown, __: AntiCheatSummary, idx: number) => idx + 1,
-    },
-    {
-      title: '用户',
-      dataIndex: 'username',
-      key: 'username',
-      width: 160,
-      ellipsis: true,
-      render: (username?: string) => (
-        <span className="block max-w-36 whitespace-nowrap overflow-hidden text-ellipsis">
-          {username || '-'}
-        </span>
-      ),
-    },
-    {
-      title: '风险等级',
-      dataIndex: 'riskLevel',
-      key: 'riskLevel',
-      width: 110,
-      render: (lvl: string) => <Tag color={RISK_COLOR[lvl] || 'default'}>{RISK_LABEL[lvl] || lvl}</Tag>,
-    },
-    {
-      title: '总分',
-      dataIndex: 'totalScore',
-      key: 'totalScore',
-      width: 80,
-      sorter: (a: AntiCheatSummary, b: AntiCheatSummary) => (a.totalScore || 0) - (b.totalScore || 0),
-    },
-    { title: '事件数', dataIndex: 'eventCount', key: 'eventCount', width: 80 },
-    { title: '离开次数', dataIndex: 'leaveCount', key: 'leaveCount', width: 90 },
-    {
-      title: '离开总时长',
-      dataIndex: 'leaveTotalSeconds',
-      key: 'leaveTotalSeconds',
-      width: 110,
-      render: (v: number) => formatSeconds(v),
-    },
-    { title: '退出全屏', dataIndex: 'fullscreenExitCount', key: 'fullscreenExitCount', width: 90 },
-    { title: '粘贴次数', dataIndex: 'pasteCount', key: 'pasteCount', width: 90 },
-    {
-      title: '最近事件',
-      dataIndex: 'lastEventAt',
-      key: 'lastEventAt',
-      width: 170,
-      render: (t?: string) => (t ? dayjs(t).format('MM-DD HH:mm:ss') : '-'),
-    },
-    {
-      title: '复核状态',
-      dataIndex: 'reviewStatus',
-      key: 'reviewStatus',
-      width: 100,
-      render: (s: string) => <Tag color={REVIEW_STATUS_COLOR[s] || 'default'}>{REVIEW_STATUS_LABEL[s] || s}</Tag>,
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 280,
-      render: (_: unknown, record: AntiCheatSummary) => (
-        <div className="flex gap-1">
-          <Button type="link" size="small" icon={<Eye className="w-4 h-4" />} onClick={() => openUserDetail(record.userId)}>
-            详情
-          </Button>
-          <Tooltip title="标记正常">
-            <Button type="link" size="small" icon={<ShieldCheck className="w-4 h-4" />} onClick={() => quickReview(record, 'REJECTED', 'NORMAL')}>正常</Button>
-          </Tooltip>
-          <Tooltip title="确认作弊">
-            <Button type="link" size="small" danger icon={<ShieldX className="w-4 h-4" />} onClick={() => quickReview(record, 'CONFIRMED', 'CHEATING')}>作弊</Button>
-          </Tooltip>
-          <Tooltip title="自定义复核">
-            <Button type="link" size="small" icon={<ShieldAlert className="w-4 h-4" />} onClick={() => openReviewModal(record)}>复核</Button>
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
-
   return (
     <Drawer
       open={open}
       onClose={onClose}
       width={Math.min(window.innerWidth - 80, 1280)}
-      destroyOnClose
       title={
         <div className="flex items-center gap-2">
           <ShieldAlert className="w-5 h-5" />
@@ -421,15 +353,46 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
         <Button icon={<Download className="w-4 h-4" />} loading={exporting} onClick={exportCsv}>导出 CSV</Button>
       </div>
 
-      <Table
+      <DataTable<AntiCheatSummary>
         rowKey="id"
         size="small"
         loading={loading}
-        columns={columns as any}
-        dataSource={summaries}
-        scroll={{ x: 1200 }}
+        rows={summaries}
         pagination={{ pageSize: 20, showSizeChanger: true }}
-      />
+      >
+        <DataColumn<AntiCheatSummary> header="排名" width={60} cell={(_, index) => index + 1} />
+        <DataColumn<AntiCheatSummary> header="用户" width={160} cell={(summary) => <span className="block max-w-36 whitespace-nowrap overflow-hidden text-ellipsis">{summary.username || '-'}</span>} />
+        <DataColumn<AntiCheatSummary> header="风险等级" width={110} cell={(summary) => <Tag color={RISK_COLOR[summary.riskLevel] || 'default'}>{RISK_LABEL[summary.riskLevel] || summary.riskLevel}</Tag>} />
+        <DataColumn<AntiCheatSummary> header="总分" width={80} cell={(summary) => summary.totalScore ?? 0} />
+        <DataColumn<AntiCheatSummary> header="事件数" width={80} cell={(summary) => summary.eventCount ?? 0} />
+        <DataColumn<AntiCheatSummary> header="离开次数" width={90} cell={(summary) => summary.leaveCount ?? 0} />
+        <DataColumn<AntiCheatSummary> header="离开总时长" width={110} cell={(summary) => formatSeconds(summary.leaveTotalSeconds)} />
+        <DataColumn<AntiCheatSummary> header="退出全屏" width={90} cell={(summary) => summary.fullscreenExitCount ?? 0} />
+        <DataColumn<AntiCheatSummary> header="粘贴次数" width={90} cell={(summary) => summary.pasteCount ?? 0} />
+        <DataColumn<AntiCheatSummary> header="最近事件" width={170} cell={(summary) => summary.lastEventAt ? dayjs(summary.lastEventAt).format('MM-DD HH:mm:ss') : '-'} />
+        <DataColumn<AntiCheatSummary> header="复核状态" width={100} cell={(summary) => <Tag color={REVIEW_STATUS_COLOR[summary.reviewStatus] || 'default'}>{REVIEW_STATUS_LABEL[summary.reviewStatus] || summary.reviewStatus}</Tag>} />
+        <DataColumn<AntiCheatSummary>
+          header="操作"
+          width={280}
+          action
+          cell={(summary) => (
+            <div className="flex gap-1">
+              <Button type="link" size="small" icon={<Eye className="w-4 h-4" />} onClick={() => openUserDetail(summary.userId)}>
+                详情
+              </Button>
+              <Tooltip title="标记正常">
+                <Button type="link" size="small" icon={<ShieldCheck className="w-4 h-4" />} onClick={() => quickReview(summary, 'REJECTED', 'NORMAL')}>正常</Button>
+              </Tooltip>
+              <Tooltip title="确认作弊">
+                <Button type="link" size="small" danger icon={<ShieldX className="w-4 h-4" />} onClick={() => quickReview(summary, 'CONFIRMED', 'CHEATING')}>作弊</Button>
+              </Tooltip>
+              <Tooltip title="自定义复核">
+                <Button type="link" size="small" icon={<ShieldAlert className="w-4 h-4" />} onClick={() => openReviewModal(summary)}>复核</Button>
+              </Tooltip>
+            </div>
+          )}
+        />
+      </DataTable>
 
       {/* 用户详情抽屉 */}
       <Drawer
@@ -437,7 +400,6 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         width={Math.min(window.innerWidth - 200, 720)}
-        destroyOnClose
       >
         {detailLoading ? (
           <div className="text-center py-10 text-gray-500">加载中...</div>
@@ -511,20 +473,14 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
         title={`复核 - ${reviewTarget?.username || ''}`}
         open={reviewModalOpen}
         onCancel={() => setReviewModalOpen(false)}
-        onOk={submitReview}
-        confirmLoading={reviewSubmitting}
-        destroyOnClose
+        footer={null}
         centered
       >
-        <Form form={reviewForm} layout="vertical">
-          <Form.Item
-            name="reviewStatus"
-            label="复核状态"
-            rules={[{ required: true, message: '请选择复核状态' }]}
-            getValueProps={(value) => ({ value })}
-            getValueFromEvent={(value) => value}
-          >
+        <div className="space-y-4">
+          <Field label="复核状态">
             <Select
+              value={reviewFormValues.reviewStatus}
+              onChange={(value) => updateReviewForm('reviewStatus', value)}
               options={[
                 { label: '待复核', value: 'PENDING' },
                 { label: '已确认（可疑/作弊）', value: 'CONFIRMED' },
@@ -532,15 +488,12 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
                 { label: '已忽略', value: 'IGNORED' },
               ]}
             />
-          </Form.Item>
-          <Form.Item
-            name="reviewResult"
-            label="复核结论"
-            getValueProps={(value) => ({ value })}
-            getValueFromEvent={(value) => value}
-          >
+          </Field>
+          <Field label="复核结论">
             <Select
               allowClear
+              value={reviewFormValues.reviewResult}
+              onChange={(value) => updateReviewForm('reviewResult', value)}
               options={[
                 { label: '正常', value: 'NORMAL' },
                 { label: '警告', value: 'WARNING' },
@@ -548,11 +501,22 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
                 { label: '证据不足', value: 'NEED_MORE_EVIDENCE' },
               ]}
             />
-          </Form.Item>
-          <Form.Item name="reviewNote" label="备注">
-            <Input.TextArea rows={4} maxLength={1000} placeholder="可填写复核理由、证据要点等" />
-          </Form.Item>
-        </Form>
+          </Field>
+          <Field label="备注">
+            <Input.TextArea value={reviewFormValues.reviewNote} onChange={(event) => updateReviewForm('reviewNote', event.target.value)} rows={4} maxLength={1000} placeholder="可填写复核理由、证据要点等" />
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button onClick={() => setReviewModalOpen(false)}>取消</Button>
+            <Button
+              type="primary"
+              loading={reviewSubmitting}
+              onClick={submitReview}
+              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+            >
+              保存
+            </Button>
+          </div>
+        </div>
       </Modal>
     </Drawer>
   );
@@ -576,3 +540,4 @@ const Info: React.FC<{ label: string; value: string }> = ({ label, value }) => (
 );
 
 export default AdminCompetitionAntiCheat;
+

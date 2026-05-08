@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Tag, Tabs, Spin, Descriptions, Divider, Empty } from 'antd';
+import { Button, Modal, Tag, Tabs, Spin, Descriptions, Divider, Empty, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
 import { RefreshCw, Users, Shield, Key, Plus, Trash2, RotateCw } from 'lucide-react';
 import api from '@/utils/api';
@@ -254,45 +254,6 @@ const AdminPermissions: React.FC = () => {
     return <Tag color={colorMap[code] || 'default'}>{code}</Tag>;
   };
 
-  const roleColumns = [
-    { title: '角色码', dataIndex: 'code', key: 'code', render: (code: string) => getRoleTag(code) },
-    { title: '角色名称', dataIndex: 'name', key: 'name' },
-    { title: '描述', dataIndex: 'description', key: 'description' },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: unknown, record: Role) => (
-        <Button type="link" onClick={() => handleRoleSelect(record)}>
-          查看权限
-        </Button>
-      ),
-    },
-  ];
-
-  const permissionColumns = [
-    { title: '权限码', dataIndex: 'code', key: 'code', render: (code: string) => <Tag color="blue">{code}</Tag> },
-    { title: '权限名称', dataIndex: 'name', key: 'name' },
-    { title: '模块', dataIndex: 'module', key: 'module', render: (module: string) => <Tag>{module}</Tag> },
-    { title: '描述', dataIndex: 'description', key: 'description' },
-  ];
-
-  const rolePermissionColumns = [
-    { title: '权限码', dataIndex: 'code', key: 'code', render: (code: string) => <Tag color="green">{code}</Tag> },
-    { title: '权限名称', dataIndex: 'name', key: 'name' },
-    { title: '模块', dataIndex: 'module', key: 'module' },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: unknown, record: Permission) => (
-        <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
-          <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(record.id)}>
-            移除
-          </Button>
-        </PermissionGuard>
-      ),
-    },
-  ];
-
   const tabItems = [
     {
       key: 'roles',
@@ -306,7 +267,20 @@ const AdminPermissions: React.FC = () => {
         <div className="space-y-6">
           <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--gemini-surface-variant)' }}>
             <h3 className="text-base font-medium mb-4" style={{ color: 'var(--gemini-text-primary)' }}>角色列表</h3>
-            <Table columns={roleColumns} dataSource={roles} rowKey="id" pagination={false} size="small" />
+            <DataTable<Role> rows={roles} rowKey="id" pagination={false} size="small">
+              <DataColumn<Role> header="角色码" cell={(role) => getRoleTag(role.code)} />
+              <DataColumn<Role> header="角色名称" cell={(role) => role.name} />
+              <DataColumn<Role> header="描述" cell={(role) => role.description} />
+              <DataColumn<Role>
+                header="操作"
+                action
+                cell={(role) => (
+                  <Button type="link" onClick={() => handleRoleSelect(role)}>
+                    查看权限
+                  </Button>
+                )}
+              />
+            </DataTable>
           </div>
 
           {selectedRole && (
@@ -327,7 +301,22 @@ const AdminPermissions: React.FC = () => {
                 </PermissionGuard>
               </div>
               <Spin spinning={rolePermissionsLoading}>
-                <Table columns={rolePermissionColumns} dataSource={rolePermissions} rowKey="id" pagination={false} size="small" />
+                <DataTable<Permission> rows={rolePermissions} rowKey="id" pagination={false} size="small">
+                  <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="green">{permission.code}</Tag>} />
+                  <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
+                  <DataColumn<Permission> header="模块" cell={(permission) => permission.module} />
+                  <DataColumn<Permission>
+                    header="操作"
+                    action
+                    cell={(permission) => (
+                      <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+                        <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(permission.id)}>
+                          移除
+                        </Button>
+                      </PermissionGuard>
+                    )}
+                  />
+                </DataTable>
               </Spin>
             </div>
           )}
@@ -445,7 +434,14 @@ const AdminPermissions: React.FC = () => {
           所有权限
         </span>
       ),
-      children: <Table columns={permissionColumns} dataSource={permissions} rowKey="id" pagination={{ pageSize: 20 }} />,
+      children: (
+        <DataTable<Permission> rows={permissions} rowKey="id" pagination={{ pageSize: 20 }}>
+          <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="blue">{permission.code}</Tag>} />
+          <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
+          <DataColumn<Permission> header="模块" cell={(permission) => <Tag>{permission.module}</Tag>} />
+          <DataColumn<Permission> header="描述" cell={(permission) => permission.description} />
+        </DataTable>
+      ),
     },
   ];
 
@@ -476,18 +472,28 @@ const AdminPermissions: React.FC = () => {
         </div>
       </div>
 
-      <Tabs items={tabItems} />
+      <Tabs defaultActiveKey="roles">
+        <Tabs.Panel id="roles" label={tabItems[0].label}>
+          {tabItems[0].children}
+        </Tabs.Panel>
+        <Tabs.Panel id="users" label={tabItems[1].label}>
+          {tabItems[1].children}
+        </Tabs.Panel>
+        <Tabs.Panel id="permissions" label={tabItems[2].label}>
+          {tabItems[2].children}
+        </Tabs.Panel>
+      </Tabs>
 
       {/* 分配角色弹窗 */}
       <Modal
         title="分配角色"
         open={assignRoleModalVisible}
-        onOk={handleAssignRoleToUser}
         centered
         onCancel={() => {
           setAssignRoleModalVisible(false);
           setSelectedRoleToAssign(null);
         }}
+        footer={null}
       >
         <div className="mb-4">
           <span>
@@ -506,31 +512,42 @@ const AdminPermissions: React.FC = () => {
               label: `${role.name} (${role.code})`,
             }))}
         />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => {
+            setAssignRoleModalVisible(false);
+            setSelectedRoleToAssign(null);
+          }}>
+            取消
+          </Button>
+          <Button type="primary" onClick={handleAssignRoleToUser}>
+            分配
+          </Button>
+        </div>
       </Modal>
 
       {/* 分配权限弹窗 */}
       <Modal
         title="分配权限"
         open={assignPermissionModalVisible}
-        onOk={handleAssignPermissionToRole}
         centered
         onCancel={() => {
           setAssignPermissionModalVisible(false);
           setSelectedPermissionsToAssign([]);
         }}
+        footer={null}
       >
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <span>
             为角色 <strong>{selectedRole?.name}</strong> 分配权限：
           </span>
-        </div>
-        <div className="flex justify-end gap-2 mb-3">
-          <Button type="link" size="small" onClick={() => setSelectedPermissionsToAssign(permissions.filter((p: Permission) => !rolePermissions.find((rp: Permission) => rp.id === p.id)).map((p: Permission) => p.id))}>
-            全选
-          </Button>
-          <Button type="link" size="small" onClick={() => setSelectedPermissionsToAssign([])}>
-            清空
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button type="link" size="small" onClick={() => setSelectedPermissionsToAssign(permissions.filter((p: Permission) => !rolePermissions.find((rp: Permission) => rp.id === p.id)).map((p: Permission) => p.id))}>
+              全选
+            </Button>
+            <Button type="link" size="small" onClick={() => setSelectedPermissionsToAssign([])}>
+              清空
+            </Button>
+          </div>
         </div>
         <Select
           mode="multiple"
@@ -551,9 +568,21 @@ const AdminPermissions: React.FC = () => {
               label: `${perm.code} - ${perm.name}`,
             }))}
         />
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => {
+            setAssignPermissionModalVisible(false);
+            setSelectedPermissionsToAssign([]);
+          }}>
+            取消
+          </Button>
+          <Button type="primary" onClick={handleAssignPermissionToRole}>
+            分配
+          </Button>
+        </div>
       </Modal>
     </div>
   );
 };
 
 export default AdminPermissions;
+
