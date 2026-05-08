@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Drawer, Table, Tag, Button, Modal, Form, Select, Tooltip, Empty, Input as AntInput } from 'antd';
+import { Drawer, Table, Tag, Button, Modal, Form, Tooltip, Empty } from 'antd';
 import toast from 'react-hot-toast';
-import { Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
+import { Download, Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import dayjs from 'dayjs';
 import api from '@/utils/api';
+import Input from '@/components/Input';
+import Select from '@/components/Select';
 import type { ApiResponse } from '@/types';
 
 interface AntiCheatSummary {
@@ -69,6 +71,13 @@ const RISK_COLOR: Record<string, string> = {
   CRITICAL: 'red',
 };
 
+const RISK_LABEL: Record<string, string> = {
+  LOW: '低风险',
+  MEDIUM: '中风险',
+  HIGH: '高风险',
+  CRITICAL: '严重风险',
+};
+
 const REVIEW_STATUS_LABEL: Record<string, string> = {
   PENDING: '待复核',
   CONFIRMED: '已确认',
@@ -115,6 +124,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
   const [keyword, setKeyword] = useState('');
   const [riskLevel, setRiskLevel] = useState<string | undefined>(undefined);
   const [reviewStatus, setReviewStatus] = useState<string | undefined>(undefined);
+  const [exporting, setExporting] = useState(false);
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -235,6 +245,39 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
     }
   };
 
+  const exportCsv = async () => {
+    if (!competitionId) return;
+    setExporting(true);
+    try {
+      const response = await api.get(`/admin/competition/${competitionId}/anti-cheat/export`, {
+        params: {
+          keyword: keyword || undefined,
+          riskLevel: riskLevel || undefined,
+          reviewStatus: reviewStatus || undefined,
+        },
+        responseType: 'blob',
+      } as any) as any;
+      const blob = response instanceof Blob ? response : response?.data;
+      if (!blob) {
+        toast.error('导出失败');
+        return;
+      }
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `competition-${competitionId}-anti-cheat.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('导出成功');
+    } catch {
+      toast.error('导出失败');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const columns = [
     {
       title: '排名',
@@ -242,13 +285,24 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
       width: 60,
       render: (_: unknown, __: AntiCheatSummary, idx: number) => idx + 1,
     },
-    { title: '用户', dataIndex: 'username', key: 'username' },
+    {
+      title: '用户',
+      dataIndex: 'username',
+      key: 'username',
+      width: 160,
+      ellipsis: true,
+      render: (username?: string) => (
+        <span className="block max-w-36 whitespace-nowrap overflow-hidden text-ellipsis">
+          {username || '-'}
+        </span>
+      ),
+    },
     {
       title: '风险等级',
       dataIndex: 'riskLevel',
       key: 'riskLevel',
       width: 110,
-      render: (lvl: string) => <Tag color={RISK_COLOR[lvl] || 'default'}>{lvl}</Tag>,
+      render: (lvl: string) => <Tag color={RISK_COLOR[lvl] || 'default'}>{RISK_LABEL[lvl] || lvl}</Tag>,
     },
     {
       title: '总分',
@@ -329,28 +383,32 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
 
       {/* 工具栏 */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <AntInput.Search
+        <Input.Search
           allowClear
           placeholder="按用户名搜索"
-          className="!w-56"
+          className="w-56"
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
           onSearch={(v) => setKeyword(v)}
         />
         <Select
           placeholder="风险等级"
           allowClear
-          className="!w-32"
+          className="w-36"
+          value={riskLevel}
           options={[
-            { label: 'LOW', value: 'LOW' },
-            { label: 'MEDIUM', value: 'MEDIUM' },
-            { label: 'HIGH', value: 'HIGH' },
-            { label: 'CRITICAL', value: 'CRITICAL' },
+            { label: '低风险', value: 'LOW' },
+            { label: '中风险', value: 'MEDIUM' },
+            { label: '高风险', value: 'HIGH' },
+            { label: '严重风险', value: 'CRITICAL' },
           ]}
           onChange={(v) => setRiskLevel(v)}
         />
         <Select
           placeholder="复核状态"
           allowClear
-          className="!w-32"
+          className="w-36"
+          value={reviewStatus}
           options={[
             { label: '待复核', value: 'PENDING' },
             { label: '已确认', value: 'CONFIRMED' },
@@ -360,6 +418,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
           onChange={(v) => setReviewStatus(v)}
         />
         <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadAll}>刷新</Button>
+        <Button icon={<Download className="w-4 h-4" />} loading={exporting} onClick={exportCsv}>导出 CSV</Button>
       </div>
 
       <Table
@@ -388,7 +447,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
               <div className="rounded-2xl border p-4 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold">{detail.summary.username}</div>
-                  <Tag color={RISK_COLOR[detail.summary.riskLevel] || 'default'}>{detail.summary.riskLevel}</Tag>
+                  <Tag color={RISK_COLOR[detail.summary.riskLevel] || 'default'}>{RISK_LABEL[detail.summary.riskLevel] || detail.summary.riskLevel}</Tag>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm mt-3">
                   <Info label="总分" value={String(detail.summary.totalScore ?? 0)} />
@@ -420,7 +479,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
                   {detail.events.map((ev) => (
                     <li key={ev.id} className="border-l-2 pl-3 py-1" style={{ borderColor: '#e5e7eb' }}>
                       <div className="flex items-center gap-2 text-sm">
-                        <Tag color={RISK_COLOR[ev.riskLevel] || 'default'}>{ev.riskLevel}</Tag>
+                        <Tag color={RISK_COLOR[ev.riskLevel] || 'default'}>{RISK_LABEL[ev.riskLevel] || ev.riskLevel}</Tag>
                         <span className="font-medium">{EVENT_TYPE_LABEL[ev.eventType] || ev.eventType}</span>
                         <span className="text-gray-400 text-xs">+{ev.riskScore}分</span>
                         <span className="text-gray-400 text-xs ml-auto">
@@ -458,7 +517,13 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
         centered
       >
         <Form form={reviewForm} layout="vertical">
-          <Form.Item name="reviewStatus" label="复核状态" rules={[{ required: true, message: '请选择复核状态' }]}>
+          <Form.Item
+            name="reviewStatus"
+            label="复核状态"
+            rules={[{ required: true, message: '请选择复核状态' }]}
+            getValueProps={(value) => ({ value })}
+            getValueFromEvent={(value) => value}
+          >
             <Select
               options={[
                 { label: '待复核', value: 'PENDING' },
@@ -468,7 +533,12 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
               ]}
             />
           </Form.Item>
-          <Form.Item name="reviewResult" label="复核结论">
+          <Form.Item
+            name="reviewResult"
+            label="复核结论"
+            getValueProps={(value) => ({ value })}
+            getValueFromEvent={(value) => value}
+          >
             <Select
               allowClear
               options={[
@@ -480,7 +550,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
             />
           </Form.Item>
           <Form.Item name="reviewNote" label="备注">
-            <AntInput.TextArea rows={4} maxLength={1000} placeholder="可填写复核理由、证据要点等" />
+            <Input.TextArea rows={4} maxLength={1000} placeholder="可填写复核理由、证据要点等" />
           </Form.Item>
         </Form>
       </Modal>

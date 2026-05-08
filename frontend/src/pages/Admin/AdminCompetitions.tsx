@@ -17,6 +17,7 @@ import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown
 import dayjs from 'dayjs';
 import api from '@/utils/api';
 import Input from '@/components/Input';
+import Select from '@/components/Select';
 import PermissionGuard from '@/components/PermissionGuard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
@@ -31,6 +32,7 @@ interface Competition {
   password?: string;
   needPassword?: boolean;
   number?: number;
+  antiCheatMode?: 'NORMAL' | 'STRICT' | string;
 }
 
 interface Problem {
@@ -93,7 +95,7 @@ const AdminCompetitions: React.FC = () => {
   const handleAdd = () => {
     setEditingCompetition(null);
     form.resetFields();
-    form.setFieldsValue({ needPassword: false });
+    form.setFieldsValue({ needPassword: false, antiCheatMode: 'NORMAL' });
     setModalVisible(true);
   };
 
@@ -106,6 +108,7 @@ const AdminCompetitions: React.FC = () => {
       endTime: competition.endTime ? dayjs(competition.endTime) : null,
       password: competition.password || '',
       needPassword: competition.needPassword || false,
+      antiCheatMode: competition.antiCheatMode || 'NORMAL',
     });
     setModalVisible(true);
   };
@@ -227,6 +230,7 @@ const AdminCompetitions: React.FC = () => {
         endTime: values.endTime.format('YYYY-MM-DD HH:mm:ss'),
         password: values.needPassword ? values.password || '' : '',
         needPassword: values.needPassword || false,
+        antiCheatMode: values.antiCheatMode || 'NORMAL',
         ...(editingCompetition ? { id: editingCompetition.id } : {}),
       };
 
@@ -395,6 +399,20 @@ const AdminCompetitions: React.FC = () => {
           </Form.Item>
           <Form.Item name="needPassword" label="是否需要密码" valuePropName="checked">
             <Switch />
+          </Form.Item>
+          <Form.Item
+            name="antiCheatMode"
+            label="防作弊模式"
+            initialValue="NORMAL"
+            getValueProps={(value) => ({ value })}
+            getValueFromEvent={(value) => value}
+          >
+            <Select
+              options={[
+                { label: '普通模式（允许本地 IDE，不记录离开/失焦）', value: 'NORMAL' },
+                { label: '严格模式（要求全屏，记录切屏/失焦/退出全屏）', value: 'STRICT' },
+              ]}
+            />
           </Form.Item>
           <Form.Item noStyle shouldUpdate={(prev, cur) => prev.needPassword !== cur.needPassword}>
             {({ getFieldValue }) =>

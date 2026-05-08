@@ -9,5 +9,7 @@ public interface CompetitionUserService {
     void updatePassCount(String name,int ok);
     void updatePenaltyTime(String name,Long cid,int time);
     void createRecord(Long cid,Long uid,String name);
+    void finishCompetition(Long cid, Long uid);
+    boolean hasFinishedCompetition(Long cid, Long uid);
     void deleteCompetition(Long id);
 }

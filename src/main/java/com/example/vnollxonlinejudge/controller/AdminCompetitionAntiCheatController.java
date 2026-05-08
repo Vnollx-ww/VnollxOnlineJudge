@@ -10,8 +10,13 @@ import com.example.vnollxonlinejudge.model.vo.competition.AntiCheatUserDetailVo;
 import com.example.vnollxonlinejudge.service.CompetitionAntiCheatService;
 import com.example.vnollxonlinejudge.utils.UserContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +75,23 @@ public class AdminCompetitionAntiCheatController {
             @RequestParam(required = false) Integer limit
     ) {
         return Result.Success(antiCheatService.getEvents(cid, uid, eventType, riskLevel, limit), "获取防作弊事件列表成功");
+    }
+
+    /** 导出 CSV */
+    @GetMapping("/{cid}/anti-cheat/export")
+    @RequirePermission(PermissionCode.COMPETITION_ANTI_CHEAT_VIEW)
+    public ResponseEntity<byte[]> exportCsv(
+            @PathVariable Long cid,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String riskLevel,
+            @RequestParam(required = false) String reviewStatus
+    ) {
+        String csv = antiCheatService.exportCsv(cid, keyword, riskLevel, reviewStatus);
+        String filename = URLEncoder.encode("competition-" + cid + "-anti-cheat.csv", StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + filename)
+                .body(csv.getBytes(StandardCharsets.UTF_8));
     }
 
     /** 人工复核 */

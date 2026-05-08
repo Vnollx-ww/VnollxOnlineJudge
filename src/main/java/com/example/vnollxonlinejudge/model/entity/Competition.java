@@ -32,4 +32,6 @@ public class Competition {
     private String endTime;
     @Column(name = "password")
     private String password;
+    @Column(name = "anti_cheat_mode")
+    private String antiCheatMode;
 }

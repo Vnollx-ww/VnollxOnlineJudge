@@ -11,4 +11,5 @@ public class AdminSaveCompetitionDTO {
     private String endTime;
     private String password;
     private Boolean needPassword;
+    private String antiCheatMode;
 }

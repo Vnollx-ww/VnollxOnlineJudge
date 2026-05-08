@@ -13,6 +13,7 @@ public class CompetitionVo {
     private String endTime;
     private Boolean needPassword;
     private String password;
+    private String antiCheatMode;
     public CompetitionVo(){}
     public CompetitionVo(Competition competition){
         this.id=competition.getId();
@@ -23,5 +24,6 @@ public class CompetitionVo {
         this.number=competition.getNumber();
         this.needPassword=competition.getNeedPassword();
         this.password=competition.getPassword();
+        this.antiCheatMode=competition.getAntiCheatMode();
     }
 }

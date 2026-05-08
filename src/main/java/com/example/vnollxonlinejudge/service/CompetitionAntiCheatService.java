@@ -31,7 +31,9 @@ public interface CompetitionAntiCheatService {
 
     /** 比赛事件列表（按时间倒序，可筛选用户/类型/等级） */
     List<AntiCheatEventVo> getEvents(Long competitionId, Long userId, String eventType, String riskLevel, Integer limit);
-
+    /** 导出比赛防作弊审查 CSV 内容 */
+    String exportCsv(Long competitionId, String keyword, String riskLevel, String reviewStatus);
+ 
     /** 人工复核 */
     void review(Long competitionId, Long userId, Long reviewerId, AdminAntiCheatReviewDTO dto);
 }

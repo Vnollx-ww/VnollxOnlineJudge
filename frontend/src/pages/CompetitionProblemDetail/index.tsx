@@ -50,6 +50,16 @@ interface ProblemExampleItem {
   sortOrder?: number;
 }
 
+interface Competition {
+  id: number;
+  title: string;
+  beginTime: string;
+  endTime: string;
+  needPassword?: boolean;
+  password?: string;
+  antiCheatMode?: 'NORMAL' | 'STRICT' | string;
+}
+
 interface Problem {
   id: number;
   title: string;
@@ -187,9 +197,13 @@ const CompetitionProblemDetail: React.FC = () => {
   const [commentLoading, setCommentLoading] = useState(false);
   const [commentContent, setCommentContent] = useState('');
   const [replyTarget, setReplyTarget] = useState<Comment | null>(null);
+  const [competition, setCompetition] = useState<Competition | null>(null);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [isCompetitionOpen, setIsCompetitionOpen] = useState(true);
   const [isCompetitionEnd, setIsCompetitionEnd] = useState(false);
+  const [isUserCompetitionEnded, setIsUserCompetitionEnded] = useState(false);
+  const [finishCompetitionLoading, setFinishCompetitionLoading] = useState(false);
+  const [finishCompetitionModalOpen, setFinishCompetitionModalOpen] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true, theme: 'dark' });
@@ -292,7 +306,7 @@ const CompetitionProblemDetail: React.FC = () => {
   useJudgeWebSocket(handleWebSocketMessage);
 
   // 比赛防作弊采集：仅在比赛进行中启用，比赛结束/未开始不采集
-  const antiCheatEnabled = !!cid && isCompetitionOpen && !isCompetitionEnd;
+  const antiCheatEnabled = competition?.antiCheatMode === 'STRICT' && !!cid && isCompetitionOpen && !isCompetitionEnd && !isUserCompetitionEnded;
   useCompetitionAntiCheat({
     competitionId: cid ?? null,
     problemId: problem?.id ?? null,
@@ -335,6 +349,7 @@ const CompetitionProblemDetail: React.FC = () => {
       return;
     }
     loadProblem();
+    loadCompetition();
     loadCompetitionStatus();
   }, [id, cid, navigate]);
 
@@ -395,6 +410,18 @@ const CompetitionProblemDetail: React.FC = () => {
     }
   };
 
+  const loadCompetition = async () => {
+    if (!cid) return;
+    try {
+      const data = await api.get(`/competition/${cid}`);
+      if (data.code === 200) {
+        setCompetition(data.data || null);
+      }
+    } catch {
+      setCompetition(null);
+    }
+  };
+
   const loadCompetitionStatus = async () => {
     try {
       const now = dayjs().format("YYYY-MM-DD HH:mm:ss");
@@ -403,6 +430,9 @@ const CompetitionProblemDetail: React.FC = () => {
 
       const endRes = await api.post("/competition/judgeIsEnd", { now, id: cid });
       setIsCompetitionEnd(endRes.code !== 200);
+
+      const finishRes = await api.get(`/competition/${cid}/finish/status`);
+      setIsUserCompetitionEnded(Boolean(finishRes.data));
     } catch (err) {
       console.warn("比赛状态判断失败", err);
     }
@@ -627,6 +657,10 @@ const CompetitionProblemDetail: React.FC = () => {
 
   const handleSubmitCode = async () => {
     setActiveBottomTab('result');
+    if (isUserCompetitionEnded) {
+      toast.error('你已确认结束本场比赛，无法再次提交');
+      return;
+    }
     if (!code.trim()) {
       toast('请先输入代码', { icon: '⚠️' });
       return;
@@ -687,6 +721,28 @@ const CompetitionProblemDetail: React.FC = () => {
       });
     } finally {
       setCodeLoading((prev) => ({ ...prev, submit: false }));
+    }
+  };
+
+  const handleFinishCompetition = async () => {
+    if (!cid) return;
+    setFinishCompetitionLoading(true);
+    try {
+      const data = await api.post(`/competition/${cid}/finish`);
+      if (data.code === 200) {
+        setIsUserCompetitionEnded(true);
+        setFinishCompetitionModalOpen(false);
+        if (document.fullscreenElement) {
+          await document.exitFullscreen().catch(() => undefined);
+        }
+        toast.success('已结束本场比赛，后续无法再次提交');
+      } else {
+        toast.error(data.msg || '结束比赛失败');
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.msg || '结束比赛失败');
+    } finally {
+      setFinishCompetitionLoading(false);
     }
   };
 
@@ -915,6 +971,14 @@ const CompetitionProblemDetail: React.FC = () => {
         {isCompetitionEnd && (
           <Tag color="red" style={{ margin: 0 }}>比赛已结束</Tag>
         )}
+        {isUserCompetitionEnded && (
+          <Tag color="red" style={{ margin: 0 }}>你已结束比赛</Tag>
+        )}
+        {!isCompetitionEnd && !isUserCompetitionEnded && (
+          <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
+            结束比赛
+          </Button>
+        )}
         <Button
           icon={<HistoryOutlined />}
           onClick={openMySubmissions}
@@ -1101,10 +1165,10 @@ const CompetitionProblemDetail: React.FC = () => {
     <Button
       loading={codeLoading.test}
       onClick={handleTestCode}
-      disabled={isCompetitionEnd || !problem.examples?.length}
+      disabled={isCompetitionEnd || isUserCompetitionEnded || !problem.examples?.length}
       style={{ padding: '0 16px', height: 32, fontSize: 14 }}
     >
-      {isCompetitionEnd ? '比赛已结束' : '自测运行'}
+      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : '自测运行'}
     </Button>
   );
 
@@ -1114,10 +1178,10 @@ const CompetitionProblemDetail: React.FC = () => {
       type="primary"
       loading={codeLoading.submit}
       onClick={handleSubmitCode}
-      disabled={isCompetitionEnd}
+      disabled={isCompetitionEnd || isUserCompetitionEnded}
       style={{ padding: '0 18px', height: 34, fontSize: 14, fontWeight: 500 }}
     >
-      {isCompetitionEnd ? '比赛已结束' : '保存并提交'}
+      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : '保存并提交'}
     </Button>
   );
 
@@ -1219,6 +1283,22 @@ const CompetitionProblemDetail: React.FC = () => {
           />
         </div>
       </Drawer>
+
+      <Modal
+        title="确认结束本场比赛？"
+        open={finishCompetitionModalOpen}
+        onOk={handleFinishCompetition}
+        onCancel={() => setFinishCompetitionModalOpen(false)}
+        okText="确认结束"
+        cancelText="取消"
+        okButtonProps={{ danger: true, loading: finishCompetitionLoading }}
+        confirmLoading={finishCompetitionLoading}
+        centered
+      >
+        <div className="space-y-2">
+          <p>确认后你将无法再次提交本场比赛的任何题目。</p>
+        </div>
+      </Modal>
 
       <Modal
         title={`提交详情 #${currentSubmission?.id ?? ''}`}

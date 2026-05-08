@@ -337,6 +337,84 @@ public class CompetitionAntiCheatServiceImpl
     }
 
     @Override
+    public String exportCsv(Long cid, String keyword, String riskLevel, String reviewStatus) {
+        List<AntiCheatSummaryVo> summaries = getSummaries(cid, keyword, riskLevel, reviewStatus);
+        Set<Long> userIds = summaries.stream()
+                .map(AntiCheatSummaryVo::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append('\uFEFF');
+        appendCsvRow(sb, Arrays.asList("比赛ID", "用户ID", "用户名", "风险等级", "总分", "事件数", "离开次数", "离开总时长(秒)", "退出全屏次数", "粘贴次数", "最近事件时间", "复核状态", "复核结论", "复核备注", "复核时间"));
+        for (AntiCheatSummaryVo item : summaries) {
+            appendCsvRow(sb, Arrays.asList(
+                    cid,
+                    item.getUserId(),
+                    item.getUsername(),
+                    item.getRiskLevel(),
+                    item.getTotalScore(),
+                    item.getEventCount(),
+                    item.getLeaveCount(),
+                    item.getLeaveTotalSeconds(),
+                    item.getFullscreenExitCount(),
+                    item.getPasteCount(),
+                    item.getLastEventAt(),
+                    item.getReviewStatus(),
+                    item.getReviewResult(),
+                    item.getReviewNote(),
+                    item.getReviewedAt()
+            ));
+        }
+
+        sb.append("\n");
+        appendCsvRow(sb, Arrays.asList("事件ID", "比赛ID", "题目ID", "用户ID", "用户名", "事件类型", "风险等级", "风险分", "开始时间", "结束时间", "持续秒数", "提交ID", "IP", "User-Agent", "详情", "创建时间"));
+        if (!userIds.isEmpty()) {
+            QueryWrapper<CompetitionAntiCheatEvent> qw = new QueryWrapper<>();
+            qw.eq("competition_id", cid).in("user_id", userIds)
+                    .orderByAsc("user_id").orderByDesc("created_at").orderByDesc("id");
+            for (CompetitionAntiCheatEvent event : this.list(qw)) {
+                appendCsvRow(sb, Arrays.asList(
+                        event.getId(),
+                        event.getCompetitionId(),
+                        event.getProblemId(),
+                        event.getUserId(),
+                        event.getUsername(),
+                        event.getEventType(),
+                        event.getRiskLevel(),
+                        event.getRiskScore(),
+                        event.getStartedAt(),
+                        event.getEndedAt(),
+                        event.getDurationSeconds(),
+                        event.getSubmissionId(),
+                        event.getIpAddress(),
+                        event.getUserAgent(),
+                        event.getDetailJson(),
+                        event.getCreatedAt()
+                ));
+            }
+        }
+        return sb.toString();
+    }
+
+    private void appendCsvRow(StringBuilder sb, List<?> values) {
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append(escapeCsv(values.get(i)));
+        }
+        sb.append('\n');
+    }
+
+    private String escapeCsv(Object value) {
+        if (value == null) return "";
+        String s = String.valueOf(value).replace("\r", " ").replace("\n", " ");
+        if (s.contains(",") || s.contains("\"")) {
+            return "\"" + s.replace("\"", "\"\"") + "\"";
+        }
+        return s;
+    }
+
+    @Override
     @Transactional
     public void review(Long cid, Long userId, Long reviewerId, AdminAntiCheatReviewDTO dto) {
         if (dto == null) {

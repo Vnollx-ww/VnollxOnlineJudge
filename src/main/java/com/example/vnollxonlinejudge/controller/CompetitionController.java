@@ -12,6 +12,7 @@ import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.service.CompetitionAntiCheatService;
 import com.example.vnollxonlinejudge.service.CompetitionService;
+import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import com.example.vnollxonlinejudge.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,19 +29,22 @@ import java.util.List;
 @RequestMapping("/api/v1/competition")
 public class CompetitionController {
     private final CompetitionService competitionService;
-    private final ProblemService problemService;
+    private final CompetitionUserService competitionUserService;
     private final CompetitionAntiCheatService antiCheatService;
+    private final ProblemService problemService;
     private final UserService userService;
     
     @Autowired
     public CompetitionController(
             CompetitionService competitionService,
             ProblemService problemService,
+            CompetitionUserService competitionUserService,
             CompetitionAntiCheatService antiCheatService,
             UserService userService
     ) {
         this.competitionService = competitionService;
         this.problemService = problemService;
+        this.competitionUserService = competitionUserService;
         this.antiCheatService = antiCheatService;
         this.userService = userService;
     }
@@ -113,6 +117,10 @@ public class CompetitionController {
         return Result.Success(competitionService.getCompetitionList(0,0,null)
                 , "获取比赛列表成功！！！");
     }
+    @GetMapping("/{id}")
+    public Result<CompetitionVo> getCompetitionById(@PathVariable Long id){
+        return Result.Success(competitionService.getCompetitionById(id), "获取比赛详情成功");
+    }
     @GetMapping("/list-problem")
     public Result<List<CompetitionProblemBriefVo>> getProblemList(@RequestParam String id) {
         Long userId = UserContextHolder.getCurrentUserId();
@@ -145,6 +153,17 @@ public class CompetitionController {
     public Result<Void> judgeIsEndById(@RequestBody GetCompetitionStatusDTO req){
         competitionService.judgeIsEndById(req.getNow(),Long.parseLong(req.getId()));
         return Result.Success("比赛开放中");
+    }
+    @PostMapping("/{cid}/finish")
+    public Result<Void> finishCompetition(@PathVariable Long cid){
+        Long userId = UserContextHolder.getCurrentUserId();
+        competitionUserService.finishCompetition(cid, userId);
+        return Result.Success("已结束比赛，无法再次提交");
+    }
+    @GetMapping("/{cid}/finish/status")
+    public Result<Boolean> getFinishStatus(@PathVariable Long cid){
+        Long userId = UserContextHolder.getCurrentUserId();
+        return Result.Success(competitionUserService.hasFinishedCompetition(cid, userId), "获取个人比赛结束状态成功");
     }
     @GetMapping("/count")
     public Result<Long> getCompetitionCount(){

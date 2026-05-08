@@ -3,11 +3,14 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 type ButtonVariant = 'primary' | 'filled' | 'outlined' | 'text' | 'danger';
 type ButtonSize = 'small' | 'middle' | 'large';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type'> {
   variant?: ButtonVariant;
+  type?: 'primary' | 'link' | 'default' | 'text';
+  htmlType?: ButtonHTMLAttributes<HTMLButtonElement>['type'];
   size?: ButtonSize;
   block?: boolean;
   loading?: boolean;
+  danger?: boolean;
   icon?: ReactNode;
 }
 
@@ -27,20 +30,26 @@ const sizeClassMap: Record<ButtonSize, string> = {
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   variant = 'filled',
+  type,
+  htmlType = 'button',
   size = 'middle',
   block = false,
   loading = false,
+  danger = false,
   icon,
   disabled,
   className = '',
   children,
   ...props
 }, ref) => {
+  const actualVariant = danger ? 'danger' : type === 'primary' ? 'primary' : type === 'link' || type === 'text' ? 'text' : variant;
+
   return (
     <button
       ref={ref}
+      type={htmlType}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-full border border-transparent font-semibold outline-none transition-all duration-200 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 ${variantClassMap[variant]} ${sizeClassMap[size]} ${block ? 'w-full' : ''} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full border border-transparent font-semibold outline-none transition-all duration-200 focus-visible:ring-4 focus-visible:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 ${variantClassMap[actualVariant]} ${sizeClassMap[size]} ${block ? 'w-full' : ''} ${className}`}
       {...props}
     >
       {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}

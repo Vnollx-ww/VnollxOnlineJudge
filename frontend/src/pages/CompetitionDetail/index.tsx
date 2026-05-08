@@ -9,6 +9,7 @@ import {
   Modal,
   Spin,
   Empty,
+  Popconfirm,
 } from 'antd';
 import toast from 'react-hot-toast';
 import {
@@ -17,6 +18,7 @@ import {
   LockOutlined,
   UnorderedListOutlined,
   HistoryOutlined,
+  FullscreenOutlined,
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
@@ -31,6 +33,7 @@ interface Competition {
   beginTime: string;
   endTime: string;
   needPassword: boolean;
+  antiCheatMode?: 'NORMAL' | 'STRICT' | string;
 }
 
 interface Problem {
@@ -60,6 +63,12 @@ const CompetitionDetail: React.FC = () => {
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [countdown, setCountdown] = useState<Countdown | null>(null);
   const [status, setStatus] = useState('');
+  const [isUserCompetitionEnded, setIsUserCompetitionEnded] = useState(false);
+  const [finishCompetitionLoading, setFinishCompetitionLoading] = useState(false);
+  const [finishCompetitionModalOpen, setFinishCompetitionModalOpen] = useState(false);
+  const [fullscreenPromptOpen, setFullscreenPromptOpen] = useState(false);
+  const [fullscreenPromptDismissed, setFullscreenPromptDismissed] = useState(false);
+  const isStrictAntiCheat = competition?.antiCheatMode === 'STRICT';
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -74,6 +83,7 @@ const CompetitionDetail: React.FC = () => {
     if (competition) {
       checkPassword();
       updateCountdown();
+      loadFinishStatus();
       const timer = setInterval(updateCountdown, 1000);
       return () => clearInterval(timer);
     }
@@ -84,6 +94,25 @@ const CompetitionDetail: React.FC = () => {
       loadProblems();
     }
   }, [passwordVerified, competition]);
+
+  useEffect(() => {
+    if (isStrictAntiCheat && status === 'running' && passwordVerified && !isUserCompetitionEnded && !fullscreenPromptDismissed && !document.fullscreenElement) {
+      setFullscreenPromptOpen(true);
+    } else {
+      setFullscreenPromptOpen(false);
+    }
+  }, [isStrictAntiCheat, status, passwordVerified, isUserCompetitionEnded, fullscreenPromptDismissed]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (isStrictAntiCheat && !document.fullscreenElement && status === 'running' && passwordVerified && !isUserCompetitionEnded) {
+        toast.error('你已退出全屏模式，该行为会被记录');
+        setFullscreenPromptOpen(true);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [isStrictAntiCheat, status, passwordVerified, isUserCompetitionEnded]);
 
   const loadCompetition = async () => {
     try {
@@ -167,6 +196,87 @@ const CompetitionDetail: React.FC = () => {
     }
   };
 
+  const loadFinishStatus = async () => {
+    if (!id) return;
+    try {
+      const data = await api.get(`/competition/${id}/finish/status`);
+      if (data.code === 200) {
+        setIsUserCompetitionEnded(Boolean(data.data));
+      }
+    } catch {
+      setIsUserCompetitionEnded(false);
+    }
+  };
+
+  const handleFinishCompetition = async () => {
+    if (!id) return;
+    setFinishCompetitionLoading(true);
+    try {
+      const data = await api.post(`/competition/${id}/finish`);
+      if (data.code === 200) {
+        setIsUserCompetitionEnded(true);
+        setFinishCompetitionModalOpen(false);
+        setFullscreenPromptOpen(false);
+        if (document.fullscreenElement) {
+          await document.exitFullscreen().catch(() => undefined);
+        }
+        toast.success('已结束本场比赛，后续无法再次提交');
+      } else {
+        toast.error(data.msg || '结束比赛失败');
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.msg || '结束比赛失败');
+    } finally {
+      setFinishCompetitionLoading(false);
+    }
+  };
+
+  const enterFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+      setFullscreenPromptOpen(false);
+      setFullscreenPromptDismissed(false);
+    } catch {
+      toast.error('进入全屏失败，请检查浏览器权限后重试');
+    }
+  };
+
+  const reportFullscreenRefuse = async () => {
+    if (!id) return;
+    try {
+      await api.post('/competition/anti-cheat/report', {
+        competitionId: Number(id),
+        events: [{
+          eventType: 'FULLSCREEN_EXIT',
+          startedAt: new Date().toISOString(),
+          endedAt: new Date().toISOString(),
+          durationSeconds: 0,
+          detailJson: JSON.stringify({ reason: 'REFUSE_FULLSCREEN' }),
+        }],
+      });
+    } catch {
+      // 忽略上报失败，避免影响用户操作
+    }
+  };
+
+  const handleSkipFullscreen = async () => {
+    setFullscreenPromptOpen(false);
+    setFullscreenPromptDismissed(true);
+    await reportFullscreenRefuse();
+    toast.error('严格模式下未进入全屏，该行为会被记录');
+  };
+
+  const handleOpenProblem = (problemId: number) => {
+    if (isStrictAntiCheat && status === 'running' && !isUserCompetitionEnded && !document.fullscreenElement) {
+      void reportFullscreenRefuse();
+      setFullscreenPromptDismissed(false);
+      setFullscreenPromptOpen(true);
+      toast.error('严格模式下必须进入全屏模式后才能答题');
+      return;
+    }
+    navigate(`/competition/${id}/problem/${problemId}`);
+  };
+
   const updateCountdown = () => {
     if (!competition) return;
 
@@ -227,13 +337,14 @@ const CompetitionDetail: React.FC = () => {
       dataIndex: 'title',
       key: 'title',
       render: (title: string, record: Problem) => (
-        <Link
-          to={`/competition/${id}/problem/${record.id}`}
-          className="font-medium hover:opacity-70 transition-opacity"
+        <button
+          type="button"
+          onClick={() => handleOpenProblem(record.id)}
+          className="font-medium hover:opacity-70 transition-opacity text-left"
           style={{ color: 'var(--gemini-accent-strong)' }}
         >
           {title}
-        </Link>
+        </button>
       ),
     },
     {
@@ -306,6 +417,11 @@ const CompetitionDetail: React.FC = () => {
                     需要密码
                   </Tag>
                 )}
+                {isUserCompetitionEnded && (
+                  <Tag color="red" className="!rounded-full !px-3">
+                    你已结束比赛
+                  </Tag>
+                )}
               </Space>
               <Paragraph style={{ color: 'var(--gemini-text-secondary)' }} className="leading-relaxed">
                 {competition.description || '暂无描述'}
@@ -321,6 +437,11 @@ const CompetitionDetail: React.FC = () => {
                     提交记录
                   </Button>
                 </Link>
+                {status === 'running' && !isUserCompetitionEnded && (
+                  <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
+                    结束比赛
+                  </Button>
+                )}
               </Space>
             </div>
             <div className="min-w-[250px]">
@@ -386,6 +507,42 @@ const CompetitionDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* 密码验证Modal */}
+      <Modal
+        title="进入全屏模式"
+        open={fullscreenPromptOpen}
+        onOk={enterFullscreen}
+        onCancel={handleSkipFullscreen}
+        okText="进入全屏"
+        cancelText="暂不进入"
+        closable={false}
+        maskClosable={false}
+      >
+        <Space direction="vertical" size="middle">
+          <div>
+            <FullscreenOutlined className="mr-2" />
+            严格模式下比赛进行期间需要保持全屏模式。
+          </div>
+          <Text type="danger">如果暂不进入或退出全屏，该行为会被记录到防作弊日志中。</Text>
+        </Space>
+      </Modal>
+
+      <Modal
+        title="确认结束本场比赛？"
+        open={finishCompetitionModalOpen}
+        onOk={handleFinishCompetition}
+        onCancel={() => setFinishCompetitionModalOpen(false)}
+        okText="确认结束"
+        cancelText="取消"
+        okButtonProps={{ danger: true, loading: finishCompetitionLoading }}
+        confirmLoading={finishCompetitionLoading}
+        centered
+      >
+        <div className="space-y-2">
+          <p>确认后你将无法再次提交本场比赛的任何题目。</p>
+        </div>
+      </Modal>
 
       {/* 密码验证Modal */}
       <Modal

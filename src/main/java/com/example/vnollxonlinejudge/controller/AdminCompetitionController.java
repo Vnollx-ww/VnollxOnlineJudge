@@ -44,7 +44,7 @@ public class AdminCompetitionController {
     @PostMapping("/create")
     @RequirePermission(PermissionCode.COMPETITION_CREATE)
     public Result<Void> createCompetition(@RequestBody AdminSaveCompetitionDTO req){
-        competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword());
+        competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword(), req.getAntiCheatMode());
         return Result.Success("创建比赛成功！！！");
     }
     @GetMapping("/list")
@@ -70,7 +70,7 @@ public class AdminCompetitionController {
     @PutMapping("/update")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
     public Result<Void> updateCompetition(@RequestBody AdminSaveCompetitionDTO req){
-        competitionService.updateCompetition(req.getId(),req.getTitle(),req.getDescription(),req.getBeginTime(),req.getEndTime(),req.getPassword(),req.getNeedPassword());
+        competitionService.updateCompetition(req.getId(),req.getTitle(),req.getDescription(),req.getBeginTime(),req.getEndTime(),req.getPassword(),req.getNeedPassword(), req.getAntiCheatMode());
         return Result.Success("修改比赛信息成功");
     }
     @PostMapping("/add/problem")

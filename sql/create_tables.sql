@@ -32,6 +32,7 @@ create table competition
     end_time      varchar(100)  not null,
     password      varchar(255)  null,
     need_password tinyint(1)    null,
+    anti_cheat_mode varchar(16) default 'NORMAL' not null,
     number        int default 0 null
 );
 
@@ -347,6 +348,8 @@ create table competition_user
     pass_count     bigint default 0 not null,
     penalty_time   int    default 0 not null,
     name           varchar(50)      not null,
+    is_ended       tinyint(1) default 0 not null,
+    ended_at       varchar(50)      null,
     constraint unique_competition_user
         unique (competition_id, user_id),
     constraint competition_user_ibfk_1

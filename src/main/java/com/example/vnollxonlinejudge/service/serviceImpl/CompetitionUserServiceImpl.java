@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 @Service
 public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMapper, CompetitionUser> implements CompetitionUserService {
@@ -52,12 +54,45 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
             record.setPenaltyTime(0);
             record.setCompetitionId(cid);
             record.setUserId(uid);
+            record.setIsEnded(false);
             save(record);
             competitionService.addNumber(cid);
         } catch (DuplicateKeyException e) {
             // 记录已存在，忽略异常（用户之前已参加过该比赛）
             // 这是正常情况，不需要抛出异常
         }
+    }
+
+    @Override
+    public void finishCompetition(Long cid, Long uid) {
+        CompetitionUser record = lambdaQuery()
+                .eq(CompetitionUser::getCompetitionId, cid)
+                .eq(CompetitionUser::getUserId, uid)
+                .one();
+        if (record == null) {
+            throw new com.example.vnollxonlinejudge.exception.BusinessException("请先进入比赛后再结束比赛");
+        }
+        if (Boolean.TRUE.equals(record.getIsEnded())) {
+            return;
+        }
+        update(new LambdaUpdateWrapper<CompetitionUser>()
+                .set(CompetitionUser::getIsEnded, true)
+                .set(CompetitionUser::getEndedAt, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .eq(CompetitionUser::getCompetitionId, cid)
+                .eq(CompetitionUser::getUserId, uid));
+    }
+
+    @Override
+    public boolean hasFinishedCompetition(Long cid, Long uid) {
+        if (cid == null || uid == null || cid <= 0) {
+            return false;
+        }
+        CompetitionUser record = lambdaQuery()
+                .select(CompetitionUser::getIsEnded)
+                .eq(CompetitionUser::getCompetitionId, cid)
+                .eq(CompetitionUser::getUserId, uid)
+                .one();
+        return record != null && Boolean.TRUE.equals(record.getIsEnded());
     }
 
     @Override

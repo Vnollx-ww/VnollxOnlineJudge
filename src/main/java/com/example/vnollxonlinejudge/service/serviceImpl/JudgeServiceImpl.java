@@ -9,6 +9,8 @@ import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.model.vo.judge.JudgeResultVO;
+import com.example.vnollxonlinejudge.exception.BusinessException;
+import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import com.example.vnollxonlinejudge.producer.JudgeProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
@@ -25,20 +27,27 @@ public class JudgeServiceImpl implements JudgeService {
     private final JudgeProducer judgeProducer;
     private final JudgeStrategyFactory judgeStrategyFactory;
     private final SubmissionService submissionService;
+    private final CompetitionUserService competitionUserService;
     private static final SnowflakeIdGenerator gen =
             new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
     public JudgeServiceImpl(
             JudgeProducer judgeProducer,
             JudgeStrategyFactory judgeStrategyFactory,
-            SubmissionService submissionService
+            SubmissionService submissionService,
+            CompetitionUserService competitionUserService
     ) {
         this.judgeProducer=judgeProducer;
         this.judgeStrategyFactory=judgeStrategyFactory;
         this.submissionService=submissionService;
+        this.competitionUserService=competitionUserService;
     }
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
+        Long cid = parseLong(req.getCid());
+        if (cid != null && cid > 0 && competitionUserService.hasFinishedCompetition(cid, uid)) {
+            throw new BusinessException("你已确认结束本场比赛，无法再次提交");
+        }
         Long snowflakeId = gen.nextId();
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
@@ -96,6 +105,14 @@ public class JudgeServiceImpl implements JudgeService {
             return "等待评测：已加入评测队列，即将开始评测。";
         }
         return "等待评测：队列前方还有 " + queueAhead + " 位，请稍候…";
+    }
+
+    private Long parseLong(String value) {
+        try {
+            return value == null || value.isBlank() ? null : Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     @Override

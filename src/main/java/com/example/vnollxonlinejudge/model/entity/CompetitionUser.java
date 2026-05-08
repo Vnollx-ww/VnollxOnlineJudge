@@ -25,4 +25,8 @@ public class CompetitionUser {
     private Integer penaltyTime;
     @Column(name = "name")
     private String name;
+    @Column(name = "is_ended")
+    private Boolean isEnded;
+    @Column(name = "ended_at")
+    private String endedAt;
 }
