@@ -1,4 +1,5 @@
-import { cloneElement, isValidElement, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type ReactElement, type ReactNode } from 'react';
+import { cloneElement, isValidElement, useLayoutEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type ReactElement, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Button from '../Button';
 
@@ -237,14 +238,48 @@ export const Descriptions = Object.assign(DescriptionsRoot, { Item: DescriptionI
 
 export function ConfirmButton({ message, onConfirm, children }: { message?: ReactNode; onConfirm?: () => void; children: ReactElement }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const [popupStyle, setPopupStyle] = useState<CSSProperties>({});
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const popupWidth = 288;
+      const margin = 12;
+      const left = Math.min(Math.max(margin, rect.right - popupWidth), window.innerWidth - popupWidth - margin);
+      const top = Math.min(rect.bottom + 8, window.innerHeight - margin);
+      setPopupStyle({ left, top });
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [open]);
+
   if (!isValidElement(children)) return children;
+
+  const child = children as ReactElement<any>;
+
   return (
-    <span className="relative inline-flex">
-      {cloneElement(children, { onClick: () => setOpen(true) } as any)}
-      {open ? (
+    <span ref={triggerRef} className="inline-flex">
+      {cloneElement(child, {
+        onClick: (event: React.MouseEvent<HTMLElement>) => {
+          child.props.onClick?.(event);
+          if (!event.defaultPrevented) setOpen(true);
+        },
+      })}
+      {open ? createPortal(
         <>
-          <button type="button" className="fixed inset-0 z-40 cursor-default bg-transparent" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl shadow-slate-200/80 ring-1 ring-white">
+          <button type="button" className="fixed inset-0 z-[10000] cursor-default bg-transparent" onClick={() => setOpen(false)} />
+          <div className="fixed z-[10001] w-72 overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl shadow-slate-200/80 ring-1 ring-white" style={popupStyle}>
             <div className="bg-gradient-to-r from-red-50 to-orange-50 px-5 py-4">
               <div className="text-sm font-bold text-slate-900">确认操作</div>
               <div className="mt-1 text-sm leading-6 text-slate-600">{message || '确认操作？'}</div>
@@ -254,7 +289,8 @@ export function ConfirmButton({ message, onConfirm, children }: { message?: Reac
               <Button size="small" danger onClick={() => { setOpen(false); onConfirm?.(); }}>确定</Button>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       ) : null}
     </span>
   );

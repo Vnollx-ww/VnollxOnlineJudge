@@ -50,10 +50,15 @@ export const useCompetitionFirstBloodWebSocket = (competitionId?: string | numbe
           const messageKey = `${message.competitionId}:${message.problemId}:${message.participantName}`;
           if (shownMessagesRef.current.has(messageKey)) return;
           shownMessagesRef.current.add(messageKey);
-          const problemName = message.problemLabel ? `${message.problemLabel}. ${message.problemTitle}` : message.problemTitle;
-          toast.success(`🔥 一血诞生！${message.participantName} 拿下《${problemName}》！`, {
+          const problemName = message.problemLabel ? `${message.problemLabel} 题《${message.problemTitle}》` : `《${message.problemTitle}》`;
+          toast.success(`🔥 ${message.participantName}拿下 ${problemName}一血`, {
             duration: 6000,
-            position: 'top-right',
+            position: 'top-center',
+            style: {
+              fontSize: '18px',
+              padding: '16px 22px',
+              maxWidth: '520px',
+            },
           });
         } catch (err) {
           console.error('[CompetitionFirstBloodWS] 解析消息失败:', err);
