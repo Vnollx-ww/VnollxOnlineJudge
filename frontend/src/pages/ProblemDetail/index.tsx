@@ -261,6 +261,7 @@ const ProblemDetail: React.FC = () => {
   const [mySubmissionsPage, setMySubmissionsPage] = useState(1);
   const [mySubmissionsTotal, setMySubmissionsTotal] = useState(0);
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
+  const optimisticCountedSubmissionsRef = useRef<Set<string>>(new Set());
   const userInfo = getUserInfo();
   const mySubmissionsPageSize = 10;
   const editorOptions = useMemo(() => ({
@@ -345,6 +346,15 @@ const ProblemDetail: React.FC = () => {
       }
 
       if (status !== '评测中') {
+        const snowflakeId = String(msg.snowflakeId);
+        if (!optimisticCountedSubmissionsRef.current.has(snowflakeId)) {
+          optimisticCountedSubmissionsRef.current.add(snowflakeId);
+          setProblem((current) => current ? {
+            ...current,
+            submitCount: (current.submitCount ?? 0) + 1,
+            passCount: status === '答案正确' ? (current.passCount ?? 0) + 1 : (current.passCount ?? 0),
+          } : current);
+        }
         window.dispatchEvent(new Event('notification-updated'));
       }
     }

@@ -37,6 +37,7 @@ import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import { useCompetitionAntiCheat } from '../../hooks/useCompetitionAntiCheat';
+import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '../../components';
 import SuccessCelebration from '../../components/SuccessCelebration';
@@ -220,6 +221,8 @@ const CompetitionProblemDetail: React.FC = () => {
   const [mySubmissionsTotal, setMySubmissionsTotal] = useState(0);
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
   const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage>>({});
+  const optimisticCountedSubmissionsRef = useRef<Set<string>>(new Set());
+  useCompetitionFirstBloodWebSocket(cid, !!cid);
 
   const codeStorageKey = useMemo(() => {
     const pid = problem?.id ?? id;
@@ -300,6 +303,29 @@ const CompetitionProblemDetail: React.FC = () => {
     }
 
     if (status !== '评测中') {
+      const snowflakeId = String(msg.snowflakeId);
+      if (!optimisticCountedSubmissionsRef.current.has(snowflakeId)) {
+        optimisticCountedSubmissionsRef.current.add(snowflakeId);
+        const solvedProblemId = problem?.id ?? id;
+        setProblem((current) => current ? {
+          ...current,
+          submitCount: (current.submitCount ?? 0) + 1,
+          passCount: status === '答案正确' ? (current.passCount ?? 0) + 1 : (current.passCount ?? 0),
+        } : current);
+        if (solvedProblemId) {
+          setCompetitionProblems((prev) =>
+            prev.map((item) =>
+              String(item.id) === String(solvedProblemId)
+                ? {
+                    ...item,
+                    submitCount: (item.submitCount ?? 0) + 1,
+                    passCount: status === '答案正确' ? (item.passCount ?? 0) + 1 : (item.passCount ?? 0),
+                  }
+                : item
+            )
+          );
+        }
+      }
       window.dispatchEvent(new Event('notification-updated'));
     }
   }, [id, problem?.id]);

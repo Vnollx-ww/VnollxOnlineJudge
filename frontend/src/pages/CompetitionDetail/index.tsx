@@ -22,6 +22,7 @@ import {
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/Input';
+import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -69,6 +70,7 @@ const CompetitionDetail: React.FC = () => {
   const [fullscreenPromptOpen, setFullscreenPromptOpen] = useState(false);
   const [fullscreenPromptDismissed, setFullscreenPromptDismissed] = useState(false);
   const isStrictAntiCheat = competition?.antiCheatMode === 'STRICT';
+  useCompetitionFirstBloodWebSocket(id, passwordVerified);
 
   useEffect(() => {
     if (!isAuthenticated()) {

@@ -20,6 +20,7 @@ import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import Select from '../../components/Select';
 import Input from '../../components/Input';
+import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 
 const { Title, Text } = Typography;
 
@@ -56,6 +57,7 @@ const CompetitionSubmissions: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
+  useCompetitionFirstBloodWebSocket(id, passwordVerified);
 
   const pageSize = 10;
 

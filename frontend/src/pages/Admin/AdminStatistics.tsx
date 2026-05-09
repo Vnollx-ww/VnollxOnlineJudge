@@ -243,7 +243,7 @@ const AdminStatistics: React.FC = () => {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="gemini-card space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
           数据统计

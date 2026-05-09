@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.vnollxonlinejudge.convert.SubmissionConvert;
+import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.model.query.SubmissionQuery;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
@@ -16,6 +17,7 @@ import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.SubmissionMapper;
 import com.example.vnollxonlinejudge.service.*;
 import com.example.vnollxonlinejudge.utils.*;
+import com.example.vnollxonlinejudge.websocket.CompetitionFirstBloodWebSocketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +42,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private final SubmissionConvert submissionConvert;
     private final UserTagService userTagService;
     private final ProblemTagService problemTagService;
+    private final CompetitionFirstBloodWebSocketHandler competitionFirstBloodWebSocketHandler;
+    private final CompetitionProblemService competitionProblemService;
 
     @Autowired
     public SubmissionServiceImpl(
@@ -51,7 +55,9 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             CompetitionTeamService competitionTeamService,
             UserTagService userTagService,
             ProblemTagService problemTagService,
-            SubmissionConvert submissionConvert
+            SubmissionConvert submissionConvert,
+            CompetitionFirstBloodWebSocketHandler competitionFirstBloodWebSocketHandler,
+            CompetitionProblemService competitionProblemService
     ) {
         this.problemService = problemService;
         this.redisService=redisService;
@@ -62,6 +68,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         this.userTagService=userTagService;
         this.problemTagService=problemTagService;
         this.submissionConvert=submissionConvert;
+        this.competitionFirstBloodWebSocketHandler=competitionFirstBloodWebSocketHandler;
+        this.competitionProblemService=competitionProblemService;
     }
 
     private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s"; // cid:uid
@@ -157,6 +165,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     String beginTimeStr=redisService.getValueByKey(timeBeginKey);
                     Long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
                     redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,participantName,penalty);//如果是比赛那就需要更新缓存了
+                    pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantName);
                 }
             }
         } else {//未通过
@@ -171,6 +180,26 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,participantName);//是比赛，而且之前也没通过，那就需要罚时了
             }
         }
+    }
+
+    private void pushCompetitionFirstBloodIfNeeded(Long cid, Long pid, String problemTitle, String participantName) {
+        QueryWrapper<Submission> wrapper = new QueryWrapper<>();
+        wrapper.eq("cid", cid)
+                .eq("pid", pid)
+                .eq("status", "答案正确");
+        if (this.baseMapper.selectCount(wrapper) == 1) {
+            competitionFirstBloodWebSocketHandler.sendFirstBlood(cid, pid, getCompetitionProblemLabel(cid, pid), problemTitle, participantName);
+        }
+    }
+
+    private String getCompetitionProblemLabel(Long cid, Long pid) {
+        List<CompetitionProblem> problems = competitionProblemService.getProblemList(cid);
+        for (int i = 0; i < problems.size(); i++) {
+            if (Objects.equals(problems.get(i).getProblemId(), pid)) {
+                return String.valueOf((char) ('A' + i));
+            }
+        }
+        return "";
     }
     @Override
     public void deleteSubmissionsByPid(Long pid) {

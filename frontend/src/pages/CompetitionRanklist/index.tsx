@@ -12,6 +12,7 @@ import { LockOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/Input';
+import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 
 const { Title, Text } = Typography;
 
@@ -131,6 +132,7 @@ const CompetitionRanklist: React.FC = () => {
   const [hoveredSubmissionId, setHoveredSubmissionId] = useState<number | null>(null);
   const [ranklistSubmissions, setRanklistSubmissions] = useState<Record<string, SubmissionRank[]>>({});
   const [loadingSubmissionKeys, setLoadingSubmissionKeys] = useState<Set<string>>(() => new Set());
+  useCompetitionFirstBloodWebSocket(id, passwordVerified);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -354,7 +356,7 @@ const CompetitionRanklist: React.FC = () => {
     container.scrollTo({ top: scrollTop, behavior: 'smooth' });
   };
 
-  const renderTeamDetail = (user: User, rank: number) => {
+  const renderTeamDetail = (user: User, rank: number, expanded: boolean) => {
     if (!competition) return null;
     const userKey = getUserKey(user);
     const submissionsLoading = loadingSubmissionKeys.has(userKey);
@@ -381,10 +383,11 @@ const CompetitionRanklist: React.FC = () => {
     );
 
     return (
-      <tr>
+      <tr aria-hidden={!expanded}>
         <td colSpan={4} className="sticky left-0 z-10 bg-[#f3f4f8] p-0" id={`detail-${user.id}`} data-virtual-id={`detail-${user.id}`}>
-          <div className="px-4 py-5">
-            <div className="relative flex h-[380px] w-full flex-col rounded-xl bg-white p-5 text-gray-800 shadow-sm">
+          <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${expanded ? 'max-h-[430px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
+            <div className="px-4 py-5">
+              <div className="relative flex h-[380px] w-full flex-col rounded-xl bg-white p-5 text-gray-800 shadow-sm">
               <div className="flex min-h-0 flex-1 gap-4">
                 <div className="flex w-24 shrink-0 flex-col justify-between">
                   {[0, 1, 2].map((memberIndex) => {
@@ -436,37 +439,40 @@ const CompetitionRanklist: React.FC = () => {
                 </div>
               </div>
             </div>
+            </div>
           </div>
         </td>
         {problemHeaders.map((problem) => {
           const problemSubmissions = submissions.filter((submission) => submission.problem?.id === problem.id).sort((a, b) => b.minutes - a.minutes).slice(0, 8);
           return (
             <td key={`score-${rank}-${problem.id}`} className="w-[90px] bg-[#f3f4f8] p-0 align-top">
-              <div className="score flex h-[380px] flex-col gap-1 bg-[#f3f4f8] p-1.5">
-                {problemSubmissions.map((submission) => (
-                  <button
-                    key={submission.id}
-                    type="button"
-                    className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-sm px-1 py-0.5 font-mono text-[15px] transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
-                    id={`ps-${submission.id}`}
-                    data-submission-id={submission.id}
-                    data-problem-id={problem.id}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      scrollToRecentSubmission(submission.id);
-                    }}
-                    onMouseEnter={() => setHoveredSubmissionId(submission.id)}
-                    onMouseLeave={() => setHoveredSubmissionId(null)}
-                  >
-                    <span className="text-[#495057]">{submission.time}</span>
-                    <span className={`text-[12px] underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
-                      {submission.status}
-                    </span>
-                  </button>
-                ))}
-                {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
-                  <div key={`empty-${problem.id}-${emptyIndex}`} className="flex items-center justify-center py-0.5 font-mono text-[15px] text-[#ccc]">-</div>
-                ))}
+              <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${expanded ? 'max-h-[430px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
+                <div className="score flex h-[380px] flex-col gap-1 bg-[#f3f4f8] p-1.5">
+                  {problemSubmissions.map((submission) => (
+                    <button
+                      key={submission.id}
+                      type="button"
+                      className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-sm px-1 py-0.5 font-mono text-[15px] transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                      id={`ps-${submission.id}`}
+                      data-submission-id={submission.id}
+                      data-problem-id={problem.id}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        scrollToRecentSubmission(submission.id);
+                      }}
+                      onMouseEnter={() => setHoveredSubmissionId(submission.id)}
+                      onMouseLeave={() => setHoveredSubmissionId(null)}
+                    >
+                      <span className="text-[#495057]">{submission.time}</span>
+                      <span className={`text-[12px] underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
+                        {submission.status}
+                      </span>
+                    </button>
+                  ))}
+                  {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
+                    <div key={`empty-${problem.id}-${emptyIndex}`} className="flex items-center justify-center py-0.5 font-mono text-[15px] text-[#ccc]">-</div>
+                  ))}
+                </div>
               </div>
             </td>
           );
@@ -583,7 +589,7 @@ const CompetitionRanklist: React.FC = () => {
                             );
                           })}
                         </tr>
-                        {expandedUserKeys.has(userKey) ? renderTeamDetail(user, index + 1) : null}
+                        {renderTeamDetail(user, index + 1, expandedUserKeys.has(userKey))}
                       </Fragment>
                       );
                     })}
