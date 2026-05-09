@@ -100,6 +100,28 @@ function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey
     return record.key ?? index;
   };
   const isActionColumn = (column: Column<T>) => column.key === 'action' || column.dataIndex === 'action' || String(column.title) === '操作';
+  const handlePageChange = (page: number, nextPageSize: number) => {
+    const scrollY = window.scrollY;
+    pagination && pagination.onChange?.(page, nextPageSize);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo({ top: scrollY, left: window.scrollX }));
+    });
+  };
+  const renderPagination = (position: 'top' | 'bottom') => pagination ? (
+    <div className={`flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white to-blue-50/50 px-5 py-4 text-sm text-slate-500 ${position === 'bottom' ? 'border-t border-blue-50' : 'border-b border-blue-50'}`}>
+      <div>{pagination.showTotal ? pagination.showTotal(total) : `共 ${total} 条记录`}</div>
+      <div className="flex items-center gap-2">
+        {pagination.showSizeChanger ? (
+          <select className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" value={pageSize} onChange={(event) => handlePageChange(1, Number(event.target.value))}>
+            {[10, 20, 50, 100].map((sizeOption) => <option key={sizeOption} value={sizeOption}>{sizeOption} 条/页</option>)}
+          </select>
+        ) : null}
+        <Button size="small" variant="outlined" disabled={current <= 1} onClick={() => handlePageChange(current - 1, pageSize)}>上一页</Button>
+        <span className="rounded-xl bg-slate-100 px-3 py-2 text-slate-700">{current} / {totalPages}</span>
+        <Button size="small" variant="outlined" disabled={current >= totalPages} onClick={() => handlePageChange(current + 1, pageSize)}>下一页</Button>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className={`overflow-hidden rounded-[28px] border border-blue-100/80 bg-white shadow-xl shadow-blue-100/40 ring-1 ring-white/80 ${className}`}>
@@ -146,21 +168,7 @@ function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey
           </tbody>
         </table>
       </div>
-      {pagination ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-blue-50 bg-gradient-to-r from-white to-blue-50/50 px-5 py-4 text-sm text-slate-500">
-          <div>{pagination.showTotal ? pagination.showTotal(total) : `共 ${total} 条记录`}</div>
-          <div className="flex items-center gap-2">
-            {pagination.showSizeChanger ? (
-              <select className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" value={pageSize} onChange={(event) => pagination.onChange?.(1, Number(event.target.value))}>
-                {[10, 20, 50, 100].map((sizeOption) => <option key={sizeOption} value={sizeOption}>{sizeOption} 条/页</option>)}
-              </select>
-            ) : null}
-            <Button size="small" variant="outlined" disabled={current <= 1} onClick={() => pagination.onChange?.(current - 1, pageSize)}>上一页</Button>
-            <span className="rounded-xl bg-slate-100 px-3 py-2 text-slate-700">{current} / {totalPages}</span>
-            <Button size="small" variant="outlined" disabled={current >= totalPages} onClick={() => pagination.onChange?.(current + 1, pageSize)}>下一页</Button>
-          </div>
-        </div>
-      ) : null}
+      {renderPagination('bottom')}
     </div>
   );
 }
@@ -228,8 +236,28 @@ function DescriptionItem({ label, children }: { label?: ReactNode; children?: Re
 export const Descriptions = Object.assign(DescriptionsRoot, { Item: DescriptionItem });
 
 export function ConfirmButton({ message, onConfirm, children }: { message?: ReactNode; onConfirm?: () => void; children: ReactElement }) {
+  const [open, setOpen] = useState(false);
   if (!isValidElement(children)) return children;
-  return cloneElement(children, { onClick: () => { if (window.confirm(String(message || '确认操作？'))) onConfirm?.(); } } as any);
+  return (
+    <span className="relative inline-flex">
+      {cloneElement(children, { onClick: () => setOpen(true) } as any)}
+      {open ? (
+        <>
+          <button type="button" className="fixed inset-0 z-40 cursor-default bg-transparent" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl shadow-slate-200/80 ring-1 ring-white">
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 px-5 py-4">
+              <div className="text-sm font-bold text-slate-900">确认操作</div>
+              <div className="mt-1 text-sm leading-6 text-slate-600">{message || '确认操作？'}</div>
+            </div>
+            <div className="flex justify-end gap-2 px-5 py-4">
+              <Button size="small" variant="outlined" onClick={() => setOpen(false)}>取消</Button>
+              <Button size="small" danger onClick={() => { setOpen(false); onConfirm?.(); }}>确定</Button>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </span>
+  );
 }
 
 class SimpleFormStore {

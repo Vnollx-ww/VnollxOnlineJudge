@@ -280,8 +280,8 @@ const AdminProblems: React.FC = () => {
       } else {
         toast.error((data as any).msg || '删除失败');
       }
-    } catch {
-      toast.error('删除题目失败');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.msg || '删除题目失败');
     }
   };
 

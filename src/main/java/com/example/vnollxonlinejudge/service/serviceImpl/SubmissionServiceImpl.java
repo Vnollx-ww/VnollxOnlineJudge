@@ -189,7 +189,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
 
         List<SubmissionVo> submissionVos = submissionConvert.toVoList(result.getRecords());
         if (submissionQuery.getCid() != null && submissionQuery.getCid() != 0) {
-            submissionVos.forEach(submissionVo -> submissionVo.setCode(null));
+            Long currentUserId = UserContextHolder.getCurrentUserId();
+            submissionVos.forEach(submissionVo -> {
+                if (currentUserId == null || !currentUserId.equals(submissionVo.getUid())) {
+                    submissionVo.setCode(null);
+                }
+            });
         }
         return submissionVos;
 

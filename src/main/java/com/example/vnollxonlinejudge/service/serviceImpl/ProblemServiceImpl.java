@@ -48,6 +48,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     private final TagService tagService;
     private final TestCaseCacheService testCaseCacheService;
     private final ProblemExampleService problemExampleService;
+    private final CompetitionProblemMapper competitionProblemMapper;
+    private final CompetitionMapper competitionMapper;
     private final static SnowflakeIdGenerator gen = new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
     public ProblemServiceImpl(
@@ -58,7 +60,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             @Lazy SubmissionService submissionService,
             TagService tagService,
             TestCaseCacheService testCaseCacheService,
-            ProblemExampleService problemExampleService
+            ProblemExampleService problemExampleService,
+            CompetitionProblemMapper competitionProblemMapper,
+            CompetitionMapper competitionMapper
     ) {
         this.problemTagService=problemTagService;
         this.userSolvedProblemService=userSolvedProblemService;
@@ -68,6 +72,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         this.tagService=tagService;
         this.testCaseCacheService=testCaseCacheService;
         this.problemExampleService=problemExampleService;
+        this.competitionProblemMapper=competitionProblemMapper;
+        this.competitionMapper=competitionMapper;
     }
 
     @Override
@@ -148,6 +154,28 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         Problem problem=this.getById(id);
         if (problem==null) {
             throw new BusinessException("题目不存在或已被删除");
+        }
+        List<CompetitionProblem> competitionProblems = competitionProblemMapper.selectList(
+                new LambdaQueryWrapper<CompetitionProblem>()
+                        .eq(CompetitionProblem::getProblemId, id)
+        );
+        if (!competitionProblems.isEmpty()) {
+            List<Long> competitionIds = competitionProblems.stream()
+                    .map(CompetitionProblem::getCompetitionId)
+                    .distinct()
+                    .toList();
+            List<String> competitionTitles = competitionMapper.selectList(
+                            new LambdaQueryWrapper<Competition>()
+                                    .in(Competition::getId, competitionIds)
+                                    .select(Competition::getTitle)
+                    ).stream()
+                    .map(Competition::getTitle)
+                    .filter(title -> title != null && !title.isBlank())
+                    .collect(Collectors.toList());
+            String competitionText = competitionTitles.isEmpty()
+                    ? competitionIds.stream().map(String::valueOf).collect(Collectors.joining("、"))
+                    : String.join("、", competitionTitles);
+            throw new BusinessException("该题目存在于比赛「" + competitionText + "」中，不能直接删除。请先从对应比赛中移除该题目后再删除。");
         }
         try {
             ossService.deleteFile(problem.getId()+".zip");

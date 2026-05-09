@@ -124,7 +124,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
 
         this.save(user);
-        permissionService.syncUserRoleByIdentity(user.getId(), IDENTITY_USER);
+        Long userId = user.getId();
+        if (userId == null) {
+            User savedUser = lambdaQuery().eq(User::getEmail, email).one();
+            if (savedUser == null || savedUser.getId() == null) {
+                throw new BusinessException("注册失败，未获取到用户ID");
+            }
+            userId = savedUser.getId();
+        }
+        permissionService.syncUserRoleByIdentity(userId, IDENTITY_USER, false);
     }
 
     @Override
@@ -284,7 +292,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
 
         save(user);
-        permissionService.syncUserRoleByIdentity(user.getId(), identity);
+        Long userId = user.getId();
+        if (userId == null) {
+            User savedUser = lambdaQuery().eq(User::getEmail, email).one();
+            if (savedUser == null || savedUser.getId() == null) {
+                throw new BusinessException("创建用户失败，未获取到用户ID");
+            }
+            userId = savedUser.getId();
+        }
+        permissionService.syncUserRoleByIdentity(userId, identity, false);
     }
 
     @Override
@@ -312,7 +328,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         updateById(user);
         
         // 同步用户角色（根据身份分配对应角色，会自动使token失效）
-        permissionService.syncUserRoleByIdentity(uid, identity);
+        permissionService.syncUserRoleByIdentity(uid, identity, true);
     }
 
     @Override

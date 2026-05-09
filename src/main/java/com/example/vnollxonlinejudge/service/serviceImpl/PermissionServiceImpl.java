@@ -477,7 +477,7 @@ public class PermissionServiceImpl implements PermissionService {
     
     @Override
     @Transactional
-    public void syncUserRoleByIdentity(Long userId, String identityCode) {
+    public void syncUserRoleByIdentity(Long userId, String identityCode, boolean forceRelogin) {
         if (userId == null || identityCode == null || identityCode.isEmpty()) {
             return;
         }
@@ -500,9 +500,11 @@ public class PermissionServiceImpl implements PermissionService {
                 .build();
         userRoleMapper.insert(userRole);
         
-        // 清除缓存并强制重新登录
+        // 清除缓存并按需强制重新登录
         clearUserPermissionCache(userId);
-        invalidateUserToken(userId);
+        if (forceRelogin) {
+            invalidateUserToken(userId);
+        }
         
         logger.info("用户角色同步成功: userId={}, roleCode={}", userId, identityCode);
     }

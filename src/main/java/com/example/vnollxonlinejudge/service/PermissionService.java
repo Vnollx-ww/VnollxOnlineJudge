@@ -114,5 +114,5 @@ public interface PermissionService {
     /**
      * 根据用户身份同步角色（清除旧角色，分配新角色）
      */
-    void syncUserRoleByIdentity(Long userId, String identityCode);
+    void syncUserRoleByIdentity(Long userId, String identityCode, boolean forceRelogin);
 }
