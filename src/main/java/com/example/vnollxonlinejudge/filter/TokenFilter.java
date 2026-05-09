@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Objects;
 
 @Component
 @Order(1)
@@ -119,6 +120,18 @@ public class TokenFilter implements Filter {
             // 解析用户 ID
             String userId = JwtToken.getUserIdFromToken(token);
             String identity= JwtToken.getUserIdentityFromToken(token);
+
+            if (userId != null) {
+                String loginTokenKey = RedisKeyType.LOGIN_TOKEN.generateKey(Long.parseLong(userId));
+                String latestToken = redisService.getValueByKey(loginTokenKey);
+                if (latestToken == null) {
+                    redisService.setKey(loginTokenKey, token, 86400L);
+                } else if (!Objects.equals(latestToken, token)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().println("账号已在其他设备登录");
+                    return;
+                }
+            }
 
             String key= null;
             if (userId != null) {

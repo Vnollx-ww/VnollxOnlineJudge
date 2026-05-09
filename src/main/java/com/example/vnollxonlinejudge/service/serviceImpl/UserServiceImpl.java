@@ -91,7 +91,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         user.setLastLoginTime(LocalDateTime.now());
         this.updateById(user);
-        return JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity());
+        String token = JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity());
+        String loginTokenKey = RedisKeyType.LOGIN_TOKEN.generateKey(user.getId());
+        redisService.deleteKey(loginTokenKey);
+        redisService.setKey(loginTokenKey, token, 86400L);
+        return token;
     }
 
     //@DS("master")
@@ -116,9 +120,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .password(hashPasswordWithSalt(password, salt))
                 .email(email)
                 .salt(salt)
+                .identity(IDENTITY_USER)
                 .build();
 
         this.save(user);
+        permissionService.syncUserRoleByIdentity(user.getId(), IDENTITY_USER);
     }
 
     @Override
@@ -259,6 +265,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Transactional
     public void addUserByAdmin(String name, String email, String identity) {
         if (lambdaQuery().eq(User::getEmail, email).exists()) {
             throw new BusinessException(ERROR_EMAIL_EXISTS);
@@ -277,6 +284,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
 
         save(user);
+        permissionService.syncUserRoleByIdentity(user.getId(), identity);
     }
 
     @Override

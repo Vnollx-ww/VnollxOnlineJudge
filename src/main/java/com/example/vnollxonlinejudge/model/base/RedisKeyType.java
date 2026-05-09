@@ -5,6 +5,7 @@ public enum RedisKeyType {
     FORGET(":forget"), 
     UPDATE(":update"),
     LOGOUT(":logout"),
+    LOGIN_TOKEN(":login:token"),
     USER_PERMISSIONS("user:permissions:"),
     USER_ROLES("user:roles:"),
     PERMISSION_REFRESH("permission:refresh:");
