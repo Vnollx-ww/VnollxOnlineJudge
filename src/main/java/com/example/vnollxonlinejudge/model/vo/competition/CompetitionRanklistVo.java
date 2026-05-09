@@ -23,9 +23,12 @@ public class CompetitionRanklistVo {
     public static class UserRankVo {
         private Long id;
         private String name;
+        private String type;
+        private List<CompetitionTeamVo.MemberVo> members = new ArrayList<>();
         private Integer passCount;
         private Integer penaltyTime;
         private List<ProblemResultVo> problems = new ArrayList<>();
+        private List<SubmissionRankVo> submissions = new ArrayList<>();
     }
 
     @Data
@@ -36,5 +39,17 @@ public class CompetitionRanklistVo {
         private Integer wrongCount = 0;
         private Integer solveMinutes;
         private String solveTime;
+    }
+
+    @Data
+    public static class SubmissionRankVo {
+        private Long id;
+        private Long problemId;
+        private String problemLabel;
+        private String status;
+        private String result;
+        private String submitTime;
+        private Integer submitMinutes;
+        private String displayTime;
     }
 }

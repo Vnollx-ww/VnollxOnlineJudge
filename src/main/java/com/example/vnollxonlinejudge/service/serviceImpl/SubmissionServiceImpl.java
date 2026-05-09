@@ -35,6 +35,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private final RedisService redisService;
     private final UserService userService;
     private final CompetitionUserService competitionUserService;
+    private final CompetitionService competitionService;
+    private final CompetitionTeamService competitionTeamService;
     private final SubmissionConvert submissionConvert;
     private final UserTagService userTagService;
     private final ProblemTagService problemTagService;
@@ -45,6 +47,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             @Lazy RedisService redisService,
             UserService userService,
             CompetitionUserService competitionUserService,
+            @Lazy CompetitionService competitionService,
+            CompetitionTeamService competitionTeamService,
             UserTagService userTagService,
             ProblemTagService problemTagService,
             SubmissionConvert submissionConvert
@@ -53,6 +57,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         this.redisService=redisService;
         this.userService=userService;
         this.competitionUserService=competitionUserService;
+        this.competitionService=competitionService;
+        this.competitionTeamService=competitionTeamService;
         this.userTagService=userTagService;
         this.problemTagService=problemTagService;
         this.submissionConvert=submissionConvert;
@@ -95,14 +101,22 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         Long uid=judgeinfo.getUid();
         Long cid=judgeinfo.getCid();
         String userName=judgeinfo.getUname();
+        String participantName=userName;
         String createTime=judgeinfo.getCreateTime();
         ProblemVo problem;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
         if (cid != 0) {
+            if ("TEAM".equalsIgnoreCase(competitionService.getCompetitionById(cid).getParticipantType())) {
+                com.example.vnollxonlinejudge.model.vo.competition.CompetitionTeamVo teamVo = competitionTeamService.getTeamVoById(judgeinfo.getTeamId());
+                if (teamVo == null) {
+                    throw new BusinessException("团队赛提交缺少队伍信息");
+                }
+                participantName = teamVo.getTeamName();
+            }
             timeOutKey=String.format(TIME_OUT_KEY,cid);
             timeBeginKey=String.format(TIME_BEGIN_KEY,cid);
-            userPassKey = String.format(USER_PASS_COUNT_KEY, cid, userName);
-            userPenaltyKey = String.format(USER_PENALTY_KEY, cid, userName);
+            userPassKey = String.format(USER_PASS_COUNT_KEY, cid, participantName);
+            userPenaltyKey = String.format(USER_PENALTY_KEY, cid, participantName);
             rankingKey = String.format(RANKING_KEY, cid);
             problemPassKey = String.format(PROBLEM_PASS_KEY, cid, pid);
             problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, pid);
@@ -110,7 +124,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             Long ttlSeconds= TimeUtils.calculateTTL(endTimeStr);
             redisService.setKey(userPassKey,"0",ttlSeconds+600);
             redisService.setKey(userPenaltyKey,"0",ttlSeconds+600);
-            if (redisService.addToSetByKey(rankingKey,calculateScore(0L,0L),userName,ttlSeconds+600)){
+            if (redisService.addToSetByKey(rankingKey,calculateScore(0L,0L),participantName,ttlSeconds+600)){
                 competitionUserService.createRecord(cid,uid,userName);
             }
 
@@ -142,7 +156,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 } else {
                     String beginTimeStr=redisService.getValueByKey(timeBeginKey);
                     Long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
-                    redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,userName,penalty);//如果是比赛那就需要更新缓存了
+                    redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,participantName,penalty);//如果是比赛那就需要更新缓存了
                 }
             }
         } else {//未通过
@@ -154,7 +168,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 userService.updateSubmitCount(uid,0);//如果非比赛，提交总数加1
                 problemService.updatePassCount(pid,0);//问题提交数也加一
             } else if (!ok) {
-                redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,userName);//是比赛，而且之前也没通过，那就需要罚时了
+                redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,participantName);//是比赛，而且之前也没通过，那就需要罚时了
             }
         }
     }
@@ -173,7 +187,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         Page<Submission> page = new Page<>(submissionQuery.getPageNum(), submissionQuery.getPageSize());
         Page<Submission> result = this.page(page, wrapper);
 
-        return submissionConvert.toVoList(result.getRecords());
+        List<SubmissionVo> submissionVos = submissionConvert.toVoList(result.getRecords());
+        if (submissionQuery.getCid() != null && submissionQuery.getCid() != 0) {
+            submissionVos.forEach(submissionVo -> submissionVo.setCode(null));
+        }
+        return submissionVos;
 
     }
 

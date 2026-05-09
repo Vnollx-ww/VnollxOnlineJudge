@@ -12,4 +12,5 @@ public class AdminSaveCompetitionDTO {
     private String password;
     private Boolean needPassword;
     private String antiCheatMode;
+    private String participantType;
 }

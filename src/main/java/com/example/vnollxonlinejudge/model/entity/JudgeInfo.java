@@ -16,6 +16,7 @@ public class JudgeInfo {
     private Long memory;
     private Long cid;
     private Long uid;
+    private Long teamId;
     private Long pid;
     private String uname;
     private String createTime;

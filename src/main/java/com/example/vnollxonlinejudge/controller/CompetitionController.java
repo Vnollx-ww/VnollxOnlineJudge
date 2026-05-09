@@ -121,6 +121,12 @@ public class CompetitionController {
     public Result<CompetitionVo> getCompetitionById(@PathVariable Long id){
         return Result.Success(competitionService.getCompetitionById(id), "获取比赛详情成功");
     }
+    @GetMapping("/{id}/participation")
+    public Result<Void> checkParticipation(@PathVariable Long id) {
+        Long userId = UserContextHolder.getCurrentUserId();
+        competitionService.checkParticipation(id, userId);
+        return Result.Success("允许参加比赛");
+    }
     @GetMapping("/list-problem")
     public Result<List<CompetitionProblemBriefVo>> getProblemList(@RequestParam String id) {
         Long userId = UserContextHolder.getCurrentUserId();
@@ -138,6 +144,11 @@ public class CompetitionController {
     public Result<CompetitionRanklistVo> getRanklist(@RequestParam String id){
         return Result.Success(competitionService.getRanklist(Long.parseLong(id))
                 ,"获取比赛排行榜成功");
+    }
+    @GetMapping("/ranklist-submissions")
+    public Result<List<CompetitionRanklistVo.SubmissionRankVo>> getRanklistSubmissions(@RequestParam String id, @RequestParam String userId){
+        return Result.Success(competitionService.getRanklistSubmissions(Long.parseLong(id), Long.parseLong(userId))
+                ,"获取比赛排行榜提交详情成功");
     }
     @PostMapping("/confirm")
     public Result<Void> confirmPassword(@RequestBody ConfirmPasswordDTO req){

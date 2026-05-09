@@ -45,6 +45,8 @@ const AdminPermissions: React.FC = () => {
   const [assignPermissionModalVisible, setAssignPermissionModalVisible] = useState(false);
   const [selectedRoleToAssign, setSelectedRoleToAssign] = useState<number | null>(null);
   const [selectedPermissionsToAssign, setSelectedPermissionsToAssign] = useState<number[]>([]);
+  const [permissionsPage, setPermissionsPage] = useState(1);
+  const permissionsPageSize = 20;
 
   useEffect(() => {
     loadRoles();
@@ -254,6 +256,11 @@ const AdminPermissions: React.FC = () => {
     return <Tag color={colorMap[code] || 'default'}>{code}</Tag>;
   };
 
+  const pagedPermissions = permissions.slice(
+    (permissionsPage - 1) * permissionsPageSize,
+    permissionsPage * permissionsPageSize,
+  );
+
   const tabItems = [
     {
       key: 'roles',
@@ -301,22 +308,24 @@ const AdminPermissions: React.FC = () => {
                 </PermissionGuard>
               </div>
               <Spin spinning={rolePermissionsLoading}>
-                <DataTable<Permission> rows={rolePermissions} rowKey="id" pagination={false} size="small">
-                  <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="green">{permission.code}</Tag>} />
-                  <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
-                  <DataColumn<Permission> header="模块" cell={(permission) => permission.module} />
-                  <DataColumn<Permission>
-                    header="操作"
-                    action
-                    cell={(permission) => (
-                      <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
-                        <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(permission.id)}>
-                          移除
-                        </Button>
-                      </PermissionGuard>
-                    )}
-                  />
-                </DataTable>
+                <div className="max-h-80 overflow-y-auto">
+                  <DataTable<Permission> rows={rolePermissions} rowKey="id" pagination={false} size="small">
+                    <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="green">{permission.code}</Tag>} />
+                    <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
+                    <DataColumn<Permission> header="模块" cell={(permission) => permission.module} />
+                    <DataColumn<Permission>
+                      header="操作"
+                      action
+                      cell={(permission) => (
+                        <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+                          <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(permission.id)}>
+                            移除
+                          </Button>
+                        </PermissionGuard>
+                      )}
+                    />
+                  </DataTable>
+                </div>
               </Spin>
             </div>
           )}
@@ -435,7 +444,16 @@ const AdminPermissions: React.FC = () => {
         </span>
       ),
       children: (
-        <DataTable<Permission> rows={permissions} rowKey="id" pagination={{ pageSize: 20 }}>
+        <DataTable<Permission>
+          rows={pagedPermissions}
+          rowKey="id"
+          pagination={{
+            current: permissionsPage,
+            pageSize: permissionsPageSize,
+            total: permissions.length,
+            onChange: (page) => setPermissionsPage(page),
+          }}
+        >
           <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="blue">{permission.code}</Tag>} />
           <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
           <DataColumn<Permission> header="模块" cell={(permission) => <Tag>{permission.module}</Tag>} />

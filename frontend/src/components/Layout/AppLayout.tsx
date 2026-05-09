@@ -186,18 +186,20 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
       {/* 主内容区 */}
       <Layout 
-        className="relative z-10" 
+        className="relative z-10 min-w-0 overflow-x-hidden" 
         style={{ 
           background: 'transparent',
           marginLeft: '80px',
+          width: 'calc(100dvw - 80px)',
+          maxWidth: 'calc(100dvw - 80px)',
           transition: 'margin-left 0.3s ease'
         }}
       >
         <Content
-          className="min-h-[calc(100vh-64px-80px)] py-6"
+          className="min-h-[calc(100vh-64px-80px)] min-w-0 overflow-x-hidden py-6"
           style={{ paddingLeft: '4vw', paddingRight: '4vw' }}
         >
-          <div className="w-full animate-fade-in">
+          <div className="min-w-0 w-full max-w-full animate-fade-in overflow-x-hidden">
             {children}
           </div>
         </Content>

@@ -34,4 +34,6 @@ public class Competition {
     private String password;
     @Column(name = "anti_cheat_mode")
     private String antiCheatMode;
+    @Column(name = "participant_type")
+    private String participantType;
 }

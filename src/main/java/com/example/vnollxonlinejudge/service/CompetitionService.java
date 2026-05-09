@@ -10,18 +10,21 @@ import java.util.List;
 public interface CompetitionService {
     CompetitionVo getCompetitionById(Long id);
 
-    void createCompetition(String title,String description,String beginTime,String endTime,String password,boolean needPassword,String antiCheatMode);
-    void updateCompetition(Long id,String title,String description,String beginTime,String endTime,String password,boolean needPassword,String antiCheatMode);
+    void createCompetition(String title,String description,String beginTime,String endTime,String password,boolean needPassword,String antiCheatMode,String participantType);
+    void updateCompetition(Long id,String title,String description,String beginTime,String endTime,String password,boolean needPassword,String antiCheatMode,String participantType);
     List<CompetitionVo> getCompetitionList(int pageNum, int pageSize, String keyword);
     Long getCount(String keyword);
     void confirmPassword(Long id,String password);
+    void checkParticipation(Long cid, Long userId);
 
     List<CompetitionProblemBriefVo> getProblemList(Long cid, Long userId);
     List<UserVo> getUserList(Long cid);
     CompetitionRanklistVo getRanklist(Long cid);
+    List<CompetitionRanklistVo.SubmissionRankVo> getRanklistSubmissions(Long cid, Long userId);
     void judgeIsOpenById(String now, Long id);
     void judgeIsEndById(String now,Long id);
     void deleteCompetition(Long id);
     void addNumber(Long id);
+    void addNumber(Long id, int delta);
     Long getCompetitionCount();
 }

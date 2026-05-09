@@ -107,12 +107,21 @@ const Competitions: React.FC = () => {
     return <Tag color={config.color} className="!rounded-full !px-3">{config.text}</Tag>;
   };
 
-  const handleJoin = (id: number, status: string) => {
+  const handleJoin = async (id: number, status: string) => {
     if (status === '暂未开始') {
       toast('比赛暂未开始，无法进入', { icon: '⚠️' });
       return;
     }
-    navigate(`/competition/${id}`);
+    try {
+      const data = await api.get(`/competition/${id}/participation`) as ApiResponse<void>;
+      if (data.code === 200) {
+        navigate(`/competition/${id}`);
+      } else {
+        toast.error((data as any).msg || '无权参加该比赛');
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.msg || '无权参加该比赛');
+    }
   };
 
   return (
@@ -162,7 +171,7 @@ const Competitions: React.FC = () => {
             >
               <div className="flex items-center gap-5 min-w-0 flex-1">
                 <img
-                  src="http://111.230.105.54:9000/markdown/ODF.png"
+                  src="http://111.230.105.54:9000/markdown/微信图片_20260509104335_470_9.jpg"
                   alt="比赛"
                   className="h-16 w-16 flex-shrink-0 rounded-2xl object-cover"
                 />
@@ -195,7 +204,7 @@ const Competitions: React.FC = () => {
 
         {competitions.length === 0 && !loading && (
           <div className="text-center py-12">
-            <img src="http://111.230.105.54:9000/markdown/ODF.png" alt="比赛" className="mx-auto mb-4 h-12 w-12 rounded-2xl object-cover opacity-60" />
+            <img src="http://111.230.105.54:9000/markdown/微信图片_20260509104335_470_9.jpg" alt="比赛" className="mx-auto mb-4 h-12 w-12 rounded-2xl object-cover opacity-60" />
             <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无比赛数据</p>
           </div>
         )}

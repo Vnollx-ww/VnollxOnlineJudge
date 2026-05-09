@@ -37,6 +37,14 @@ const defaultUserForm: UserFormValues = {
   identity: '',
 };
 
+const roleColorMap: Record<string, string> = {
+  SUPER_ADMIN: 'red',
+  ADMIN: 'orange',
+  TEACHER: 'green',
+  USER: 'blue',
+  GUEST: 'default',
+};
+
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -153,7 +161,7 @@ const AdminUsers: React.FC = () => {
     const role = roles.find((item) => item.code === identity);
     const item = {
       text: role?.name || identity,
-      color: role ? 'blue' : 'default',
+      color: roleColorMap[identity] || 'default',
     };
     return <Tag color={item.color}>{item.text}</Tag>;
   };

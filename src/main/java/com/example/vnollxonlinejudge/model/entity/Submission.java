@@ -41,6 +41,9 @@ public class Submission {
     @Column(name = "uid")
     private Long uid;
 
+    @Column(name = "team_id")
+    private Long teamId;
+
     @Column(name = "pid")
     private Long pid;
     @Column(name="snow_flake_id")

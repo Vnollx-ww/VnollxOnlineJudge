@@ -188,7 +188,7 @@ const CompetitionDetail: React.FC = () => {
         toast.error('请先登录！');
         navigate('/login');
       } else {
-        toast.error('加载题目列表失败');
+        toast.error(error?.response?.data?.msg || '加载题目列表失败');
         console.error(error);
       }
     } finally {

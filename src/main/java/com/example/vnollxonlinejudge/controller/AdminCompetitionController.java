@@ -4,21 +4,25 @@ import com.example.vnollxonlinejudge.annotation.RequirePermission;
 import com.example.vnollxonlinejudge.model.base.PermissionCode;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminAddProblemDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminBatchAddProblemDTO;
+import com.example.vnollxonlinejudge.model.dto.admin.AdminCompetitionTeamDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminReorderCompetitionProblemsDTO;
 import com.example.vnollxonlinejudge.model.dto.admin.AdminSaveCompetitionDTO;
 import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
+import com.example.vnollxonlinejudge.model.vo.competition.CompetitionTeamVo;
 import com.example.vnollxonlinejudge.model.vo.competition.CompetitionVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemVo;
 import com.example.vnollxonlinejudge.model.vo.problem.ProblemBasicVo;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
 import com.example.vnollxonlinejudge.service.CompetitionService;
+import com.example.vnollxonlinejudge.service.CompetitionTeamService;
 import com.example.vnollxonlinejudge.service.ProblemService;
 import jakarta.validation.Valid;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -28,23 +32,26 @@ import java.util.List;
 public class AdminCompetitionController {
     private final CompetitionService competitionService;
     private final CompetitionProblemService competitionProblemService;
+    private final CompetitionTeamService competitionTeamService;
     private final ProblemService problemService;
     
     @Autowired
     public AdminCompetitionController(
             CompetitionService competitionService,
             CompetitionProblemService competitionProblemService,
+            CompetitionTeamService competitionTeamService,
             ProblemService problemService
     ) {
         this.competitionService = competitionService;
         this.competitionProblemService = competitionProblemService;
+        this.competitionTeamService = competitionTeamService;
         this.problemService = problemService;
     }
 
     @PostMapping("/create")
     @RequirePermission(PermissionCode.COMPETITION_CREATE)
     public Result<Void> createCompetition(@RequestBody AdminSaveCompetitionDTO req){
-        competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword(), req.getAntiCheatMode());
+        competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword(), req.getAntiCheatMode(), req.getParticipantType());
         return Result.Success("创建比赛成功！！！");
     }
     @GetMapping("/list")
@@ -70,7 +77,7 @@ public class AdminCompetitionController {
     @PutMapping("/update")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
     public Result<Void> updateCompetition(@RequestBody AdminSaveCompetitionDTO req){
-        competitionService.updateCompetition(req.getId(),req.getTitle(),req.getDescription(),req.getBeginTime(),req.getEndTime(),req.getPassword(),req.getNeedPassword(), req.getAntiCheatMode());
+        competitionService.updateCompetition(req.getId(),req.getTitle(),req.getDescription(),req.getBeginTime(),req.getEndTime(),req.getPassword(),req.getNeedPassword(), req.getAntiCheatMode(), req.getParticipantType());
         return Result.Success("修改比赛信息成功");
     }
     @PostMapping("/add/problem")
@@ -121,5 +128,40 @@ public class AdminCompetitionController {
                 })
                 .collect(java.util.stream.Collectors.toList());
         return Result.Success(problems, "获取比赛题目列表成功");
+    }
+
+    @GetMapping("/{cid}/teams")
+    @RequirePermission(PermissionCode.COMPETITION_VIEW)
+    public Result<List<CompetitionTeamVo>> getCompetitionTeams(@PathVariable Long cid){
+        return Result.Success(competitionTeamService.getTeams(cid), "获取比赛队伍列表成功");
+    }
+
+    @PostMapping("/{cid}/teams")
+    @RequirePermission(PermissionCode.COMPETITION_UPDATE)
+    public Result<Void> saveCompetitionTeam(@PathVariable Long cid, @RequestBody AdminCompetitionTeamDTO req){
+        req.setCompetitionId(cid);
+        competitionTeamService.saveTeam(req);
+        return Result.Success("保存比赛队伍成功");
+    }
+
+    @PostMapping("/{cid}/teams/import")
+    @RequirePermission(PermissionCode.COMPETITION_UPDATE)
+    public Result<Void> importCompetitionTeams(@PathVariable Long cid, @RequestBody List<AdminCompetitionTeamDTO> req){
+        competitionTeamService.importTeams(cid, req);
+        return Result.Success("导入比赛队伍成功");
+    }
+
+    @PostMapping("/{cid}/teams/import/excel")
+    @RequirePermission(PermissionCode.COMPETITION_UPDATE)
+    public Result<Void> importCompetitionTeamsExcel(@PathVariable Long cid, @RequestParam("file") MultipartFile file){
+        competitionTeamService.importTeamsFromExcel(cid, file);
+        return Result.Success("Excel 导入比赛队伍成功");
+    }
+
+    @DeleteMapping("/teams/{teamId}")
+    @RequirePermission(PermissionCode.COMPETITION_UPDATE)
+    public Result<Void> deleteCompetitionTeam(@PathVariable Long teamId){
+        competitionTeamService.deleteTeam(teamId);
+        return Result.Success("删除比赛队伍成功");
     }
 }

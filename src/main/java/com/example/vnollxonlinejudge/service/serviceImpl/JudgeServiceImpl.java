@@ -10,6 +10,8 @@ import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.model.vo.judge.JudgeResultVO;
 import com.example.vnollxonlinejudge.exception.BusinessException;
+import com.example.vnollxonlinejudge.service.CompetitionService;
+import com.example.vnollxonlinejudge.service.CompetitionTeamService;
 import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import com.example.vnollxonlinejudge.producer.JudgeProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
@@ -28,6 +30,8 @@ public class JudgeServiceImpl implements JudgeService {
     private final JudgeStrategyFactory judgeStrategyFactory;
     private final SubmissionService submissionService;
     private final CompetitionUserService competitionUserService;
+    private final CompetitionService competitionService;
+    private final CompetitionTeamService competitionTeamService;
     private static final SnowflakeIdGenerator gen =
             new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
@@ -35,12 +39,16 @@ public class JudgeServiceImpl implements JudgeService {
             JudgeProducer judgeProducer,
             JudgeStrategyFactory judgeStrategyFactory,
             SubmissionService submissionService,
-            CompetitionUserService competitionUserService
+            CompetitionUserService competitionUserService,
+            CompetitionService competitionService,
+            CompetitionTeamService competitionTeamService
     ) {
         this.judgeProducer=judgeProducer;
         this.judgeStrategyFactory=judgeStrategyFactory;
         this.submissionService=submissionService;
         this.competitionUserService=competitionUserService;
+        this.competitionService=competitionService;
+        this.competitionTeamService=competitionTeamService;
     }
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
@@ -48,6 +56,7 @@ public class JudgeServiceImpl implements JudgeService {
         if (cid != null && cid > 0 && competitionUserService.hasFinishedCompetition(cid, uid)) {
             throw new BusinessException("你已确认结束本场比赛，无法再次提交");
         }
+        Long teamId = resolveTeamId(cid, uid);
         Long snowflakeId = gen.nextId();
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
@@ -56,6 +65,7 @@ public class JudgeServiceImpl implements JudgeService {
                 .memory(Long.parseLong(req.getMemory()))
                 .cid(Long.parseLong(req.getCid()))
                 .uid(uid)
+                .teamId(teamId)
                 .pid(Long.parseLong(req.getPid()))
                 .createTime(req.getCreate_time())
                 .uname(req.getUname())
@@ -69,6 +79,7 @@ public class JudgeServiceImpl implements JudgeService {
                 .pid(judgeInfo.getPid())
                 .cid(judgeInfo.getCid())
                 .uid(judgeInfo.getUid())
+                .teamId(judgeInfo.getTeamId())
                 .createTime(judgeInfo.getCreateTime())
                 .userName(judgeInfo.getUname())
                 .status("等待评测")
@@ -113,6 +124,20 @@ public class JudgeServiceImpl implements JudgeService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private Long resolveTeamId(Long cid, Long uid) {
+        if (cid == null || cid <= 0) {
+            return null;
+        }
+        if (!"TEAM".equalsIgnoreCase(competitionService.getCompetitionById(cid).getParticipantType())) {
+            return null;
+        }
+        com.example.vnollxonlinejudge.model.entity.CompetitionTeam team = competitionTeamService.getTeamByMember(cid, uid);
+        if (team == null) {
+            throw new BusinessException("团队赛需要管理员预先导入队伍后才能提交");
+        }
+        return team.getId();
     }
 
     @Override

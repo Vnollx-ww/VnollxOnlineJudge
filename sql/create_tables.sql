@@ -33,6 +33,7 @@ create table competition
     password      varchar(255)  null,
     need_password tinyint(1)    null,
     anti_cheat_mode varchar(16) default 'NORMAL' not null,
+    participant_type varchar(16) default 'INDIVIDUAL' not null,
     number        int default 0 null
 );
 
@@ -285,6 +286,7 @@ create table submission
     problem_name varchar(255)     null,
     code         text             null,
     cid          bigint default 0 null,
+    team_id      bigint           null,
     memory       int              not null,
     snowflake_id bigint           null,
     error_info   text             null,
@@ -294,6 +296,49 @@ create table submission
 
 create index submission_snowflake_id_index
     on submission (snowflake_id);
+
+create index submission_team_id_index
+    on submission (team_id);
+
+create table competition_team
+(
+    id             bigint auto_increment
+        primary key,
+    competition_id int          not null,
+    team_name      varchar(100) not null,
+    leader_name    varchar(50)  not null,
+    phone          varchar(30)  not null,
+    email          varchar(100) not null,
+    is_female_team tinyint(1)   not null default 0,
+    school         varchar(100) null,
+    created_at     varchar(50)  null,
+    constraint unique_competition_team_name
+        unique (competition_id, team_name),
+    constraint unique_competition_team_email
+        unique (competition_id, email),
+    constraint competition_team_ibfk_1
+        foreign key (competition_id) references competition (id)
+            on update cascade on delete cascade
+);
+
+create table competition_team_member
+(
+    id             bigint auto_increment
+        primary key,
+    competition_id int          not null,
+    team_id        bigint       not null,
+    real_name      varchar(50)  null,
+    created_at     varchar(50)  null,
+    constraint competition_team_member_ibfk_1
+        foreign key (competition_id) references competition (id)
+            on update cascade on delete cascade,
+    constraint competition_team_member_ibfk_2
+        foreign key (team_id) references competition_team (id)
+            on update cascade on delete cascade
+);
+
+create index competition_team_member_team_id_index
+    on competition_team_member (team_id);
 
 create table tag
 (
