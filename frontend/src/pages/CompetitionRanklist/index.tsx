@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -9,7 +9,7 @@ import {
   Empty,
 } from 'antd';
 import toast from 'react-hot-toast';
-import { LockOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/Input';
@@ -97,7 +97,7 @@ const balloonColors = [
   '#4c0519',
 ];
 
-const BalloonIcon = ({ color, className = 'h-9 w-9', style }: { color: string; className?: string; style?: React.CSSProperties }) => (
+const BalloonIcon = memo(({ color, className = 'h-9 w-9', style }: { color: string; className?: string; style?: React.CSSProperties }) => (
   <svg className={`${className} shrink-0`} viewBox="0 0 48 48" fill="none" style={style}>
     <title>{color}</title>
     <path
@@ -117,7 +117,7 @@ const BalloonIcon = ({ color, className = 'h-9 w-9', style }: { color: string; c
       strokeLinejoin="round"
     />
   </svg>
-);
+));
 
 const digitSegments = [
   [1, 2, 3, 4, 5, 6],
@@ -137,7 +137,17 @@ const getActiveSegments = (digit: string) => {
   return Number.isNaN(num) ? [] : digitSegments[num];
 };
 
-const LedDigit = ({ digit, fontSize, digitColor, glowColor }: { digit: string; fontSize: number; digitColor: string; glowColor: string }) => {
+const SEGMENT_STYLES: React.CSSProperties[] = [
+  { top: 10, left: 20, right: 20, height: 14 },
+  { top: 20, right: 10, width: 14, height: 75 },
+  { bottom: 20, right: 10, width: 14, height: 75 },
+  { bottom: 10, left: 20, right: 20, height: 14 },
+  { bottom: 20, left: 10, width: 14, height: 75 },
+  { top: 20, left: 10, width: 14, height: 75 },
+  { bottom: 95, left: 20, right: 20, height: 14 },
+];
+
+const LedDigit = memo(({ digit, fontSize, digitColor, glowColor }: { digit: string; fontSize: number; digitColor: string; glowColor: string }) => {
   const scale = fontSize / 200;
   const activeSegments = getActiveSegments(digit);
   const segmentBaseStyle: React.CSSProperties = {
@@ -149,18 +159,9 @@ const LedDigit = ({ digit, fontSize, digitColor, glowColor }: { digit: string; f
   };
   const activeStyle: React.CSSProperties = {
     opacity: 1,
-    boxShadow: `0 0 100px ${glowColor}`,
+    boxShadow: `0 0 6px ${glowColor}`,
     transition: 'opacity 0s',
   };
-  const segmentStyles: React.CSSProperties[] = [
-    { top: 10, left: 20, right: 20, height: 14 },
-    { top: 20, right: 10, width: 14, height: 75 },
-    { bottom: 20, right: 10, width: 14, height: 75 },
-    { bottom: 10, left: 20, right: 20, height: 14 },
-    { bottom: 20, left: 10, width: 14, height: 75 },
-    { top: 20, left: 10, width: 14, height: 75 },
-    { bottom: 95, left: 20, right: 20, height: 14 },
-  ];
 
   return (
     <div
@@ -168,7 +169,7 @@ const LedDigit = ({ digit, fontSize, digitColor, glowColor }: { digit: string; f
       style={{ width: 120 * scale, height: fontSize, margin: `0 ${5 * scale}px` }}
     >
       <div className="relative h-[200px] w-[120px] origin-top-left" style={{ transform: digit === '1' ? `scale(${scale}) translateX(-43px)` : `scale(${scale})` }}>
-        {segmentStyles.map((style, index) => (
+        {SEGMENT_STYLES.map((style, index) => (
           <div
             key={index}
             style={{
@@ -181,9 +182,9 @@ const LedDigit = ({ digit, fontSize, digitColor, glowColor }: { digit: string; f
       </div>
     </div>
   );
-};
+});
 
-const LedSeparator = ({ fontSize, digitColor, glowColor }: { fontSize: number; digitColor: string; glowColor: string }) => {
+const LedSeparator = memo(({ fontSize, digitColor, glowColor }: { fontSize: number; digitColor: string; glowColor: string }) => {
   const dotSize = fontSize * 0.12;
   const gap = fontSize * 0.36;
   const sideMargin = fontSize * 0.14;
@@ -200,15 +201,15 @@ const LedSeparator = ({ fontSize, digitColor, glowColor }: { fontSize: number; d
             width: dotSize,
             height: dotSize,
             background: 'currentColor',
-            boxShadow: `0 0 ${fontSize * 0.5}px ${glowColor}`,
+            boxShadow: `0 0 ${Math.min(fontSize * 0.25, 4)}px ${glowColor}`,
           }}
         />
       ))}
     </div>
   );
-};
+});
 
-const LedTimeDisplay = ({ value, fontSize = 42, digitColor = '#00ff00', glowColor = 'rgba(0,255,0,0.7)' }: { value: string; fontSize?: number; digitColor?: string; glowColor?: string }) => {
+const LedTimeDisplay = memo(({ value, fontSize = 42, digitColor = '#00ff00', glowColor = 'rgba(0,255,0,0.7)' }: { value: string; fontSize?: number; digitColor?: string; glowColor?: string }) => {
   const [hours = '00', minutes = '00', seconds = '00'] = value.split(':');
   const digits = `${hours.padStart(2, '0')}${minutes.padStart(2, '0')}${seconds.padStart(2, '0')}`.slice(0, 6);
 
@@ -227,9 +228,9 @@ const LedTimeDisplay = ({ value, fontSize = 42, digitColor = '#00ff00', glowColo
       <LedDigit digit={digits[5]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
     </div>
   );
-};
+});
 
-const InlineLedNumber = ({ value, fontSize = 19, digitColor = '#000' }: { value?: string | number; fontSize?: number; digitColor?: string }) => {
+const InlineLedNumber = memo(({ value, fontSize = 19, digitColor = '#000' }: { value?: string | number; fontSize?: number; digitColor?: string }) => {
   const text = String(value ?? '');
   const glowColor = 'transparent';
 
@@ -267,7 +268,405 @@ const InlineLedNumber = ({ value, fontSize = 19, digitColor = '#000' }: { value?
       })}
     </span>
   );
+});
+
+const formatHMS = (seconds: number) => {
+  if (!seconds || seconds < 0) return '00:00:00';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
+
+const CountdownDisplay = memo(({ endTime }: { endTime?: string }) => {
+  const [value, setValue] = useState(() => {
+    if (!endTime) return '00:00:00';
+    const end = new Date(endTime).getTime();
+    if (Number.isNaN(end)) return '00:00:00';
+    const diff = Math.floor((end - Date.now()) / 1000);
+    return formatHMS(diff);
+  });
+
+  useEffect(() => {
+    const tick = () => {
+      if (!endTime) {
+        setValue('00:00:00');
+        return;
+      }
+      const end = new Date(endTime).getTime();
+      if (Number.isNaN(end)) {
+        setValue('00:00:00');
+        return;
+      }
+      const diff = Math.floor((end - Date.now()) / 1000);
+      setValue(formatHMS(diff));
+    };
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, [endTime]);
+
+  return <LedTimeDisplay value={value} />;
+});
+
+type ProblemHeader = Problem & { color: string; label: string; stat: string };
+
+const EMPTY_SUBMISSIONS: SubmissionRank[] = [];
+
+const getUserKey = (user: User) => String(user.id ?? user.name);
+
+const getSubmissionTimestamp = (submitTime?: string) => {
+  if (!submitTime) return 0;
+  const timestamp = Date.parse(submitTime.replace(/-/g, '/'));
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const compareSubmissionsDesc = (a: DetailSubmission, b: DetailSubmission) => {
+  const timeCompare = b.submitTimestamp - a.submitTimestamp;
+  if (timeCompare !== 0) return timeCompare;
+  return b.id - a.id;
+};
+
+const isProblemSame = (a: Problem, b: Problem) => (
+  a.id === b.id
+  && a.title === b.title
+  && a.label === b.label
+  && (a.passCount || 0) === (b.passCount || 0)
+  && (a.submitCount || 0) === (b.submitCount || 0)
+);
+
+const isProblemResultSame = (a?: ProblemResult, b?: ProblemResult) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.problemId === b.problemId
+    && a.solved === b.solved
+    && a.firstSolve === b.firstSolve
+    && (a.wrongCount || 0) === (b.wrongCount || 0)
+    && (a.solveMinutes || 0) === (b.solveMinutes || 0)
+    && a.solveTime === b.solveTime;
+};
+
+const isTeamMemberSame = (a?: TeamMember, b?: TeamMember) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.userId === b.userId
+    && a.userName === b.userName
+    && a.realName === b.realName;
+};
+
+const isUserSame = (a: User, b: User) => {
+  if (
+    a.id !== b.id
+    || a.name !== b.name
+    || a.type !== b.type
+    || (a.passCount || 0) !== (b.passCount || 0)
+    || (a.penaltyTime || 0) !== (b.penaltyTime || 0)
+  ) {
+    return false;
+  }
+
+  const aProblems = a.problems || [];
+  const bProblems = b.problems || [];
+  if (aProblems.length !== bProblems.length) return false;
+  for (let i = 0; i < aProblems.length; i += 1) {
+    if (!isProblemResultSame(aProblems[i], bProblems[i])) return false;
+  }
+
+  const aMembers = a.members || [];
+  const bMembers = b.members || [];
+  if (aMembers.length !== bMembers.length) return false;
+  for (let i = 0; i < aMembers.length; i += 1) {
+    if (!isTeamMemberSame(aMembers[i], bMembers[i])) return false;
+  }
+
+  return true;
+};
+
+const setRecentSubmissionHighlighted = (submissionId: number, highlighted: boolean) => {
+  const recentTarget = document.getElementById(`rs-${submissionId}`);
+  const problemTarget = document.getElementById(`ps-${submissionId}`);
+  recentTarget?.classList.toggle('bg-blue-100', highlighted);
+  problemTarget?.classList.toggle('bg-blue-100', highlighted);
+};
+
+const formatBoardTime = (seconds: number) => {
+  if (!seconds) return '0';
+  return String(seconds);
+};
+
+const getProblemCellClassName = (result?: ProblemResult) => {
+  const baseClassName = "relative h-[52px] whitespace-nowrap px-1.5 py-2 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222]";
+  if (!result) return `${baseClassName} bg-white`;
+  if (result.solved) {
+    return `${baseClassName} ${result.firstSolve ? 'bg-[#98e6b1]' : (result.wrongCount || 0) > 0 ? 'bg-[#c7efd3]' : 'bg-[#e4f8e9]'}`;
+  }
+  if ((result.wrongCount || 0) > 0) {
+    return `${baseClassName} bg-[#f7b2b2]`;
+  }
+  return `${baseClassName} bg-white`;
+};
+
+const renderProblemCell = (result?: ProblemResult) => {
+  if (!result) return <span className="flex h-full items-center justify-center"><span className="block h-1.5 w-1.5 rounded-full bg-[#ccc]" /></span>;
+  if (result.solved) {
+    return (
+      <span className="flex items-center justify-center gap-1.5">
+        <InlineLedNumber value={result.solveTime} />
+        <span className="self-start -mt-1.5 text-[12px] leading-none text-[#222]">+{result.wrongCount || 0}</span>
+      </span>
+    );
+  }
+  if ((result.wrongCount || 0) > 0) {
+    return <span className="text-[20px] leading-none text-[#222]">+{result.wrongCount}</span>;
+  }
+  return <span className="flex h-full items-center justify-center"><span className="block h-1.5 w-1.5 rounded-full bg-[#ccc]" /></span>;
+};
+
+const scrollToRecentSubmission = (submissionId: number) => {
+  const target = document.getElementById(`rs-${submissionId}`);
+  if (!target) return;
+  const container = target.closest('[data-recent-submissions]');
+  if (!container) return;
+  const containerRect = container.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const scrollTop = container.scrollTop + (targetRect.top - containerRect.top) - (containerRect.height / 2) + (targetRect.height / 2);
+  container.scrollTo({ top: scrollTop, behavior: 'smooth' });
+};
+
+const renderDetailStatus = (status: 'AC' | 'WA') => (
+  <span className={`font-mono text-[19px] font-normal leading-none border-b-[1.5px] pb-[1px] ${status === 'AC' ? 'border-[#22c55e] text-[#22c55e]' : 'border-[#ef4444] text-[#ef4444]'}`}>
+    {status}
+  </span>
+);
+
+interface RanklistRowProps {
+  user: User;
+  rank: number;
+  expanded: boolean;
+  problemHeaders: ProblemHeader[];
+  submissions: SubmissionRank[];
+  submissionsLoading: boolean;
+  onToggle: (user: User) => void;
+}
+
+const RanklistRow = memo(function RanklistRow({
+  user,
+  rank,
+  expanded,
+  problemHeaders,
+  submissions,
+  submissionsLoading,
+  onToggle,
+}: RanklistRowProps) {
+  const problemHeaderMap = useMemo(() => {
+    const map = new Map<number, ProblemHeader>();
+    for (const problem of problemHeaders) {
+      map.set(problem.id, problem);
+    }
+    return map;
+  }, [problemHeaders]);
+
+  const detailSubmissions = useMemo<DetailSubmission[]>(() => {
+    if (!expanded) return [];
+    return submissions.flatMap((submission) => {
+      const problem = problemHeaderMap.get(submission.problemId);
+      if (!problem) return [];
+      const status: 'AC' | 'WA' = submission.result === 'AC' ? 'AC' : 'WA';
+      return [{
+        id: submission.id,
+        problem,
+        label: submission.problemLabel || problem?.label || '',
+        color: problem?.color || '#adb5bd',
+        time: submission.displayTime,
+        minutes: submission.submitMinutes || 0,
+        submitTimestamp: getSubmissionTimestamp(submission.submitTime),
+        status,
+      }];
+    }).sort(compareSubmissionsDesc);
+  }, [expanded, submissions, problemHeaderMap]);
+
+  const submissionsByProblem = useMemo(() => {
+    const map = new Map<number, DetailSubmission[]>();
+    if (!expanded) return map;
+    for (const s of detailSubmissions) {
+      const arr = map.get(s.problem.id);
+      if (arr) arr.push(s);
+      else map.set(s.problem.id, [s]);
+    }
+    return map;
+  }, [detailSubmissions, expanded]);
+
+  const recentSubmissions = useMemo(
+    () => (expanded ? detailSubmissions.slice(0, 24) : []),
+    [detailSubmissions, expanded],
+  );
+
+  const teamMembers = useMemo(() => (user.members || []).slice(0, 3), [user.members]);
+
+  const handleClick = useCallback(() => onToggle(user), [onToggle, user]);
+
+  const [mounted, setMounted] = useState(expanded);
+  const [open, setOpen] = useState(expanded);
+  useEffect(() => {
+    if (expanded) {
+      setMounted(true);
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setOpen(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        if (raf2) cancelAnimationFrame(raf2);
+      };
+    }
+    setOpen(false);
+    const timer = window.setTimeout(() => setMounted(false), 260);
+    return () => window.clearTimeout(timer);
+  }, [expanded]);
+
+  return (
+    <Fragment>
+      <tr className="cursor-pointer" onClick={handleClick}>
+        <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-1.5 py-3 text-center text-lg font-medium text-black">
+          <span className="flex items-center justify-center">{rank}</span>
+        </td>
+        <td className="sticky left-[55px] z-10 w-[300px] truncate whitespace-nowrap bg-white py-3 pl-5 pr-1.5 text-left text-lg font-medium text-[#444]">
+          <button
+            type="button"
+            className={`max-w-full truncate text-left font-inherit text-inherit ${expanded ? 'underline' : ''}`}
+          >
+            {user.name}
+          </button>
+        </td>
+        <td className="sticky left-[355px] z-10 whitespace-nowrap bg-white px-1.5 py-3 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222]">
+          <span className="flex items-center justify-center">{user.passCount || 0}</span>
+        </td>
+        <td className="sticky left-[435px] z-10 whitespace-nowrap bg-white px-1.5 py-3 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222]">
+          <span className="flex items-center justify-center"><InlineLedNumber value={formatBoardTime(user.penaltyTime || 0)} /></span>
+        </td>
+        {problemHeaders.map((problem, problemIndex) => {
+          const result = user.problems?.[problemIndex];
+          return (
+            <td key={problem.id} className={getProblemCellClassName(result)}>
+              {renderProblemCell(result)}
+            </td>
+          );
+        })}
+      </tr>
+      {mounted ? (
+        <tr>
+          <td colSpan={4} className="sticky left-0 z-10 bg-[#f3f4f8] p-0" id={`detail-${user.id}`}>
+            <div
+              className={`overflow-hidden will-change-[max-height] transition-[max-height] duration-200 ease-out ${open ? 'max-h-[430px]' : 'max-h-0'}`}
+            >
+              <div className="px-4 py-5">
+                <div className="relative flex h-[390px] w-full flex-col rounded-xl bg-white p-5 text-gray-800 shadow-sm">
+                  <div className="flex min-h-0 flex-1 gap-4">
+                    <div className="flex w-24 shrink-0 flex-col justify-between">
+                      {[0, 1, 2].map((memberIndex) => {
+                        const member = teamMembers[memberIndex];
+                        return (
+                          <div key={member?.userId || memberIndex}>
+                            <div className="mb-1 text-[14px] text-gray-400">成员 {memberIndex + 1}</div>
+                            <div className="truncate text-[17px] text-gray-700">{member ? (member.realName || member.userName) : '-'}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                      <div className="mb-2 text-[14px] text-gray-400">最近提交</div>
+                      <div data-recent-submissions className="min-h-0 flex-1 overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
+                        {recentSubmissions.map((submission) => (
+                          <div
+                            key={submission.id}
+                            className="flex items-center text-[16px] rounded px-1 -mx-1 py-[7px] border-b border-gray-200 last:border-b-0 transition-colors"
+                            id={`rs-${submission.id}`}
+                            data-submission-id={submission.id}
+                            data-problem-id={submission.problem.id}
+                            onMouseEnter={() => setRecentSubmissionHighlighted(submission.id, true)}
+                            onMouseLeave={() => setRecentSubmissionHighlighted(submission.id, false)}
+                          >
+                            <BalloonIcon color={submission.color} className="h-[28px] w-7" />
+                            <span className="ml-1 w-3 text-gray-800">{submission.label}</span>
+                            <span className="ml-auto text-gray-500"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
+                            <span className="ml-3 w-5 text-center">{renderDetailStatus(submission.status)}</span>
+                          </div>
+                        ))}
+                        {recentSubmissions.length === 0 ? (
+                          <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+                            {submissionsLoading ? (
+                              <>
+                                <svg className="h-6 w-6 animate-spin text-gray-300" viewBox="0 0 24 24" fill="none">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                                  <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                                </svg>
+                                <span className="text-[13px]">提交记录加载中</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                                  <path d="M14 3v6h6" />
+                                  <path d="M9 14h6" />
+                                  <path d="M9 17h4" />
+                                </svg>
+                                <span className="text-[13px]">暂无提交记录</span>
+                              </>
+                            )}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+          {problemHeaders.map((problem) => {
+            const problemSubmissions = submissionsByProblem.get(problem.id) || [];
+            return (
+              <td key={`score-${rank}-${problem.id}`} className="w-[90px] bg-[#f3f4f8] p-0 align-top">
+                <div
+                  className={`overflow-hidden will-change-[max-height] transition-[max-height] duration-200 ease-out ${open ? 'pointer-events-auto max-h-[430px]' : 'pointer-events-none max-h-0'}`}
+                >
+                  <div className="h-[430px] overflow-hidden">
+                    <div className="score flex max-h-[423px] flex-col gap-px overflow-y-auto bg-white [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
+                      {problemSubmissions.map((submission) => (
+                        <button
+                          key={submission.id}
+                          type="button"
+                          className="flex h-[52px] w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 bg-[#f3f4f8] px-1 font-['Digital-7',sans-serif] text-[20px] leading-none transition-colors hover:bg-blue-100"
+                          id={`ps-${submission.id}`}
+                          data-submission-id={submission.id}
+                          data-problem-id={problem.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            scrollToRecentSubmission(submission.id);
+                          }}
+                          onMouseEnter={() => setRecentSubmissionHighlighted(submission.id, true)}
+                          onMouseLeave={() => setRecentSubmissionHighlighted(submission.id, false)}
+                        >
+                          <span className="text-[#495057]"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
+                          <span className={`font-mono text-[19px] font-normal leading-none underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
+                            {submission.status}
+                          </span>
+                        </button>
+                      ))}
+                      {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
+                        <div key={`empty-${problem.id}-${emptyIndex}`} className="flex h-[52px] w-full shrink-0 items-center justify-center bg-[#f3f4f8] font-mono text-[15px] text-[#ccc]">-</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </td>
+            );
+          })}
+        </tr>
+      ) : null}
+    </Fragment>
+  );
+});
 
 const CompetitionRanklist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -279,9 +678,7 @@ const CompetitionRanklist: React.FC = () => {
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordVerified, setPasswordVerified] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
   const [expandedUserKeys, setExpandedUserKeys] = useState<Set<string>>(() => new Set());
-  const [hoveredSubmissionId, setHoveredSubmissionId] = useState<number | null>(null);
   const [ranklistSubmissions, setRanklistSubmissions] = useState<Record<string, SubmissionRank[]>>({});
   const [loadingSubmissionKeys, setLoadingSubmissionKeys] = useState<Set<string>>(() => new Set());
   useCompetitionFirstBloodWebSocket(id, passwordVerified);
@@ -316,13 +713,6 @@ const CompetitionRanklist: React.FC = () => {
 
     return () => window.clearInterval(timer);
   }, [passwordVerified, competition, id]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const loadCompetition = async () => {
     try {
@@ -381,6 +771,11 @@ const CompetitionRanklist: React.FC = () => {
     }
   };
 
+  const ranklistSubmissionsRef = useRef(ranklistSubmissions);
+  ranklistSubmissionsRef.current = ranklistSubmissions;
+  const loadingSubmissionKeysRef = useRef(loadingSubmissionKeys);
+  loadingSubmissionKeysRef.current = loadingSubmissionKeys;
+
   const loadRanklist = async (showLoading = true) => {
     if (showLoading) {
       setLoading(true);
@@ -390,8 +785,25 @@ const CompetitionRanklist: React.FC = () => {
         params: { id: id },
       });
       if (data.code === 200) {
-        setProblems(data.data?.problems || []);
-        setUsers(data.data?.users || []);
+        const nextProblems: Problem[] = data.data?.problems || [];
+        const nextUsers: User[] = data.data?.users || [];
+        setProblems((prev) => {
+          if (prev.length === nextProblems.length) {
+            const same = prev.every((p, i) => isProblemSame(p, nextProblems[i]));
+            if (same) return prev;
+          }
+          return nextProblems;
+        });
+        setUsers((prev) => {
+          if (prev.length !== nextUsers.length) return nextUsers;
+          let changed = false;
+          const merged = nextUsers.map((u, i) => {
+            if (isUserSame(prev[i], u)) return prev[i];
+            changed = true;
+            return u;
+          });
+          return changed ? merged : prev;
+        });
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -407,27 +819,7 @@ const CompetitionRanklist: React.FC = () => {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    if (!seconds) return '00:00:00';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
-  const formatBoardTime = (seconds: number) => {
-    if (!seconds) return '0';
-    return String(seconds);
-  };
-
-  const formatCountdown = () => {
-    if (!competition?.endTime) return '00:00:00';
-    const end = new Date(competition.endTime).getTime();
-    if (Number.isNaN(end) || end <= now) return '00:00:00';
-    return formatTime(Math.floor((end - now) / 1000));
-  };
-
-  const problemHeaders = useMemo(() => problems.map((problem, index) => ({
+  const problemHeaders = useMemo<ProblemHeader[]>(() => problems.map((problem, index) => ({
     ...problem,
     label: problem.label || String.fromCharCode(65 + index),
     color: balloonColors[index % balloonColors.length],
@@ -438,51 +830,9 @@ const CompetitionRanklist: React.FC = () => {
   const problemColumnsWidth = problemHeaders.length * problemColumnWidth;
   const ranklistTableWidth = fixedColumnsWidth + problemColumnsWidth;
 
-  const getProblemCellClassName = (result?: ProblemResult) => {
-    const baseClassName = "relative h-[52px] whitespace-nowrap px-1.5 py-2 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222]";
-    if (!result) return `${baseClassName} bg-white`;
-    if (result.solved) {
-      return `${baseClassName} ${result.firstSolve ? 'bg-[#98e6b1]' : (result.wrongCount || 0) > 0 ? 'bg-[#c7efd3]' : 'bg-[#e4f8e9]'}`;
-    }
-    if ((result.wrongCount || 0) > 0) {
-      return `${baseClassName} bg-[#f7b2b2]`;
-    }
-    return `${baseClassName} bg-white`;
-  };
-
-  const renderProblemCell = (result?: ProblemResult) => {
-    if (!result) return <span className="flex h-full items-center justify-center"><span className="block h-1.5 w-1.5 rounded-full bg-[#ccc]" /></span>;
-    if (result.solved) {
-      return (
-        <span className="flex items-center justify-center gap-1.5">
-          <InlineLedNumber value={result.solveTime} />
-          <span className="self-start -mt-1.5 text-[12px] leading-none text-[#222]">+{result.wrongCount || 0}</span>
-        </span>
-      );
-    }
-    if ((result.wrongCount || 0) > 0) {
-      return <span className="text-[20px] leading-none text-[#222]">+{result.wrongCount}</span>;
-    }
-    return <span className="flex h-full items-center justify-center"><span className="block h-1.5 w-1.5 rounded-full bg-[#ccc]" /></span>;
-  };
-
-  const getUserKey = (user: User) => String(user.id ?? user.name);
-
-  const getSubmissionTimestamp = (submitTime?: string) => {
-    if (!submitTime) return 0;
-    const timestamp = Date.parse(submitTime.replace(/-/g, '/'));
-    return Number.isNaN(timestamp) ? 0 : timestamp;
-  };
-
-  const compareSubmissionsDesc = (a: DetailSubmission, b: DetailSubmission) => {
-    const timeCompare = b.submitTimestamp - a.submitTimestamp;
-    if (timeCompare !== 0) return timeCompare;
-    return b.id - a.id;
-  };
-
-  const loadRanklistSubmissions = async (user: User) => {
+  const loadRanklistSubmissions = useCallback(async (user: User) => {
     const userKey = getUserKey(user);
-    if (ranklistSubmissions[userKey] || loadingSubmissionKeys.has(userKey)) return;
+    if (ranklistSubmissionsRef.current[userKey] || loadingSubmissionKeysRef.current.has(userKey)) return;
     if (!user.id) {
       toast.error('该排行榜行缺少用户/队伍 ID，无法加载提交记录');
       return;
@@ -507,144 +857,21 @@ const CompetitionRanklist: React.FC = () => {
         return next;
       });
     }
-  };
+  }, [id]);
 
-  const scrollToRecentSubmission = (submissionId: number) => {
-    const target = document.getElementById(`rs-${submissionId}`);
-    if (!target) return;
-    const container = target.closest('[data-recent-submissions]');
-    if (!container) return;
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const scrollTop = container.scrollTop + (targetRect.top - containerRect.top) - (containerRect.height / 2) + (targetRect.height / 2);
-    container.scrollTo({ top: scrollTop, behavior: 'smooth' });
-  };
-
-  const renderTeamDetail = (user: User, rank: number, expanded: boolean) => {
-    if (!competition) return null;
+  const handleToggleRow = useCallback((user: User) => {
     const userKey = getUserKey(user);
-    const submissionsLoading = loadingSubmissionKeys.has(userKey);
-    const submissions: DetailSubmission[] = (ranklistSubmissions[userKey] || []).flatMap((submission) => {
-      const problem = problemHeaders.find((item) => item.id === submission.problemId);
-      if (!problem) return [];
-      const status: 'AC' | 'WA' = submission.result === 'AC' ? 'AC' : 'WA';
-      return [{
-        id: submission.id,
-        problem,
-        label: submission.problemLabel || problem?.label || '',
-        color: problem?.color || '#adb5bd',
-        time: submission.displayTime,
-        minutes: submission.submitMinutes || 0,
-        submitTimestamp: getSubmissionTimestamp(submission.submitTime),
-        status,
-      }];
-    }).sort(compareSubmissionsDesc);
-    const recentSubmissions = submissions.slice(0, 24);
-    const teamMembers = (user.members || []).slice(0, 3);
-    const renderStatus = (status: 'AC' | 'WA') => (
-      <span className={`font-mono text-[13px] font-semibold leading-tight border-b-[1.5px] pb-[1px] ${status === 'AC' ? 'border-[#22c55e] text-[#22c55e]' : 'border-[#ef4444] text-[#ef4444]'}`}>
-        {status}
-      </span>
-    );
-
-    return (
-      <tr aria-hidden={!expanded}>
-        <td colSpan={4} className="sticky left-0 z-10 bg-[#f3f4f8] p-0" id={`detail-${user.id}`} data-virtual-id={`detail-${user.id}`}>
-          <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${expanded ? 'max-h-[430px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
-            <div className="px-4 py-5">
-              <div className="relative flex h-[380px] w-full flex-col rounded-xl bg-white p-5 text-gray-800 shadow-sm">
-              <div className="flex min-h-0 flex-1 gap-4">
-                <div className="flex w-24 shrink-0 flex-col justify-between">
-                  {[0, 1, 2].map((memberIndex) => {
-                    const member = teamMembers[memberIndex];
-                    return (
-                      <div key={member?.userId || memberIndex}>
-                        <div className="mb-1 text-[14px] text-gray-400">成员 {memberIndex + 1}</div>
-                        <div className="truncate text-[17px] text-gray-700">{member ? (member.realName || member.userName) : '-'}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                  <div className="mb-2 text-[14px] text-gray-400">最近提交</div>
-                  <div data-recent-submissions className="min-h-0 flex-1 space-y-[14px] overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
-                    {recentSubmissions.map((submission) => (
-                      <div key={submission.id} className={`flex items-center text-[16px] rounded px-1 -mx-1 transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : ''}`} id={`rs-${submission.id}`} data-submission-id={submission.id} data-problem-id={submission.problem.id}>
-                        <BalloonIcon color={submission.color} className="h-[28px] w-7" />
-                        <span className="ml-1 w-3 text-gray-800">{submission.label}</span>
-                        <span className="ml-auto text-gray-500"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
-                        <span className="ml-3 w-5 text-center">{renderStatus(submission.status)}</span>
-                      </div>
-                    ))}
-                    {recentSubmissions.length === 0 ? (
-                      <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
-                        {submissionsLoading ? (
-                          <>
-                            <svg className="h-6 w-6 animate-spin text-gray-300" viewBox="0 0 24 24" fill="none">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-                              <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                            </svg>
-                            <span className="text-[13px]">提交记录加载中</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                              <path d="M14 3v6h6" />
-                              <path d="M9 14h6" />
-                              <path d="M9 17h4" />
-                            </svg>
-                            <span className="text-[13px]">暂无提交记录</span>
-                          </>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
-        </td>
-        {problemHeaders.map((problem) => {
-          const problemSubmissions = submissions.filter((submission) => submission.problem?.id === problem.id).sort(compareSubmissionsDesc);
-          return (
-            <td key={`score-${rank}-${problem.id}`} className="w-[90px] bg-[#f3f4f8] p-0 align-top">
-              <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${expanded ? 'max-h-[430px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
-                <div className="score flex max-h-[423px] flex-col gap-px overflow-y-auto bg-white [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
-                  {problemSubmissions.map((submission) => (
-                    <button
-                      key={submission.id}
-                      type="button"
-                      className={`flex h-[52px] w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 px-1 font-['Digital-7',sans-serif] text-[20px] leading-none transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : 'bg-[#f3f4f8] hover:bg-gray-100'}`}
-                      id={`ps-${submission.id}`}
-                      data-submission-id={submission.id}
-                      data-problem-id={problem.id}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        scrollToRecentSubmission(submission.id);
-                      }}
-                      onMouseEnter={() => setHoveredSubmissionId(submission.id)}
-                      onMouseLeave={() => setHoveredSubmissionId(null)}
-                    >
-                      <span className="text-[#495057]"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
-                      <span className={`font-mono font-semibold text-[12px] underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
-                        {submission.status}
-                      </span>
-                    </button>
-                  ))}
-                  {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
-                    <div key={`empty-${problem.id}-${emptyIndex}`} className="flex h-[52px] w-full shrink-0 items-center justify-center bg-[#f3f4f8] font-mono text-[15px] text-[#ccc]">-</div>
-                  ))}
-                </div>
-              </div>
-            </td>
-          );
-        })}
-      </tr>
-    );
-  };
+    setExpandedUserKeys((current) => {
+      const next = new Set(current);
+      if (next.has(userKey)) {
+        next.delete(userKey);
+      } else {
+        next.add(userKey);
+        loadRanklistSubmissions(user);
+      }
+      return next;
+    });
+  }, [loadRanklistSubmissions]);
 
   if (loading && !competition) {
     return createPortal(
@@ -670,8 +897,17 @@ const CompetitionRanklist: React.FC = () => {
         {passwordVerified ? (
           <div className="flex h-full min-w-0 w-full max-w-full flex-col overflow-hidden bg-white p-5">
             <div className="mb-6 flex min-w-0 max-w-full items-center justify-between gap-4 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => navigate(`/competition/${id}`)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
+                title="返回比赛详情"
+                aria-label="返回比赛详情"
+              >
+                <ArrowLeftOutlined />
+              </button>
               <div
-                className="hidden h-14 w-[13.25rem] shrink-0 bg-contain bg-left bg-no-repeat md:block"
+                className="ml-2 hidden h-20 w-[19rem] shrink-0 bg-contain bg-left bg-no-repeat md:block"
                 style={{ backgroundImage: 'url("https://oss.vnollx.top/cover/6b1e0341-7a1c-4bbb-9716-015f86c00cd1.png")' }}
               >
               </div>
@@ -681,7 +917,7 @@ const CompetitionRanklist: React.FC = () => {
                 </Title>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-3">
-                <LedTimeDisplay value={formatCountdown()} />
+                <CountdownDisplay endTime={competition.endTime} />
               </div>
             </div>
 
@@ -698,14 +934,16 @@ const CompetitionRanklist: React.FC = () => {
                 <table className="table-fixed border-separate border-spacing-[1px]" style={{ width: ranklistTableWidth, minWidth: ranklistTableWidth }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white/90 py-2.5 text-center text-[16px] font-normal text-black backdrop-blur-[2px]">排名</th>
-                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white/90 py-2.5 pl-5 text-left text-[16px] font-normal text-black backdrop-blur-[2px]">队伍</th>
-                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-black backdrop-blur-[2px]">过题数</th>
-                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-black backdrop-blur-[2px]">总用时</th>
+                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white py-2.5 text-center text-[16px] font-normal text-black">排名</th>
+                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white py-2.5 pl-5 text-left text-[16px] font-normal text-black">队伍</th>
+                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white py-2.5 text-center text-[16px] font-normal text-black">过题数</th>
+                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white py-2.5 text-center text-[16px] font-normal text-black">总用时</th>
                       {problemHeaders.map((problem) => (
-                        <th key={problem.id} className="sticky top-0 z-20 w-[90px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
+                        <th key={problem.id} className="group cursor-pointer sticky top-0 z-20 w-[90px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
                           <div className="flex items-center justify-center -space-x-1">
-                            <BalloonIcon color={problem.color} />
+                            <span className="inline-block transition-transform duration-150 ease-out group-hover:-translate-y-1">
+                              <BalloonIcon color={problem.color} />
+                            </span>
                             <div className="flex flex-col items-center leading-tight">
                               <span className="text-base font-bold text-gray-700">{problem.label}</span>
                               <span className="block text-[11px] text-[#999]">{problem.stat}</span>
@@ -719,47 +957,18 @@ const CompetitionRanklist: React.FC = () => {
                   <tbody>
                     {users.map((user, index) => {
                       const userKey = getUserKey(user);
+                      const expanded = expandedUserKeys.has(userKey);
                       return (
-                      <Fragment key={userKey}>
-                        <tr
-                          className="cursor-pointer"
-                          onClick={() => setExpandedUserKeys((current) => {
-                            const next = new Set(current);
-                            if (next.has(userKey)) {
-                              next.delete(userKey);
-                            } else {
-                              next.add(userKey);
-                              loadRanklistSubmissions(user);
-                            }
-                            return next;
-                          })}
-                        >
-                          <td className="sticky left-0 z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center text-sm font-bold text-gray-500 backdrop-blur-[2px]">{index + 1}</td>
-                          <td className="sticky left-[55px] z-10 w-[300px] truncate whitespace-nowrap bg-white/75 py-3 pl-5 pr-1.5 text-left text-sm font-medium text-[#444] backdrop-blur-[2px]">
-                            <button
-                              type="button"
-                              className={`max-w-full truncate text-left font-semibold text-black ${expandedUserKeys.has(userKey) ? 'underline' : ''}`}
-                            >
-                              {user.name}
-                            </button>
-                          </td>
-                          <td className="sticky left-[355px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222] backdrop-blur-[2px]">
-                            <span className="flex items-center justify-center">{user.passCount || 0}</span>
-                          </td>
-                          <td className="sticky left-[435px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222] backdrop-blur-[2px]">
-                            <span className="flex items-center justify-center"><InlineLedNumber value={formatBoardTime(user.penaltyTime || 0)} /></span>
-                          </td>
-                          {problemHeaders.map((problem, problemIndex) => {
-                            const result = user.problems?.[problemIndex];
-                            return (
-                              <td key={`${user.id || user.name}-${problem.id}`} className={getProblemCellClassName(result)}>
-                                {renderProblemCell(result)}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        {renderTeamDetail(user, index + 1, expandedUserKeys.has(userKey))}
-                      </Fragment>
+                        <RanklistRow
+                          key={userKey}
+                          user={user}
+                          rank={index + 1}
+                          expanded={expanded}
+                          problemHeaders={problemHeaders}
+                          submissions={ranklistSubmissions[userKey] || EMPTY_SUBMISSIONS}
+                          submissionsLoading={loadingSubmissionKeys.has(userKey)}
+                          onToggle={handleToggleRow}
+                        />
                       );
                     })}
                   </tbody>

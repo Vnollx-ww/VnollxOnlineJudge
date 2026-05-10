@@ -105,6 +105,8 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef<'v' | 'h' | null>(null);
+  const dragFrameRef = useRef<number | null>(null);
+  const dragPointRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     if (leftKey) writeNumber(leftKey, leftPct);
@@ -128,22 +130,31 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
     const onMove = (e: MouseEvent) => {
       const mode = draggingRef.current;
       if (!mode) return;
-      if (mode === 'v') {
+      dragPointRef.current = { x: e.clientX, y: e.clientY };
+      if (dragFrameRef.current != null) return;
+      dragFrameRef.current = window.requestAnimationFrame(() => {
+        dragFrameRef.current = null;
+        const currentMode = draggingRef.current;
+        const point = dragPointRef.current;
+        if (!currentMode || !point) return;
+      if (currentMode === 'v') {
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect) return;
-        const pct = ((e.clientX - rect.left) / rect.width) * 100;
+        const pct = ((point.x - rect.left) / rect.width) * 100;
         setLeftPct(Math.min(MAX_LEFT_PCT, Math.max(MIN_LEFT_PCT, pct)));
-      } else if (mode === 'h') {
+      } else if (currentMode === 'h') {
         const rect = rightRef.current?.getBoundingClientRect();
         if (!rect) return;
-        const px = rect.bottom - e.clientY;
+        const px = rect.bottom - point.y;
         const maxPx = Math.max(MIN_BOTTOM_PX, rect.height - MIN_EDITOR_PX);
         setBottomPx(Math.min(maxPx, Math.max(MIN_BOTTOM_PX, px)));
       }
+      });
     };
     const onUp = () => {
       if (draggingRef.current) {
         draggingRef.current = null;
+        dragPointRef.current = null;
         document.body.style.userSelect = '';
         document.body.style.cursor = '';
       }
@@ -153,6 +164,10 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
     return () => {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      if (dragFrameRef.current != null) {
+        window.cancelAnimationFrame(dragFrameRef.current);
+        dragFrameRef.current = null;
+      }
     };
   }, []);
 

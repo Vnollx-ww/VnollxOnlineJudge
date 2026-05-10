@@ -85,9 +85,9 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
         }
     }
 
-    /** 一批包含的测试点数量，默认 20。 */
+    /** 一批包含的测试点数量，默认 1（单条执行，避免内存峰值过高）。子类如需批量并行可覆写。 */
     protected int batchSize() {
-        return 20;
+        return 1;
     }
 
     /* ---------------- JudgeStrategy 接口实现 ---------------- */

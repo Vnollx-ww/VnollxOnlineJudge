@@ -22,12 +22,6 @@ public class PythonJudgeStrategy extends AbstractJudgeStrategy {
     }
 
     @Override
-    protected int batchSize() {
-        // Python 解释型按现有行为单条执行
-        return 1;
-    }
-
-    @Override
     protected String compile(String userCode, StringBuilder errorOut) {
         // 直接把源码作为"产物"返回，buildRunCmd 中作为 copyIn.content 嵌入
         return userCode != null ? userCode : "";

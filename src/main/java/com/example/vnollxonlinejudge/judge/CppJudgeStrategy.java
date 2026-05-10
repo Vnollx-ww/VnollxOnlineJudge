@@ -18,11 +18,6 @@ public class CppJudgeStrategy extends AbstractJudgeStrategy {
     }
 
     @Override
-    protected int batchSize() {
-        return 1;
-    }
-
-    @Override
     protected String compile(String userCode, StringBuilder errorOut) {
         String payload = String.format("""
         {"cmd": [{

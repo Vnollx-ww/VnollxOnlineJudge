@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { MouseEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Typography,
@@ -271,7 +272,7 @@ const CompetitionDetail: React.FC = () => {
     toast.error('严格模式下未进入全屏，该行为会被记录');
   };
 
-  const handleOpenProblem = (problemId: number) => {
+  const handleOpenProblem = (problemId: number, event?: MouseEvent<HTMLButtonElement>) => {
     if (isStrictAntiCheat && status === 'running' && !isUserCompetitionEnded && !document.fullscreenElement) {
       void reportFullscreenRefuse();
       setFullscreenPromptDismissed(false);
@@ -279,7 +280,12 @@ const CompetitionDetail: React.FC = () => {
       toast.error('严格模式下必须进入全屏模式后才能答题');
       return;
     }
-    navigate(`/competition/${id}/problem/${problemId}`);
+    const problemUrl = `/competition/${id}/problem/${problemId}`;
+    if (event?.ctrlKey) {
+      window.open(problemUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    navigate(problemUrl);
   };
 
   const updateCountdown = () => {
@@ -344,7 +350,7 @@ const CompetitionDetail: React.FC = () => {
       render: (title: string, record: Problem) => (
         <button
           type="button"
-          onClick={() => handleOpenProblem(record.id)}
+          onClick={(event) => handleOpenProblem(record.id, event)}
           className="font-medium hover:opacity-70 transition-opacity text-left"
           style={{ color: 'var(--gemini-accent-strong)' }}
         >
