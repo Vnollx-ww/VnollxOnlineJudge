@@ -698,10 +698,10 @@ const CompetitionRanklist: React.FC = () => {
                 <table className="table-fixed border-separate border-spacing-[1px]" style={{ width: ranklistTableWidth, minWidth: ranklistTableWidth }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white/90 py-2.5 text-center text-[16px] font-normal text-[#777] backdrop-blur-[2px]">排名</th>
-                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white/90 py-2.5 pl-5 text-left text-[16px] font-normal text-[#777] backdrop-blur-[2px]">队伍</th>
-                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-[#777] backdrop-blur-[2px]">过题数</th>
-                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-[#777] backdrop-blur-[2px]">总用时</th>
+                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white/90 py-2.5 text-center text-[16px] font-normal text-black backdrop-blur-[2px]">排名</th>
+                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white/90 py-2.5 pl-5 text-left text-[16px] font-normal text-black backdrop-blur-[2px]">队伍</th>
+                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-black backdrop-blur-[2px]">过题数</th>
+                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-black backdrop-blur-[2px]">总用时</th>
                       {problemHeaders.map((problem) => (
                         <th key={problem.id} className="sticky top-0 z-20 w-[90px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
                           <div className="flex items-center justify-center -space-x-1">
@@ -738,7 +738,7 @@ const CompetitionRanklist: React.FC = () => {
                           <td className="sticky left-[55px] z-10 w-[300px] truncate whitespace-nowrap bg-white/75 py-3 pl-5 pr-1.5 text-left text-sm font-medium text-[#444] backdrop-blur-[2px]">
                             <button
                               type="button"
-                              className={`max-w-full truncate text-left font-semibold hover:text-blue-700 ${expandedUserKeys.has(userKey) ? 'text-blue-700 underline' : 'text-blue-600'}`}
+                              className={`max-w-full truncate text-left font-semibold text-black ${expandedUserKeys.has(userKey) ? 'underline' : ''}`}
                             >
                               {user.name}
                             </button>
