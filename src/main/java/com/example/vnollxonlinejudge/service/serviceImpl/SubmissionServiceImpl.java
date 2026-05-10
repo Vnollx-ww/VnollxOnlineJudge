@@ -246,6 +246,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
      */
     private void fillQueueAhead(List<Submission> records, List<SubmissionVo> vos) {
         if (records == null || records.isEmpty()) return;
+        // 先把非"等待评测"行的 queueAhead 置空，避免 DB 中残留的入库快照误导前端
+        for (SubmissionVo vo : vos) {
+            if (!"等待评测".equals(vo.getStatus())) {
+                vo.setQueueAhead(null);
+            }
+        }
         boolean hasWaiting = false;
         for (SubmissionVo vo : vos) {
             if ("等待评测".equals(vo.getStatus())) { hasWaiting = true; break; }
