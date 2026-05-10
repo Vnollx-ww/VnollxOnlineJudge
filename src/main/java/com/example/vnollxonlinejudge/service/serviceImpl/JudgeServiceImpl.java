@@ -89,10 +89,11 @@ public class JudgeServiceImpl implements JudgeService {
                 .build();
 
         submissionService.addSubmission(submission);
-        Integer queueAhead = null;
+        // addSubmission 已基于 DB 计算并写入 queueAhead，复用同一份快照保证响应/列表/详情三处口径一致
+        Integer queueAhead = submission.getQueueAhead();
         try {
             int priority = 1;
-            queueAhead = judgeProducer.sendJudge(priority, judgeInfo);
+            judgeProducer.sendJudge(priority, judgeInfo);
             logger.info("消息发送到MQ成功: snowflakeId={}, uid={}, pid={}, queueAhead={}",
                     snowflakeId, uid, req.getPid(), queueAhead);
         } catch (Exception e) {
