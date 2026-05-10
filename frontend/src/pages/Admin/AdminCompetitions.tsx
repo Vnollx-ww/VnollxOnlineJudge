@@ -11,7 +11,6 @@ import {
   Field,
   DataTable,
   DataColumn,
-  ConfirmButton,
 } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown, ShieldAlert, Users, Phone, Mail, Building2, Download } from 'lucide-react';
@@ -271,6 +270,29 @@ const AdminCompetitions: React.FC = () => {
   const [teamExcelFile, setTeamExcelFile] = useState<File | null>(null);
   const [competitionTeams, setCompetitionTeams] = useState<CompetitionTeam[]>([]);
   const [teamListLoading, setTeamListLoading] = useState(false);
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'deleteCompetition' | 'deleteTeam' | 'deleteProblemFromCompetition' | null>(null);
+  const [confirmTargetId, setConfirmTargetId] = useState<number | null>(null);
+  const [confirmTargetName, setConfirmTargetName] = useState<string>('');
+
+  const openConfirm = (action: 'deleteCompetition' | 'deleteTeam' | 'deleteProblemFromCompetition', id: number, name: string) => {
+    setConfirmAction(action);
+    setConfirmTargetId(id);
+    setConfirmTargetName(name);
+    setConfirmModalVisible(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmTargetId === null) return;
+    if (confirmAction === 'deleteCompetition') {
+      handleDelete(confirmTargetId);
+    } else if (confirmAction === 'deleteTeam') {
+      handleDeleteTeam(confirmTargetId);
+    } else if (confirmAction === 'deleteProblemFromCompetition') {
+      handleDeleteProblemFromCompetition(confirmTargetId);
+    }
+    setConfirmModalVisible(false);
+  };
 
   useEffect(() => {
     loadCompetitions();
@@ -596,62 +618,56 @@ const AdminCompetitions: React.FC = () => {
   const availableProblems = filteredProblems.filter((p) => !addedProblemIds.has(p.id.toString()));
 
   return (
-    <div className="gemini-card">
-      {/* Header - Gemini 风格 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>比赛列表</h2>
-          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有比赛</p>
-        </div>
-        <PermissionGuard permission={PermissionCode.COMPETITION_CREATE}>
-          <Button 
-            type="primary" 
-            icon={<Plus className="w-4 h-4" />} 
-            onClick={handleAdd}
-            style={{ 
-              backgroundColor: 'var(--gemini-accent)',
-              color: 'var(--gemini-accent-text)',
-              border: 'none'
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/50 p-4">
+          <Input.Search
+            placeholder="搜索比赛..."
+            allowClear
+            className="w-72"
+            onSearch={(value) => {
+              setKeyword(value);
+              setCurrentPage(1);
             }}
-          >
-            新建比赛
-          </Button>
-        </PermissionGuard>
-      </div>
+          />
+          <div className="flex items-center gap-2">
+            <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadCompetitions}>
+              刷新
+            </Button>
+            <PermissionGuard permission={PermissionCode.COMPETITION_CREATE}>
+              <Button 
+                type="primary" 
+                icon={<Plus className="w-4 h-4" />} 
+                onClick={handleAdd}
+                style={{ 
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                  border: 'none'
+                }}
+              >
+                新建比赛
+              </Button>
+            </PermissionGuard>
+          </div>
+        </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <Input.Search
-          placeholder="搜索比赛..."
-          allowClear
-          className="w-72"
-          onSearch={(value) => {
-            setKeyword(value);
-            setCurrentPage(1);
+        <DataTable<Competition>
+          className="rounded-none border-0 shadow-none"
+          rows={competitions}
+          loading={loading}
+          rowKey="id"
+          pagination={{
+            current: currentPage,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 条记录`,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
           }}
-        />
-        <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadCompetitions}>
-          刷新
-        </Button>
-      </div>
-
-      {/* Table */}
-      <DataTable<Competition>
-        rows={competitions}
-        loading={loading}
-        rowKey="id"
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 条记录`,
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          },
-        }}
-      >
+        >
         <DataColumn<Competition> header="ID" width={80} cell={(competition) => competition.id} />
         <DataColumn<Competition> header="标题" cell={(competition) => competition.title} />
         <DataColumn<Competition> header="开始时间" cell={(competition) => formatTime(competition.beginTime)} />
@@ -661,49 +677,40 @@ const AdminCompetitions: React.FC = () => {
         <DataColumn<Competition>
           header="操作"
           width={380}
-          action
           cell={(competition) => (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1">
               <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
-                <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(competition)}>
-                  编辑
-                </Button>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(competition)} title="编辑">
+                  <Edit size={16} />
+                </button>
               </PermissionGuard>
               <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
-                <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(competition)}>
-                  管理题目
-                </Button>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleManageProblems(competition)} title="管理题目">
+                  <Settings size={16} />
+                </button>
               </PermissionGuard>
               {competition.participantType === 'TEAM' ? (
                 <PermissionGuard permission={PermissionCode.COMPETITION_UPDATE}>
-                  <Button type="link" onClick={() => handleOpenTeamImport(competition)}>
-                    管理队伍
-                  </Button>
+                  <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleOpenTeamImport(competition)} title="管理队伍">
+                    <Users size={16} />
+                  </button>
                 </PermissionGuard>
               ) : null}
               <PermissionGuard permission={PermissionCode.COMPETITION_ANTI_CHEAT_VIEW}>
-                <Button
-                  type="link"
-                  icon={<ShieldAlert className="w-4 h-4" />}
-                  onClick={() => {
-                    setAntiCheatTarget(competition);
-                    setAntiCheatOpen(true);
-                  }}
-                >
-                  防作弊
-                </Button>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => { setAntiCheatTarget(competition); setAntiCheatOpen(true); }} title="防作弊">
+                  <ShieldAlert size={16} />
+                </button>
               </PermissionGuard>
               <PermissionGuard permission={PermissionCode.COMPETITION_DELETE}>
-                <ConfirmButton message="确定要删除这个比赛吗？" onConfirm={() => handleDelete(competition.id)}>
-                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                    删除
-                  </Button>
-                </ConfirmButton>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => openConfirm('deleteCompetition', competition.id, competition.title)} title="删除">
+                  <Trash2 size={16} />
+                </button>
               </PermissionGuard>
             </div>
           )}
         />
-      </DataTable>
+        </DataTable>
+      </div>
 
       {/* 新建/编辑比赛 Modal */}
       <Modal
@@ -855,11 +862,9 @@ const AdminCompetitions: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                        <ConfirmButton message="确定删除这个队伍吗？" onConfirm={() => handleDeleteTeam(team.id)}>
-                          <Button type="link" danger size="small" icon={<Trash2 className="h-4 w-4" />}>
+                          <Button type="link" danger size="small" icon={<Trash2 className="h-4 w-4" />} onClick={() => openConfirm('deleteTeam', team.id, team.teamName)}>
                             删除
                           </Button>
-                        </ConfirmButton>
                       </div>
                       <div className="mt-4 flex flex-wrap gap-2">
                         {memberNames.map((name, index) => (
@@ -1016,15 +1021,9 @@ const AdminCompetitions: React.FC = () => {
                 >
                   下移
                 </Button>,
-                <ConfirmButton
-                  key="delete"
-                  message="确定要从比赛中删除这个题目吗？"
-                  onConfirm={() => handleDeleteProblemFromCompetition(problem.id)}
-                >
-                  <Button type="link" danger size="small">
-                    删除
-                  </Button>
-                </ConfirmButton>,
+                <Button key="delete" type="link" danger size="small" onClick={() => openConfirm('deleteProblemFromCompetition', problem.id, problem.title)}>
+                  删除
+                </Button>,
               ]}
             >
               <List.Item.Meta
@@ -1125,6 +1124,29 @@ const AdminCompetitions: React.FC = () => {
       </Modal>
 
       {/* 防作弊审查面板 */}
+      {/* 确认弹窗 */}
+      <Modal
+        title="确认操作"
+        open={confirmModalVisible}
+        centered
+        onCancel={() => setConfirmModalVisible(false)}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          {confirmAction === 'deleteCompetition' ? (
+            <>确定要删除比赛 <strong>{confirmTargetName}</strong> 吗？</>
+          ) : confirmAction === 'deleteTeam' ? (
+            <>确定要删除队伍 <strong>{confirmTargetName}</strong> 吗？</>
+          ) : (
+            <>确定要从比赛中删除题目 <strong>{confirmTargetName}</strong> 吗？</>
+          )}
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => setConfirmModalVisible(false)}>取消</Button>
+          <Button type="primary" danger onClick={handleConfirm}>确定</Button>
+        </div>
+      </Modal>
+
       <AdminCompetitionAntiCheat
         open={antiCheatOpen}
         competitionId={antiCheatTarget?.id ?? null}

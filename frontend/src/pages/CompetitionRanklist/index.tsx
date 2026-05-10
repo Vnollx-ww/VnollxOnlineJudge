@@ -1,4 +1,5 @@
 import { Fragment, useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography,
@@ -646,26 +647,28 @@ const CompetitionRanklist: React.FC = () => {
   };
 
   if (loading && !competition) {
-    return (
-      <div className="flex items-center justify-center py-24">
+    return createPortal(
+      <div className="fixed inset-0 flex items-center justify-center bg-white" style={{ zIndex: 9999 }}>
         <Spin size="large" tip="加载中..." />
-      </div>
+      </div>,
+      document.body
     );
   }
 
   if (!competition) {
-    return (
-      <div className="flex items-center justify-center py-24">
+    return createPortal(
+      <div className="fixed inset-0 flex items-center justify-center bg-white" style={{ zIndex: 9999 }}>
         <Empty description="比赛不存在" />
-      </div>
+      </div>,
+      document.body
     );
   }
 
-  return (
-    <div className="min-w-0 w-full max-w-full text-[#333]">
-      <div className="min-w-0 w-full max-w-full">
+  return createPortal(
+    <div className="fixed inset-0 min-w-0 overflow-hidden bg-white text-[#333]" style={{ zIndex: 9999 }}>
+      <div className="min-w-0 h-full w-full max-w-full">
         {passwordVerified ? (
-          <div className="min-w-0 w-full max-w-full overflow-hidden rounded-3xl bg-white p-5">
+          <div className="flex h-full min-w-0 w-full max-w-full flex-col overflow-hidden bg-white p-5">
             <div className="mb-6 flex min-w-0 max-w-full items-center justify-between gap-4 overflow-hidden">
               <div
                 className="hidden h-14 w-[13.25rem] shrink-0 bg-contain bg-left bg-no-repeat md:block"
@@ -687,11 +690,11 @@ const CompetitionRanklist: React.FC = () => {
                 <Spin size="large" tip="榜单加载中..." />
               </div>
             ) : users.length === 0 ? (
-              <div className="rounded-lg py-16">
+              <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg">
                 <Empty description="暂无排名数据" />
               </div>
             ) : (
-              <div className="h-[calc(100vh-220px)] w-full max-w-full overflow-auto rounded-2xl [scrollbar-gutter:stable]">
+              <div className="min-h-0 flex-1 w-full max-w-full overflow-auto rounded-2xl [scrollbar-gutter:stable]">
                 <table className="table-fixed border-separate border-spacing-[1px]" style={{ width: ranklistTableWidth, minWidth: ranklistTableWidth }}>
                   <thead>
                     <tr>
@@ -795,7 +798,8 @@ const CompetitionRanklist: React.FC = () => {
           className="!rounded-full"
         />
       </Modal>
-    </div>
+    </div>,
+    document.body
   );
 };
 

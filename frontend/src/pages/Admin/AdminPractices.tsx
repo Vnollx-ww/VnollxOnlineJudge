@@ -10,7 +10,6 @@ import {
   Field,
   DataTable,
   DataColumn,
-  ConfirmButton,
 } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
@@ -65,6 +64,26 @@ const AdminPractices: React.FC = () => {
   const [selectedProblems, setSelectedProblems] = useState<number[]>([]);
   const [addProblemModalVisible, setAddProblemModalVisible] = useState(false);
   const [problemSearchKeyword, setProblemSearchKeyword] = useState('');
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'deletePractice' | 'deleteProblemFromPractice' | null>(null);
+  const [confirmTargetId, setConfirmTargetId] = useState<number | null>(null);
+  const [confirmTargetName, setConfirmTargetName] = useState<string>('');
+
+  const openConfirm = (action: 'deletePractice' | 'deleteProblemFromPractice', id: number, name: string) => {
+    setConfirmAction(action);
+    setConfirmTargetId(id);
+    setConfirmTargetName(name);
+    setConfirmModalVisible(true);
+  };
+
+  const handleConfirm = () => {
+    if (confirmAction === 'deletePractice' && confirmTargetId !== null) {
+      handleDelete(confirmTargetId);
+    } else if (confirmAction === 'deleteProblemFromPractice' && confirmTargetId !== null) {
+      handleDeleteProblemFromPractice(confirmTargetId);
+    }
+    setConfirmModalVisible(false);
+  };
 
   useEffect(() => {
     loadPractices();
@@ -243,62 +262,56 @@ const AdminPractices: React.FC = () => {
   const availableProblems = filteredProblems.filter((p) => !addedProblemIds.has(p.id.toString()));
 
   return (
-    <div className="gemini-card">
-      {/* Header - Gemini 风格 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>练习列表</h2>
-          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有练习</p>
-        </div>
-        <PermissionGuard permission={PermissionCode.PRACTICE_CREATE}>
-          <Button 
-            type="primary" 
-            icon={<Plus className="w-4 h-4" />} 
-            onClick={handleAdd}
-            style={{ 
-              backgroundColor: 'var(--gemini-accent)',
-              color: 'var(--gemini-accent-text)',
-              border: 'none'
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/50 p-4">
+          <Input.Search
+            placeholder="搜索练习..."
+            allowClear
+            className="w-72"
+            onSearch={(value) => {
+              setKeyword(value);
+              setCurrentPage(1);
             }}
-          >
-            新建练习
-          </Button>
-        </PermissionGuard>
-      </div>
+          />
+          <div className="flex items-center gap-2">
+            <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadPractices}>
+              刷新
+            </Button>
+            <PermissionGuard permission={PermissionCode.PRACTICE_CREATE}>
+              <Button 
+                type="primary" 
+                icon={<Plus className="w-4 h-4" />} 
+                onClick={handleAdd}
+                style={{ 
+                  backgroundColor: 'var(--gemini-accent)',
+                  color: 'var(--gemini-accent-text)',
+                  border: 'none'
+                }}
+              >
+                新建练习
+              </Button>
+            </PermissionGuard>
+          </div>
+        </div>
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <Input.Search
-          placeholder="搜索练习..."
-          allowClear
-          className="w-72"
-          onSearch={(value) => {
-            setKeyword(value);
-            setCurrentPage(1);
+        <DataTable<Practice>
+          className="rounded-none border-0 shadow-none"
+          rows={practices}
+          loading={loading}
+          rowKey="id"
+          pagination={{
+            current: currentPage,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 条记录`,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
           }}
-        />
-        <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadPractices}>
-          刷新
-        </Button>
-      </div>
-
-      {/* Table */}
-      <DataTable<Practice>
-        rows={practices}
-        loading={loading}
-        rowKey="id"
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 条记录`,
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          },
-        }}
-      >
+        >
         <DataColumn<Practice> header="ID" width={80} cell={(practice) => practice.id} />
         <DataColumn<Practice> header="标题" cell={(practice) => practice.title} />
         <DataColumn<Practice> header="题目数量" width={100} cell={(practice) => practice.problemCount} />
@@ -307,30 +320,28 @@ const AdminPractices: React.FC = () => {
         <DataColumn<Practice>
           header="操作"
           width={320}
-          action
           cell={(practice) => (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1">
               <PermissionGuard permission={PermissionCode.PRACTICE_UPDATE}>
-                <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(practice)}>
-                  编辑
-                </Button>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEdit(practice)} title="编辑">
+                  <Edit size={16} />
+                </button>
               </PermissionGuard>
               <PermissionGuard permission={PermissionCode.PRACTICE_UPDATE}>
-                <Button type="link" icon={<Settings className="w-4 h-4" />} onClick={() => handleManageProblems(practice)}>
-                  管理题目
-                </Button>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleManageProblems(practice)} title="管理题目">
+                  <Settings size={16} />
+                </button>
               </PermissionGuard>
               <PermissionGuard permission={PermissionCode.PRACTICE_DELETE}>
-                <ConfirmButton message="确定要删除这个练习吗？" onConfirm={() => handleDelete(practice.id)}>
-                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                    删除
-                  </Button>
-                </ConfirmButton>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => openConfirm('deletePractice', practice.id, practice.title)} title="删除">
+                  <Trash2 size={16} />
+                </button>
               </PermissionGuard>
             </div>
           )}
         />
-      </DataTable>
+        </DataTable>
+      </div>
 
       {/* 新建/编辑练习 Modal */}
       <Modal
@@ -416,15 +427,9 @@ const AdminPractices: React.FC = () => {
           renderItem={(problem) => (
             <List.Item
               actions={[
-                <ConfirmButton
-                  key="delete"
-                  message="确定要从练习中删除这个题目吗？"
-                  onConfirm={() => handleDeleteProblemFromPractice(problem.id)}
-                >
-                  <Button type="link" danger size="small">
-                    删除
-                  </Button>
-                </ConfirmButton>,
+                <Button key="delete" type="link" danger size="small" onClick={() => openConfirm('deleteProblemFromPractice', problem.id, problem.title)}>
+                  删除
+                </Button>,
               ]}
             >
               <List.Item.Meta
@@ -520,6 +525,27 @@ const AdminPractices: React.FC = () => {
           >
             批量添加 ({selectedProblems.length})
           </Button>
+        </div>
+      </Modal>
+
+      {/* 确认弹窗 */}
+      <Modal
+        title="确认操作"
+        open={confirmModalVisible}
+        centered
+        onCancel={() => setConfirmModalVisible(false)}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          {confirmAction === 'deletePractice' ? (
+            <>确定要删除练习 <strong>{confirmTargetName}</strong> 吗？</>
+          ) : (
+            <>确定要从练习中删除题目 <strong>{confirmTargetName}</strong> 吗？</>
+          )}
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => setConfirmModalVisible(false)}>取消</Button>
+          <Button type="primary" danger onClick={handleConfirm}>确定</Button>
         </div>
       </Modal>
     </div>

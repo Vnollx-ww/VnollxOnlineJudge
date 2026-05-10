@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Tabs, Spin, Progress, Statistic, Button, DataTable, DataColumn, Grid } from '@/components';
+import { Card, Spin, Progress, Statistic, Button, DataTable, DataColumn, Grid } from '@/components';
 import {
   PieChart,
   Pie,
@@ -15,7 +15,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, GraduationCap, TrendingUp } from 'lucide-react';
+import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, TrendingUp } from 'lucide-react';
 import api from '@/utils/api';
 import Select from '@/components/Select';
 import type { ApiResponse } from '@/types';
@@ -35,19 +35,6 @@ interface LearningAnalytics {
   passRate: number;
   dailySubmissions: DailySubmission[];
   solvedProblems: SolvedProblemItem[];
-}
-
-interface PracticeProgressItem {
-  problemId: number;
-  title: string;
-  solvedCount: number;
-}
-
-interface TeachingProgressItem {
-  practiceId: number;
-  practiceTitle: string;
-  totalProblems: number;
-  problemProgressList: PracticeProgressItem[];
 }
 
 interface ErrorPatternStat {
@@ -94,11 +81,7 @@ const AdminStatistics: React.FC = () => {
   const [learningUid, setLearningUid] = useState<number>(0);
   const [userOptions, setUserOptions] = useState<{ id: number; name: string }[]>([]);
   const [loadingUserOptions, setLoadingUserOptions] = useState(false);
-  const [teachingProgress, setTeachingProgress] = useState<TeachingProgressItem[]>([]);
-  const [loadingTeaching, setLoadingTeaching] = useState(false);
-  const [teachingPracticeId, setTeachingPracticeId] = useState<number>(0);
-  const [practiceOptions, setPracticeOptions] = useState<{ id: number; title: string }[]>([]);
-  const [loadingPracticeOptions, setLoadingPracticeOptions] = useState(false);
+  const [activeTab, setActiveTab] = useState<'error' | 'platform' | 'learning'>('error');
 
   const loadErrorPatterns = async () => {
     setLoadingError(true);
@@ -145,16 +128,8 @@ const AdminStatistics: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    loadPracticeOptions();
-  }, []);
-
-  useEffect(() => {
     loadLearningAnalytics();
   }, [learningDays, learningUid]);
-
-  useEffect(() => {
-    loadTeachingProgress();
-  }, [teachingPracticeId]);
 
   const loadUserOptions = async () => {
     setLoadingUserOptions(true);
@@ -169,22 +144,6 @@ const AdminStatistics: React.FC = () => {
       setUserOptions([]);
     } finally {
       setLoadingUserOptions(false);
-    }
-  };
-
-  const loadPracticeOptions = async () => {
-    setLoadingPracticeOptions(true);
-    try {
-      const res = await api.get('/admin/practice/list', { params: { pageNum: 1, pageSize: 500 } }) as ApiResponse<{ id: number; title: string }[]>;
-      if (res.code === 200 && res.data) {
-        setPracticeOptions(res.data);
-      } else {
-        setPracticeOptions([]);
-      }
-    } catch {
-      setPracticeOptions([]);
-    } finally {
-      setLoadingPracticeOptions(false);
     }
   };
 
@@ -203,23 +162,6 @@ const AdminStatistics: React.FC = () => {
       setLearningData(null);
     } finally {
       setLoadingLearning(false);
-    }
-  };
-
-  const loadTeachingProgress = async () => {
-    setLoadingTeaching(true);
-    try {
-      const params = teachingPracticeId > 0 ? { practiceId: teachingPracticeId } : {};
-      const res = await api.get('/admin/statistics/teaching-progress', { params }) as ApiResponse<TeachingProgressItem[]>;
-      if (res.code === 200 && res.data) {
-        setTeachingProgress(res.data);
-      } else {
-        setTeachingProgress([]);
-      }
-    } catch {
-      setTeachingProgress([]);
-    } finally {
-      setLoadingTeaching(false);
     }
   };
 
@@ -243,24 +185,46 @@ const AdminStatistics: React.FC = () => {
   }));
 
   return (
-    <div className="gemini-card space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
-          数据统计
-        </h2>
-      </div>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-2 border-b border-gray-50 bg-gray-50/50 p-4">
+          <div className="flex gap-2 rounded-full bg-slate-100 p-1">
+            {[
+              { key: 'error' as const, label: <span className="flex items-center gap-2"><AlertCircle className="w-4 h-4" />常见错误模式统计</span> },
+              { key: 'platform' as const, label: <span className="flex items-center gap-2"><BarChart3 className="w-4 h-4" />平台数据分析</span> },
+              { key: 'learning' as const, label: <span className="flex items-center gap-2"><TrendingUp className="w-4 h-4" />用户学习分析</span> },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 ${
+                  activeTab === tab.key
+                    ? 'bg-white text-blue-700 shadow-sm shadow-slate-200'
+                    : 'text-slate-500 hover:bg-white/60 hover:text-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              icon={<RefreshCw className="w-4 h-4" />}
+              onClick={() => {
+                if (activeTab === 'error') loadErrorPatterns();
+                else if (activeTab === 'platform') loadPlatformStats();
+                else loadLearningAnalytics();
+              }}
+            >
+              刷新
+            </Button>
+          </div>
+        </div>
 
-      <Tabs defaultActiveKey="error" centered>
-        <Tabs.Panel
-          id="error"
-          label={
-              <span className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                常见错误模式统计
-              </span>
-          }
-        >
-              <Card>
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          {activeTab === 'error' && (
+            <>
                 <div className="flex justify-end mb-4">
                   <RefreshCw
                     className="w-5 h-5 cursor-pointer hover:opacity-70"
@@ -316,19 +280,11 @@ const AdminStatistics: React.FC = () => {
                     </div>
                   )}
                 </Spin>
-              </Card>
-        </Tabs.Panel>
-        <Tabs.Panel
-          id="platform"
-          label={
-              <span className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                平台数据分析
-              </span>
-          }
-        >
+            </>
+          )}
+          {activeTab === 'platform' && (
               <div className="space-y-6">
-                <Card>
+                <div>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <span style={{ color: 'var(--gemini-text-secondary)' }}>统计维度</span>
                     <Select
@@ -556,25 +512,14 @@ const AdminStatistics: React.FC = () => {
                       </div>
                     )}
                   </Spin>
-                </Card>
+                </div>
               </div>
-        </Tabs.Panel>
-        <Tabs.Panel
-          id="learning"
-          label={
-              <span className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                学习数据分析
-              </span>
-          }
-        >
-              <Card>
+          )}
+          {activeTab === 'learning' && (
+            <>
                 <div className="flex flex-wrap items-center gap-4 mb-4">
                   <span style={{ color: 'var(--gemini-text-secondary)' }}>选择用户</span>
                   <Select
-                    placeholder="当前用户"
-                    showSearch
-                    optionFilterProp="label"
                     value={learningUid}
                     onChange={(v) => setLearningUid(v ?? 0)}
                     loading={loadingUserOptions}
@@ -654,58 +599,10 @@ const AdminStatistics: React.FC = () => {
                     <div className="text-center py-8" style={{ color: 'var(--gemini-text-secondary)' }}>选择条件后点击查询</div>
                   )}
                 </Spin>
-              </Card>
-        </Tabs.Panel>
-        <Tabs.Panel
-          id="teaching"
-          label={
-              <span className="flex items-center gap-2">
-                <GraduationCap className="w-4 h-4" />
-                教学进度跟踪
-              </span>
-          }
-        >
-              <Card>
-                <div className="flex flex-wrap items-center gap-4 mb-4">
-                  <span style={{ color: 'var(--gemini-text-secondary)' }}>选择练习</span>
-                  <Select
-                    placeholder="全部练习"
-                    showSearch
-                    optionFilterProp="label"
-                    value={teachingPracticeId}
-                    onChange={(v) => setTeachingPracticeId(v ?? 0)}
-                    loading={loadingPracticeOptions}
-                    style={{ width: 280 }}
-                    options={[
-                      { value: 0, label: '全部练习' },
-                      ...practiceOptions.map((p) => ({ value: p.id, label: p.title })),
-                    ]}
-                  />
-                  <Button type="primary" onClick={loadTeachingProgress} loading={loadingTeaching}>查询</Button>
-                  <RefreshCw className="w-5 h-5 cursor-pointer hover:opacity-70" onClick={loadTeachingProgress} />
-                </div>
-                <Spin spinning={loadingTeaching}>
-                  {teachingProgress.length > 0 ? (
-                    <div className="space-y-4">
-                      {teachingProgress.map((p) => (
-                        <Card key={p.practiceId} size="small" title={`${p.practiceTitle}（共 ${p.totalProblems} 题）`}>
-                          <DataTable<PracticeProgressItem> rowKey="problemId" size="small" pagination={false} rows={p.problemProgressList || []}>
-                            <DataColumn<PracticeProgressItem> header="题号" width={90} cell={(problem) => problem.problemId} />
-                            <DataColumn<PracticeProgressItem> header="题目" cell={(problem) => problem.title} />
-                            <DataColumn<PracticeProgressItem> header="通过人数" width={110} cell={(problem) => problem.solvedCount} />
-                          </DataTable>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8" style={{ color: 'var(--gemini-text-secondary)' }}>
-                      {!loadingTeaching ? '选择条件后点击查询或暂无练习数据' : ''}
-                    </div>
-                  )}
-                </Spin>
-              </Card>
-        </Tabs.Panel>
-      </Tabs>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

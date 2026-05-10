@@ -2,6 +2,7 @@ import { cloneElement, isValidElement, useLayoutEffect, useRef, useState, type C
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Button from '../Button';
+import Select from '../Select';
 
 type Key = string | number;
 
@@ -109,31 +110,35 @@ function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey
     });
   };
   const renderPagination = (position: 'top' | 'bottom') => pagination ? (
-    <div className={`flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-white to-blue-50/50 px-5 py-4 text-sm text-slate-500 ${position === 'bottom' ? 'border-t border-blue-50' : 'border-b border-blue-50'}`}>
+    <div className={`shrink-0 flex flex-wrap items-center justify-between gap-3 bg-gray-50/30 px-6 py-4 text-xs font-medium text-gray-400 ${position === 'bottom' ? 'border-t border-gray-50' : 'border-b border-gray-50'}`}>
       <div>{pagination.showTotal ? pagination.showTotal(total) : `共 ${total} 条记录`}</div>
       <div className="flex items-center gap-2">
         {pagination.showSizeChanger ? (
-          <select className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-100" value={pageSize} onChange={(event) => handlePageChange(1, Number(event.target.value))}>
-            {[10, 20, 50, 100].map((sizeOption) => <option key={sizeOption} value={sizeOption}>{sizeOption} 条/页</option>)}
-          </select>
+          <Select
+            size="small"
+            value={pageSize}
+            onChange={(next: number) => handlePageChange(1, next)}
+            options={[10, 20, 50, 100].map((sizeOption) => ({ value: sizeOption, label: `${sizeOption} 条/页` }))}
+            style={{ width: 100 }}
+          />
         ) : null}
-        <Button size="small" variant="outlined" disabled={current <= 1} onClick={() => handlePageChange(current - 1, pageSize)}>上一页</Button>
-        <span className="rounded-xl bg-slate-100 px-3 py-2 text-slate-700">{current} / {totalPages}</span>
-        <Button size="small" variant="outlined" disabled={current >= totalPages} onClick={() => handlePageChange(current + 1, pageSize)}>下一页</Button>
+        <button type="button" className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300" disabled={current <= 1} onClick={() => handlePageChange(current - 1, pageSize)}>上一页</button>
+        <span className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">{current} / {totalPages}</span>
+        <button type="button" className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300" disabled={current >= totalPages} onClick={() => handlePageChange(current + 1, pageSize)}>下一页</button>
       </div>
     </div>
   ) : null;
 
   return (
-    <div className={`overflow-hidden rounded-[28px] border border-blue-100/80 bg-white shadow-xl shadow-blue-100/40 ring-1 ring-white/80 ${className}`}>
-      <div className="overflow-x-auto">
+    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ${className}`}>
+      <div className="relative min-h-0 flex-1 overflow-auto">
         <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50">
+          <thead className="sticky top-0 z-10 bg-white">
+            <tr className="border-b border-gray-50 text-[11px] font-bold uppercase tracking-widest text-gray-400 shadow-sm shadow-gray-50">
               {columns.map((column, index) => (
                 <th
                   key={column.key || String(column.dataIndex || index)}
-                  className={`whitespace-nowrap border-b border-blue-100 px-5 font-bold uppercase tracking-wide text-slate-600 ${size === 'small' ? 'py-3 text-sm' : 'py-4 text-sm'}`}
+                  className={`whitespace-nowrap px-6 font-bold ${isActionColumn(column) ? 'text-left' : ''} ${size === 'small' ? 'py-4' : 'py-4'}`}
                   style={{ width: column.width }}
                 >
                   {column.title}
@@ -143,21 +148,21 @@ function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={columns.length} className="px-5 py-12 text-center text-slate-500"><Spin spinning /> 加载中...</td></tr>
+              <tr><td colSpan={columns.length} className="px-6 py-16 text-center text-sm font-medium text-gray-400"><Spin spinning /> 加载中...</td></tr>
             ) : dataSource.length === 0 ? (
-              <tr><td colSpan={columns.length} className="px-5 py-12"><Empty description="暂无数据" /></td></tr>
+              <tr><td colSpan={columns.length} className="px-6 py-16"><Empty description="暂无数据" /></td></tr>
             ) : dataSource.map((record, rowIndex) => (
-              <tr key={getKey(record, rowIndex)} className="group transition duration-200 hover:bg-gradient-to-r hover:from-blue-50/70 hover:to-violet-50/50">
+              <tr key={getKey(record, rowIndex)} className="group border-b border-gray-50 transition-colors last:border-b-0 hover:bg-blue-50/20">
                 {columns.map((column, columnIndex) => {
                   const value = column.dataIndex ? record[column.dataIndex] : undefined;
                   const content = column.render ? column.render(value, record, rowIndex) : value ?? '-';
                   return (
                     <td
                       key={column.key || String(column.dataIndex || columnIndex)}
-                      className={`border-b border-blue-50 px-5 text-slate-700 group-last:border-b-0 ${isActionColumn(column) ? 'text-left align-middle' : ''} ${size === 'small' ? 'py-3 text-sm' : 'py-4 text-sm'}`}
+                      className={`px-6 text-gray-700 ${isActionColumn(column) ? 'text-left align-middle' : ''} ${size === 'small' ? 'py-4 text-sm' : 'py-5 text-sm'}`}
                     >
                       {isActionColumn(column) ? (
-                        <div className="inline-flex flex-wrap items-center justify-start gap-1 rounded-2xl bg-slate-50 p-1 ring-1 ring-slate-200/70 [&_button]:h-8 [&_button]:rounded-xl [&_button]:px-2.5 [&_button]:font-semibold [&_button]:text-slate-700 [&_button]:shadow-none [&_button]:ring-0 [&_button:hover]:bg-white [&_button:hover]:text-slate-900 [&_button:hover]:shadow-sm [&_button.text-red-600]:text-red-600 [&_button.text-red-600:hover]:text-red-700">
+                        <div className="flex flex-wrap items-center justify-start gap-1.5 [&_button]:inline-flex [&_button]:h-8 [&_button]:items-center [&_button]:gap-1.5 [&_button]:rounded-full [&_button]:border [&_button]:border-blue-100 [&_button]:bg-blue-50/70 [&_button]:px-3 [&_button]:py-0 [&_button]:text-xs [&_button]:font-semibold [&_button]:text-blue-600 [&_button]:shadow-sm [&_button]:shadow-blue-50/70 [&_button]:transition-all [&_button:hover]:border-blue-200 [&_button:hover]:bg-blue-100 [&_button:hover]:text-blue-700 [&_button:hover]:shadow-blue-100 [&_button:active]:scale-95 [&_button:disabled]:cursor-not-allowed [&_button:disabled]:border-gray-100 [&_button:disabled]:bg-gray-50 [&_button:disabled]:text-gray-300 [&_button:disabled]:shadow-none [&_button.text-red-600]:border-red-100 [&_button.text-red-600]:bg-red-50/80 [&_button.text-red-600]:text-red-600 [&_button.text-red-600]:shadow-red-50/70 [&_button.text-red-600:hover]:border-red-200 [&_button.text-red-600:hover]:bg-red-100 [&_button.text-red-600:hover]:text-red-700 [&_button.text-red-600:hover]:shadow-red-100">
                           {content}
                         </div>
                       ) : content}

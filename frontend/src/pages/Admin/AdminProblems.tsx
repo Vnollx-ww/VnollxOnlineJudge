@@ -11,7 +11,6 @@ import {
   Typography,
   DataTable,
   DataColumn,
-  ConfirmButton,
 } from '@/components';
 import toast from 'react-hot-toast';
 import {
@@ -183,6 +182,8 @@ const AdminProblems: React.FC = () => {
   const [aiInput, setAiInput] = useState('');
   const [aiParsing, setAiParsing] = useState(false);
   const [examplesList, setExamplesList] = useState<ProblemExampleItem[]>([{ input: '', output: '', sortOrder: 0 }]);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [problemToDelete, setProblemToDelete] = useState<Problem | null>(null);
 
   useEffect(() => {
     const loadTagList = async () => {
@@ -527,36 +528,14 @@ ${aiInput}`;
   };
 
   return (
-    <div className="gemini-card">
-      {/* Header - Gemini 风格 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>题目列表</h2>
-          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有题目</p>
-        </div>
-        <PermissionGuard permission={PermissionCode.PROBLEM_CREATE}>
-          <Button 
-            type="primary" 
-            icon={<Plus className="w-4 h-4" />} 
-            onClick={() => showModal(null)}
-            style={{ 
-              backgroundColor: 'var(--gemini-accent)',
-              color: 'var(--gemini-accent-text)',
-              border: 'none'
-            }}
-          >
-            新建题目
-          </Button>
-        </PermissionGuard>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex flex-col items-center justify-between gap-4 border-b border-gray-50 bg-gray-50/50 p-4 sm:flex-row">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Input.Search
             placeholder="搜索题目..."
             allowClear
-            className="w-72"
+            className="w-full sm:w-72"
             onSearch={(value) => {
               setKeyword(value);
               setCurrentPage(1);
@@ -574,12 +553,27 @@ ${aiInput}`;
             options={tagOptions.map((t) => ({ label: t.name, value: t.name }))}
           />
         </div>
-        <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadProblems}>
-          刷新
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadProblems}>
+            刷新
+          </Button>
+          <PermissionGuard permission={PermissionCode.PROBLEM_CREATE}>
+            <Button 
+              type="primary" 
+              icon={<Plus className="w-4 h-4" />} 
+              onClick={() => showModal(null)}
+              style={{ 
+                backgroundColor: 'var(--gemini-accent)',
+                color: 'var(--gemini-accent-text)',
+                border: 'none'
+              }}
+            >
+              新建题目
+            </Button>
+          </PermissionGuard>
+        </div>
       </div>
 
-      {/* Table */}
       <DataTable<Problem>
         rows={problems}
         loading={loading}
@@ -606,25 +600,23 @@ ${aiInput}`;
         <DataColumn<Problem>
           header="操作"
           width={180}
-          action
           cell={(problem) => (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1">
               <PermissionGuard permission={PermissionCode.PROBLEM_UPDATE}>
-                <Button type="link" className="text-blue-600 hover:text-blue-700" icon={<Edit className="w-4 h-4" />} onClick={() => showModal(problem)}>
-                  编辑
-                </Button>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => showModal(problem)} title="编辑">
+                  <Edit size={16} />
+                </button>
               </PermissionGuard>
               <PermissionGuard permission={PermissionCode.PROBLEM_DELETE}>
-                <ConfirmButton message="确定要删除这道题目吗？" onConfirm={() => handleDelete(problem.id)}>
-                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                    删除
-                  </Button>
-                </ConfirmButton>
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => { setProblemToDelete(problem); setDeleteModalVisible(true); }} title="删除">
+                  <Trash2 size={16} />
+                </button>
               </PermissionGuard>
             </div>
           )}
         />
       </DataTable>
+      </div>
 
       {/* Modal */}
       <Modal
@@ -1047,6 +1039,23 @@ ${aiInput}`;
               <Text code>return 1</Text> 或非零：答案错误或输出格式错误（Wrong Answer）。
             </li>
           </ul>
+        </div>
+      </Modal>
+
+      {/* 删除题目确认弹窗 */}
+      <Modal
+        title="确认删除"
+        open={deleteModalVisible}
+        centered
+        onCancel={() => { setDeleteModalVisible(false); setProblemToDelete(null); }}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          确定要删除题目 <strong>{problemToDelete?.title}</strong> 吗？
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => { setDeleteModalVisible(false); setProblemToDelete(null); }}>取消</Button>
+          <Button type="primary" danger onClick={() => { if (problemToDelete) { handleDelete(problemToDelete.id); } setDeleteModalVisible(false); setProblemToDelete(null); }}>确定</Button>
         </div>
       </Modal>
     </div>

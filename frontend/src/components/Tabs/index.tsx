@@ -6,10 +6,11 @@ interface TabsProps<T extends string = string> {
   onChange?: (key: T) => void;
   centered?: boolean;
   className?: string;
+  contentClassName?: string;
   children?: ReactNode;
 }
 
-function TabsRoot<T extends string = string>({ activeKey, defaultActiveKey, onChange, centered = false, className = '', children }: TabsProps<T>) {
+function TabsRoot<T extends string = string>({ activeKey, defaultActiveKey, onChange, centered = false, className = '', contentClassName = '', children }: TabsProps<T>) {
   const panels = Children.toArray(children)
     .filter(isValidElement)
     .map((child) => (child as ReactElement<TabPanelProps<T>>).props);
@@ -45,7 +46,7 @@ function TabsRoot<T extends string = string>({ activeKey, defaultActiveKey, onCh
           );
         })}
       </div>
-      <div>{activeItem?.children}</div>
+      <div className={contentClassName}>{activeItem?.children}</div>
     </div>
   );
 }

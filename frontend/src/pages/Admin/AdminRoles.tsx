@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Button, Modal, Tag, Spin, Field, DataTable, DataColumn, ConfirmButton } from '@/components';
+import { Button, Modal, Tag, Spin, Field, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
-import { RefreshCw, Shield, Plus, Trash2, Edit, X, Key } from 'lucide-react';
+import { RefreshCw, Plus, Trash2, Edit, Key } from 'lucide-react';
 import api from '@/utils/api';
 import Select from '@/components/Select';
 import Input from '@/components/Input';
@@ -52,6 +52,11 @@ const AdminRoles: React.FC = () => {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [assignPermissionModalVisible, setAssignPermissionModalVisible] = useState(false);
   const [permissionModalVisible, setPermissionModalVisible] = useState(false);
+  const [viewRoleModalVisible, setViewRoleModalVisible] = useState(false);
+  const [deleteRoleModalVisible, setDeleteRoleModalVisible] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [removePermissionModalVisible, setRemovePermissionModalVisible] = useState(false);
+  const [permissionToRemove, setPermissionToRemove] = useState<Permission | null>(null);
   const [selectedPermissionsToAssign, setSelectedPermissionsToAssign] = useState<number[]>([]);
   const [roleForm, setRoleForm] = useState<RoleFormValues>(defaultRoleForm);
   const [permissionFormValues, setPermissionFormValues] = useState<PermissionFormValues>(defaultPermissionForm);
@@ -103,6 +108,7 @@ const AdminRoles: React.FC = () => {
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     loadRolePermissions(role.id);
+    setViewRoleModalVisible(true);
   };
 
   const handleAddRole = () => {
@@ -257,14 +263,9 @@ const AdminRoles: React.FC = () => {
   }, {} as Record<string, Permission[]>);
 
   return (
-    <div className="gemini-card">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>角色管理</h2>
-          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统角色及其权限</p>
-        </div>
-        <div className="flex gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden text-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-end gap-2 border-b border-gray-50 bg-gray-50/50 p-4">
           <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadRoles}>
             刷新
           </Button>
@@ -287,14 +288,6 @@ const AdminRoles: React.FC = () => {
             </Button>
           </PermissionGuard>
         </div>
-      </div>
-
-      {/* 角色列表 */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-          <span className="font-medium" style={{ color: 'var(--gemini-text-primary)' }}>角色列表</span>
-        </div>
         <DataTable<Role>
           rows={roles}
           rowKey="id"
@@ -308,78 +301,26 @@ const AdminRoles: React.FC = () => {
           <DataColumn<Role>
             header="操作"
             width={240}
-            action
             cell={(role) => (
-              <div className="flex gap-2">
-                <Button type="link" size="small" onClick={() => handleRoleSelect(role)}>
-                  查看权限
-                </Button>
+              <div className="flex items-center gap-1">
+                <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleRoleSelect(role)} title="查看权限">
+                  <Key size={16} />
+                </button>
                 <PermissionGuard permission={PermissionCode.ROLE_UPDATE}>
-                  <Button type="link" size="small" icon={<Edit className="w-3 h-3" />} onClick={() => handleEditRole(role)}>
-                    编辑
-                  </Button>
+                  <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => handleEditRole(role)} title="编辑">
+                    <Edit size={16} />
+                  </button>
                 </PermissionGuard>
                 <PermissionGuard permission={PermissionCode.ROLE_DELETE}>
-                  <ConfirmButton message="确定要删除这个角色吗？" onConfirm={() => handleDeleteRole(role.id)}>
-                    <Button type="link" danger size="small" icon={<Trash2 className="w-3 h-3" />}>
-                      删除
-                    </Button>
-                  </ConfirmButton>
+                  <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => { setRoleToDelete(role); setDeleteRoleModalVisible(true); }} title="删除">
+                    <Trash2 size={16} />
+                  </button>
                 </PermissionGuard>
               </div>
             )}
           />
         </DataTable>
       </div>
-
-      {/* 选中角色的权限 */}
-      {selectedRole && (
-        <div className="p-4 rounded-lg border" style={{ borderColor: 'var(--gemini-accent)', backgroundColor: 'rgba(66, 133, 244, 0.05)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-              {getRoleTag(selectedRole.code)} {selectedRole.name} 的权限 ({rolePermissions.length}个)
-            </h3>
-            <div className="flex gap-2">
-              <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
-              <Button
-                type="primary"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={() => setAssignPermissionModalVisible(true)}
-                style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-              >
-                添加权限
-              </Button>
-              </PermissionGuard>
-              <Button
-                icon={<X className="w-4 h-4" />}
-                onClick={() => setSelectedRole(null)}
-              >
-                收起
-              </Button>
-            </div>
-          </div>
-          <Spin spinning={rolePermissionsLoading}>
-            <div className="max-h-80 overflow-y-auto">
-              <DataTable<Permission> rows={rolePermissions} rowKey="id" pagination={false} size="small">
-                <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="green">{permission.code}</Tag>} />
-                <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
-                <DataColumn<Permission> header="模块" cell={(permission) => permission.module} />
-                <DataColumn<Permission>
-                  header="操作"
-                  action
-                  cell={(permission) => (
-                    <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
-                      <Button type="link" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => handleRemovePermissionFromRole(permission.id)}>
-                        移除
-                      </Button>
-                    </PermissionGuard>
-                  )}
-                />
-              </DataTable>
-            </div>
-          </Spin>
-        </div>
-      )}
 
       {/* 新建/编辑角色 Modal */}
       <Modal
@@ -419,6 +360,76 @@ const AdminRoles: React.FC = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* 查看角色权限弹窗 */}
+      <Modal
+        title={
+          <span className="flex items-center gap-2">
+            {selectedRole ? getRoleTag(selectedRole.code) : null}
+            {selectedRole?.name} 的权限 ({rolePermissions.length}个)
+          </span>
+        }
+        open={viewRoleModalVisible}
+        centered
+        width={900}
+        onCancel={() => {
+          setViewRoleModalVisible(false);
+          setSelectedRole(null);
+        }}
+        footer={null}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-base font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
+            权限列表
+          </h4>
+          <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+            <Button
+              type="primary"
+              icon={<Plus className="w-4 h-4" />}
+              onClick={() => setAssignPermissionModalVisible(true)}
+              style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+            >
+              添加权限
+            </Button>
+          </PermissionGuard>
+        </div>
+        <Spin spinning={rolePermissionsLoading}>
+          <div className="max-h-80 overflow-auto">
+            <DataTable<Permission> rows={rolePermissions} rowKey="id" pagination={false} size="small">
+              <DataColumn<Permission> header="权限码" cell={(permission) => <Tag color="green">{permission.code}</Tag>} />
+              <DataColumn<Permission> header="权限名称" cell={(permission) => permission.name} />
+              <DataColumn<Permission> header="模块" cell={(permission) => permission.module} />
+              <DataColumn<Permission>
+                header="操作"
+                cell={(permission) => (
+                  <PermissionGuard permission={PermissionCode.PERMISSION_ASSIGN}>
+                    <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => { setPermissionToRemove(permission); setRemovePermissionModalVisible(true); }} title="移除">
+                      <Trash2 size={16} />
+                    </button>
+                  </PermissionGuard>
+                )}
+              />
+            </DataTable>
+          </div>
+        </Spin>
+      </Modal>
+
+      {/* 移除权限确认弹窗 */}
+      <Modal
+        title="确认移除"
+        open={removePermissionModalVisible}
+        centered
+        onCancel={() => { setRemovePermissionModalVisible(false); setPermissionToRemove(null); }}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          确定要移除权限 <strong>{permissionToRemove?.name}</strong> 吗？
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => { setRemovePermissionModalVisible(false); setPermissionToRemove(null); }}>取消</Button>
+          <Button type="primary" danger onClick={() => { if (permissionToRemove) { handleRemovePermissionFromRole(permissionToRemove.id); } setRemovePermissionModalVisible(false); setPermissionToRemove(null); }}>确定</Button>
+        </div>
       </Modal>
 
       {/* 分配权限 Modal */}
@@ -472,6 +483,26 @@ const AdminRoles: React.FC = () => {
               分配
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* 删除角色确认弹窗 */}
+      <Modal
+        title="确认删除"
+        open={deleteRoleModalVisible}
+        centered
+        onCancel={() => {
+          setDeleteRoleModalVisible(false);
+          setRoleToDelete(null);
+        }}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          确定要删除角色 <strong>{roleToDelete?.name}</strong> 吗？
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => { setDeleteRoleModalVisible(false); setRoleToDelete(null); }}>取消</Button>
+          <Button type="primary" danger onClick={() => { if (roleToDelete) { handleDeleteRole(roleToDelete.id); } setDeleteRoleModalVisible(false); setRoleToDelete(null); }}>确定</Button>
         </div>
       </Modal>
 

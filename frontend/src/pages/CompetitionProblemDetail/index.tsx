@@ -22,6 +22,7 @@ import {
   HistoryOutlined,
   FullscreenExitOutlined,
   CopyOutlined,
+  TrophyOutlined,
 } from '@ant-design/icons';
 import { CheckCircle2 } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -1048,6 +1049,12 @@ const CompetitionProblemDetail: React.FC = () => {
             评论 {comments.length ? `(${comments.length})` : ''}
           </Button>
         )}
+        <Button
+          icon={<TrophyOutlined />}
+          onClick={() => navigate(`/competition/${cid}/ranklist`)}
+        >
+          排行榜
+        </Button>
       </div>
     </>
   );

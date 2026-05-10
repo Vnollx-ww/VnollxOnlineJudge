@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Drawer, Tag, Button, Modal, Tooltip, Empty, Field, DataTable, DataColumn } from '@/components';
+import { Drawer, Tag, Button, Modal, Empty, Field, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
 import { Download, Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import dayjs from 'dayjs';
@@ -304,62 +304,61 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
         </div>
       }
     >
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-        <StatCard label="参与人数" value={stats.totalUsers ?? 0} />
-        <StatCard label="可疑人数" value={stats.suspiciousUsers ?? 0} accent="orange" />
-        <StatCard label="高风险" value={stats.highRiskUsers ?? 0} accent="red" />
-        <StatCard label="待复核" value={stats.pendingReviewUsers ?? 0} accent="gold" />
-        <StatCard label="事件总数" value={stats.totalEvents ?? 0} />
-      </div>
+      <div className="flex h-[calc(100vh-120px)] min-h-0 flex-col overflow-hidden">
+        <div className="grid shrink-0 grid-cols-2 gap-3 md:grid-cols-5">
+          <StatCard label="参与人数" value={stats.totalUsers ?? 0} />
+          <StatCard label="可疑人数" value={stats.suspiciousUsers ?? 0} accent="orange" />
+          <StatCard label="高风险" value={stats.highRiskUsers ?? 0} accent="red" />
+          <StatCard label="待复核" value={stats.pendingReviewUsers ?? 0} accent="gold" />
+          <StatCard label="事件总数" value={stats.totalEvents ?? 0} />
+        </div>
 
-      {/* 工具栏 */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <Input.Search
-          allowClear
-          placeholder="按用户名搜索"
-          className="w-56"
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
-          onSearch={(v) => setKeyword(v)}
-        />
-        <Select
-          placeholder="风险等级"
-          allowClear
-          className="w-36"
-          value={riskLevel}
-          options={[
-            { label: '低风险', value: 'LOW' },
-            { label: '中风险', value: 'MEDIUM' },
-            { label: '高风险', value: 'HIGH' },
-            { label: '严重风险', value: 'CRITICAL' },
-          ]}
-          onChange={(v) => setRiskLevel(v)}
-        />
-        <Select
-          placeholder="复核状态"
-          allowClear
-          className="w-36"
-          value={reviewStatus}
-          options={[
-            { label: '待复核', value: 'PENDING' },
-            { label: '已确认', value: 'CONFIRMED' },
-            { label: '已驳回', value: 'REJECTED' },
-            { label: '已忽略', value: 'IGNORED' },
-          ]}
-          onChange={(v) => setReviewStatus(v)}
-        />
-        <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadAll}>刷新</Button>
-        <Button icon={<Download className="w-4 h-4" />} loading={exporting} onClick={exportCsv}>导出 CSV</Button>
-      </div>
+        <div className="mt-4 flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-50 bg-gray-50/50 p-4">
+          <Input.Search
+            allowClear
+            placeholder="按用户名搜索"
+            className="w-56"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            onSearch={(v) => setKeyword(v)}
+          />
+          <Select
+            placeholder="风险等级"
+            allowClear
+            className="w-36"
+            value={riskLevel}
+            options={[
+              { label: '低风险', value: 'LOW' },
+              { label: '中风险', value: 'MEDIUM' },
+              { label: '高风险', value: 'HIGH' },
+              { label: '严重风险', value: 'CRITICAL' },
+            ]}
+            onChange={(v) => setRiskLevel(v)}
+          />
+          <Select
+            placeholder="复核状态"
+            allowClear
+            className="w-36"
+            value={reviewStatus}
+            options={[
+              { label: '待复核', value: 'PENDING' },
+              { label: '已确认', value: 'CONFIRMED' },
+              { label: '已驳回', value: 'REJECTED' },
+              { label: '已忽略', value: 'IGNORED' },
+            ]}
+            onChange={(v) => setReviewStatus(v)}
+          />
+          <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadAll}>刷新</Button>
+          <Button icon={<Download className="w-4 h-4" />} loading={exporting} onClick={exportCsv}>导出 CSV</Button>
+        </div>
 
-      <DataTable<AntiCheatSummary>
-        rowKey="id"
-        size="small"
-        loading={loading}
-        rows={summaries}
-        pagination={{ pageSize: 20, showSizeChanger: true }}
-      >
+        <DataTable<AntiCheatSummary>
+          rowKey="id"
+          size="small"
+          loading={loading}
+          rows={summaries}
+          pagination={{ pageSize: 20, showSizeChanger: true }}
+        >
         <DataColumn<AntiCheatSummary> header="排名" width={60} cell={(_, index) => index + 1} />
         <DataColumn<AntiCheatSummary> header="用户" width={160} cell={(summary) => <span className="block max-w-36 whitespace-nowrap overflow-hidden text-ellipsis">{summary.username || '-'}</span>} />
         <DataColumn<AntiCheatSummary> header="风险等级" width={110} cell={(summary) => <Tag color={RISK_COLOR[summary.riskLevel] || 'default'}>{RISK_LABEL[summary.riskLevel] || summary.riskLevel}</Tag>} />
@@ -374,25 +373,25 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
         <DataColumn<AntiCheatSummary>
           header="操作"
           width={280}
-          action
           cell={(summary) => (
-            <div className="flex gap-1">
-              <Button type="link" size="small" icon={<Eye className="w-4 h-4" />} onClick={() => openUserDetail(summary.userId)}>
-                详情
-              </Button>
-              <Tooltip title="标记正常">
-                <Button type="link" size="small" icon={<ShieldCheck className="w-4 h-4" />} onClick={() => quickReview(summary, 'REJECTED', 'NORMAL')}>正常</Button>
-              </Tooltip>
-              <Tooltip title="确认作弊">
-                <Button type="link" size="small" danger icon={<ShieldX className="w-4 h-4" />} onClick={() => quickReview(summary, 'CONFIRMED', 'CHEATING')}>作弊</Button>
-              </Tooltip>
-              <Tooltip title="自定义复核">
-                <Button type="link" size="small" icon={<ShieldAlert className="w-4 h-4" />} onClick={() => openReviewModal(summary)}>复核</Button>
-              </Tooltip>
+            <div className="flex items-center gap-1">
+              <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => openUserDetail(summary.userId)} title="详情">
+                <Eye size={16} />
+              </button>
+              <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-green-50 hover:text-green-600" onClick={() => quickReview(summary, 'REJECTED', 'NORMAL')} title="标记正常">
+                <ShieldCheck size={16} />
+              </button>
+              <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => quickReview(summary, 'CONFIRMED', 'CHEATING')} title="确认作弊">
+                <ShieldX size={16} />
+              </button>
+              <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600" onClick={() => openReviewModal(summary)} title="自定义复核">
+                <ShieldAlert size={16} />
+              </button>
             </div>
           )}
         />
-      </DataTable>
+        </DataTable>
+      </div>
 
       {/* 用户详情抽屉 */}
       <Drawer

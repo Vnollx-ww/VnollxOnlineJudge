@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { Button, Modal, Tag, Field, DataTable, DataColumn, ConfirmButton } from '@/components';
+import { useState, useEffect, useMemo } from 'react';
+import { Button, Modal, Field } from '@/components';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Search, RefreshCw, Edit3, Trash2, Filter, CheckCircle2, Clock } from 'lucide-react';
 import api from '@/utils/api';
 import Select from '@/components/Select';
 import Input from '@/components/Input';
@@ -38,12 +38,34 @@ const defaultUserForm: UserFormValues = {
 };
 
 const roleColorMap: Record<string, string> = {
-  SUPER_ADMIN: 'red',
-  ADMIN: 'orange',
-  TEACHER: 'green',
-  USER: 'blue',
-  GUEST: 'default',
+  SUPER_ADMIN: 'bg-red-50 text-red-600 border-red-100',
+  ADMIN: 'bg-orange-50 text-orange-600 border-orange-100',
+  TEACHER: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+  USER: 'bg-blue-50 text-blue-600 border-blue-100',
+  GUEST: 'bg-gray-50 text-gray-500 border-gray-100',
 };
+
+const StatCard = ({
+  title,
+  value,
+  icon: Icon,
+  color,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  color: string;
+}) => (
+  <div className="flex cursor-default items-center gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-transform hover:scale-[1.02]">
+    <div className={`rounded-xl p-3 ${color}`}>
+      <Icon size={22} className="text-white" />
+    </div>
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{title}</p>
+      <h3 className="mt-1 text-xl font-bold leading-none text-gray-800">{value}</h3>
+    </div>
+  </div>
+);
 
 const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -56,6 +78,8 @@ const AdminUsers: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userForm, setUserForm] = useState<UserFormValues>(defaultUserForm);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -157,13 +181,12 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const getIdentityTag = (identity: string) => {
+  const getIdentityMeta = (identity: string) => {
     const role = roles.find((item) => item.code === identity);
-    const item = {
+    return {
       text: role?.name || identity,
-      color: roleColorMap[identity] || 'default',
+      className: roleColorMap[identity] || 'bg-slate-50 text-slate-600 border-slate-100',
     };
-    return <Tag color={item.color}>{item.text}</Tag>;
   };
 
   const identityOptions = roles.map((role) => ({
@@ -171,92 +194,185 @@ const AdminUsers: React.FC = () => {
     label: role.name,
   }));
 
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const totalSubmitCount = useMemo(() => users.reduce((sum, user) => sum + (user.submitCount || 0), 0), [users]);
+  const totalPassCount = useMemo(() => users.reduce((sum, user) => sum + (user.passCount || 0), 0), [users]);
+  const passRate = totalSubmitCount > 0 ? `${((totalPassCount / totalSubmitCount) * 100).toFixed(1)}%` : '0%';
+  const adminCount = useMemo(() => users.filter((user) => ['SUPER_ADMIN', 'ADMIN'].includes(user.identity)).length, [users]);
+  const formatLastLogin = (value?: string) => value ? value.replace('T', ' ') : '从未登录';
+  const getUserInitial = (name: string) => (name || '?').charAt(0).toUpperCase();
+  const getPassPercent = (user: User) => user.submitCount > 0 ? Math.round((user.passCount / user.submitCount) * 100) : 0;
+
   return (
-    <div className="gemini-card">
-      {/* Header - Gemini 风格 */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>用户列表</h2>
-          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>管理系统中的所有用户</p>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
+      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard title="总用户" value={total} icon={Users} color="bg-blue-500" />
+        <StatCard title="当前页管理员" value={`${adminCount} 人`} icon={Clock} color="bg-emerald-500" />
+        <StatCard title="当前页通过率" value={passRate} icon={CheckCircle2} color="bg-orange-500" />
+        <StatCard title="每页显示" value={pageSize} icon={Filter} color="bg-purple-500" />
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex flex-col items-center justify-between gap-4 border-b border-gray-50 bg-gray-50/50 p-4 sm:flex-row">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              placeholder="搜索用户名、邮箱..."
+              className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-50"
+              value={keyword}
+              onChange={(event) => {
+                setKeyword(event.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <button
+              type="button"
+              onClick={loadUsers}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-bold text-gray-600 transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={loading}
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              刷新
+            </button>
+            <PermissionGuard permission={PermissionCode.USER_CREATE}>
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-100 transition-all hover:bg-blue-700"
+              >
+                <UserPlus size={15} />
+                新建用户
+              </button>
+            </PermissionGuard>
+          </div>
         </div>
-        <PermissionGuard permission={PermissionCode.USER_CREATE}>
-          <Button 
-            type="primary" 
-            icon={<Plus className="w-4 h-4" />} 
-            onClick={handleAdd}
-            style={{ 
-              backgroundColor: 'var(--gemini-accent)',
-              color: 'var(--gemini-accent-text)',
-              border: 'none'
-            }}
-          >
-            新建用户
-          </Button>
-        </PermissionGuard>
-      </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-row items-center justify-between gap-3 mb-4">
-        <Input.Search
-          placeholder="搜索用户..."
-          allowClear
-          className="w-72 shrink-0"
-          onSearch={(value) => {
-            setKeyword(value);
-            setCurrentPage(1);
-          }}
-        />
-        <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadUsers}>
-          刷新
-        </Button>
-      </div>
-
-      {/* Table */}
-      <DataTable<User>
-        rows={users}
-        loading={loading}
-        rowKey="id"
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showTotal: (t) => `共 ${t} 条记录`,
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          },
-        }}
-      >
-        <DataColumn<User> header="用户名" cell={(user) => user.name} />
-        <DataColumn<User> header="邮箱" cell={(user) => user.email} />
-        <DataColumn<User> header="身份" cell={(user) => getIdentityTag(user.identity)} />
-        <DataColumn<User> header="提交次数" cell={(user) => user.submitCount} />
-        <DataColumn<User> header="通过数" cell={(user) => user.passCount} />
-        <DataColumn<User> header="上次登录" cell={(user) => user.lastLoginTime ? user.lastLoginTime.replace('T', ' ') : '-'} />
-        <DataColumn<User>
-          header="操作"
-          action
-          cell={(user) => (
-            <div className="flex gap-2">
-              <PermissionGuard permission={PermissionCode.USER_UPDATE}>
-                <Button type="link" icon={<Edit className="w-4 h-4" />} onClick={() => handleEdit(user)}>
-                  编辑
-                </Button>
-              </PermissionGuard>
-              <PermissionGuard permission={PermissionCode.USER_DELETE}>
-                <ConfirmButton message="确定要删除这个用户吗？" onConfirm={() => handleDelete(user.id)}>
-                  <Button type="link" danger icon={<Trash2 className="w-4 h-4" />}>
-                    删除
-                  </Button>
-                </ConfirmButton>
-              </PermissionGuard>
+        <div className="relative min-h-0 flex-1 overflow-auto">
+          {loading ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px]">
+              <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
             </div>
-          )}
-        />
-      </DataTable>
+          ) : null}
+          <table className="w-full text-left">
+            <thead className="sticky top-0 z-10 bg-white">
+              <tr className="border-b border-gray-50 text-[11px] font-bold uppercase tracking-widest text-gray-400 shadow-sm shadow-gray-50">
+                <th className="px-6 py-4">基础信息</th>
+                <th className="px-6 py-4">身份</th>
+                <th className="px-6 py-4 text-center">提交 / 通过</th>
+                <th className="px-6 py-4">上次登录</th>
+                <th className="px-6 py-4 text-left">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-16 text-center text-sm font-medium text-gray-400">
+                    暂无用户数据
+                  </td>
+                </tr>
+              ) : users.map((user) => {
+                const identity = getIdentityMeta(user.identity);
+                const passPercent = getPassPercent(user);
+                return (
+                  <tr key={user.id} className="group transition-colors hover:bg-blue-50/20">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-xs font-bold uppercase text-gray-400 transition-colors group-hover:bg-blue-100 group-hover:text-blue-600">
+                          {getUserInitial(user.name)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-gray-800">{user.name}</span>
+                          <span className="text-xs text-gray-400">{user.email}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${identity.className}`}>
+                        {identity.text}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <div className="text-xs font-bold text-gray-600">
+                          {user.submitCount || 0} <span className="mx-0.5 text-gray-300">/</span> <span className="text-emerald-500">{user.passCount || 0}</span>
+                        </div>
+                        <div className="h-1 w-20 overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            className={`h-full ${passPercent > 50 ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                            style={{ width: `${passPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="whitespace-nowrap text-xs font-medium text-gray-500">{formatLastLogin(user.lastLoginTime)}</span>
+                    </td>
+                    <td className="px-6 py-5 text-left">
+                      <div className="flex items-center justify-start gap-1">
+                        <PermissionGuard permission={PermissionCode.USER_UPDATE}>
+                          <button
+                            type="button"
+                            className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600"
+                            onClick={() => handleEdit(user)}
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                        </PermissionGuard>
+                        <PermissionGuard permission={PermissionCode.USER_DELETE}>
+                          <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => { setUserToDelete(user); setDeleteModalVisible(true); }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </PermissionGuard>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-      {/* Modal */}
+        <div className="flex items-center justify-between border-t border-gray-50 bg-gray-50/30 px-6 py-4">
+          <span className="text-xs font-medium text-gray-400">显示 {users.length} 个结果，共 {total} 条</span>
+          <div className="flex items-center gap-2">
+            <Select
+              className="w-32"
+              value={pageSize}
+              onChange={(value) => {
+                setPageSize(Number(value));
+                setCurrentPage(1);
+              }}
+              options={[10, 20, 50, 100].map((size) => ({
+                value: size,
+                label: `${size} 条/页`,
+              }))}
+            />
+            <button
+              type="button"
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+              disabled={currentPage <= 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+            >
+              上一页
+            </button>
+            <button type="button" className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
+              {currentPage} / {totalPages}
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      </div>
+
       <Modal
         title={editingUser ? '编辑用户' : '新建用户'}
         open={modalVisible}
@@ -278,7 +394,7 @@ const AdminUsers: React.FC = () => {
             <Input value={userForm.email} onChange={(event) => updateUserForm('email', event.target.value)} />
           </Field>
           <Field label="身份">
-            <Select value={userForm.identity} onChange={(value) => updateUserForm('identity', value)} options={identityOptions} />
+            <Select className="w-full min-w-64" value={userForm.identity} onChange={(value) => updateUserForm('identity', value)} options={identityOptions} />
           </Field>
           <div>
             <div className="flex justify-end gap-2">
@@ -297,6 +413,23 @@ const AdminUsers: React.FC = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* 删除用户确认弹窗 */}
+      <Modal
+        title="确认删除"
+        open={deleteModalVisible}
+        centered
+        onCancel={() => { setDeleteModalVisible(false); setUserToDelete(null); }}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          确定要删除用户 <strong>{userToDelete?.name}</strong> 吗？
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => { setDeleteModalVisible(false); setUserToDelete(null); }}>取消</Button>
+          <Button type="primary" danger onClick={() => { if (userToDelete) { handleDelete(userToDelete.id); } setDeleteModalVisible(false); setUserToDelete(null); }}>确定</Button>
+        </div>
       </Modal>
     </div>
   );

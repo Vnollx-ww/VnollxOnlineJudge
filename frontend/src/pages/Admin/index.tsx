@@ -7,13 +7,13 @@ import {
   Lightbulb,
   Trophy,
   Shield,
-  Home,
   BookOpen,
   Key,
   BarChart3,
   Bot,
   PanelLeftClose,
   PanelLeftOpen,
+  Home,
 } from 'lucide-react';
 import AdminUsers from './AdminUsers';
 import AdminProblems from './AdminProblems';
@@ -147,7 +147,7 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="flex h-screen overflow-hidden">
       {/* 固定侧边栏 */}
       <aside
         className="admin-sider"
@@ -187,6 +187,14 @@ const Admin: React.FC = () => {
         <div className="admin-sider__footer">
           <button
             type="button"
+            onClick={() => navigate('/')}
+            className="mb-2 flex w-full items-center justify-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-800"
+          >
+            <Home className="w-5 h-5 shrink-0" />
+            {!collapsed && <span>返回主页</span>}
+          </button>
+          <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
             className="admin-sider__trigger"
             aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
@@ -204,29 +212,7 @@ const Admin: React.FC = () => {
           marginLeft: collapsed ? SIDER_COLLAPSED_WIDTH : SIDER_WIDTH,
         }}
       >
-        <header className="admin-header">
-          <h1 className="admin-header__title">Vnollx在线评测系统 - 管理后台</h1>
-          <div className="admin-header__actions">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="admin-header__btn-home"
-            >
-              <Home className="w-4 h-4" />
-              返回主页
-            </button>
-            <div className="admin-header__user">
-              <div
-                className="admin-header__avatar"
-              >
-                A
-              </div>
-              <span className="admin-header__user-label">管理员</span>
-            </div>
-          </div>
-        </header>
-
-        <main className="admin-content">
+        <main className="admin-content overflow-hidden">
           <Routes>
             <Route path="users" element={<AdminUsers />} />
             <Route path="problems" element={<AdminProblems />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Modal, InputNumber, FilePicker, Field, DataTable, DataColumn, ConfirmButton } from '@/components';
+import { Button, Modal, InputNumber, FilePicker, Field, Empty, Spin } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon } from 'lucide-react';
 import api from '@/utils/api';
@@ -51,6 +51,8 @@ const AdminAiModels: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [modelForm, setModelForm] = useState<AiModelFormValues>(defaultModelForm);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [modelToDelete, setModelToDelete] = useState<AiModelVo | null>(null);
 
   const loadList = async () => {
     setLoading(true);
@@ -166,14 +168,9 @@ const AdminAiModels: React.FC = () => {
   };
 
   return (
-    <div className="gemini-card">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>AI 模型管理</h2>
-          <p className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>配置后可被用户在 AI 助手中选择使用</p>
-        </div>
-        <div className="flex gap-2">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div className="flex items-center justify-end gap-2 border-b border-gray-50 bg-gray-50/50 p-4">
           <Button icon={<RefreshCw className="w-4 h-4" />} onClick={loadList} loading={loading}>
             刷新
           </Button>
@@ -191,44 +188,65 @@ const AdminAiModels: React.FC = () => {
               添加模型
             </Button>
           </PermissionGuard>
-        </div>
       </div>
 
-      {/* Table */}
-      <DataTable<AiModelVo> rowKey="id" loading={loading} rows={list} pagination={false}>
-        <DataColumn<AiModelVo> header="排序" width={72} cell={(model) => model.sortOrder} />
-        <DataColumn<AiModelVo>
-          header="名称"
-          cell={(model) => (
-            <span className="flex items-center gap-2">
-              {model.logoUrl ? (
-                <img src={model.logoUrl} alt="" className="w-6 h-6 rounded object-cover" />
-              ) : (
-                <Bot className="w-5 h-5 text-gray-400" />
-              )}
-              {model.name}
-            </span>
-          )}
-        />
-        <DataColumn<AiModelVo>
-          header="操作"
-          action
-          cell={(model) => (
-            <div className="flex gap-2 flex-wrap">
-              <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
-                <Button type="link" size="small" icon={<Edit className="w-3.5 h-3.5" />} onClick={() => handleEdit(model)}>
-                  编辑
-                </Button>
-                <ConfirmButton message="确定删除该模型？" onConfirm={() => handleDelete(model.id)}>
-                  <Button type="link" danger size="small" icon={<Trash2 className="w-3.5 h-3.5" />}>
-                    删除
-                  </Button>
-                </ConfirmButton>
-              </PermissionGuard>
-            </div>
-          )}
-        />
-      </DataTable>
+      <div className="relative min-h-0 flex-1 overflow-auto p-4">
+        {loading ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-gray-400">
+            <Spin spinning />
+            <span>加载中...</span>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <Empty description="暂无模型数据" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {list.map((model) => (
+              <div
+                key={model.id}
+                className="group relative flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-50">
+                  {model.logoUrl ? (
+                    <img src={model.logoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Bot className="h-6 w-6 text-gray-400" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-gray-900">{model.name}</div>
+                  <div className="mt-0.5 text-xs text-gray-400">排序: {model.sortOrder}</div>
+                </div>
+                <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600"
+                      onClick={() => handleEdit(model)}
+                      title="编辑"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600"
+                      onClick={() => {
+                        setModelToDelete(model);
+                        setDeleteModalVisible(true);
+                      }}
+                      title="删除"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </PermissionGuard>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      </div>
 
       <Modal
         title={editingId ? '编辑模型' : '添加模型'}
@@ -306,6 +324,23 @@ const AdminAiModels: React.FC = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* 删除模型确认弹窗 */}
+      <Modal
+        title="确认删除"
+        open={deleteModalVisible}
+        centered
+        onCancel={() => { setDeleteModalVisible(false); setModelToDelete(null); }}
+        footer={null}
+      >
+        <div className="py-2 text-sm text-slate-700">
+          确定要删除模型 <strong>{modelToDelete?.name}</strong> 吗？
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button onClick={() => { setDeleteModalVisible(false); setModelToDelete(null); }}>取消</Button>
+          <Button type="primary" danger onClick={() => { if (modelToDelete) { handleDelete(modelToDelete.id); } setDeleteModalVisible(false); setModelToDelete(null); }}>确定</Button>
+        </div>
       </Modal>
     </div>
   );
