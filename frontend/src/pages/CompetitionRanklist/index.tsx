@@ -76,6 +76,7 @@ type DetailSubmission = {
   color: string;
   time: string;
   minutes: number;
+  submitTimestamp: number;
   status: 'AC' | 'WA';
 };
 
@@ -116,6 +117,156 @@ const BalloonIcon = ({ color, className = 'h-9 w-9', style }: { color: string; c
     />
   </svg>
 );
+
+const digitSegments = [
+  [1, 2, 3, 4, 5, 6],
+  [2, 3],
+  [1, 2, 7, 5, 4],
+  [1, 2, 7, 3, 4],
+  [6, 7, 2, 3],
+  [1, 6, 7, 3, 4],
+  [1, 3, 4, 5, 6, 7],
+  [1, 2, 3],
+  [1, 2, 3, 4, 5, 6, 7],
+  [1, 2, 3, 4, 6, 7],
+];
+
+const getActiveSegments = (digit: string) => {
+  const num = Number.parseInt(digit, 10);
+  return Number.isNaN(num) ? [] : digitSegments[num];
+};
+
+const LedDigit = ({ digit, fontSize, digitColor, glowColor }: { digit: string; fontSize: number; digitColor: string; glowColor: string }) => {
+  const scale = fontSize / 200;
+  const activeSegments = getActiveSegments(digit);
+  const segmentBaseStyle: React.CSSProperties = {
+    position: 'absolute',
+    background: digitColor,
+    borderRadius: 5,
+    opacity: 0,
+    transition: 'opacity 0.2s',
+  };
+  const activeStyle: React.CSSProperties = {
+    opacity: 1,
+    boxShadow: `0 0 100px ${glowColor}`,
+    transition: 'opacity 0s',
+  };
+  const segmentStyles: React.CSSProperties[] = [
+    { top: 10, left: 20, right: 20, height: 14 },
+    { top: 20, right: 10, width: 14, height: 75 },
+    { bottom: 20, right: 10, width: 14, height: 75 },
+    { bottom: 10, left: 20, right: 20, height: 14 },
+    { bottom: 20, left: 10, width: 14, height: 75 },
+    { top: 20, left: 10, width: 14, height: 75 },
+    { bottom: 95, left: 20, right: 20, height: 14 },
+  ];
+
+  return (
+    <div
+      className="relative inline-block"
+      style={{ width: 120 * scale, height: fontSize, margin: `0 ${5 * scale}px` }}
+    >
+      <div className="relative h-[200px] w-[120px] origin-top-left" style={{ transform: digit === '1' ? `scale(${scale}) translateX(-43px)` : `scale(${scale})` }}>
+        {segmentStyles.map((style, index) => (
+          <div
+            key={index}
+            style={{
+              ...segmentBaseStyle,
+              ...style,
+              ...(activeSegments.includes(index + 1) ? activeStyle : null),
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const LedSeparator = ({ fontSize, digitColor, glowColor }: { fontSize: number; digitColor: string; glowColor: string }) => {
+  const dotSize = fontSize * 0.12;
+  const gap = fontSize * 0.36;
+  const sideMargin = fontSize * 0.14;
+  return (
+    <div
+      className="inline-flex flex-col justify-center"
+      style={{ height: fontSize, margin: `0 ${sideMargin}px`, gap, color: digitColor }}
+    >
+      {[0, 1].map((item) => (
+        <span
+          key={item}
+          className="block rounded-full"
+          style={{
+            width: dotSize,
+            height: dotSize,
+            background: 'currentColor',
+            boxShadow: `0 0 ${fontSize * 0.5}px ${glowColor}`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const LedTimeDisplay = ({ value, fontSize = 42, digitColor = '#00ff00', glowColor = 'rgba(0,255,0,0.7)' }: { value: string; fontSize?: number; digitColor?: string; glowColor?: string }) => {
+  const [hours = '00', minutes = '00', seconds = '00'] = value.split(':');
+  const digits = `${hours.padStart(2, '0')}${minutes.padStart(2, '0')}${seconds.padStart(2, '0')}`.slice(0, 6);
+
+  return (
+    <div
+      className="flex items-center rounded border-4 border-inset border-[#333] bg-black px-2 py-1 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+      style={{ height: fontSize + 18 }}
+    >
+      <LedDigit digit={digits[0]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedDigit digit={digits[1]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedSeparator fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedDigit digit={digits[2]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedDigit digit={digits[3]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedSeparator fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedDigit digit={digits[4]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedDigit digit={digits[5]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+    </div>
+  );
+};
+
+const InlineLedNumber = ({ value, fontSize = 19, digitColor = '#000' }: { value?: string | number; fontSize?: number; digitColor?: string }) => {
+  const text = String(value ?? '');
+  const glowColor = 'transparent';
+
+  return (
+    <span className="inline-flex items-center justify-center align-middle" style={{ height: fontSize }}>
+      {Array.from(text).map((char, index) => {
+        if (/\d/.test(char)) {
+          return (
+            <LedDigit
+              key={`${char}-${index}`}
+              digit={char}
+              fontSize={fontSize}
+              digitColor={digitColor}
+              glowColor={glowColor}
+            />
+          );
+        }
+
+        if (char === ':') {
+          return (
+            <LedSeparator
+              key={`${char}-${index}`}
+              fontSize={fontSize}
+              digitColor={digitColor}
+              glowColor={glowColor}
+            />
+          );
+        }
+
+        return (
+          <span key={`${char}-${index}`} className="font-['Digital-7',sans-serif] leading-none" style={{ color: digitColor, fontSize }}>
+            {char}
+          </span>
+        );
+      })}
+    </span>
+  );
+};
 
 const CompetitionRanklist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -299,22 +450,34 @@ const CompetitionRanklist: React.FC = () => {
   };
 
   const renderProblemCell = (result?: ProblemResult) => {
-    if (!result) return <span className="text-[20px] text-[#ccc]">.</span>;
+    if (!result) return <span className="flex h-full items-center justify-center"><span className="block h-1.5 w-1.5 rounded-full bg-[#ccc]" /></span>;
     if (result.solved) {
       return (
-        <>
-          <span className="block leading-none">{result.solveTime}</span>
-          <span className="absolute right-2 top-[8px] text-[12px] leading-none text-[#222]">+{result.wrongCount || 0}</span>
-        </>
+        <span className="flex items-center justify-center gap-1.5">
+          <InlineLedNumber value={result.solveTime} />
+          <span className="self-start -mt-1.5 text-[12px] leading-none text-[#222]">+{result.wrongCount || 0}</span>
+        </span>
       );
     }
     if ((result.wrongCount || 0) > 0) {
       return <span className="text-[20px] leading-none text-[#222]">+{result.wrongCount}</span>;
     }
-    return <span className="text-[20px] text-[#ccc]">.</span>;
+    return <span className="flex h-full items-center justify-center"><span className="block h-1.5 w-1.5 rounded-full bg-[#ccc]" /></span>;
   };
 
   const getUserKey = (user: User) => String(user.id ?? user.name);
+
+  const getSubmissionTimestamp = (submitTime?: string) => {
+    if (!submitTime) return 0;
+    const timestamp = Date.parse(submitTime.replace(/-/g, '/'));
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  };
+
+  const compareSubmissionsDesc = (a: DetailSubmission, b: DetailSubmission) => {
+    const timeCompare = b.submitTimestamp - a.submitTimestamp;
+    if (timeCompare !== 0) return timeCompare;
+    return b.id - a.id;
+  };
 
   const loadRanklistSubmissions = async (user: User) => {
     const userKey = getUserKey(user);
@@ -371,9 +534,10 @@ const CompetitionRanklist: React.FC = () => {
         color: problem?.color || '#adb5bd',
         time: submission.displayTime,
         minutes: submission.submitMinutes || 0,
+        submitTimestamp: getSubmissionTimestamp(submission.submitTime),
         status,
       }];
-    }).sort((a, b) => b.minutes - a.minutes);
+    }).sort(compareSubmissionsDesc);
     const recentSubmissions = submissions.slice(0, 24);
     const teamMembers = (user.members || []).slice(0, 3);
     const renderStatus = (status: 'AC' | 'WA') => (
@@ -408,7 +572,7 @@ const CompetitionRanklist: React.FC = () => {
                       <div key={submission.id} className={`flex items-center text-[16px] rounded px-1 -mx-1 transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : ''}`} id={`rs-${submission.id}`} data-submission-id={submission.id} data-problem-id={submission.problem.id}>
                         <BalloonIcon color={submission.color} className="h-[28px] w-7" />
                         <span className="ml-1 w-3 text-gray-800">{submission.label}</span>
-                        <span className="ml-auto font-mono text-[15px] tracking-wide text-gray-500">{submission.time}</span>
+                        <span className="ml-auto text-gray-500"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
                         <span className="ml-3 w-5 text-center">{renderStatus(submission.status)}</span>
                       </div>
                     ))}
@@ -443,16 +607,16 @@ const CompetitionRanklist: React.FC = () => {
           </div>
         </td>
         {problemHeaders.map((problem) => {
-          const problemSubmissions = submissions.filter((submission) => submission.problem?.id === problem.id).sort((a, b) => b.minutes - a.minutes).slice(0, 8);
+          const problemSubmissions = submissions.filter((submission) => submission.problem?.id === problem.id).sort(compareSubmissionsDesc);
           return (
             <td key={`score-${rank}-${problem.id}`} className="w-[90px] bg-[#f3f4f8] p-0 align-top">
               <div className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 ease-out ${expanded ? 'max-h-[430px] opacity-100 translate-y-0' : 'max-h-0 opacity-0 -translate-y-2'}`}>
-                <div className="score flex h-[380px] flex-col gap-1 bg-[#f3f4f8] p-1.5">
+                <div className="score flex max-h-[423px] flex-col gap-px overflow-y-auto bg-white [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
                   {problemSubmissions.map((submission) => (
                     <button
                       key={submission.id}
                       type="button"
-                      className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-sm px-1 py-0.5 font-mono text-[15px] transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                      className={`flex h-[52px] w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 px-1 font-['Digital-7',sans-serif] text-[20px] leading-none transition-colors ${hoveredSubmissionId === submission.id ? 'bg-blue-100' : 'bg-[#f3f4f8] hover:bg-gray-100'}`}
                       id={`ps-${submission.id}`}
                       data-submission-id={submission.id}
                       data-problem-id={problem.id}
@@ -463,14 +627,14 @@ const CompetitionRanklist: React.FC = () => {
                       onMouseEnter={() => setHoveredSubmissionId(submission.id)}
                       onMouseLeave={() => setHoveredSubmissionId(null)}
                     >
-                      <span className="text-[#495057]">{submission.time}</span>
-                      <span className={`text-[12px] underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
+                      <span className="text-[#495057]"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
+                      <span className={`font-mono font-semibold text-[12px] underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
                         {submission.status}
                       </span>
                     </button>
                   ))}
                   {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
-                    <div key={`empty-${problem.id}-${emptyIndex}`} className="flex items-center justify-center py-0.5 font-mono text-[15px] text-[#ccc]">-</div>
+                    <div key={`empty-${problem.id}-${emptyIndex}`} className="flex h-[52px] w-full shrink-0 items-center justify-center bg-[#f3f4f8] font-mono text-[15px] text-[#ccc]">-</div>
                   ))}
                 </div>
               </div>
@@ -505,7 +669,7 @@ const CompetitionRanklist: React.FC = () => {
             <div className="mb-6 flex min-w-0 max-w-full items-center justify-between gap-4 overflow-hidden">
               <div
                 className="hidden h-14 w-[13.25rem] shrink-0 bg-contain bg-left bg-no-repeat md:block"
-                style={{ backgroundImage: 'url("http://111.230.105.54:9000/cover/6b1e0341-7a1c-4bbb-9716-015f86c00cd1.png")' }}
+                style={{ backgroundImage: 'url("https://oss.vnollx.top/cover/6b1e0341-7a1c-4bbb-9716-015f86c00cd1.png")' }}
               >
               </div>
               <div className="min-w-0 flex-1 text-center">
@@ -514,9 +678,7 @@ const CompetitionRanklist: React.FC = () => {
                 </Title>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-3">
-                <div className="whitespace-nowrap rounded border-4 border-inset border-[#333] bg-black px-2 py-1 font-mono text-2xl leading-none text-[#00ff00] shadow-[0_0_10px_rgba(0,0,0,0.5)] sm:px-3 sm:text-4xl lg:text-[2.8rem]">
-                  {formatCountdown()}
-                </div>
+                <LedTimeDisplay value={formatCountdown()} />
               </div>
             </div>
 
@@ -533,10 +695,10 @@ const CompetitionRanklist: React.FC = () => {
                 <table className="table-fixed border-separate border-spacing-[1px]" style={{ width: ranklistTableWidth, minWidth: ranklistTableWidth }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white/90 py-2.5 text-center text-[13px] font-normal text-[#777] backdrop-blur-[2px]">排名</th>
-                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white/90 py-2.5 pl-5 text-left text-[13px] font-normal text-[#777] backdrop-blur-[2px]">队伍</th>
-                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[13px] font-normal text-[#777] backdrop-blur-[2px]">过题数</th>
-                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[13px] font-normal text-[#777] backdrop-blur-[2px]">总用时</th>
+                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white/90 py-2.5 text-center text-[16px] font-normal text-[#777] backdrop-blur-[2px]">排名</th>
+                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white/90 py-2.5 pl-5 text-left text-[16px] font-normal text-[#777] backdrop-blur-[2px]">队伍</th>
+                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-[#777] backdrop-blur-[2px]">过题数</th>
+                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white/90 py-2.5 text-center text-[16px] font-normal text-[#777] backdrop-blur-[2px]">总用时</th>
                       {problemHeaders.map((problem) => (
                         <th key={problem.id} className="sticky top-0 z-20 w-[90px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
                           <div className="flex items-center justify-center -space-x-1">
@@ -578,8 +740,12 @@ const CompetitionRanklist: React.FC = () => {
                               {user.name}
                             </button>
                           </td>
-                          <td className="sticky left-[355px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center text-sm font-bold backdrop-blur-[2px]">{user.passCount || 0}</td>
-                          <td className="sticky left-[435px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center text-sm text-gray-500 backdrop-blur-[2px]">{formatBoardTime(user.penaltyTime || 0)}</td>
+                          <td className="sticky left-[355px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222] backdrop-blur-[2px]">
+                            <span className="flex items-center justify-center">{user.passCount || 0}</span>
+                          </td>
+                          <td className="sticky left-[435px] z-10 whitespace-nowrap bg-white/75 px-1.5 py-3 text-center font-['Digital-7',sans-serif] text-[20px] leading-none text-[#222] backdrop-blur-[2px]">
+                            <span className="flex items-center justify-center"><InlineLedNumber value={formatBoardTime(user.penaltyTime || 0)} /></span>
+                          </td>
                           {problemHeaders.map((problem, problemIndex) => {
                             const result = user.problems?.[problemIndex];
                             return (

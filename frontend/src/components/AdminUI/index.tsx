@@ -248,9 +248,14 @@ export function ConfirmButton({ message, onConfirm, children }: { message?: Reac
       const rect = triggerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const popupWidth = 288;
+      const popupHeight = 158;
       const margin = 12;
       const left = Math.min(Math.max(margin, rect.right - popupWidth), window.innerWidth - popupWidth - margin);
-      const top = Math.min(rect.bottom + 8, window.innerHeight - margin);
+      const bottomTop = rect.bottom + 8;
+      const topTop = rect.top - popupHeight - 8;
+      const top = bottomTop + popupHeight <= window.innerHeight - margin
+        ? bottomTop
+        : Math.max(margin, topTop);
       setPopupStyle({ left, top });
     };
 
