@@ -37,7 +37,7 @@
 | Redis | Latest | 缓存/会话 |
 | RabbitMQ | Latest | 消息队列 |
 | MinIO | Latest | 对象存储 |
-| Go-Judge | Latest | 代码评测沙箱 |
+| Go-Judge | Latest | 多节点评测沙箱，支持容量限流 |
 | Python 代理 (FastAPI) | - | AI 多厂商调用、工具调用，国内/海外双机部署 |
 
 ### 前端技术
@@ -47,7 +47,7 @@
 | React | 19.2.0 | UI框架 |
 | TypeScript | 5.9.3 | 类型安全 |
 | Vite | 7.2.4 | 构建工具 |
-| Ant Design | 5.21.0 | UI组件库 |
+| 手写业务组件 | - | 管理后台与业务组件 |
 | TailwindCSS | 3.4.17 | CSS框架 |
 | Monaco Editor | 0.55.1 | 代码编辑器 |
 
@@ -101,7 +101,7 @@ cd frontend && npm install && npm run dev
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    前端 (React + TypeScript)                     │
-│              Vite + Ant Design + TailwindCSS                    │
+│              Vite + TailwindCSS + 手写组件                       │
 └─────────────────────────────┬───────────────────────────────────┘
                               │ REST API / WebSocket
                               ▼
@@ -118,10 +118,10 @@ cd frontend && npm install && npm run dev
 └───────────┘  └───────────┘  └─────┬─────┘  └───────────┘
                                     │
                                     ▼
-                            ┌───────────────┐
-                            │   Go-Judge    │
-                            │   代码评测沙箱  │
-                            └───────────────┘
+                      ┌───────────────┐ ┌───────────────┐
+                      │  Go-Judge A   │ │  Go-Judge B   │
+                      │ capacity=12   │ │ capacity=4    │
+                      └───────────────┘ └───────────────┘
 ```
 
 ---
@@ -131,9 +131,9 @@ cd frontend && npm install && npm run dev
 | 模块 | 功能 | 状态 |
 |:-----|:-----|:----:|
 | 👤 用户系统 | 注册登录、个人资料、密码管理 | ✅ |
-| 📝 题目管理 | 题目CRUD、标签分类、难度分级 | ✅ |
-| ⚡ 代码评测 | 多语言支持、沙箱评测、实时结果 | ✅ |
-| 🏆 比赛系统 | 创建比赛、实时排名、ACM赛制 | ✅ |
+| 📝 题目管理 | 题目CRUD、标签分类、难度分级、标准题/构造题、浮点误差 | ✅ |
+| ⚡ 代码评测 | 多语言支持、沙箱评测、队列位置、实时结果、多 Go-Judge 容量调度 | ✅ |
+| 🏆 比赛系统 | 创建比赛、个人赛/团队赛、实时排名、ACM赛制、防作弊审查 | ✅ |
 | 📚 练习系统 | 练习集管理、进度追踪 | ✅ |
 | 💡 题解分享 | Markdown编辑、评论点赞 | ✅ |
 | 👥 社交功能 | 好友系统、私信功能 | ✅ |
@@ -147,7 +147,9 @@ cd frontend && npm install && npm run dev
 
 - **🔄 主从分离** - MySQL主从复制，读写分离，动态数据源切换
 - **📨 异步评测** - RabbitMQ消息队列，异步处理，削峰填谷
+- **⚖️ 容量调度** - 多 Go-Judge 节点按 capacity 限流，支持端点熔断
 - **📡 实时推送** - WebSocket实时通知评测结果
+- **🛡️ 比赛治理** - 团队赛、防作弊事件采集、风险汇总、人工复核与导出
 - **💾 权限缓存** - Redis缓存权限数据，30分钟过期
 - **🧵 虚拟线程** - Java 21虚拟线程，高并发支持
 - **🤖 AI 集成** - 多模型（Gemini、Kimi、MiniMax、Mistral、DeepSeek、通义千问、智谱），国内/海外双代理部署
@@ -184,7 +186,17 @@ VnollxOnlineJudge/
 
 ---
 
-## 📞 联系我们
+## � 文档导航
+
+- **[需求文档](./需求文档.md)**：功能需求、角色权限、非功能需求与术语。
+- **[系统架构](./系统架构.md)**：整体架构、技术选型、评测流程与部署逻辑。
+- **[部署文档](./部署文档.md)**：环境准备、服务部署、Go-Judge 与 RabbitMQ 配置。
+- **[AI 代理架构](./AI代理架构.md)**：Python 代理、模型调用与工具调用设计。
+- **[后续演进规划](./后续演进规划.md)**：OI/IOI 赛制扩展与评测策略模式重构规划。
+
+---
+
+## �📞 联系我们
 
 - **🌐 项目主页**: [https://github.com/Vnollx-ww/VnollxOnlineJudge](https://github.com/Vnollx-ww/VnollxOnlineJudge)
 - **🐛 问题反馈**: [GitHub Issues](https://github.com/Vnollx-ww/VnollxOnlineJudge/issues)
@@ -199,6 +211,6 @@ VnollxOnlineJudge/
 
 Made with ❤️ by Vnollx Team
 
-*最后更新: 2026年3月*
+*最后更新: 2026年5月*
 
 </div>
