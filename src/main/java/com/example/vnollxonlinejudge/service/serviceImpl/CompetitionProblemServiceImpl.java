@@ -41,6 +41,15 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
     }
 
     @Override
+    public void setCount(Long pid, int passCount, int submitCount, Long cid) {
+        update(new LambdaUpdateWrapper<CompetitionProblem>()
+                .set(CompetitionProblem::getPassCount, passCount)
+                .set(CompetitionProblem::getSubmitCount, submitCount)
+                .eq(CompetitionProblem::getProblemId, pid)
+                .eq(CompetitionProblem::getCompetitionId, cid));
+    }
+
+    @Override
     public void deleteCompetition(Long id) {
         QueryWrapper<CompetitionProblem> wrapper=new QueryWrapper<>();
         wrapper.eq("competition_id",id);
