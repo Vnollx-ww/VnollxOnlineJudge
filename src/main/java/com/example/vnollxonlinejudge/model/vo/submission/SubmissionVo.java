@@ -20,6 +20,12 @@ public class SubmissionVo {
     private String errorInfo;
     private Integer passCount;
     private Integer testCount;
+    /**
+     * 仅当 status="等待评测" 时由列表查询懒填充：
+     * 当前提交在评测队列中前方还有多少条同样处于"等待评测"的提交。
+     * 其他状态保持 null。
+     */
+    private Integer queueAhead;
     public SubmissionVo(){
     }
     public SubmissionVo(Submission submission){
@@ -38,6 +44,7 @@ public class SubmissionVo {
         this.errorInfo=submission.getErrorInfo();
         this.passCount=submission.getPassCount();
         this.testCount=submission.getTestCount();
+        this.queueAhead=submission.getQueueAhead();
         if (submission.getCid() != null && submission.getCid() != 0) {
             this.errorInfo = null;
             this.passCount = null;

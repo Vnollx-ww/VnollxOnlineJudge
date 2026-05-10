@@ -99,6 +99,13 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             default -> "C++";
         };
         submission.setLanguage(language);
+        // 入库前给"等待评测"提交打上前方排队数快照：
+        // 当前所有 status='等待评测' 的行数（不含本条，因为本条还没插入），
+        // 即本条入队后将位于第 (count+1) 位，前方有 count 位。
+        if ("等待评测".equals(submission.getStatus()) && submission.getQueueAhead() == null) {
+            long ahead = this.count(new QueryWrapper<Submission>().eq("status", "等待评测"));
+            submission.setQueueAhead((int) ahead);
+        }
         this.save(submission);
     }
 
@@ -216,7 +223,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         Page<Submission> page = new Page<>(submissionQuery.getPageNum(), submissionQuery.getPageSize());
         Page<Submission> result = this.page(page, wrapper);
 
-        List<SubmissionVo> submissionVos = submissionConvert.toVoList(result.getRecords());
+        List<Submission> records = result.getRecords();
+        List<SubmissionVo> submissionVos = submissionConvert.toVoList(records);
         if (submissionQuery.getCid() != null && submissionQuery.getCid() != 0) {
             Long currentUserId = UserContextHolder.getCurrentUserId();
             submissionVos.forEach(submissionVo -> {
@@ -225,8 +233,39 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 }
             });
         }
+        fillQueueAhead(records, submissionVos);
         return submissionVos;
 
+    }
+
+    /**
+     * 列表查询时懒计算"等待评测"提交在队列中前方还有多少位，覆盖入库时落库的快照值。
+     * snowflakeId 单调递增 + 队列同优先级 FIFO ⇒
+     * 前方人数 = 当前所有 status='等待评测' 中 snowflakeId 比自己小的数量。
+     * 仅当当前页存在等待评测的提交时才发起一次轻量查询拉全部 waiting 的 snowflakeId。
+     */
+    private void fillQueueAhead(List<Submission> records, List<SubmissionVo> vos) {
+        if (records == null || records.isEmpty()) return;
+        boolean hasWaiting = false;
+        for (SubmissionVo vo : vos) {
+            if ("等待评测".equals(vo.getStatus())) { hasWaiting = true; break; }
+        }
+        if (!hasWaiting) return;
+        QueryWrapper<Submission> w = new QueryWrapper<>();
+        w.select("snow_flake_id").eq("status", "等待评测").orderByAsc("snow_flake_id");
+        List<Long> waitingIds = this.baseMapper.selectList(w).stream()
+                .map(Submission::getSnowflakeId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        for (int i = 0; i < records.size(); i++) {
+            Submission s = records.get(i);
+            SubmissionVo vo = vos.get(i);
+            if (!"等待评测".equals(vo.getStatus()) || s.getSnowflakeId() == null) continue;
+            int idx = Collections.binarySearch(waitingIds, s.getSnowflakeId());
+            // 找到则前方数量等于 idx；未找到（极小概率竞态：已被消费者拉走改为评测中）则取插入点
+            int ahead = idx >= 0 ? idx : -idx - 1;
+            vo.setQueueAhead(Math.max(0, ahead));
+        }
     }
 
     @Override

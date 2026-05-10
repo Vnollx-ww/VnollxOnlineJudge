@@ -38,10 +38,11 @@ spring:
     password: ${RABBITMQ_PASSWORD:admin}
     listener:
       simple:
-        # 消费者并发应大于等于所有 go-judge 端点 capacity 之和，
-        # 以保证排在队列前面的任务能立刻去抢占 GoJudgeRouter 的信号量。
+        # 消费者并发应等于所有 go-judge 端点 capacity 之和（当前 12+4=16）。
+        # 设得更高会导致多余消费者从 MQ 预取消息后阻塞在 GoJudgeRouter 许可上，
+        # 反而扣留消息、降低吞吐。如果之后增减 go-judge 容量，记得同步调整这里。
         concurrency: 16
-        max-concurrency: 32
+        max-concurrency: 16
         prefetch: 1
   threads:
     virtual:

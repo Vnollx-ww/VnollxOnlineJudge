@@ -59,4 +59,12 @@ public class Submission {
     /** 总数据组数 */
     @Column(name = "test_count")
     private Integer testCount;
+
+    /**
+     * 入库时记录的"前方等待数"快照。仅在 status='等待评测' 时有意义；
+     * 评测开始/结束后值会保留作为历史记录，但不再代表实时位置。
+     * 列表查询会基于最新 status='等待评测' 的集合做懒计算覆盖。
+     */
+    @Column(name = "queue_ahead")
+    private Integer queueAhead;
 }

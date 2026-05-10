@@ -291,7 +291,8 @@ create table submission
     snowflake_id bigint           null,
     error_info   text             null,
     pass_count   int              null comment '通过的数据组数',
-    test_count   int              null comment '总数据组数'
+    test_count   int              null comment '总数据组数',
+    queue_ahead  int              null comment '入库时记录的前方排队数快照'
 );
 
 create index submission_snowflake_id_index
@@ -299,6 +300,10 @@ create index submission_snowflake_id_index
 
 create index submission_team_id_index
     on submission (team_id);
+
+-- 加速懒计算队列位置时按 status 过滤后扫 snowflake_id
+create index submission_status_snowflake_id_index
+    on submission (status(20), snowflake_id);
 
 create table competition_team
 (
