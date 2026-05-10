@@ -12,9 +12,9 @@ public class JavascriptJudgeStrategy extends AbstractJudgeStrategy {
     @Autowired
     public JavascriptJudgeStrategy(TestCaseCacheService testCaseCacheService,
                                    SpecialJudgeSupport specialJudgeSupport,
-                                   String goJudgeEndpoint,
+                                   GoJudgeRouter router,
                                    RestTemplate restTemplate) {
-        super(testCaseCacheService, specialJudgeSupport, restTemplate, goJudgeEndpoint);
+        super(testCaseCacheService, specialJudgeSupport, restTemplate, router);
     }
 
     @Override

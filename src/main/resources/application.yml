@@ -38,8 +38,10 @@ spring:
     password: ${RABBITMQ_PASSWORD:admin}
     listener:
       simple:
-        concurrency: 5
-        max-concurrency: 10
+        # 消费者并发应大于等于所有 go-judge 端点 capacity 之和，
+        # 以保证排在队列前面的任务能立刻去抢占 GoJudgeRouter 的信号量。
+        concurrency: 16
+        max-concurrency: 32
         prefetch: 1
   threads:
     virtual:
@@ -59,7 +61,16 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:vnollxvnollxvnollx}
 
 go-judge:
-  endpoint: ${GO_JUDGE_ENDPOINT:http://go-judge:5050}
+  # 多端点加权限流：每个端点配 capacity（同时承载的评测数）。
+  # 评测进来时按 capacity 从大到小尝试占用，全满则阻塞等大端点释放。
+  endpoints:
+    # 大机器（3G 内存）
+    - url: ${GO_JUDGE_REMOTE_ENDPOINT:http://42.193.130.159:5050}
+      capacity: ${GO_JUDGE_REMOTE_CAPACITY:12}
+    # 小机器（1G 内存）
+    - url: ${GO_JUDGE_LOCAL_ENDPOINT:http://111.230.105.54:5050}
+      capacity: ${GO_JUDGE_LOCAL_CAPACITY:4}
+  default-capacity: 4
 
 server:
   port: 8080

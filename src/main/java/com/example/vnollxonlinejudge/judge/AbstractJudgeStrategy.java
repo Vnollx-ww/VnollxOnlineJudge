@@ -37,18 +37,26 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     protected final TestCaseCacheService testCaseCacheService;
     protected final SpecialJudgeSupport specialJudgeSupport;
     protected final RestTemplate restTemplate;
-    protected final String runUrl;
-    protected final String deleteUrl;
+    protected final GoJudgeRouter router;
 
     protected AbstractJudgeStrategy(TestCaseCacheService testCaseCacheService,
                                     SpecialJudgeSupport specialJudgeSupport,
                                     RestTemplate restTemplate,
-                                    String goJudgeEndpoint) {
+                                    GoJudgeRouter router) {
         this.testCaseCacheService = testCaseCacheService;
         this.specialJudgeSupport = specialJudgeSupport;
         this.restTemplate = restTemplate;
-        this.runUrl = goJudgeEndpoint + "/run";
-        this.deleteUrl = goJudgeEndpoint + "/file/{fileId}";
+        this.router = router;
+    }
+
+    /** 从当前线程绑定的端点取 /run URL。 */
+    protected String runUrl() {
+        return router.current().getRunUrl();
+    }
+
+    /** 从当前线程绑定的端点取 /file/{fileId} 删除 URL。 */
+    protected String deleteUrl() {
+        return router.current().getDeleteUrl();
     }
 
     /* ---------------- 模板方法 ---------------- */
@@ -106,25 +114,43 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     @Override
     public final RunResult judge(String code, String dataZipUrl, Long timeLimit, Long memoryLimit,
                                  String judgeMode, String checkerFile, Double floatTolerance) {
-        RunResult raw = "special".equals(judgeMode)
-                ? specialJudge(code, dataZipUrl, timeLimit, memoryLimit, checkerFile)
-                : standardJudge(code, dataZipUrl, timeLimit, memoryLimit, null, null, judgeMode, floatTolerance);
-        applyTimeLimitOnTimeout(raw, timeLimit);
-        normalizeMetrics(raw);
-        translateStatus(raw);
-        translateFallbackStatus(raw);
-        return raw;
+        GoJudgeRouter.Endpoint ep = null;
+        try {
+            ep = router.acquire();
+            RunResult raw = "special".equals(judgeMode)
+                    ? specialJudge(code, dataZipUrl, timeLimit, memoryLimit, checkerFile)
+                    : standardJudge(code, dataZipUrl, timeLimit, memoryLimit, null, null, judgeMode, floatTolerance);
+            applyTimeLimitOnTimeout(raw, timeLimit);
+            normalizeMetrics(raw);
+            translateStatus(raw);
+            translateFallbackStatus(raw);
+            return raw;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return errorResult(JUDGE_ERROR, "评测被中断");
+        } finally {
+            router.release(ep);
+        }
     }
 
     @Override
     public final RunResult testJudge(String code, String inputExample, String outputExample,
                                      Long timeLimit, Long memoryLimit) {
-        RunResult raw = standardJudge(code, null, timeLimit, memoryLimit, inputExample, outputExample, "standard", null);
-        applyTimeLimitOnTimeout(raw, timeLimit);
-        normalizeMetrics(raw);
-        translateStatus(raw);
-        translateFallbackStatus(raw);
-        return raw;
+        GoJudgeRouter.Endpoint ep = null;
+        try {
+            ep = router.acquire();
+            RunResult raw = standardJudge(code, null, timeLimit, memoryLimit, inputExample, outputExample, "standard", null);
+            applyTimeLimitOnTimeout(raw, timeLimit);
+            normalizeMetrics(raw);
+            translateStatus(raw);
+            translateFallbackStatus(raw);
+            return raw;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return errorResult(JUDGE_ERROR, "评测被中断");
+        } finally {
+            router.release(ep);
+        }
     }
 
     /* ---------------- 标准评测 ---------------- */
@@ -275,29 +301,40 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
     protected RunResult invokeCompile(String payload) {
         try {
             ResponseEntity<List<RunResult>> response = restTemplate.exchange(
-                    runUrl, HttpMethod.POST,
+                    runUrl(), HttpMethod.POST,
                     new HttpEntity<>(payload, jsonHeaders()),
                     new ParameterizedTypeReference<List<RunResult>>() {});
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && !response.getBody().isEmpty()) {
+                router.recordSuccess();
                 return response.getBody().getFirst();
             }
+            router.recordFailure();
             log.error("编译请求响应异常: {}", response.getStatusCode());
         } catch (Exception e) {
+            router.recordFailure();
             log.error("编译请求发生异常: {}", e.getMessage());
         }
         return null;
     }
 
     private List<RunResult> invokeRun(String payload, HttpHeaders headers) {
-        ResponseEntity<List<RunResult>> response = restTemplate.exchange(
-                runUrl, HttpMethod.POST,
-                new HttpEntity<>(payload, headers),
-                new ParameterizedTypeReference<List<RunResult>>() {});
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            log.error("批量判题请求失败");
+        try {
+            ResponseEntity<List<RunResult>> response = restTemplate.exchange(
+                    runUrl(), HttpMethod.POST,
+                    new HttpEntity<>(payload, headers),
+                    new ParameterizedTypeReference<List<RunResult>>() {});
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                router.recordFailure();
+                log.error("批量判题请求失败: {}", response.getStatusCode());
+                return null;
+            }
+            router.recordSuccess();
+            return response.getBody();
+        } catch (Exception e) {
+            router.recordFailure();
+            log.error("批量判题请求异常: {}", e.getMessage());
             return null;
         }
-        return response.getBody();
     }
 
     /** 子类可覆写以跳过/自定义清理（默认按 fileId 删除 go-judge 缓存）。 */
@@ -307,11 +344,15 @@ public abstract class AbstractJudgeStrategy implements JudgeStrategy {
             Map<String, String> params = new HashMap<>();
             params.put("fileId", artifactId);
             ResponseEntity<Void> response = restTemplate.exchange(
-                    deleteUrl, HttpMethod.DELETE, null, Void.class, params);
+                    deleteUrl(), HttpMethod.DELETE, null, Void.class, params);
             if (!response.getStatusCode().is2xxSuccessful()) {
+                router.recordFailure();
                 log.error("删除编译产物失败，状态码: {}", response.getStatusCode());
+            } else {
+                router.recordSuccess();
             }
         } catch (Exception e) {
+            router.recordFailure();
             log.error("删除编译产物时发生异常: {}", e.getMessage());
         }
     }

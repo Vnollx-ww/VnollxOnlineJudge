@@ -24,14 +24,20 @@ public class SpecialJudgeSupport {
     private static final Logger logger = LoggerFactory.getLogger(SpecialJudgeSupport.class);
     private final MinioClient minioClient;
     private final RestTemplate restTemplate;
-    private final String runUrl;
-    private final String deleteUrl;
+    private final GoJudgeRouter router;
 
-    public SpecialJudgeSupport(MinioClient minioClient, RestTemplate restTemplate, String goJudgeEndpoint) {
+    public SpecialJudgeSupport(MinioClient minioClient, RestTemplate restTemplate, GoJudgeRouter router) {
         this.minioClient = minioClient;
         this.restTemplate = restTemplate;
-        this.runUrl = goJudgeEndpoint + "/run";
-        this.deleteUrl = goJudgeEndpoint + "/file/{fileId}";
+        this.router = router;
+    }
+
+    private String runUrl() {
+        return router.current().getRunUrl();
+    }
+
+    private String deleteUrl() {
+        return router.current().getDeleteUrl();
     }
 
     public String compileChecker(String checkerFile) throws Exception {
@@ -39,13 +45,20 @@ public class SpecialJudgeSupport {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(buildCheckerCompilePayload(checkerCode), headers);
-        ResponseEntity<List<RunResult>> response = restTemplate.exchange(
-                runUrl,
-                HttpMethod.POST,
-                entity,
-                new ParameterizedTypeReference<List<RunResult>>() {}
-        );
+        ResponseEntity<List<RunResult>> response;
+        try {
+            response = restTemplate.exchange(
+                    runUrl(),
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<List<RunResult>>() {}
+            );
+        } catch (Exception e) {
+            router.recordFailure();
+            throw e;
+        }
         if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && !response.getBody().isEmpty()) {
+            router.recordSuccess();
             RunResult result = response.getBody().getFirst();
             // 须与 copyOutCached 文件名一致；RunResult.FileIds 仅映射 "a"（与 CppJudgeStrategy 一致）
             if ("Accepted".equals(result.getStatus()) && result.getFileIds() != null) {
@@ -57,6 +70,7 @@ public class SpecialJudgeSupport {
             String stderr = result.getFiles() != null ? result.getFiles().getStderr() : "";
             throw new IllegalStateException("Checker 编译错误: " + stderr);
         }
+        router.recordFailure();
         throw new IllegalStateException("Checker 编译请求失败");
     }
 
@@ -69,13 +83,26 @@ public class SpecialJudgeSupport {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(buildCheckerRunPayload(checkerFileId, input, participantOutput), headers);
-        ResponseEntity<List<RunResult>> response = restTemplate.exchange(
-                runUrl,
-                HttpMethod.POST,
-                entity,
-                new ParameterizedTypeReference<List<RunResult>>() {}
-        );
+        ResponseEntity<List<RunResult>> response;
+        try {
+            response = restTemplate.exchange(
+                    runUrl(),
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<List<RunResult>>() {}
+            );
+        } catch (Exception e) {
+            router.recordFailure();
+            logger.error("Checker 运行异常: {}", e.getMessage());
+            RunResult result = new RunResult();
+            result.setStatus("判题错误");
+            result.setExitStatus(1);
+            result.setFiles(new RunResult.Files());
+            result.getFiles().setStderr("Checker 执行异常: " + e.getMessage());
+            return result;
+        }
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null || response.getBody().isEmpty()) {
+            router.recordFailure();
             RunResult result = new RunResult();
             result.setStatus("判题错误");
             result.setExitStatus(1);
@@ -83,6 +110,7 @@ public class SpecialJudgeSupport {
             result.getFiles().setStderr("Checker 执行失败");
             return result;
         }
+        router.recordSuccess();
         return response.getBody().getFirst();
     }
 
@@ -93,11 +121,15 @@ public class SpecialJudgeSupport {
         try {
             Map<String, String> params = new HashMap<>();
             params.put("fileId", fileId);
-            ResponseEntity<Void> response = restTemplate.exchange(deleteUrl, HttpMethod.DELETE, null, Void.class, params);
+            ResponseEntity<Void> response = restTemplate.exchange(deleteUrl(), HttpMethod.DELETE, null, Void.class, params);
             if (!response.getStatusCode().is2xxSuccessful()) {
+                router.recordFailure();
                 logger.error("删除缓存文件失败，状态码: {}", response.getStatusCode());
+            } else {
+                router.recordSuccess();
             }
         } catch (Exception e) {
+            router.recordFailure();
             logger.error("删除缓存文件时发生异常: {}", e.getMessage());
         }
     }
