@@ -1,6 +1,5 @@
 package com.example.vnollxonlinejudge.model.result;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
@@ -20,11 +19,9 @@ public class RunResult {
     @JsonProperty("fileIds")
     private FileIds fileIds;
 
-    /** 评测内部使用：失败用例的输入（不参与 sandbox JSON 解析） */
-    @JsonIgnore
+    /** 失败用例的输入（由 judge-agent 返回） */
     private String caseInput;
-    /** 评测内部使用：失败用例的期望输出（不参与 sandbox JSON 解析） */
-    @JsonIgnore
+    /** 失败用例的期望输出（由 judge-agent 返回） */
     private String caseExpected;
 
     public RunResult() {

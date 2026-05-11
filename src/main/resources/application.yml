@@ -23,6 +23,7 @@ spring:
     redis:
       host: ${REDIS_HOST:redis}
       port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:ab512888AB}
       timeout: 10000
       connect-timeout: 10000
       lettuce:
@@ -38,11 +39,11 @@ spring:
     password: ${RABBITMQ_PASSWORD:admin}
     listener:
       simple:
-        # 消费者并发应等于所有 go-judge 端点 capacity 之和（当前 12+4=16）。
-        # 设得更高会导致多余消费者从 MQ 预取消息后阻塞在 GoJudgeRouter 许可上，
-        # 反而扣留消息、降低吞吐。如果之后增减 go-judge 容量，记得同步调整这里。
-        concurrency: 16
-        max-concurrency: 16
+        # 消费者并发应等于所有 judge-agent 端点 capacity 之和（当前 8+2=10）。
+        # 设得更高会导致多余消费者从 MQ 预取消息后阻塞在 JudgeAgentRouter 许可上，
+        # 反而扣留消息、降低吞吐。如果之后增减 agent 容量，记得同步调整这里。
+        concurrency: 10
+        max-concurrency: 10
         prefetch: 1
   threads:
     virtual:
@@ -57,21 +58,29 @@ spring:
     allow-bean-definition-overriding: true
 
 minio:
-  endpoint: ${MINIO_ENDPOINT:http://minio:9000}
-  access-key: ${MINIO_ACCESS_KEY:vnollxvnollx}
-  secret-key: ${MINIO_SECRET_KEY:vnollxvnollxvnollx}
+  # 多 MinIO 端点：第一个为主端点（生成头像/图片 URL、读取走主），
+  # 题目测试数据 zip 和 checker.cpp 上传 / 删除时会向所有端点双写，
+  # 保证多台评测机的本机 MinIO 内容一致。
+  endpoints:
+    - url: ${MINIO_PRIMARY_URL:http://111.230.105.54:9000}
+      access-key: ${MINIO_PRIMARY_ACCESS_KEY:vnollxvnollx}
+      secret-key: ${MINIO_PRIMARY_SECRET_KEY:vnollxvnollxvnollx}
+    - url: ${MINIO_SECONDARY_URL:http://42.193.130.159:9000}
+      access-key: ${MINIO_SECONDARY_ACCESS_KEY:vnollxvnollx}
+      secret-key: ${MINIO_SECONDARY_SECRET_KEY:vnollxvnollxvnollx}
 
-go-judge:
-  # 多端点加权限流：每个端点配 capacity（同时承载的评测数）。
+judge-agent:
+  # 多 judge-agent 端点加权限流：每个端点配 capacity（该 Agent 同时承载的评测数）。
   # 评测进来时按 capacity 从大到小尝试占用，全满则阻塞等大端点释放。
+  # 每台评测机同机部署 MinIO + judge-agent + go-judge，Agent 承担全部评测业务逻辑。
   endpoints:
     # 大机器（3G 内存）
-    - url: ${GO_JUDGE_REMOTE_ENDPOINT:http://42.193.130.159:5050}
-      capacity: ${GO_JUDGE_REMOTE_CAPACITY:12}
+    - url: ${JUDGE_AGENT_REMOTE_ENDPOINT:http://42.193.130.159:8090}
+      capacity: ${JUDGE_AGENT_REMOTE_CAPACITY:8}
     # 小机器（1G 内存）
-    - url: ${GO_JUDGE_LOCAL_ENDPOINT:http://111.230.105.54:5050}
-      capacity: ${GO_JUDGE_LOCAL_CAPACITY:4}
-  default-capacity: 4
+    - url: ${JUDGE_AGENT_LOCAL_ENDPOINT:http://111.230.105.54:8090}
+      capacity: ${JUDGE_AGENT_LOCAL_CAPACITY:2}
+  default-capacity: 2
 
 server:
   port: 8080

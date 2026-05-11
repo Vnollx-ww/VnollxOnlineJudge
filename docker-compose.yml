@@ -37,8 +37,39 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      judge-agent:
+        condition: service_started
+    networks:
+      - app-network
+
+  # ==================== Judge Agent (评测业务逻辑 + 本机数据缓存) ====================
+  # 同机调用 go-judge 与本机 MinIO，后端只调 Agent。
+  # 生产环境每台评测机都部署一份（Agent + go-judge + MinIO）。
+  judge-agent:
+    build:
+      context: .
+      dockerfile: docker/judge-agent.Dockerfile
+    image: vnollx/judge-agent:latest
+    container_name: judge-agent
+    ports:
+      - "8090:8090"
+    environment:
+      GO_JUDGE_URL: http://go-judge:5050
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: problem
+      JUDGE_DATA_ROOT: /data/judge-cache
+      PRELOAD_ALL_ON_STARTUP: "true"
+      HTTP_TIMEOUT_SECONDS: "60"
+    volumes:
+      - judge-cache:/data/judge-cache
+    depends_on:
       go-judge:
         condition: service_started
+      minio:
+        condition: service_started
+    restart: unless-stopped
     networks:
       - app-network
 
@@ -165,6 +196,8 @@ volumes:
   minio-data:
     driver: local
   rabbitmq-data:
+    driver: local
+  judge-cache:
     driver: local
 
 networks:

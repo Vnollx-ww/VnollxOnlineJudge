@@ -1,8 +1,8 @@
 package com.example.vnollxonlinejudge.service.serviceImpl;
 
+import com.example.vnollxonlinejudge.judge.AgentSampleRequest;
+import com.example.vnollxonlinejudge.judge.JudgeAgentClient;
 import com.example.vnollxonlinejudge.judge.JudgeStatusDescriber;
-import com.example.vnollxonlinejudge.judge.JudgeStrategy;
-import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
 import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 public class JudgeServiceImpl implements JudgeService {
     private static final Logger logger = LoggerFactory.getLogger(JudgeServiceImpl.class);
     private final JudgeProducer judgeProducer;
-    private final JudgeStrategyFactory judgeStrategyFactory;
+    private final JudgeAgentClient judgeAgentClient;
     private final SubmissionService submissionService;
     private final CompetitionUserService competitionUserService;
     private final CompetitionService competitionService;
@@ -37,14 +37,14 @@ public class JudgeServiceImpl implements JudgeService {
     @Autowired
     public JudgeServiceImpl(
             JudgeProducer judgeProducer,
-            JudgeStrategyFactory judgeStrategyFactory,
+            JudgeAgentClient judgeAgentClient,
             SubmissionService submissionService,
             CompetitionUserService competitionUserService,
             CompetitionService competitionService,
             CompetitionTeamService competitionTeamService
     ) {
         this.judgeProducer=judgeProducer;
-        this.judgeStrategyFactory=judgeStrategyFactory;
+        this.judgeAgentClient=judgeAgentClient;
         this.submissionService=submissionService;
         this.competitionUserService=competitionUserService;
         this.competitionService=competitionService;
@@ -143,16 +143,16 @@ public class JudgeServiceImpl implements JudgeService {
 
     @Override
     public JudgeResultVO testSubmission(TestCodeDTO req,Long uid) {
-        JudgeStrategy strategy = judgeStrategyFactory.getStrategy(req.getOption());
         boolean customTest = Boolean.TRUE.equals(req.getCustomTest());
 
-        RunResult result=strategy.testJudge(
-                req.getCode(),
-                req.getInputExample(),
-                req.getOutputExample(),
-                Long.parseLong(req.getTime()),
-                Long.parseLong(req.getMemory())
-        );
+        AgentSampleRequest sampleReq = new AgentSampleRequest();
+        sampleReq.setLanguage(req.getOption());
+        sampleReq.setCode(req.getCode());
+        sampleReq.setInputExample(req.getInputExample());
+        sampleReq.setOutputExample(customTest ? null : req.getOutputExample());
+        sampleReq.setTimeLimit(Long.parseLong(req.getTime()));
+        sampleReq.setMemoryLimit(Long.parseLong(req.getMemory()));
+        RunResult result = judgeAgentClient.runSample(sampleReq);
         JudgeResultVO vo=new JudgeResultVO();
         if (customTest) {
             vo.setActualOutput(extractStdout(result));

@@ -46,7 +46,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
     private final OssService ossService;
     private final SubmissionService submissionService;
     private final TagService tagService;
-    private final TestCaseCacheService testCaseCacheService;
     private final ProblemExampleService problemExampleService;
     private final CompetitionProblemMapper competitionProblemMapper;
     private final CompetitionMapper competitionMapper;
@@ -59,7 +58,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             OssService ossService,
             @Lazy SubmissionService submissionService,
             TagService tagService,
-            TestCaseCacheService testCaseCacheService,
             ProblemExampleService problemExampleService,
             CompetitionProblemMapper competitionProblemMapper,
             CompetitionMapper competitionMapper
@@ -70,7 +68,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         this.ossService=ossService;
         this.submissionService=submissionService;
         this.tagService=tagService;
-        this.testCaseCacheService=testCaseCacheService;
         this.problemExampleService=problemExampleService;
         this.competitionProblemMapper=competitionProblemMapper;
         this.competitionMapper=competitionMapper;
@@ -116,6 +113,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
                 .open(Objects.equals(dto.getOpen(), "true"))
                 .build();
         problem.setSnakeId(gen.nextId());
+        problem.setVersion(1);
         save(problem); // 插入数据库，获取自增ID
         problemTagService.deleteTagByProblem(problem.getId());
         tagService.addTags(dto.getTags());
@@ -226,18 +224,23 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             tagService.createTag(s);
             problemTagService.addRelated(s,problem.getId());
         }
+        boolean dataChanged = false;
         try {
             if (dto.getTestCaseFile() != null && !dto.getTestCaseFile().isEmpty()) {
                 ossService.uploadFile(dto.getId() + ".zip", dto.getTestCaseFile());
-                // 清除测试用例缓存，确保下次评测使用最新的测试用例
-                testCaseCacheService.evictFromCache(dto.getId() + ".zip");
+                dataChanged = true;
             }
             if (dto.getCheckerFile() != null && !dto.getCheckerFile().isEmpty()) {
                 ossService.uploadFile(dto.getId() + "_checker.cpp", dto.getCheckerFile());
                 problem.setCheckerFile(dto.getId() + "_checker.cpp");
+                dataChanged = true;
             }
         } catch (IOException e) {
             throw new BusinessException("文件上传失败，服务器异常");
+        }
+        if (dataChanged) {
+            int current = problem.getVersion() != null ? problem.getVersion() : 1;
+            problem.setVersion(current + 1);
         }
         updateById(problem);
     }

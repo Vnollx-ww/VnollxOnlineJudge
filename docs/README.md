@@ -37,7 +37,8 @@
 | Redis | Latest | 缓存/会话 |
 | RabbitMQ | Latest | 消息队列 |
 | MinIO | Latest | 对象存储 |
-| Go-Judge | Latest | 多节点评测沙箱，支持容量限流 |
+| Judge Agent | Latest | 多机部署的评测业务服务，本机缓存测试数据、本机调用 go-judge、后端只调 Agent |
+| go-judge | Latest | Agent 本机沙箱，不对后端暴露 |
 | Python 代理 (FastAPI) | - | AI 多厂商调用、工具调用，国内/海外双机部署 |
 
 ### 前端技术
@@ -119,8 +120,10 @@ cd frontend && npm install && npm run dev
                                     │
                                     ▼
                       ┌───────────────┐ ┌───────────────┐
-                      │  Go-Judge A   │ │  Go-Judge B   │
-                      │ capacity=12   │ │ capacity=4    │
+                      │ Judge Agent A │ │ Judge Agent B │
+                      │ capacity=8    │ │ capacity=2    │
+                      │ + MinIO       │ │ + MinIO       │
+                      │ + go-judge    │ │ + go-judge    │
                       └───────────────┘ └───────────────┘
 ```
 
@@ -132,7 +135,7 @@ cd frontend && npm install && npm run dev
 |:-----|:-----|:----:|
 | 👤 用户系统 | 注册登录、个人资料、密码管理 | ✅ |
 | 📝 题目管理 | 题目CRUD、标签分类、难度分级、标准题/构造题、浮点误差 | ✅ |
-| ⚡ 代码评测 | 多语言支持、沙箱评测、队列位置、实时结果、多 Go-Judge 容量调度 | ✅ |
+| ⚡ 代码评测 | 多语言支持、沙箱评测、队列位置、实时结果、多 Judge Agent 容量调度 | ✅ |
 | 🏆 比赛系统 | 创建比赛、个人赛/团队赛、实时排名、ACM赛制、防作弊审查 | ✅ |
 | 📚 练习系统 | 练习集管理、进度追踪 | ✅ |
 | 💡 题解分享 | Markdown编辑、评论点赞 | ✅ |
@@ -147,7 +150,7 @@ cd frontend && npm install && npm run dev
 
 - **🔄 主从分离** - MySQL主从复制，读写分离，动态数据源切换
 - **📨 异步评测** - RabbitMQ消息队列，异步处理，削峰填谷
-- **⚖️ 容量调度** - 多 Go-Judge 节点按 capacity 限流，支持端点熔断
+- **⚖️ 容量调度** - 多 Judge Agent 节点按 capacity 限流，支持节点熔断；后端 MinIO 多端点双写保持多机数据一致
 - **📡 实时推送** - WebSocket实时通知评测结果
 - **🛡️ 比赛治理** - 团队赛、防作弊事件采集、风险汇总、人工复核与导出
 - **💾 权限缓存** - Redis缓存权限数据，30分钟过期
@@ -190,7 +193,7 @@ VnollxOnlineJudge/
 
 - **[需求文档](./需求文档.md)**：功能需求、角色权限、非功能需求与术语。
 - **[系统架构](./系统架构.md)**：整体架构、技术选型、评测流程与部署逻辑。
-- **[部署文档](./部署文档.md)**：环境准备、服务部署、Go-Judge 与 RabbitMQ 配置。
+- **[部署文档](./部署文档.md)**：环境准备、服务部署、Judge Agent + go-judge 同机部署、多 MinIO 双写与 RabbitMQ 配置。
 - **[AI 代理架构](./AI代理架构.md)**：Python 代理、模型调用与工具调用设计。
 - **[后续演进规划](./后续演进规划.md)**：OI/IOI 赛制扩展与评测策略模式重构规划。
 

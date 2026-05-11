@@ -8,23 +8,56 @@ spring:
       datasource:
         master:
           url: jdbc:mysql://localhost:3308/vnollxonlinejudge?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&useUnicode=true&allowPublicKeyRetrieval=true
+          username: root
           password: your_mysql_password
   data:
     redis:
       host: localhost
+      port: 6379
+      timeout: 10000
+      password: your_redis_password
+      connect-timeout: 10000
+      lettuce:
+        pool:
+          max-active: 100
+          max-idle: 10
+          min-idle: 5
+        shutdown-timeout: 200
   rabbitmq:
     host: localhost
+    port: 5672
+    username: admin
+    password: admin
+    listener:
+      simple:
+        concurrency: 10
+        max-concurrency: 10
+        prefetch: 1
+  threads:
+    virtual:
+      enabled: true
   mail:
+    host: smtp.qq.com
+    port: 465
     username: your_email@qq.com
     password: your_email_auth_code
 
 minio:
-  endpoint: http://localhost:9000
-  access-key: your_minio_access_key
-  secret-key: your_minio_secret_key
+  endpoints:
+    - url: http://localhost:9000
+      access-key: your_minio_access_key
+      secret-key: your_minio_secret_key
+    - url: http://remote-minio-host:9000
+      access-key: your_minio_access_key
+      secret-key: your_minio_secret_key
 
-go-judge:
-  endpoint: http://localhost:5050
+judge-agent:
+  endpoints:
+    - url: http://remote-judge-agent-host:8090
+      capacity: 8
+    - url: http://localhost:8090
+      capacity: 2
+  default-capacity: 2
 
 ai:
   proxy:
@@ -32,3 +65,4 @@ ai:
       url: http://localhost:8000
     overseas:
       url: http://localhost:8000
+    timeout: 300

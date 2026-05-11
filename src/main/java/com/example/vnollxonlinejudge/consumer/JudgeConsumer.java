@@ -1,8 +1,8 @@
 package com.example.vnollxonlinejudge.consumer;
 
+import com.example.vnollxonlinejudge.judge.AgentSubmitRequest;
+import com.example.vnollxonlinejudge.judge.JudgeAgentClient;
 import com.example.vnollxonlinejudge.judge.JudgeStatusDescriber;
-import com.example.vnollxonlinejudge.judge.JudgeStrategy;
-import com.example.vnollxonlinejudge.judge.JudgeStrategyFactory;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.model.result.RunResult;
 import com.example.vnollxonlinejudge.service.ProblemService;
@@ -26,7 +26,7 @@ public class JudgeConsumer {
     private static final Logger logger = LoggerFactory.getLogger(JudgeConsumer.class);
     private final ObjectMapper objectMapper;
     private final SubmissionService submissionService;
-    private final JudgeStrategyFactory judgeStrategyFactory;
+    private final JudgeAgentClient judgeAgentClient;
     private final JudgeWebSocketHandler judgeWebSocketHandler;
     private final ProblemService problemService;
 
@@ -34,13 +34,13 @@ public class JudgeConsumer {
     public JudgeConsumer(
             ObjectMapper objectMapper,
             SubmissionService submissionService,
-            JudgeStrategyFactory judgeStrategyFactory,
+            JudgeAgentClient judgeAgentClient,
             JudgeWebSocketHandler judgeWebSocketHandler,
             ProblemService problemService
     ){
         this.objectMapper=objectMapper;
         this.submissionService=submissionService;
-        this.judgeStrategyFactory=judgeStrategyFactory;
+        this.judgeAgentClient=judgeAgentClient;
         this.judgeWebSocketHandler = judgeWebSocketHandler;
         this.problemService = problemService;
     }
@@ -55,24 +55,27 @@ public class JudgeConsumer {
             );
             logger.info("Processing submission: snowflakeId={}, uid={}", judgeInfo.getSnowflakeId(), judgeInfo.getUid());
 
-            JudgeStrategy strategy = judgeStrategyFactory.getStrategy(judgeInfo.getLanguage());
             Problem problem = problemService.getById(judgeInfo.getPid());
-            if (problem != null) {
-                judgeInfo.setJudgeMode(problem.getJudgeMode());
-                judgeInfo.setCheckerFile(problem.getCheckerFile());
-            }
             submissionService.updateSubmissionJudgeStatusBySnowflake(judgeInfo.getSnowflakeId(), "评测中", null, null, null, null, null);
             sendUpdate(judgeInfo, "评测中", null, null, null, null, null);
 
-
-            RunResult result=strategy.judge(
-                    judgeInfo.getCode(),
-                    judgeInfo.getPid() + ".zip",
-                    judgeInfo.getTime(),
-                    judgeInfo.getMemory(),
-                    judgeInfo.getJudgeMode(),
-                    judgeInfo.getCheckerFile()
-            );
+            AgentSubmitRequest req = new AgentSubmitRequest();
+            req.setSubmissionId(judgeInfo.getSnowflakeId());
+            req.setProblemId(judgeInfo.getPid());
+            req.setLanguage(judgeInfo.getLanguage());
+            req.setCode(judgeInfo.getCode());
+            req.setTimeLimit(judgeInfo.getTime());
+            req.setMemoryLimit(judgeInfo.getMemory());
+            if (problem != null) {
+                req.setJudgeMode(problem.getJudgeMode());
+                req.setCheckerFile(problem.getCheckerFile());
+                req.setFloatTolerance(problem.getFloatTolerance());
+                Integer version = problem.getVersion();
+                req.setDataVersion(version != null ? String.valueOf(version) : "1");
+            } else {
+                req.setDataVersion("1");
+            }
+            RunResult result = judgeAgentClient.submit(req);
             // 获取错误信息（如果有）
             String errorInfo = null;
             if (result.getFiles() != null && result.getFiles().getStderr() != null) {
