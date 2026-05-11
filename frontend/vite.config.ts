@@ -20,8 +20,6 @@ export default defineConfig({
         manualChunks: {
           // React 核心库单独打包
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // Ant Design 单独打包
-          'antd-vendor': ['antd'],
           // Markdown 相关库单独打包
           'markdown-vendor': ['marked', 'react-markdown', 'react-syntax-highlighter', 'highlight.js'],
           // 其他工具库
