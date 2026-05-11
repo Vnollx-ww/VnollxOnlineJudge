@@ -32,9 +32,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -287,18 +289,24 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok) {
-        return getProblemList(keyword, pid, offset, size, ok, null);
+        return getProblemList(keyword, pid, offset, size, ok, (String) null);
     }
 
     @Override
     public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok, String tag) {
+        List<String> tags = StringUtils.isNotBlank(tag) ? List.of(tag) : null;
+        return getProblemList(keyword, pid, offset, size, ok, tags);
+    }
+
+    @Override
+    public List<ProblemVo> getProblemList(String keyword, Long pid, int offset, int size, boolean ok, List<String> tags) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
         if (!ok){
             wrapper.eq("open",1);
             wrapper.select("id, title, difficulty, submit_count, pass_count");
         }
-        if (StringUtils.isNotBlank(tag)) {
-            List<Long> tagPids = problemTagService.getProblemByTag(tag);
+        List<Long> tagPids = getProblemIdsByAllTags(tags);
+        if (tags != null && !tags.isEmpty()) {
             if (tagPids == null || tagPids.isEmpty()) {
                 return List.of();
             }
@@ -331,15 +339,21 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     public Long getCount(String keyword, Long pid,boolean ok) {
-        return getCount(keyword, pid, ok, null);
+        return getCount(keyword, pid, ok, (String) null);
     }
 
     @Override
     public Long getCount(String keyword, Long pid, boolean ok, String tag) {
+        List<String> tags = StringUtils.isNotBlank(tag) ? List.of(tag) : null;
+        return getCount(keyword, pid, ok, tags);
+    }
+
+    @Override
+    public Long getCount(String keyword, Long pid, boolean ok, List<String> tags) {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
         if (!ok) wrapper.eq("open",1);
-        if (StringUtils.isNotBlank(tag)) {
-            List<Long> tagPids = problemTagService.getProblemByTag(tag);
+        List<Long> tagPids = getProblemIdsByAllTags(tags);
+        if (tags != null && !tags.isEmpty()) {
             if (tagPids == null || tagPids.isEmpty()) {
                 return 0L;
             }
@@ -354,6 +368,35 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             }
         }
         return count(wrapper);
+    }
+
+    private List<Long> getProblemIdsByAllTags(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return null;
+        }
+        List<String> normalizedTags = tags.stream()
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .collect(Collectors.toList());
+        if (normalizedTags.isEmpty()) {
+            return null;
+        }
+        Set<Long> intersection = null;
+        for (String tag : normalizedTags) {
+            List<Long> pids = problemTagService.getProblemByTag(tag);
+            if (pids == null || pids.isEmpty()) {
+                return List.of();
+            }
+            if (intersection == null) {
+                intersection = new HashSet<>(pids);
+            } else {
+                intersection.retainAll(pids);
+            }
+            if (intersection.isEmpty()) {
+                return List.of();
+            }
+        }
+        return new ArrayList<>(intersection);
     }
 
     @Override

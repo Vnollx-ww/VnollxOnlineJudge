@@ -11,6 +11,7 @@ import {
   Key,
   BarChart3,
   Bot,
+  BookMarked,
   PanelLeftClose,
   PanelLeftOpen,
   Home,
@@ -21,6 +22,7 @@ import AdminSolves from './AdminSolves';
 import AdminCompetitions from './AdminCompetitions';
 import AdminPractices from './AdminPractices';
 import AdminAiModels from './AdminAiModels';
+import AdminDicts from './AdminDicts';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
 import AdminStatistics from './AdminStatistics';
@@ -120,6 +122,7 @@ const Admin: React.FC = () => {
     { key: '/admin/roles', icon: Shield, label: '角色管理', permissions: [PermissionCode.ROLE_VIEW] },
     { key: '/admin/permissions', icon: Key, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
     { key: '/admin/ai-models', icon: Bot, label: 'AI 模型', permissions: [PermissionCode.AI_CONFIG_VIEW] },
+    { key: '/admin/dicts', icon: BookMarked, label: '字典管理', permissions: [PermissionCode.SYSTEM_SETTINGS] },
   ];
 
   const menuItems = useMemo(() => {
@@ -223,6 +226,7 @@ const Admin: React.FC = () => {
             <Route path="roles" element={<AdminRoles />} />
             <Route path="permissions" element={<AdminPermissions />} />
             <Route path="ai-models" element={<AdminAiModels />} />
+            <Route path="dicts" element={<AdminDicts />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>
         </main>

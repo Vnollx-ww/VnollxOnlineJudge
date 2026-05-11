@@ -21,6 +21,12 @@ public class RabbitMQConfig {
 
     @Value("${spring.rabbitmq.template.reply-timeout:10000}")
     private int replyTimeout;
+    @Value("${spring.rabbitmq.listener.simple.concurrency:1}")
+    private int concurrentConsumers;
+    @Value("${spring.rabbitmq.listener.simple.max-concurrency:1}")
+    private int maxConcurrentConsumers;
+    @Value("${spring.rabbitmq.listener.simple.prefetch:1}")
+    private int prefetchCount;
 
     // 队列定义
     @Bean
@@ -81,7 +87,9 @@ public class RabbitMQConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter());
-        factory.setPrefetchCount(1);
+        factory.setConcurrentConsumers(concurrentConsumers);
+        factory.setMaxConcurrentConsumers(maxConcurrentConsumers);
+        factory.setPrefetchCount(prefetchCount);
         return factory;
     }
 

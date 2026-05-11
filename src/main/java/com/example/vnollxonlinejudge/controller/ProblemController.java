@@ -50,31 +50,37 @@ public class ProblemController {
         return Result.Success(problemService.getTagNames(pid),"获取题目标签成功");
     }
     @GetMapping("/list")
-    public Result<List<ProblemVo>> getProblemList(@RequestParam(required = false) String keyword, @RequestParam String offset, @RequestParam String size){
+    public Result<List<ProblemVo>> getProblemList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam String offset,
+            @RequestParam String size,
+            @RequestParam(required = false) List<String> tags){
         if(keyword != null && !keyword.isEmpty() && keyword.matches("^-?\\d+$")){
             return Result.Success(
                     problemService.getProblemList(
                             keyword,Long.parseLong(keyword),
-                            Integer.parseInt(offset),Integer.parseInt(size),false
+                            Integer.parseInt(offset),Integer.parseInt(size),false,tags
                     )
             ,"搜索题目成功");
         }else{
             return Result.Success(
                     problemService.getProblemList(
-                            keyword,0L,Integer.parseInt(offset),Integer.parseInt(size),false
+                            keyword,0L,Integer.parseInt(offset),Integer.parseInt(size),false,tags
                     )
                     ,"搜索题目成功");
         }
     }
     @GetMapping("/count")
-    public Result<Long> getCount(@RequestParam(required = false) String keyword){
+    public Result<Long> getCount(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) List<String> tags){
         if(keyword != null && !keyword.isEmpty() &&  keyword.matches("^-?\\d+$")){
             return Result.Success(
-                    problemService.getCount(keyword,Long.parseLong(keyword),false)
+                    problemService.getCount(keyword,Long.parseLong(keyword),false,tags)
                     ,"获取关键字题目总数成功");
         }else{
             return Result.Success(
-                    problemService.getCount(keyword,0L,false)
+                    problemService.getCount(keyword,0L,false,tags)
                     ,"获取关键字题目总数成功");
         }
     }

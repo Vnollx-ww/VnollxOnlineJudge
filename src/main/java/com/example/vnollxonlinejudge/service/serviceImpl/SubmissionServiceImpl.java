@@ -161,7 +161,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         boolean ok=problemService.isSolved(pid,uid,cid);
         //提交后对题目提交数，用户提交数进行处理！！！！
         if (result.equals("答案正确")) { //如果问题通过
-            if (!ok) { //是否首次通过
+            if (!ok) { //是否首次通过：首次才更新 tag、solve 记录、榜单/罚时、一血
                 List<String> tagList=problemTagService.getTagNames(problem.getId());
                 userTagService.updateTagPassStatus(uid,tagList,1L);
                 problemService.addUserSolveRecord(pid,uid,cid,problem.getTitle()); //对问题添加通过记录
@@ -174,6 +174,13 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,participantName,penalty);//如果是比赛那就需要更新缓存了
                     pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantName);
                 }
+            } else { //已经 AC 过，再次 AC：只累加 submit/pass 计数，不动榜单分数和罚时
+                if (cid == 0) {
+                    userService.updateSubmitCount(uid,1);
+                    problemService.updatePassCount(pid,1);
+                } else {
+                    redisService.incrementProblemPassAndSubmit(problemPassKey, problemSubmitKey);
+                }
             }
         } else {//未通过
             if (!ok){
@@ -185,6 +192,8 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 problemService.updatePassCount(pid,0);//问题提交数也加一
             } else if (!ok) {
                 redisService.updateIfNoPass(userPenaltyKey,problemSubmitKey,userPassKey,rankingKey,participantName);//是比赛，而且之前也没通过，那就需要罚时了
+            } else { //比赛中已 AC 后再 WA：只让题目提交数 +1，不再罚时、不动榜单
+                redisService.incrementProblemSubmit(problemSubmitKey);
             }
         }
     }

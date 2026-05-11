@@ -12,6 +12,8 @@ public interface RedisService {
     boolean addToSetByKey(String key,Long score,String userName,Long seconds);
     void updateIfPass(String userPassKey,String userPenaltyKey,String problemPassKey,String problemSubmitKey,String rankingKey,String userName,Long penalty);
     void updateIfNoPass(String userPenaltyKey,String problemSubmitKey,String userPassKey, String rankingKey,String userName);
+    void incrementProblemPassAndSubmit(String problemPassKey, String problemSubmitKey);
+    void incrementProblemSubmit(String problemSubmitKey);
     Long getTtl(String key);
     Set<ZSetOperations.TypedTuple<String>> getZset(String key);
     boolean IsExists(String key);

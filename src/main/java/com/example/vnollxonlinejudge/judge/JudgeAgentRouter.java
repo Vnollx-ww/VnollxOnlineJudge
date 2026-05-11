@@ -71,11 +71,14 @@ public class JudgeAgentRouter {
                 && secondary != null
                 && primary.availablePermits() < primary.getCapacity();
 
-        if (preferSecondary && secondary.isHealthy() && secondary.semaphore.tryAcquire()) {
-            return secondary;
-        }
-        if (primary.isHealthy()) {
-            primary.semaphore.acquire();
+        if (preferSecondary) {
+            if (secondary.isHealthy() && secondary.semaphore.tryAcquire()) {
+                return secondary;
+            }
+            if (primary.isHealthy() && primary.semaphore.tryAcquire()) {
+                return primary;
+            }
+        } else if (primary.isHealthy() && primary.semaphore.tryAcquire()) {
             return primary;
         }
         if (secondary != null && secondary.isHealthy() && secondary.semaphore.tryAcquire()) {

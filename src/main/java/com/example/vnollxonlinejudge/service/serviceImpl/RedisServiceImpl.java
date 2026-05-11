@@ -105,6 +105,25 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public void incrementProblemPassAndSubmit(String problemPassKey, String problemSubmitKey) {
+        try {
+            stringRedisTemplate.opsForValue().increment(problemPassKey);
+            stringRedisTemplate.opsForValue().increment(problemSubmitKey);
+        } catch (Exception e) {
+            logger.error("递增题目通过/提交计数异常", e);
+        }
+    }
+
+    @Override
+    public void incrementProblemSubmit(String problemSubmitKey) {
+        try {
+            stringRedisTemplate.opsForValue().increment(problemSubmitKey);
+        } catch (Exception e) {
+            logger.error("递增题目提交计数异常", e);
+        }
+    }
+
+    @Override
     public Long getTtl(String key) {
         try {
             return stringRedisTemplate.getExpire(key, TimeUnit.SECONDS);

@@ -371,6 +371,73 @@ create table problem_tag
 create index idx_problem_id
     on problem_tag (problem_id);
 
+create table dict_type
+(
+    id          bigint auto_increment primary key                comment '字典主键',
+    dict_name   varchar(100) not null                            comment '字典名称',
+    dict_type   varchar(100) not null                            comment '字典类型编码（英文，唯一）',
+    status      tinyint(1)   default 1 not null                  comment '状态：1-正常 0-停用',
+    remark      varchar(500) null                                comment '备注',
+    create_by   varchar(64)  null                                comment '创建人',
+    create_time datetime     default CURRENT_TIMESTAMP not null  comment '创建时间',
+    update_by   varchar(64)  null                                comment '更新人',
+    update_time datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_dict_type unique (dict_type)
+) comment '字典类型表';
+
+create table dict_data
+(
+    id          bigint auto_increment primary key                comment '字典数据主键',
+    dict_type   varchar(100) not null                            comment '字典类型编码（关联 dict_type.dict_type）',
+    dict_label  varchar(100) not null                            comment '字典标签（展示文本）',
+    dict_value  varchar(100) not null                            comment '字典键值（业务值）',
+    sort        int          default 0  not null                 comment '排序，升序',
+    css_class   varchar(100) null                                comment '样式属性（如标签颜色 default/primary/success/warning/danger）',
+    list_class  varchar(100) null                                comment '表格回显样式',
+    is_default  tinyint(1)   default 0  not null                 comment '是否默认：1-是 0-否',
+    status      tinyint(1)   default 1  not null                 comment '状态：1-正常 0-停用',
+    remark      varchar(500) null                                comment '备注',
+    create_by   varchar(64)  null                                comment '创建人',
+    create_time datetime     default CURRENT_TIMESTAMP not null  comment '创建时间',
+    update_by   varchar(64)  null                                comment '更新人',
+    update_time datetime     default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_dict_type_value unique (dict_type, dict_value)
+) comment '字典数据表';
+
+create index idx_dict_data_type
+    on dict_data (dict_type);
+
+create index idx_dict_data_status
+    on dict_data (status);
+
+INSERT IGNORE INTO dict_type (dict_name, dict_type, status, remark)
+VALUES
+('提交语言', 'SUBMIT_LANGUAGE', 1, '在线判题支持的提交语言'),
+('判题结果状态', 'JUDGE_RESULT_STATUS', 1, '提交记录和判题服务使用的结果状态'),
+('判题模式', 'JUDGE_MODE', 1, '题目评测时使用的判题模式');
+
+INSERT IGNORE INTO dict_data (dict_type, dict_label, dict_value, sort, css_class, list_class, is_default, status, remark)
+VALUES
+('SUBMIT_LANGUAGE', 'C++', 'cpp', 1, 'blue', 'primary', 1, 1, 'GNU G++ 编译运行'),
+('SUBMIT_LANGUAGE', 'Java', 'java', 2, 'orange', 'warning', 0, 1, 'Javac 编译，Java 运行'),
+('SUBMIT_LANGUAGE', 'Python', 'python', 3, 'green', 'success', 0, 1, 'Python 3 解释执行'),
+('SUBMIT_LANGUAGE', 'Go', 'go', 4, 'cyan', 'primary', 0, 1, 'Golang 编译运行'),
+('SUBMIT_LANGUAGE', 'JavaScript', 'javascript', 5, 'purple', 'primary', 0, 1, 'Node.js 运行'),
+('JUDGE_RESULT_STATUS', '等待评测', '等待评测', 1, 'default', 'default', 1, 1, '提交已入队，等待判题机处理'),
+('JUDGE_RESULT_STATUS', '评测中', '评测中', 2, 'blue', 'processing', 0, 1, '判题机正在运行评测'),
+('JUDGE_RESULT_STATUS', '答案正确', '答案正确', 3, 'green', 'success', 0, 1, 'Accepted'),
+('JUDGE_RESULT_STATUS', '答案错误', '答案错误', 4, 'red', 'danger', 0, 1, 'Wrong Answer'),
+('JUDGE_RESULT_STATUS', '编译错误', '编译错误', 5, 'orange', 'warning', 0, 1, 'Compile Error'),
+('JUDGE_RESULT_STATUS', '运行时错误', '运行时错误', 6, 'red', 'danger', 0, 1, 'Runtime Error'),
+('JUDGE_RESULT_STATUS', '时间超出限制', '时间超出限制', 7, 'orange', 'warning', 0, 1, 'Time Limit Exceeded'),
+('JUDGE_RESULT_STATUS', '内存超出限制', '内存超出限制', 8, 'orange', 'warning', 0, 1, 'Memory Limit Exceeded'),
+('JUDGE_RESULT_STATUS', '输出超出限制', '输出超出限制', 9, 'orange', 'warning', 0, 1, 'Output Limit Exceeded'),
+('JUDGE_RESULT_STATUS', '非法系统调用', '非法系统调用', 10, 'red', 'danger', 0, 1, 'Dangerous Syscall'),
+('JUDGE_RESULT_STATUS', '判题错误', '判题错误', 11, 'red', 'danger', 0, 1, 'Judge Error'),
+('JUDGE_MODE', '标准判题', 'standard', 1, 'blue', 'primary', 1, 1, '忽略行尾和末尾空白后比较输出'),
+('JUDGE_MODE', '浮点判题', 'float', 2, 'green', 'success', 0, 1, '按浮点误差容忍度比较输出'),
+('JUDGE_MODE', '特殊判题', 'special', 3, 'purple', 'primary', 0, 1, '使用题目提供的 C++ checker 判定输出');
+
 create table user
 (
     id              int auto_increment
