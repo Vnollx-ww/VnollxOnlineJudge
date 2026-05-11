@@ -29,7 +29,7 @@ import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import api from '@/utils/api';
+import { adminProblemApi, tagApi } from '@/lib';
 import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
@@ -188,7 +188,7 @@ const AdminProblems: React.FC = () => {
   useEffect(() => {
     const loadTagList = async () => {
       try {
-        const res = await api.get('/tag/list') as ApiResponse<{ id: number; name: string }[]>;
+        const res = await tagApi.list<{ id: number; name: string }[]>() as ApiResponse<{ id: number; name: string }[]>;
         if (res.code === 200 && res.data) {
           setTagOptions(res.data);
         }
@@ -206,21 +206,17 @@ const AdminProblems: React.FC = () => {
   const loadProblems = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/admin/problem/list', {
-        params: {
-          offset: ((currentPage - 1) * pageSize).toString(),
-          size: pageSize.toString(),
-          keyword: keyword || undefined,
-          tag: filterTag || undefined,
-        },
+      const data = await adminProblemApi.list<Problem[]>({
+        offset: ((currentPage - 1) * pageSize).toString(),
+        size: pageSize.toString(),
+        keyword: keyword || undefined,
+        tag: filterTag || undefined,
       }) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         setProblems(data.data || []);
       }
 
-      const countData = await api.get('/admin/problem/count', {
-        params: { keyword: keyword || undefined, tag: filterTag || undefined },
-      }) as ApiResponse<number>;
+      const countData = await adminProblemApi.count({ keyword: keyword || undefined, tag: filterTag || undefined }) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }
@@ -254,7 +250,7 @@ const AdminProblems: React.FC = () => {
       setTestCaseFiles([]);
       setCheckerFiles([]);
       try {
-        const res = await api.get('/admin/problem/examples', { params: { pid: problem.id } }) as ApiResponse<ProblemExampleItem[]>;
+        const res = await adminProblemApi.examples<ProblemExampleItem[]>(problem.id) as ApiResponse<ProblemExampleItem[]>;
         if (res.code === 200 && res.data?.length) {
           setExamplesList(res.data.map((e, i) => ({ input: e.input ?? '', output: e.output ?? '', sortOrder: i })));
         } else {
@@ -274,7 +270,7 @@ const AdminProblems: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const data = await api.delete(`/admin/problem/delete/${id}`) as ApiResponse;
+      const data = await adminProblemApi.delete(id) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除题目成功');
         loadProblems();
@@ -351,13 +347,9 @@ const AdminProblems: React.FC = () => {
 
       let data: ApiResponse;
       if (editingProblem) {
-        data = await api.put(url, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }) as ApiResponse;
+        data = await adminProblemApi.update(formData) as ApiResponse;
       } else {
-        data = await api.post(url, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }) as ApiResponse;
+        data = await adminProblemApi.add(formData) as ApiResponse;
       }
 
       if (data.code === 200) {

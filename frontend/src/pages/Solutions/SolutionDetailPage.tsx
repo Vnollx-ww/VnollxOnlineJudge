@@ -8,7 +8,7 @@ import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import katex from 'katex';
 import dayjs from 'dayjs';
-import api from '../../utils/api';
+import { solutionApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
@@ -83,7 +83,7 @@ const SolutionDetailPage: React.FC = () => {
   const loadSolution = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/solve/detail', { params: { id: solveId } });
+      const data = await solutionApi.detail<Solution>(solveId);
       if (data.code === 200) {
         setSolution(data.data);
         setError(null);

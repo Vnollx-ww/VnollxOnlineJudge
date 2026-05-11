@@ -19,7 +19,7 @@ import {
   message,
 } from 'antd';
 import dayjs from 'dayjs';
-import api from '../../utils/api';
+import { notificationApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import Select from '../../components/select';
 import Input from '../../components/input';
@@ -78,7 +78,7 @@ const Notifications: React.FC = () => {
     setLoading(true);
     try {
       const { params, effectiveKeyword, effectiveStatus } = buildParams(page, overrides);
-      const data = await api.get('/notification/list', { params });
+      const data = await notificationApi.list<Notification[]>(params);
       if (data.code === 200) {
         setNotifications(data.data || []);
         setCurrentPage(page);
@@ -93,7 +93,7 @@ const Notifications: React.FC = () => {
       if (effectiveStatus) {
         countParams.status = effectiveStatus;
       }
-      const countData = await api.get('/notification/count', { params: countParams });
+      const countData = await notificationApi.count(countParams);
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }
@@ -143,7 +143,7 @@ const Notifications: React.FC = () => {
 
   const handleMarkRead = async (id: number) => {
     try {
-      await api.put(`/notification/read/${id}`);
+      await notificationApi.read(id);
       messageApi.success('已标记为已读');
       dispatchNotificationUpdate();
       loadNotifications(currentPage);
@@ -162,7 +162,7 @@ const Notifications: React.FC = () => {
       okButtonProps: { danger: true },
       async onOk() {
         try {
-          await api.delete(`/notification/delete/${id}`);
+          await notificationApi.delete(id);
           messageApi.success('删除成功');
           dispatchNotificationUpdate();
           const nextPage =
@@ -200,7 +200,7 @@ const Notifications: React.FC = () => {
       // 标记为已读
       if (!item.is_read) {
         try {
-          await api.put(`/notification/read/${item.id}`);
+          await notificationApi.read(item.id);
           dispatchNotificationUpdate();
         } catch (error) {
           console.error('标记已读失败:', error);

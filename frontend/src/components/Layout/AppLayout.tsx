@@ -5,8 +5,8 @@ import { MessageCircle, Bell } from 'lucide-react';
 import Sidebar from './Sidebar';
 import AIAssistant from '../ai-assistant';
 import ParticleBackground from '../particle-background';
-import { AuthModal, type AuthMode } from '../auth-modal';
-import api from '../../utils/api';
+import AuthModal, { type AuthMode } from '../auth-modal';
+import { notificationApi, userApi } from '@/lib';
 import { isAuthenticated, setUserInfo } from '../../utils/auth';
 import { useNotificationWebSocket, type NotificationMessage } from '../../hooks/useNotificationWebSocket';
 import type { User, ApiResponse } from '../../types';
@@ -27,7 +27,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const loadUserInfo = useCallback(async () => {
     try {
-      const data = await api.get('/user/profile') as ApiResponse<User>;
+      const data = await userApi.getProfile<User>() as ApiResponse<User>;
       if (data.code === 200) {
         setUser(data.data);
         setUserInfo({
@@ -43,7 +43,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   const loadNotificationCount = useCallback(async () => {
     try {
-      const data = await api.get('/notification/count', { params: { status: 'false' } }) as ApiResponse<number>;
+      const data = await notificationApi.count('false') as ApiResponse<number>;
       if (data.code === 200) {
         setNotificationCount(data.data || 0);
       }

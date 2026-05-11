@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button, Modal, Field } from '@/components';
 import toast from 'react-hot-toast';
 import { Users, UserPlus, Search, RefreshCw, Edit3, Trash2, Filter, CheckCircle2, Clock } from 'lucide-react';
-import api from '@/utils/api';
+import { adminRoleApi, adminUserApi } from '@/lib';
 import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
@@ -91,7 +91,7 @@ const AdminUsers: React.FC = () => {
 
   const loadRoles = async () => {
     try {
-      const data = await api.get('/admin/permission/roles') as ApiResponse<Role[]>;
+      const data = await adminRoleApi.listRoles<Role[]>() as ApiResponse<Role[]>;
       if (data.code === 200) {
         setRoles(data.data || []);
       }
@@ -103,16 +103,12 @@ const AdminUsers: React.FC = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/admin/user/list', {
-        params: { pageNum: currentPage.toString(), pageSize: pageSize.toString(), keyword: keyword || undefined },
-      }) as ApiResponse<User[]>;
+      const data = await adminUserApi.list<User[]>({ pageNum: currentPage.toString(), pageSize: pageSize.toString(), keyword: keyword || undefined }) as ApiResponse<User[]>;
       if (data.code === 200) {
         setUsers(data.data || []);
       }
 
-      const countData = await api.get('/admin/user/count', {
-        params: { keyword: keyword || undefined },
-      }) as ApiResponse<number>;
+      const countData = await adminUserApi.count({ keyword: keyword || undefined }) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }
@@ -139,7 +135,7 @@ const AdminUsers: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const data = await api.delete(`/admin/user/delete/${id}`) as ApiResponse;
+      const data = await adminUserApi.delete(id) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除用户成功');
         loadUsers();
@@ -158,7 +154,7 @@ const AdminUsers: React.FC = () => {
   const handleSubmit = async (values: UserFormValues) => {
     try {
       if (editingUser) {
-        const data = await api.put('/admin/user/update', { id: editingUser.id, ...values }) as ApiResponse;
+        const data = await adminUserApi.update({ id: editingUser.id, ...values }) as ApiResponse;
         if (data.code === 200) {
           toast.success('更新用户成功');
           setModalVisible(false);
@@ -167,7 +163,7 @@ const AdminUsers: React.FC = () => {
           toast.error((data as any).msg || '更新失败');
         }
       } else {
-        const data = await api.post('/admin/user/add', values) as ApiResponse;
+        const data = await adminUserApi.add(values) as ApiResponse;
         if (data.code === 200) {
           toast.success('添加用户成功');
           setModalVisible(false);

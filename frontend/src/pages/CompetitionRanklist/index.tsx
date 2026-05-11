@@ -10,7 +10,7 @@ import {
 } from 'antd';
 import toast from 'react-hot-toast';
 import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
-import api from '../../utils/api';
+import { competitionApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/input';
 import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
@@ -676,7 +676,7 @@ const CompetitionRanklist: React.FC = () => {
 
   const loadCompetition = async () => {
     try {
-      const data = await api.get('/competition/list');
+      const data = await competitionApi.list<Competition[]>();
       if (data.code === 200) {
         const comp = data.data.find((c: Competition) => c.id.toString() === id);
         if (comp) {
@@ -713,10 +713,7 @@ const CompetitionRanklist: React.FC = () => {
 
   const handleVerifyPassword = async () => {
     try {
-      const data = await api.post('/competition/confirm', {
-        id: id,
-        password: password,
-      });
+      const data = await competitionApi.confirm(id, password);
       if (data.code === 200) {
         toast.success('密码验证成功');
         setPasswordVerified(true);
@@ -741,9 +738,7 @@ const CompetitionRanklist: React.FC = () => {
       setLoading(true);
     }
     try {
-      const data = await api.get('/competition/ranklist-detail', {
-        params: { id: id },
-      });
+      const data = await competitionApi.ranklistDetail<{ problems: Problem[]; users: User[] }>(id);
       if (data.code === 200) {
         const nextProblems: Problem[] = data.data?.problems || [];
         const nextUsers: User[] = data.data?.users || [];
@@ -799,9 +794,7 @@ const CompetitionRanklist: React.FC = () => {
     }
     setLoadingSubmissionKeys((current) => new Set(current).add(userKey));
     try {
-      const data = await api.get('/competition/ranklist-submissions', {
-        params: { id, userId: user.id },
-      });
+      const data = await competitionApi.ranklistSubmissions<SubmissionRank[]>(id, user.id);
       if (data.code === 200) {
         setRanklistSubmissions((current) => ({
           ...current,

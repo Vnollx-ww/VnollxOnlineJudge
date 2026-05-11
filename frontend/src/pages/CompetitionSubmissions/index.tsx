@@ -16,7 +16,7 @@ import {
   UnorderedListOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
-import api from '../../utils/api';
+import { competitionApi, dictApi, submissionApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import Select from '../../components/select';
 import Input from '../../components/input';
@@ -81,8 +81,8 @@ const CompetitionSubmissions: React.FC = () => {
   const loadDictOptions = async () => {
     try {
       const [statusRes, languageRes] = await Promise.all([
-        api.get('/dict/data/list', { params: { dictType: 'JUDGE_RESULT_STATUS' } }),
-        api.get('/dict/data/list', { params: { dictType: 'SUBMIT_LANGUAGE' } }),
+        dictApi.listData<DictData[]>('JUDGE_RESULT_STATUS'),
+        dictApi.listData<DictData[]>('SUBMIT_LANGUAGE'),
       ]);
       if (statusRes.code === 200) {
         setStatusOptions(((statusRes.data || []) as DictData[]).map((item) => ({ value: item.dictValue, label: item.dictLabel })));
@@ -115,7 +115,7 @@ const CompetitionSubmissions: React.FC = () => {
 
   const loadCompetition = async () => {
     try {
-      const data = await api.get('/competition/list');
+      const data = await competitionApi.list<Competition[]>();
       if (data.code === 200) {
         const comp = data.data.find((c: Competition) => c.id.toString() === id);
         if (comp) {
@@ -152,10 +152,7 @@ const CompetitionSubmissions: React.FC = () => {
 
   const handleVerifyPassword = async () => {
     try {
-      const data = await api.post('/competition/confirm', {
-        id: id,
-        password: password,
-      });
+      const data = await competitionApi.confirm(id, password);
       if (data.code === 200) {
         toast.success('密码验证成功');
         setPasswordVerified(true);
@@ -181,7 +178,7 @@ const CompetitionSubmissions: React.FC = () => {
       if (status) params.status = status;
       if (language) params.language = language;
 
-      const data = await api.get('/submission/list', { params });
+      const data = await submissionApi.list<Submission[]>(params);
       if (data.code === 200) {
         setSubmissions(data.data || []);
       }
@@ -190,7 +187,7 @@ const CompetitionSubmissions: React.FC = () => {
       if (status) countParams.status = status;
       if (language) countParams.language = language;
 
-      const countData = await api.get('/submission/count', { params: countParams });
+      const countData = await submissionApi.count(countParams);
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }

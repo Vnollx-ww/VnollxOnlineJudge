@@ -4,7 +4,7 @@ import { CheckCircle2, Edit, Layers3, Plus, RefreshCw, Search, Trash2 } from 'lu
 import { Button, Empty, Field, InputNumber, Modal, Spin, Tag } from '@/components';
 import Input from '@/components/input';
 import Select from '@/components/select';
-import api from '@/utils/api';
+import { adminDictApi } from '@/lib';
 import type { ApiResponse } from '@/types';
 
 interface DictTypeVo {
@@ -105,7 +105,7 @@ const AdminDicts: React.FC = () => {
   const loadTypes = async () => {
     setTypeLoading(true);
     try {
-      const res = await api.get('/admin/dict/type/list') as ApiResponse<DictTypeVo[]>;
+      const res = await adminDictApi.typeList<DictTypeVo[]>() as ApiResponse<DictTypeVo[]>;
       if (res.code === 200) {
         const nextTypes = res.data ?? [];
         setTypes(nextTypes);
@@ -126,7 +126,7 @@ const AdminDicts: React.FC = () => {
   const loadData = async (dictType: string) => {
     setDataLoading(true);
     try {
-      const res = await api.get('/admin/dict/data/list', { params: { dictType } }) as ApiResponse<DictDataVo[]>;
+      const res = await adminDictApi.dataList<DictDataVo[]>(dictType) as ApiResponse<DictDataVo[]>;
       if (res.code === 200) {
         setDataList(res.data ?? []);
       } else {
@@ -200,7 +200,7 @@ const AdminDicts: React.FC = () => {
       return;
     }
     try {
-      const res = await api.post('/admin/dict/type/save', { id: editingTypeId ?? undefined, ...typeForm }) as ApiResponse<number>;
+      const res = await adminDictApi.saveType<number>({ id: editingTypeId ?? undefined, ...typeForm }) as ApiResponse<number>;
       if (res.code === 200) {
         toast.success(editingTypeId ? '字典类型已更新' : '字典类型已创建');
         setTypeModalVisible(false);
@@ -220,7 +220,7 @@ const AdminDicts: React.FC = () => {
     }
     try {
       const payload = { ...dataForm, id: editingDataId ?? undefined, sort: Number(dataForm.sort) || 0 };
-      const res = await api.post('/admin/dict/data/save', payload) as ApiResponse<number>;
+      const res = await adminDictApi.saveData<number>(payload) as ApiResponse<number>;
       if (res.code === 200) {
         toast.success(editingDataId ? '字典数据已更新' : '字典数据已创建');
         setDataModalVisible(false);
@@ -236,8 +236,9 @@ const AdminDicts: React.FC = () => {
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
-      const url = deleteTarget.kind === 'type' ? `/admin/dict/type/${deleteTarget.id}` : `/admin/dict/data/${deleteTarget.id}`;
-      const res = await api.delete(url) as ApiResponse;
+      const res = await (deleteTarget.kind === 'type'
+        ? adminDictApi.deleteType(deleteTarget.id)
+        : adminDictApi.deleteData(deleteTarget.id)) as ApiResponse;
       if (res.code === 200) {
         toast.success('删除成功');
         setDeleteModalVisible(false);

@@ -26,7 +26,7 @@ import AdminDicts from './AdminDicts';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
 import AdminStatistics from './AdminStatistics';
-import api from '../../utils/api';
+import { userApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import { usePermission } from '../../contexts/PermissionContext';
 import { PermissionCode } from '../../constants/permissions';
@@ -83,7 +83,7 @@ const Admin: React.FC = () => {
     }
 
     try {
-      const verifyData = await api.get('/user/profile') as ApiResponse;
+      const verifyData = await userApi.getProfile() as ApiResponse;
       if (verifyData.code !== 200) {
         toast.error('登录已过期，请重新登录');
         navigate('/');

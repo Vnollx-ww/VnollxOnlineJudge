@@ -8,7 +8,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import api from '@/utils/api';
+import { aiApi, userApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
 import { usePermission } from '@/contexts/PermissionContext';
 import { PermissionCode } from '@/constants/permissions';
@@ -476,7 +476,7 @@ const AIAssistant: React.FC = () => {
       if (beforeId) {
         query.set('beforeId', String(beforeId));
       }
-      const response = await api.get(`/ai/history/page?${query.toString()}`) as ApiResponse<HistoryPageResponse>;
+      const response = await aiApi.getHistoryPage<HistoryPageResponse>(query.toString()) as ApiResponse<HistoryPageResponse>;
       // 会话已切换，丢弃过期结果
       if (currentSessionIdRef.current !== sessionId) return;
       if (response.code === 200 && response.data) {
@@ -555,7 +555,7 @@ const AIAssistant: React.FC = () => {
   const loadModels = useCallback(async () => {
     if (!isAuthenticated()) return;
     try {
-      const res = await api.get('/ai/models') as ApiResponse<AiModelOption[]>;
+      const res = await aiApi.listModels<AiModelOption[]>() as ApiResponse<AiModelOption[]>;
       if (res.code === 200 && res.data?.length) {
         setModels(res.data);
         setSelectedModelId((prev) => {
@@ -573,7 +573,7 @@ const AIAssistant: React.FC = () => {
   const loadUserProfile = useCallback(async () => {
     if (!isAuthenticated()) return;
     try {
-      const res = await api.get('/user/profile') as ApiResponse<{ avatar?: string }>;
+      const res = await userApi.getProfile<{ avatar?: string }>() as ApiResponse<{ avatar?: string }>;
       if (res.code === 200 && res.data?.avatar) {
         setUserAvatar(res.data.avatar);
       } else {
@@ -593,7 +593,7 @@ const AIAssistant: React.FC = () => {
     }
     setSessionsLoading(true);
     try {
-      const res = await api.get('/ai/sessions') as ApiResponse<AiChatSession[]>;
+      const res = await aiApi.listSessions<AiChatSession[]>() as ApiResponse<AiChatSession[]>;
       const preferred = preferredSessionId ?? currentSessionIdRef.current;
       const baseList = res.code === 200 && Array.isArray(res.data) ? res.data : [];
       const list = preferred?.startsWith('pending_')
@@ -674,7 +674,7 @@ const AIAssistant: React.FC = () => {
   }, [currentSessionId, open, loadHistory]);
 
   const createSessionApi = useCallback(async (title?: string) => {
-    const res = await api.post('/ai/sessions', title ? { title } : {}) as ApiResponse<AiChatSession>;
+    const res = await aiApi.createSession<AiChatSession>(title) as ApiResponse<AiChatSession>;
     if (res.code !== 200 || !res.data) {
       throw new Error((res as any).msg || '创建会话失败');
     }
@@ -737,7 +737,7 @@ const AIAssistant: React.FC = () => {
 
   const confirmDeleteSession = useCallback(async (sessionId: string) => {
     try {
-      const res = await api.delete(`/ai/sessions/${sessionId}`) as ApiResponse<void>;
+      const res = await aiApi.deleteSession(sessionId) as ApiResponse<void>;
       if (res.code === 200) {
         setSessions((prev) => {
           const newList = prev.filter((s) => s.id !== sessionId);

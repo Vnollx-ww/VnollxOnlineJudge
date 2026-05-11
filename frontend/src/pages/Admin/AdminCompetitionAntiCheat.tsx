@@ -3,7 +3,7 @@ import { Drawer, Tag, Button, Modal, Empty, Field, DataTable, DataColumn } from 
 import toast from 'react-hot-toast';
 import { Download, Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import dayjs from 'dayjs';
-import api from '@/utils/api';
+import { adminAntiCheatApi } from '@/lib';
 import Input from '@/components/input';
 import Select from '@/components/select';
 import type { ApiResponse } from '@/types';
@@ -153,14 +153,12 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
     setLoading(true);
     try {
       const [listRes, statsRes] = await Promise.all([
-        api.get(`/admin/competition/${competitionId}/anti-cheat/summaries`, {
-          params: {
-            keyword: keyword || undefined,
-            riskLevel: riskLevel || undefined,
-            reviewStatus: reviewStatus || undefined,
-          },
+        adminAntiCheatApi.summaries<AntiCheatSummary[]>(competitionId, {
+          keyword: keyword || undefined,
+          riskLevel: riskLevel || undefined,
+          reviewStatus: reviewStatus || undefined,
         }) as Promise<ApiResponse<AntiCheatSummary[]>>,
-        api.get(`/admin/competition/${competitionId}/anti-cheat/statistics`) as Promise<ApiResponse<Stats>>,
+        adminAntiCheatApi.statistics<Stats>(competitionId) as Promise<ApiResponse<Stats>>,
       ]);
       if (listRes.code === 200) setSummaries(listRes.data || []);
       if (statsRes.code === 200) setStats(statsRes.data || {});
@@ -189,7 +187,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
     setDetailOpen(true);
     setDetailLoading(true);
     try {
-      const data = await api.get(`/admin/competition/${competitionId}/anti-cheat/users/${uid}`) as ApiResponse<UserDetail>;
+      const data = await adminAntiCheatApi.userDetail<UserDetail>(competitionId, uid) as ApiResponse<UserDetail>;
       if (data.code === 200) {
         setDetail(data.data);
       }
@@ -214,10 +212,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
     if (!competitionId || !reviewTarget) return;
     try {
       setReviewSubmitting(true);
-      const data = await api.put(
-        `/admin/competition/${competitionId}/anti-cheat/users/${reviewTarget.userId}/review`,
-        reviewFormValues,
-      ) as ApiResponse;
+      const data = await adminAntiCheatApi.review(competitionId, reviewTarget.userId, { ...reviewFormValues }) as ApiResponse;
       if (data.code === 200) {
         toast.success('复核已保存');
         setReviewModalOpen(false);
@@ -244,10 +239,7 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
   const quickReview = async (record: AntiCheatSummary, status: string, result?: string) => {
     if (!competitionId) return;
     try {
-      const data = await api.put(
-        `/admin/competition/${competitionId}/anti-cheat/users/${record.userId}/review`,
-        { reviewStatus: status, reviewResult: result },
-      ) as ApiResponse;
+      const data = await adminAntiCheatApi.review(competitionId, record.userId, { reviewStatus: status, reviewResult: result }) as ApiResponse;
       if (data.code === 200) {
         toast.success('已更新');
         await loadAll();
@@ -263,14 +255,11 @@ const AdminCompetitionAntiCheat: React.FC<Props> = ({ open, competitionId, compe
     if (!competitionId) return;
     setExporting(true);
     try {
-      const response = await api.get(`/admin/competition/${competitionId}/anti-cheat/export`, {
-        params: {
-          keyword: keyword || undefined,
-          riskLevel: riskLevel || undefined,
-          reviewStatus: reviewStatus || undefined,
-        },
-        responseType: 'blob',
-      } as any) as any;
+      const response = await adminAntiCheatApi.export<Blob>(competitionId, {
+        keyword: keyword || undefined,
+        riskLevel: riskLevel || undefined,
+        reviewStatus: reviewStatus || undefined,
+      }) as ApiResponse<Blob>;
       const blob = response instanceof Blob ? response : response?.data;
       if (!blob) {
         toast.error('导出失败');

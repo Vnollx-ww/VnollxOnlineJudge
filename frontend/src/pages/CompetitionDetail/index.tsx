@@ -20,7 +20,7 @@ import {
   HistoryOutlined,
   FullscreenOutlined,
 } from '@ant-design/icons';
-import api from '../../utils/api';
+import { antiCheatApi, competitionApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/input';
 import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
@@ -119,7 +119,7 @@ const CompetitionDetail: React.FC = () => {
 
   const loadCompetition = async () => {
     try {
-      const data = await api.get('/competition/list');
+      const data = await competitionApi.list<Competition[]>();
       if (data.code === 200) {
         const comp = data.data.find((c: Competition) => c.id.toString() === id);
         if (comp) {
@@ -157,10 +157,7 @@ const CompetitionDetail: React.FC = () => {
 
   const handleVerifyPassword = async () => {
     try {
-      const data = await api.post('/competition/confirm', {
-        id: id,
-        password: password,
-      });
+      const data = await competitionApi.confirm(id, password);
       if (data.code === 200) {
         toast.success('密码验证成功');
         setPasswordVerified(true);
@@ -180,9 +177,7 @@ const CompetitionDetail: React.FC = () => {
     setProblems([]);
     setProblemsLoading(true);
     try {
-      const data = await api.get('/competition/list-problem', {
-        params: { id: id },
-      });
+      const data = await competitionApi.listProblem<Problem[]>(id);
       if (data.code === 200) {
         setProblems(data.data || []);
       }
@@ -203,7 +198,7 @@ const CompetitionDetail: React.FC = () => {
     if (!id) return;
     setFinishStatusLoaded(false);
     try {
-      const data = await api.get(`/competition/${id}/finish/status`);
+      const data = await competitionApi.finishStatus<boolean>(id);
       if (data.code === 200) {
         setIsUserCompetitionEnded(Boolean(data.data));
       }
@@ -218,7 +213,7 @@ const CompetitionDetail: React.FC = () => {
     if (!id) return;
     setFinishCompetitionLoading(true);
     try {
-      const data = await api.post(`/competition/${id}/finish`);
+      const data = await competitionApi.finish(id);
       if (data.code === 200) {
         setIsUserCompetitionEnded(true);
         setFinishCompetitionModalOpen(false);
@@ -250,7 +245,7 @@ const CompetitionDetail: React.FC = () => {
   const reportFullscreenRefuse = async () => {
     if (!id) return;
     try {
-      await api.post('/competition/anti-cheat/report', {
+      await antiCheatApi.report({
         competitionId: Number(id),
         events: [{
           eventType: 'FULLSCREEN_EXIT',

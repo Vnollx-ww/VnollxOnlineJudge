@@ -33,7 +33,7 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import api from '@/utils/api';
+import { commentApi, judgeApi, problemApi, submissionApi } from '@/lib';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
@@ -464,7 +464,7 @@ const ProblemDetail: React.FC = () => {
   const loadProblem = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/problem/get', { params: { id } }) as ApiResponse<Problem>;
+      const data = await problemApi.get<Problem>(id) as ApiResponse<Problem>;
       if (data.code === 200) {
         setProblem(data.data);
       } else {
@@ -479,7 +479,7 @@ const ProblemDetail: React.FC = () => {
 
   const loadTags = async (pid: number) => {
     try {
-      const data = await api.get('/problem/tags', { params: { pid } }) as ApiResponse<string[]>;
+      const data = await problemApi.tags<string[]>(pid) as ApiResponse<string[]>;
       if (data.code === 200) {
         setTags(data.data || []);
       }
@@ -503,13 +503,11 @@ const ProblemDetail: React.FC = () => {
         uid: String(userInfo.id),
         keyword: String(problem.id),
       };
-      const data = await api.get('/submission/list', { params }) as ApiResponse<Submission[]>;
+      const data = await submissionApi.list<Submission[]>(params) as ApiResponse<Submission[]>;
       if (data.code === 200) {
         setMySubmissions(data.data || []);
       }
-      const countData = await api.get('/submission/count', {
-        params: { cid: params.cid, uid: params.uid, keyword: params.keyword },
-      }) as ApiResponse<number>;
+      const countData = await submissionApi.count({ cid: params.cid, uid: params.uid, keyword: params.keyword }) as ApiResponse<number>;
       if (countData.code === 200) {
         setMySubmissionsTotal(countData.data || 0);
       }
@@ -535,7 +533,7 @@ const ProblemDetail: React.FC = () => {
   const loadComments = async (pid: number) => {
     setCommentLoading(true);
     try {
-      const data = await api.get('/comment/list', { params: { pid } }) as ApiResponse<Comment[]>;
+      const data = await commentApi.list<Comment[]>(pid) as ApiResponse<Comment[]>;
       if (data.code === 200) {
         setComments(formatComments(data.data || []));
       }
@@ -630,7 +628,16 @@ const ProblemDetail: React.FC = () => {
         memory: String(problem!.memoryLimit || 256),
         customTest: isCustomTest,
       };
-      const data = await api.post('/judge/test', payload) as ApiResponse<{
+      const data = await judgeApi.test<{
+        status?: string;
+        description?: string;
+        errorInfo?: string;
+        input?: string;
+        expectedOutput?: string;
+        actualOutput?: string;
+        passCount?: number | null;
+        testCount?: number | null;
+      }>(payload) as ApiResponse<{
         status?: string;
         description?: string;
         errorInfo?: string;
@@ -719,7 +726,12 @@ const ProblemDetail: React.FC = () => {
         time: String(problem.timeLimit || 1000),
         memory: String(problem.memoryLimit || 256),
       };
-      const data = await api.post('/judge/submit', payload) as ApiResponse<{
+      const data = await judgeApi.submit<{
+        snowflakeId?: string;
+        status?: string;
+        description?: string;
+        queueAhead?: number | null;
+      }>(payload) as ApiResponse<{
         snowflakeId?: string;
         status?: string;
         description?: string;
@@ -773,7 +785,7 @@ const ProblemDetail: React.FC = () => {
         content: commentContent.trim(),
         createTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       };
-      const data = await api.post('/comment/publish', payload) as ApiResponse;
+      const data = await commentApi.publish(payload) as ApiResponse;
       if (data.code === 200) {
         toast.success('发布成功');
         setCommentContent('');
@@ -792,7 +804,7 @@ const ProblemDetail: React.FC = () => {
   const handleDeleteComment = async (commentId: number) => {
     if (!problem) return;
     try {
-      const data = await api.delete('/comment/delete', { params: { commentId } }) as ApiResponse;
+      const data = await commentApi.delete(commentId) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除成功');
         loadComments(problem.id);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '@/utils/api';
+import { authApi, userApi } from '@/lib';
 import { setToken, setUserInfo } from '@/utils/auth';
 
 const Login: React.FC = () => {
@@ -13,10 +13,10 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const data = await api.post('/user/login', formData);
+      const data = await authApi.login(formData);
       if (data.code === 200) {
         setToken(data.data);
-        const userRes = await api.get('/user/profile');
+        const userRes = await userApi.getProfile<{ id: string; name: string; identity: string }>();
         if (userRes.code === 200) setUserInfo(userRes.data);
         toast.success('登录成功', { duration: 2000 });
         // 使用 replace 并在导航后触发自定义事件，让 Header 组件重新获取用户信息

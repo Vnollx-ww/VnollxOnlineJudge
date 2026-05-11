@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, AlertCircle, Clock, HardDrive, Layers, Hash, User, CalendarDays } from 'lucide-react';
-import api from '../../utils/api';
+import { dictApi, submissionApi, userApi } from '@/lib';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import type { ApiResponse, JudgeMessage } from '../../types';
@@ -106,8 +106,8 @@ const Submissions: React.FC = () => {
   const loadDictOptions = async () => {
     try {
       const [statusRes, languageRes] = await Promise.all([
-        api.get('/dict/data/list', { params: { dictType: 'JUDGE_RESULT_STATUS' } }) as Promise<ApiResponse<DictData[]>>,
-        api.get('/dict/data/list', { params: { dictType: 'SUBMIT_LANGUAGE' } }) as Promise<ApiResponse<DictData[]>>,
+        dictApi.listData<DictData[]>('JUDGE_RESULT_STATUS') as Promise<ApiResponse<DictData[]>>,
+        dictApi.listData<DictData[]>('SUBMIT_LANGUAGE') as Promise<ApiResponse<DictData[]>>,
       ]);
       if (statusRes.code === 200) {
         setStatusOptions((statusRes.data || []).map((item) => ({ value: item.dictValue, label: item.dictLabel })));
@@ -133,7 +133,7 @@ const Submissions: React.FC = () => {
           currentUid = userInfo.id;
         } else {
           try {
-            const res = await api.get('/user/profile') as ApiResponse<{ id: string; name: string; identity: string }>;
+            const res = await userApi.getProfile<{ id: string; name: string; identity: string }>() as ApiResponse<{ id: string; name: string; identity: string }>;
             if (res.code === 200) {
               setUserInfo({ id: res.data.id, name: res.data.name, identity: res.data.identity });
               currentUid = res.data.id;
@@ -153,7 +153,7 @@ const Submissions: React.FC = () => {
       if (language) params.language = language;
       if (currentUid) params.uid = currentUid;
 
-      const data = await api.get('/submission/list', { params }) as ApiResponse<Submission[]>;
+      const data = await submissionApi.list<Submission[]>(params) as ApiResponse<Submission[]>;
       if (data.code === 200) {
         setSubmissions(data.data || []);
       }
@@ -164,7 +164,7 @@ const Submissions: React.FC = () => {
       if (language) countParams.language = language;
       if (currentUid) countParams.uid = currentUid;
 
-      const countData = await api.get('/submission/count', { params: countParams }) as ApiResponse<number>;
+      const countData = await submissionApi.count(countParams) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }

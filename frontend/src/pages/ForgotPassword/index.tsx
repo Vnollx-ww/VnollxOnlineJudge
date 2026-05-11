@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '@/utils/api';
+import { authApi } from '@/lib';
 
 const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ const ForgotPassword: React.FC = () => {
 
     setCodeLoading(true);
     try {
-      const data = await api.post('/email/send', { email, option: 'forget' });
+      const data = await authApi.sendEmailCode(email, 'forget');
       if (data.code === 200) {
         toast.success('验证码已发送到您的邮箱', { duration: 2000 });
         setStep('verify');
@@ -68,7 +68,7 @@ const ForgotPassword: React.FC = () => {
 
     setLoading(true);
     try {
-      const data = await api.put('/user/forget', {
+      const data = await authApi.forgetPassword({
         email,
         verifyCode,
         newPassword,
@@ -93,7 +93,7 @@ const ForgotPassword: React.FC = () => {
     const { email } = formData;
     setCodeLoading(true);
     try {
-      const data = await api.post('/email/send', { email, option: 'forget' });
+      const data = await authApi.sendEmailCode(email, 'forget');
       if (data.code === 200) {
         toast.success('验证码已重新发送', { duration: 2000 });
         setCountdown(60);

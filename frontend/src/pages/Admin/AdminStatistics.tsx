@@ -16,7 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, TrendingUp } from 'lucide-react';
-import api from '@/utils/api';
+import { adminStatisticsApi, adminUserApi } from '@/lib';
 import Select from '@/components/select';
 import type { ApiResponse } from '@/types';
 
@@ -86,7 +86,7 @@ const AdminStatistics: React.FC = () => {
   const loadErrorPatterns = async () => {
     setLoadingError(true);
     try {
-      const res = await api.get('/admin/statistics/error-patterns') as ApiResponse<ErrorPatternStat[]>;
+      const res = await adminStatisticsApi.errorPatterns<ErrorPatternStat[]>() as ApiResponse<ErrorPatternStat[]>;
       if (res.code === 200 && res.data) {
         setErrorPatterns(res.data);
       }
@@ -100,9 +100,7 @@ const AdminStatistics: React.FC = () => {
   const loadPlatformStats = async () => {
     setLoadingPlatform(true);
     try {
-      const res = await api.get('/admin/statistics/platform', {
-        params: { days: platformDays },
-      }) as ApiResponse<PlatformStats>;
+      const res = await adminStatisticsApi.platform<PlatformStats>(platformDays) as ApiResponse<PlatformStats>;
       if (res.code === 200 && res.data) {
         setPlatformStats(res.data);
       } else {
@@ -134,7 +132,7 @@ const AdminStatistics: React.FC = () => {
   const loadUserOptions = async () => {
     setLoadingUserOptions(true);
     try {
-      const res = await api.get('/admin/user/list', { params: { pageNum: 1, pageSize: 500 } }) as ApiResponse<{ id: number; name: string }[]>;
+      const res = await adminUserApi.list<{ id: number; name: string }[]>({ pageNum: 1, pageSize: 500 }) as ApiResponse<{ id: number; name: string }[]>;
       if (res.code === 200 && res.data) {
         setUserOptions(res.data);
       } else {
@@ -152,7 +150,7 @@ const AdminStatistics: React.FC = () => {
     try {
       const params: Record<string, string | number> = { days: learningDays };
       if (learningUid > 0) params.uid = learningUid;
-      const res = await api.get('/admin/statistics/learning', { params }) as ApiResponse<LearningAnalytics>;
+      const res = await adminStatisticsApi.learning<LearningAnalytics>(params) as ApiResponse<LearningAnalytics>;
       if (res.code === 200 && res.data) {
         setLearningData(res.data);
       } else {

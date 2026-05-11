@@ -13,7 +13,7 @@ import {
 } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
-import api from '@/utils/api';
+import { adminPracticeApi } from '@/lib';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
@@ -92,16 +92,12 @@ const AdminPractices: React.FC = () => {
   const loadPractices = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/admin/practice/list', {
-        params: { pageNum: currentPage.toString(), pageSize: pageSize.toString(), keyword: keyword || undefined },
-      }) as ApiResponse<Practice[]>;
+      const data = await adminPracticeApi.list<Practice[]>({ pageNum: currentPage.toString(), pageSize: pageSize.toString(), keyword: keyword || undefined }) as ApiResponse<Practice[]>;
       if (data.code === 200) {
         setPractices(data.data || []);
       }
 
-      const countData = await api.get('/admin/practice/count', {
-        params: { keyword: keyword || undefined },
-      }) as ApiResponse<number>;
+      const countData = await adminPracticeApi.count({ keyword: keyword || undefined }) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }
@@ -132,7 +128,7 @@ const AdminPractices: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const data = await api.delete(`/admin/practice/delete/${id}`) as ApiResponse;
+      const data = await adminPracticeApi.delete(id) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除练习成功');
         loadPractices();
@@ -153,7 +149,7 @@ const AdminPractices: React.FC = () => {
 
   const loadPracticeProblems = async (practiceId: number) => {
     try {
-      const data = await api.get(`/admin/practice/${practiceId}/problems`) as ApiResponse<Problem[]>;
+      const data = await adminPracticeApi.practiceProblems<Problem[]>(practiceId) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         setPracticeProblems(data.data || []);
       }
@@ -164,7 +160,7 @@ const AdminPractices: React.FC = () => {
 
   const loadAllProblems = async () => {
     try {
-      const data = await api.get('/admin/practice/problems') as ApiResponse<Problem[]>;
+      const data = await adminPracticeApi.allProblems<Problem[]>() as ApiResponse<Problem[]>;
       if (data.code === 200) {
         setAllProblems(data.data || []);
       }
@@ -180,10 +176,7 @@ const AdminPractices: React.FC = () => {
     }
 
     try {
-      const data = await api.post('/admin/practice/add/problems', {
-        practiceId: currentPracticeId!.toString(),
-        problemIds: selectedProblems.map((p) => p.toString()),
-      }) as ApiResponse;
+      const data = await adminPracticeApi.addProblems(currentPracticeId!, selectedProblems.map((p) => p.toString())) as ApiResponse;
 
       if (data.code === 200) {
         toast.success('批量添加题目成功');
@@ -200,7 +193,7 @@ const AdminPractices: React.FC = () => {
 
   const handleDeleteProblemFromPractice = async (problemId: number) => {
     try {
-      const data = await api.delete(`/admin/practice/${currentPracticeId}/problems/${problemId}`) as ApiResponse;
+      const data = await adminPracticeApi.deleteProblem(currentPracticeId!, problemId) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除题目成功');
         loadPracticeProblems(currentPracticeId!);
@@ -225,10 +218,9 @@ const AdminPractices: React.FC = () => {
         ...(editingPractice ? { id: editingPractice.id } : {}),
       };
 
-      const url = editingPractice ? '/admin/practice/update' : '/admin/practice/create';
-      const method = editingPractice ? 'put' : 'post';
-
-      const data = await (api as any)[method](url, submitData) as ApiResponse;
+      const data = await (editingPractice
+        ? adminPracticeApi.update(submitData)
+        : adminPracticeApi.create(submitData)) as ApiResponse;
 
       if (data.code === 200) {
         toast.success(editingPractice ? '更新练习成功' : '创建练习成功');

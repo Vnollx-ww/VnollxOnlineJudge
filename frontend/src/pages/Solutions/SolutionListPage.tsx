@@ -20,7 +20,7 @@ import {
 import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import api from '../../utils/api';
+import { problemApi, solutionApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
@@ -81,7 +81,7 @@ const SolutionListPage: React.FC = () => {
         setProblemInfo({ title: titleFromState, id: pid });
         return;
       }
-      const data = await api.get('/problem/get', { params: { id: pid } });
+      const data = await problemApi.get<{ title?: string; id?: string }>(pid);
       if (data.code === 200) {
         setProblemInfo(data.data);
       } else {
@@ -95,7 +95,7 @@ const SolutionListPage: React.FC = () => {
   const loadSolutions = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/solve/list', { params: { pid } });
+      const data = await solutionApi.list<Solution[]>(pid);
       if (data.code === 200) {
         setSolutions((data.data || []).reverse());
         setFetchError(null);

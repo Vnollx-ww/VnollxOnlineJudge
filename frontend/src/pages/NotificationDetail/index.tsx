@@ -16,7 +16,7 @@ import {
   Spin,
 } from 'antd';
 import dayjs from 'dayjs';
-import api from '../../utils/api';
+import { notificationApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 
 const { Title, Text, Paragraph } = Typography;
@@ -47,7 +47,7 @@ const NotificationDetail: React.FC = () => {
     if (!id) return;
     setLoading(true);
     try {
-      const data = await api.get('/notification/info', { params: { nid: id } });
+      const data = await notificationApi.info<Notification>(id);
       if (data.code === 200) {
         setNotification(data.data);
         dispatchNotificationUpdate();
@@ -77,7 +77,7 @@ const NotificationDetail: React.FC = () => {
       return;
     }
     try {
-      await api.put(`/notification/read/${id}`);
+      await notificationApi.read(id!);
       messageApi.success('已标记为已读');
       dispatchNotificationUpdate();
       loadDetail();
@@ -95,7 +95,7 @@ const NotificationDetail: React.FC = () => {
       okButtonProps: { danger: true },
       async onOk() {
         try {
-          await api.delete(`/notification/delete/${id}`);
+          await notificationApi.delete(id!);
           messageApi.success('删除成功');
           dispatchNotificationUpdate();
           navigate('/notifications');

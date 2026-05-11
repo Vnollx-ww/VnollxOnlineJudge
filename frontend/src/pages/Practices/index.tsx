@@ -4,7 +4,7 @@ import { Input, Progress, Tag } from 'antd';
 import toast from 'react-hot-toast';
 import { BookOpen, CalendarDays, FileText, Search } from 'lucide-react';
 import { Select } from '../../components';
-import api from '../../utils/api';
+import { practiceApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
 
@@ -41,7 +41,7 @@ const Practices: React.FC = () => {
   const loadPractices = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/practice/list') as ApiResponse<Practice[]>;
+      const data = await practiceApi.list<Practice[]>() as ApiResponse<Practice[]>;
       if (data.code === 200) {
         setAllPractices(data.data || []);
         setPractices(data.data || []);

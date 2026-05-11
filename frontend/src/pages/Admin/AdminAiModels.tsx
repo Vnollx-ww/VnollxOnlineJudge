@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Modal, InputNumber, FilePicker, Field, Empty, Spin } from '@/components';
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon } from 'lucide-react';
-import api from '@/utils/api';
+import { adminAiModelApi, userApi } from '@/lib';
 import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
@@ -57,7 +57,7 @@ const AdminAiModels: React.FC = () => {
   const loadList = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/admin/ai-model/list') as ApiResponse<AiModelVo[]>;
+      const res = await adminAiModelApi.list<AiModelVo[]>() as ApiResponse<AiModelVo[]>;
       if (res.code === 200) {
         setList(res.data ?? []);
       } else {
@@ -83,7 +83,7 @@ const AdminAiModels: React.FC = () => {
   const handleEdit = async (row: AiModelVo) => {
     setEditingId(row.id);
     try {
-      const res = await api.get(`/admin/ai-model/${row.id}`) as ApiResponse<AdminAiModelDetail>;
+      const res = await adminAiModelApi.detail<AdminAiModelDetail>(row.id) as ApiResponse<AdminAiModelDetail>;
       if (res.code === 200 && res.data) {
         const d = res.data;
         setModelForm({
@@ -106,7 +106,7 @@ const AdminAiModels: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const res = await api.delete(`/admin/ai-model/${id}`) as ApiResponse;
+      const res = await adminAiModelApi.delete(id) as ApiResponse;
       if (res.code === 200) {
         toast.success('删除成功');
         loadList();
@@ -125,7 +125,7 @@ const AdminAiModels: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await api.post('/user/upload/avatar?prefix=ai-model', formData) as ApiResponse<string>;
+      const res = await userApi.uploadAvatar<string>(formData, 'ai-model') as ApiResponse<string>;
       if (res.code === 200 && res.data) {
         setModelForm((current) => ({ ...current, logoUrl: res.data }));
         toast.success('Logo 上传成功');
@@ -154,7 +154,7 @@ const AdminAiModels: React.FC = () => {
         status: values.status ?? 1,
         proxyType: values.proxyType ?? 'overseas',
       };
-      const res = await api.post('/admin/ai-model/save', payload) as ApiResponse<number>;
+      const res = await adminAiModelApi.save<number>(payload) as ApiResponse<number>;
       if (res.code === 200) {
         toast.success(editingId ? '更新成功' : '创建成功');
         setModalVisible(false);

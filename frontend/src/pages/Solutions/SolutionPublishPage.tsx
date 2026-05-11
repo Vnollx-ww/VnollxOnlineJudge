@@ -12,7 +12,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import katex from 'katex';
-import api from '../../utils/api';
+import { problemApi, solutionApi } from '@/lib';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import Input from '../../components/input';
 import 'highlight.js/styles/github.css';
@@ -82,7 +82,7 @@ const SolutionPublishPage: React.FC = () => {
       return;
     }
     try {
-      const data = await api.get('/problem/get', { params: { id: pid } });
+      const data = await problemApi.get<{ id?: string; title?: string }>(pid);
       if (data.code === 200) {
         setProblemInfo(data.data);
       } else {
@@ -114,7 +114,7 @@ const SolutionPublishPage: React.FC = () => {
         name: user?.name,
         problemName: problemInfo?.title,
       };
-      const data = await api.post('/solve/create', payload);
+      const data = await solutionApi.create(payload);
       if (data.code === 200) {
         toast.success('题解发布成功，审核通过后可见');
         navigate(`/problem/${pid}/solutions`, { state: { title: problemInfo?.title } });

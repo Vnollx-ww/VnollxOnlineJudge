@@ -10,7 +10,7 @@ import {
   Terminal,
   Sparkles,
 } from 'lucide-react';
-import api from '../../utils/api';
+import { statsApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import { CountUp, CodeWindow } from '../../components';
 import type { ApiResponse } from '../../types';
@@ -39,10 +39,10 @@ const Home: React.FC = () => {
     try {
       const [problemRes, userRes, submissionRes, competitionRes] =
         await Promise.all([
-          api.get('/problem/count') as Promise<ApiResponse<number>>,
-          api.get('/user/count') as Promise<ApiResponse<number>>,
-          api.get('/submission/count') as Promise<ApiResponse<number>>,
-          api.get('/competition/count') as Promise<ApiResponse<number>>,
+          statsApi.problemCount() as Promise<ApiResponse<number>>,
+          statsApi.userCount() as Promise<ApiResponse<number>>,
+          statsApi.submissionCount() as Promise<ApiResponse<number>>,
+          statsApi.competitionCount() as Promise<ApiResponse<number>>,
         ]);
 
       setStats({

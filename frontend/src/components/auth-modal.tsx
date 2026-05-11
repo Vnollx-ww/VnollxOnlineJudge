@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { ArrowRight, Eye, EyeOff, Lock, Mail, User, X } from 'lucide-react';
-import api from '@/utils/api';
 import { Toast, type ToastState } from '@/components';
+import { authApi } from '@/lib';
 import { setToken } from '@/utils/auth';
 import type { ApiResponse } from '@/types';
 
@@ -284,7 +284,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
     if (!validateLogin()) return;
     setLoginLoading(true);
     try {
-      const data = await api.post('/user/login', loginForm) as ApiResponse<string>;
+      const data = await authApi.login(loginForm) as ApiResponse<string>;
       if (data.code === 200) {
         setToken(data.data);
         notify('success', '登录成功');
@@ -310,7 +310,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
     }
     setForgotLoading(true);
     try {
-      const data = await api.put('/user/forget', {
+      const data = await authApi.forgetPassword({
         email: forgotForm.email,
         verifyCode: forgotForm.verifyCode,
         newPassword: forgotForm.newPassword,
@@ -339,10 +339,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
 
     setForgotCodeLoading(true);
     try {
-      const data = await api.post('/email/send', {
-        email: forgotForm.email,
-        option: 'forget',
-      }) as ApiResponse;
+      const data = await authApi.sendEmailCode(forgotForm.email, 'forget') as ApiResponse;
       if (data.code === 200) {
         notify('success', '验证码已发送，请注意查收');
         setForgotCountdown(60);
@@ -365,7 +362,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
     }
     setRegisterLoading(true);
     try {
-      const data = await api.post('/user/register', {
+      const data = await authApi.register({
         name: registerForm.name,
         email: registerForm.email,
         verifyCode: registerForm.verifyCode,
@@ -393,10 +390,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
 
     setCodeLoading(true);
     try {
-      const data = await api.post('/email/send', {
-        email: registerForm.email,
-        option: 'register',
-      }) as ApiResponse;
+      const data = await authApi.sendEmailCode(registerForm.email, 'register') as ApiResponse;
       if (data.code === 200) {
         notify('success', '验证码已发送，请注意查收');
         setCountdown(60);

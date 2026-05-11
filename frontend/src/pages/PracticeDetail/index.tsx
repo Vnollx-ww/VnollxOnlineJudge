@@ -17,7 +17,7 @@ import {
   MinusCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import api from '../../utils/api';
+import { practiceApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 
 const { Title, Text } = Typography;
@@ -66,10 +66,8 @@ const PracticeDetail: React.FC = () => {
     setLoading(true);
     try {
       const [practiceRes, problemsRes] = await Promise.all([
-        api.get(`/practice/${id}`) as Promise<ApiResponse<Practice>>,
-        api.get(`/practice/${id}/problems`, {
-          params: { pageNum: 1, pageSize: PROBLEMS_BATCH_SIZE },
-        }) as Promise<ApiResponse<Problem[]>>,
+        practiceApi.get<Practice>(id) as Promise<ApiResponse<Practice>>,
+        practiceApi.problems<Problem[]>(id, { pageNum: 1, pageSize: PROBLEMS_BATCH_SIZE }) as Promise<ApiResponse<Problem[]>>,
       ]);
 
       if (practiceRes.code === 200) {
@@ -98,9 +96,7 @@ const PracticeDetail: React.FC = () => {
     const nextPage = currentPage + 1;
 
     try {
-      const problemsRes = await api.get(`/practice/${id}/problems`, {
-        params: { pageNum: nextPage, pageSize: PROBLEMS_BATCH_SIZE },
-      }) as ApiResponse<Problem[]>;
+      const problemsRes = await practiceApi.problems<Problem[]>(id, { pageNum: nextPage, pageSize: PROBLEMS_BATCH_SIZE }) as ApiResponse<Problem[]>;
 
       if (problemsRes.code === 200) {
         const nextBatch = problemsRes.data || [];

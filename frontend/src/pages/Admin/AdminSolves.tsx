@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Modal, Tag, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
 import { RefreshCw, Check, X, Trash2 } from 'lucide-react';
-import api from '@/utils/api';
+import { adminSolveApi } from '@/lib';
 import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
@@ -53,13 +53,11 @@ const AdminSolves: React.FC = () => {
   const loadSolves = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/admin/solve/list', {
-        params: {
-          page: currentPage.toString(),
-          size: pageSize.toString(),
-          keyword: keyword || undefined,
-          status: statusFilter !== null ? statusFilter : undefined,
-        },
+      const data = await adminSolveApi.list<Solve[]>({
+        page: currentPage.toString(),
+        size: pageSize.toString(),
+        keyword: keyword || undefined,
+        status: statusFilter !== null ? statusFilter : undefined,
       }) as ApiResponse<Solve[]>;
       if (data.code === 200) {
         setSolves(data.data || []);
@@ -75,7 +73,7 @@ const AdminSolves: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const data = await api.delete(`/admin/solve/${id}`) as ApiResponse;
+      const data = await adminSolveApi.delete(id) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除题解成功');
         loadSolves();
@@ -89,9 +87,7 @@ const AdminSolves: React.FC = () => {
 
   const handleAudit = async (id: number, status: number) => {
     try {
-      const data = await api.put(`/admin/solve/${id}/status`, null, {
-        params: { status },
-      }) as ApiResponse;
+      const data = await adminSolveApi.audit(id, status) as ApiResponse;
       if (data.code === 200) {
         toast.success((data as any).msg || '审核成功');
         loadSolves();

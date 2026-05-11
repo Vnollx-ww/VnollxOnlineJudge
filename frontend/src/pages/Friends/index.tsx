@@ -4,7 +4,7 @@ import { Search, Send, UserPlus, Check, X, Trash2, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import toast from 'react-hot-toast';
 import Input from '../../components/input';
-import api from '@/utils/api';
+import { friendApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
 import { useMessageWebSocket } from '@/contexts/MessageWebSocketContext';
 import type { ApiResponse } from '@/types';
@@ -83,7 +83,7 @@ const Friends: React.FC = () => {
     if (!isAuthenticated()) return;
     setLoading(true);
     try {
-      const data = await api.get('/friend/list') as ApiResponse<Friend[]>;
+      const data = await friendApi.list<Friend[]>() as ApiResponse<Friend[]>;
       if (data.code === 200) {
         setFriends(data.data || []);
       }
@@ -98,7 +98,7 @@ const Friends: React.FC = () => {
   const loadPendingRequests = useCallback(async () => {
     if (!isAuthenticated()) return;
     try {
-      const data = await api.get('/friend/requests') as ApiResponse<Friend[]>;
+      const data = await friendApi.requests<Friend[]>() as ApiResponse<Friend[]>;
       if (data.code === 200) {
         setPendingRequests(data.data || []);
       }
@@ -114,9 +114,7 @@ const Friends: React.FC = () => {
       return;
     }
     try {
-      const data = await api.get('/friend/search', { 
-        params: { keyword, pageNum: 1, pageSize: 20 } 
-      }) as ApiResponse<UserSearch[]>;
+      const data = await friendApi.search<UserSearch[]>(keyword) as ApiResponse<UserSearch[]>;
       if (data.code === 200) {
         setSearchResults(data.data || []);
       }
@@ -138,7 +136,7 @@ const Friends: React.FC = () => {
       setMessages(cached);
       setHasMoreMessages(cached.length >= PAGE_SIZE);
       // 后台标记已读
-      api.post(`/friend/read/${friendId}`).then(() => {
+      friendApi.read(friendId).then(() => {
         window.dispatchEvent(new CustomEvent('message-updated'));
         setFriends(prev => prev.map(f => 
           f.userId === friendId ? { ...f, unreadCount: 0 } : f
@@ -149,9 +147,7 @@ const Friends: React.FC = () => {
     
     setChatLoading(true);
     try {
-      const data = await api.get(`/friend/chat/${friendId}`, {
-        params: { pageNum: 1, pageSize: PAGE_SIZE }
-      }) as ApiResponse<PrivateMessage[]>;
+      const data = await friendApi.chat<PrivateMessage[]>(friendId, 1, PAGE_SIZE) as ApiResponse<PrivateMessage[]>;
       if (data.code === 200) {
         const msgs = data.data || [];
         // 消息按时间正序排列（旧的在前，新的在后）
@@ -161,7 +157,7 @@ const Friends: React.FC = () => {
         chatCacheRef.current.set(friendId, msgs);
       }
       // 标记已读
-      await api.post(`/friend/read/${friendId}`);
+      await friendApi.read(friendId);
       window.dispatchEvent(new CustomEvent('message-updated'));
       // 本地更新未读数，避免刷新整个列表
       setFriends(prev => prev.map(f => 
@@ -182,9 +178,7 @@ const Friends: React.FC = () => {
     const nextPage = currentPage + 1;
     
     try {
-      const data = await api.get(`/friend/chat/${selectedFriend.userId}`, {
-        params: { pageNum: nextPage, pageSize: PAGE_SIZE }
-      }) as ApiResponse<PrivateMessage[]>;
+      const data = await friendApi.chat<PrivateMessage[]>(selectedFriend.userId, nextPage, PAGE_SIZE) as ApiResponse<PrivateMessage[]>;
       
       if (data.code === 200) {
         const olderMsgs = data.data || [];
@@ -258,10 +252,7 @@ const Friends: React.FC = () => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedFriend) return;
     try {
-      const data = await api.post('/friend/message', {
-        receiverId: selectedFriend.userId,
-        content: newMessage
-      }) as ApiResponse<PrivateMessage>;
+      const data = await friendApi.sendMessage<PrivateMessage>(selectedFriend.userId, newMessage) as ApiResponse<PrivateMessage>;
       if (data.code === 200) {
         const newMsg = data.data;
         setMessages(prev => [...prev, newMsg]);
@@ -288,7 +279,7 @@ const Friends: React.FC = () => {
   // 发送好友请求
   const sendFriendRequest = async (userId: number) => {
     try {
-      const data = await api.post(`/friend/request/${userId}`) as ApiResponse<void>;
+      const data = await friendApi.request(userId) as ApiResponse<void>;
       if (data.code === 200) {
         toast.success('好友请求已发送');
         searchUsers(searchKeyword);
@@ -301,7 +292,7 @@ const Friends: React.FC = () => {
   // 接受好友请求
   const acceptRequest = async (requesterId: number) => {
     try {
-      const data = await api.post(`/friend/accept/${requesterId}`) as ApiResponse<void>;
+      const data = await friendApi.accept(requesterId) as ApiResponse<void>;
       if (data.code === 200) {
         toast.success('已同意好友请求');
         loadFriends();
@@ -315,7 +306,7 @@ const Friends: React.FC = () => {
   // 拒绝好友请求
   const rejectRequest = async (requesterId: number) => {
     try {
-      const data = await api.post(`/friend/reject/${requesterId}`) as ApiResponse<void>;
+      const data = await friendApi.reject(requesterId) as ApiResponse<void>;
       if (data.code === 200) {
         toast.success('已拒绝好友请求');
         loadPendingRequests();
@@ -335,7 +326,7 @@ const Friends: React.FC = () => {
       okType: 'danger',
       onOk: async () => {
         try {
-          const data = await api.delete(`/friend/chat/clear/${friendId}`) as ApiResponse<void>;
+          const data = await friendApi.clearChat(friendId) as ApiResponse<void>;
           if (data.code === 200) {
             toast.success('已清除聊天记录');
             setMessages([]);
@@ -422,7 +413,7 @@ const Friends: React.FC = () => {
         if (cached) {
           chatCacheRef.current.set(msg.senderId, [...cached, newMsg]);
         }
-        api.post(`/friend/read/${msg.senderId}`).then(() => {
+        friendApi.read(msg.senderId).then(() => {
           window.dispatchEvent(new CustomEvent('message-updated'));
           // 通知对方消息已读
           console.log('[WS] 发送 message_read:', { type: 'message_read', toUid: msg.senderId });

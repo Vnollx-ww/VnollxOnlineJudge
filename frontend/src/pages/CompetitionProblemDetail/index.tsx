@@ -33,7 +33,7 @@ import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import api from '../../utils/api';
+import { commentApi, competitionApi, judgeApi, problemApi, submissionApi } from '@/lib';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
@@ -435,7 +435,7 @@ const CompetitionProblemDetail: React.FC = () => {
       setLoading(true);
     }
     try {
-      const data = await api.get('/problem/get', { params: { id } });
+      const data = await problemApi.get<Problem>(id);
       if (data.code === 200) {
         setProblem(data.data);
       } else {
@@ -451,7 +451,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const loadCompetition = async () => {
     if (!cid) return;
     try {
-      const data = await api.get(`/competition/${cid}`);
+      const data = await competitionApi.get<Competition>(cid);
       if (data.code === 200) {
         setCompetition(data.data || null);
       }
@@ -463,13 +463,13 @@ const CompetitionProblemDetail: React.FC = () => {
   const loadCompetitionStatus = async () => {
     try {
       const now = dayjs().format("YYYY-MM-DD HH:mm:ss");
-      const openRes = await api.post("/competition/judgeIsOpen", { now, id: cid });
+      const openRes = await competitionApi.judgeIsOpen(now, cid);
       setIsCompetitionOpen(openRes.code === 200);
 
-      const endRes = await api.post("/competition/judgeIsEnd", { now, id: cid });
+      const endRes = await competitionApi.judgeIsEnd(now, cid);
       setIsCompetitionEnd(endRes.code !== 200);
 
-      const finishRes = await api.get(`/competition/${cid}/finish/status`);
+      const finishRes = await competitionApi.finishStatus<boolean>(cid);
       setIsUserCompetitionEnded(Boolean(finishRes.data));
     } catch (err) {
       console.warn("比赛状态判断失败", err);
@@ -480,9 +480,7 @@ const CompetitionProblemDetail: React.FC = () => {
     if (!cid) return;
     setCompetitionProblemsLoading(true);
     try {
-      const data = await api.get('/competition/list-problem', {
-        params: { id: cid },
-      });
+      const data = await competitionApi.listProblem<CompetitionProblem[]>(cid);
       if (data.code === 200) {
         setCompetitionProblems(data.data || []);
       }
@@ -508,13 +506,11 @@ const CompetitionProblemDetail: React.FC = () => {
         uid: String(userInfo.id),
         keyword: String(problem.id),
       };
-      const data = await api.get('/submission/list', { params });
+      const data = await submissionApi.list<Submission[]>(params);
       if (data.code === 200) {
         setMySubmissions(data.data || []);
       }
-      const countData = await api.get('/submission/count', {
-        params: { cid: params.cid, uid: params.uid, keyword: params.keyword },
-      });
+      const countData = await submissionApi.count({ cid: params.cid, uid: params.uid, keyword: params.keyword });
       if (countData.code === 200) {
         setMySubmissionsTotal(countData.data || 0);
       }
@@ -540,7 +536,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const loadComments = async (pid: number) => {
     setCommentLoading(true);
     try {
-      const data = await api.get('/comment/list', { params: { pid } });
+      const data = await commentApi.list<Comment[]>(pid);
       if (data.code === 200) {
         setComments(formatComments(data.data || []));
       }
@@ -640,7 +636,16 @@ const CompetitionProblemDetail: React.FC = () => {
         memory: String(problem!.memoryLimit || 256),
         customTest: isCustomTest,
       };
-      const data = await api.post('/judge/test', payload);
+      const data = await judgeApi.test<{
+        actualOutput?: string;
+        expectedOutput?: string;
+        input?: string;
+        description?: string;
+        status?: string;
+        errorInfo?: string;
+        passCount?: number | null;
+        testCount?: number | null;
+      }>(payload);
       if (data.code === 200) {
         if (isCustomTest) {
           setRunResult({
@@ -722,7 +727,12 @@ const CompetitionProblemDetail: React.FC = () => {
         time: String(problem?.timeLimit || 1000),
         memory: String(problem?.memoryLimit || 256),
       };
-      const data = await api.post('/judge/submit', payload);
+      const data = await judgeApi.submit<{
+        snowflakeId?: string;
+        status?: string;
+        description?: string;
+        queueAhead?: number | null;
+      }>(payload);
       if (data.code === 200) {
         let hasAppliedPendingMessage = false;
         if (data.data.snowflakeId) {
@@ -766,7 +776,7 @@ const CompetitionProblemDetail: React.FC = () => {
     if (!cid) return;
     setFinishCompetitionLoading(true);
     try {
-      const data = await api.post(`/competition/${cid}/finish`);
+      const data = await competitionApi.finish(cid);
       if (data.code === 200) {
         setIsUserCompetitionEnded(true);
         setFinishCompetitionModalOpen(false);
@@ -803,7 +813,7 @@ const CompetitionProblemDetail: React.FC = () => {
         content: commentContent.trim(),
         createTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       };
-      const data = await api.post('/comment/publish', payload);
+      const data = await commentApi.publish(payload);
       if (data.code === 200) {
         toast.success('发布成功');
         setCommentContent('');
@@ -821,7 +831,7 @@ const CompetitionProblemDetail: React.FC = () => {
 
   const handleDeleteComment = async (commentId: number) => {
     try {
-      const data = await api.delete('/comment/delete', { params: { commentId } });
+      const data = await commentApi.delete(commentId);
       if (data.code === 200) {
         toast.success('删除成功');
         loadComments(problem!.id);

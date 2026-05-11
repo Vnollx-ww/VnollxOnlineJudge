@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Modal, Tag, Spin, Descriptions, Divider, Empty, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
 import { RefreshCw, Users, Shield, Key, Plus, Trash2, RotateCw } from 'lucide-react';
-import api from '@/utils/api';
+import { adminRoleApi, adminUserApi } from '@/lib';
 import Select from '@/components/select';
 import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
@@ -62,7 +62,7 @@ const AdminPermissions: React.FC = () => {
 
   const loadRoles = async () => {
     try {
-      const data = await api.get('/admin/permission/roles') as ApiResponse<Role[]>;
+      const data = await adminRoleApi.listRoles<Role[]>() as ApiResponse<Role[]>;
       if (data.code === 200) {
         setRoles(data.data || []);
       }
@@ -73,7 +73,7 @@ const AdminPermissions: React.FC = () => {
 
   const loadPermissions = async () => {
     try {
-      const data = await api.get('/admin/permission/permissions') as ApiResponse<Permission[]>;
+      const data = await adminRoleApi.listPermissions<Permission[]>() as ApiResponse<Permission[]>;
       if (data.code === 200) {
         setPermissions(data.data || []);
       }
@@ -85,9 +85,7 @@ const AdminPermissions: React.FC = () => {
   const loadUsers = async () => {
     setUsersLoading(true);
     try {
-      const data = await api.get('/admin/user/list', {
-        params: { pageNum: 1, pageSize: 100 },
-      }) as ApiResponse<User[]>;
+      const data = await adminUserApi.list<User[]>({ pageNum: 1, pageSize: 100 }) as ApiResponse<User[]>;
       if (data.code === 200) {
         setUsers(data.data || []);
       }
@@ -101,7 +99,7 @@ const AdminPermissions: React.FC = () => {
   const loadRolePermissions = async (roleId: number) => {
     setRolePermissionsLoading(true);
     try {
-      const data = await api.get(`/admin/permission/role/${roleId}/permissions`) as ApiResponse<Permission[]>;
+      const data = await adminRoleApi.rolePermissions<Permission[]>(roleId) as ApiResponse<Permission[]>;
       if (data.code === 200) {
         setRolePermissions(data.data || []);
       }
@@ -115,8 +113,8 @@ const AdminPermissions: React.FC = () => {
   const loadUserRolesAndPermissions = async (userId: number) => {
     try {
       const [rolesData, permsData] = await Promise.all([
-        api.get(`/admin/permission/user/${userId}/roles`) as Promise<ApiResponse<Role[]>>,
-        api.get(`/admin/permission/user/${userId}/permissions`) as Promise<ApiResponse<string[]>>,
+        adminRoleApi.userRoles<Role[]>(userId) as Promise<ApiResponse<Role[]>>,
+        adminRoleApi.userPermissions<string[]>(userId) as Promise<ApiResponse<string[]>>,
       ]);
       if (rolesData.code === 200) {
         setUserRoles(rolesData.data || []);
@@ -149,7 +147,7 @@ const AdminPermissions: React.FC = () => {
       return;
     }
     try {
-      const data = await api.post(`/admin/permission/user/${selectedUser.id}/role/${selectedRoleToAssign}`) as ApiResponse;
+      const data = await adminRoleApi.assignUserRole(selectedUser.id, selectedRoleToAssign) as ApiResponse;
       if (data.code === 200) {
         toast.success('分配角色成功');
         loadUserRolesAndPermissions(selectedUser.id);
@@ -166,7 +164,7 @@ const AdminPermissions: React.FC = () => {
   const handleRemoveRoleFromUser = async (roleId: number) => {
     if (!selectedUser) return;
     try {
-      const data = await api.delete(`/admin/permission/user/${selectedUser.id}/role/${roleId}`) as ApiResponse;
+      const data = await adminRoleApi.removeUserRole(selectedUser.id, roleId) as ApiResponse;
       if (data.code === 200) {
         toast.success('移除角色成功');
         loadUserRolesAndPermissions(selectedUser.id);
@@ -186,7 +184,7 @@ const AdminPermissions: React.FC = () => {
     try {
       const results = await Promise.allSettled(
         selectedPermissionsToAssign.map((permissionId) =>
-          api.post(`/admin/permission/role/${selectedRole.id}/permission/${permissionId}`) as Promise<ApiResponse>
+          adminRoleApi.assignPermission(selectedRole.id, permissionId) as Promise<ApiResponse>
         )
       );
       const successCount = results.filter(
@@ -214,7 +212,7 @@ const AdminPermissions: React.FC = () => {
   const handleRemovePermissionFromRole = async (permissionId: number) => {
     if (!selectedRole) return;
     try {
-      const data = await api.delete(`/admin/permission/role/${selectedRole.id}/permission/${permissionId}`) as ApiResponse;
+      const data = await adminRoleApi.removePermission(selectedRole.id, permissionId) as ApiResponse;
       if (data.code === 200) {
         toast.success('移除权限成功');
         loadRolePermissions(selectedRole.id);
@@ -244,7 +242,7 @@ const AdminPermissions: React.FC = () => {
 
   const handleRefreshCache = async (userId: number) => {
     try {
-      const data = await api.post(`/admin/permission/user/${userId}/refresh`) as ApiResponse;
+      const data = await adminRoleApi.refreshUserCache(userId) as ApiResponse;
       if (data.code === 200) {
         toast.success('刷新缓存成功');
       } else {
@@ -257,7 +255,7 @@ const AdminPermissions: React.FC = () => {
 
   const handleClearAllCache = async () => {
     try {
-      const data = await api.post('/admin/permission/cache/clear') as ApiResponse;
+      const data = await adminRoleApi.clearCache() as ApiResponse;
       if (data.code === 200) {
         toast.success('清除所有缓存成功');
       } else {

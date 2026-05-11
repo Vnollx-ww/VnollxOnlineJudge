@@ -17,7 +17,7 @@ import {
   LockOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
-import api from '../../utils/api';
+import { authApi, userApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import Input from '../../components/input';
 
@@ -53,7 +53,7 @@ const Settings: React.FC = () => {
 
   const loadUserInfo = async () => {
     try {
-      const data = await api.get('/user/profile');
+      const data = await userApi.getProfile<User>();
       if (data.code === 200) {
         setUser(data.data);
         form.setFieldsValue({
@@ -78,7 +78,7 @@ const Settings: React.FC = () => {
       formData.append('signature', values.signature);
       formData.append('verifyCode', '');
 
-      const data = await api.put('/user/update/profile', formData);
+      const data = await userApi.updateProfile(formData);
       if (data.code === 200) {
         toast.success('用户信息更新成功');
         localStorage.setItem('name', values.name);
@@ -98,7 +98,7 @@ const Settings: React.FC = () => {
       return;
     }
     try {
-      const data = await api.put('/user/update/profile', {
+      const data = await userApi.updateProfile({
         email: values.newEmail,
         name: user!.name,
         option: 'email',
@@ -122,7 +122,7 @@ const Settings: React.FC = () => {
       return;
     }
     try {
-      const data = await api.put('/user/update/password', {
+      const data = await userApi.updatePassword({
         oldPassword: values.oldPassword,
         newPassword: values.newPassword,
       });
@@ -145,10 +145,7 @@ const Settings: React.FC = () => {
     }
     setCodeLoading(true);
     try {
-      const data = await api.post('/email/send', {
-        email: newEmail,
-        option: 'update',
-      });
+      const data = await authApi.sendEmailCode(newEmail, 'update');
       if (data.code === 200) {
         toast.success('验证码已发送，请查收邮件');
         setCountdown(60);
@@ -183,7 +180,7 @@ const Settings: React.FC = () => {
       formData.append('signature', user!.signature || '');
       formData.append('verifyCode', '');
 
-      const data = await api.put('/user/update/profile', formData);
+      const data = await userApi.updateProfile(formData);
       if (data.code === 200) {
         toast.success('头像更新成功');
         // 重新加载用户信息获取新头像URL

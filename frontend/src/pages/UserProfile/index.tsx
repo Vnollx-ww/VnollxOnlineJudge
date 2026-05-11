@@ -16,7 +16,7 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from 'recharts';
-import api from '../../utils/api';
+import { userApi } from '@/lib';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { PermissionCode } from '../../constants/permissions';
 import Select from '../../components/select';
@@ -80,14 +80,12 @@ const UserProfile: React.FC = () => {
   const loadUserData = async () => {
     setLoading(true);
     try {
-      const profileData = await api.get(`/user/${userId}`) as ApiResponse<User>;
+      const profileData = await userApi.getById<User>(userId) as ApiResponse<User>;
       if (profileData.code === 200) {
         setUser(profileData.data);
       }
 
-      const solvedData = await api.get('/user/solved-problems', {
-        params: { uid: userId },
-      });
+      const solvedData = await userApi.getSolvedProblems<SolvedProblem[]>(userId!);
       if (solvedData.code === 200) {
         setSolvedProblems(solvedData.data || []);
       }
@@ -102,9 +100,7 @@ const UserProfile: React.FC = () => {
   const loadLearningData = async () => {
     setLearningLoading(true);
     try {
-      const res = await api.get('/user/learning-stats', {
-        params: { days: learningDays },
-      }) as ApiResponse<LearningData>;
+      const res = await userApi.getLearningStats<LearningData>(learningDays) as ApiResponse<LearningData>;
       if (res.code === 200 && res.data) {
         setLearningData(res.data);
       }

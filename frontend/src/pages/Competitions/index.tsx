@@ -4,7 +4,7 @@ import { Button, Input, Tag } from 'antd';
 import toast from 'react-hot-toast';
 import { CalendarDays, Clock, Search } from 'lucide-react';
 import { Select } from '../../components';
-import api from '../../utils/api';
+import { competitionApi } from '@/lib';
 import { isAuthenticated } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
 
@@ -41,7 +41,7 @@ const Competitions: React.FC = () => {
   const loadCompetitions = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/competition/list') as ApiResponse<Competition[]>;
+      const data = await competitionApi.list<Competition[]>() as ApiResponse<Competition[]>;
       if (data.code === 200) {
         const sorted = data.data.sort(
           (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
@@ -113,7 +113,7 @@ const Competitions: React.FC = () => {
       return;
     }
     try {
-      const data = await api.get(`/competition/${id}/participation`) as ApiResponse<void>;
+      const data = await competitionApi.participation<void>(id) as ApiResponse<void>;
       if (data.code === 200) {
         navigate(`/competition/${id}`);
       } else {

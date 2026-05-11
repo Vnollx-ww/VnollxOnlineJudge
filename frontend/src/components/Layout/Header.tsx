@@ -16,7 +16,7 @@ import {
   Zap,
   Users,
 } from 'lucide-react';
-import api from '../../utils/api';
+import { notificationApi, userApi } from '@/lib';
 import { isAuthenticated, removeToken } from '../../utils/auth';
 import type { User as UserType, ApiResponse } from '../../types';
 import AuthModal, { type AuthMode } from '../auth-modal';
@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
 
   const loadUserInfo = useCallback(async () => {
     try {
-      const data = await api.get('/user/profile') as ApiResponse<UserType>;
+      const data = await userApi.getProfile<UserType>() as ApiResponse<UserType>;
       if (data.code === 200) {
         setUser(data.data);
         localStorage.setItem('id', String(data.data.id));
@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
 
   const loadNotificationCount = useCallback(async () => {
     try {
-      const data = await api.get('/notification/count', { params: { status: 'false' } }) as ApiResponse<number>;
+      const data = await notificationApi.count('false') as ApiResponse<number>;
       if (data.code === 200) {
         setNotificationCount(data.data || 0);
       }

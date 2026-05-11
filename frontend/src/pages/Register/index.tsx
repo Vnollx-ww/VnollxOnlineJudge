@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '@/utils/api';
+import { authApi } from '@/lib';
 
 interface RegisterFormValues {
   name: string;
@@ -32,7 +32,7 @@ const Register: React.FC = () => {
     }
     setLoading(true);
     try {
-      const data = await api.post('/user/register', {
+      const data = await authApi.register({
         name: formData.name,
         email: formData.email,
         verifyCode: formData.verifyCode,
@@ -60,7 +60,7 @@ const Register: React.FC = () => {
     }
     setCodeLoading(true);
     try {
-      const data = await api.post('/email/send', { email, option: 'register' });
+      const data = await authApi.sendEmailCode(email, 'register');
       if (data.code === 200) {
         toast.success('验证码已发送', { duration: 2000 });
         setCountdown(60);

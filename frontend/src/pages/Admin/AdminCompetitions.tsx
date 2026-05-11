@@ -15,7 +15,7 @@ import {
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown, ShieldAlert, Users, Phone, Mail, Building2, Download } from 'lucide-react';
 import dayjs from 'dayjs';
-import api from '@/utils/api';
+import { adminCompetitionApi } from '@/lib';
 import Input from '@/components/input';
 import Select from '@/components/select';
 import PermissionGuard from '@/components/permission-guard';
@@ -301,16 +301,12 @@ const AdminCompetitions: React.FC = () => {
   const loadCompetitions = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/admin/competition/list', {
-        params: { pageNum: currentPage.toString(), pageSize: pageSize.toString(), keyword: keyword || undefined },
-      }) as ApiResponse<Competition[]>;
+      const data = await adminCompetitionApi.list<Competition[]>({ pageNum: currentPage.toString(), pageSize: pageSize.toString(), keyword: keyword || undefined }) as ApiResponse<Competition[]>;
       if (data.code === 200) {
         setCompetitions(data.data || []);
       }
 
-      const countData = await api.get('/admin/competition/count', {
-        params: { keyword: keyword || undefined },
-      }) as ApiResponse<number>;
+      const countData = await adminCompetitionApi.count({ keyword: keyword || undefined }) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }
@@ -346,7 +342,7 @@ const AdminCompetitions: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      const data = await api.delete(`/admin/competition/delete/${id}`) as ApiResponse;
+      const data = await adminCompetitionApi.delete(id) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除比赛成功');
         loadCompetitions();
@@ -367,7 +363,7 @@ const AdminCompetitions: React.FC = () => {
 
   const loadCompetitionProblems = async (cid: number) => {
     try {
-      const data = await api.get(`/admin/competition/${cid}/problems`) as ApiResponse<Problem[]>;
+      const data = await adminCompetitionApi.problems<Problem[]>(cid) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         setCompetitionProblems(data.data || []);
       }
@@ -378,7 +374,7 @@ const AdminCompetitions: React.FC = () => {
 
   const loadAllProblems = async () => {
     try {
-      const data = await api.get('/admin/competition/problems') as ApiResponse<Problem[]>;
+      const data = await adminCompetitionApi.allProblems<Problem[]>() as ApiResponse<Problem[]>;
       if (data.code === 200) {
         setAllProblems(data.data || []);
       }
@@ -394,10 +390,7 @@ const AdminCompetitions: React.FC = () => {
     }
 
     try {
-      const data = await api.post('/admin/competition/add/problems/batch', {
-        cid: currentCompetitionId!.toString(),
-        pids: selectedProblems.map((p) => p.toString()),
-      }) as ApiResponse;
+      const data = await adminCompetitionApi.addProblems(currentCompetitionId!, selectedProblems.map((p) => p.toString())) as ApiResponse;
 
       if (data.code === 200) {
         toast.success('批量添加题目成功');
@@ -414,7 +407,7 @@ const AdminCompetitions: React.FC = () => {
 
   const handleDeleteProblemFromCompetition = async (pid: number) => {
     try {
-      const data = await api.delete(`/admin/competition/${currentCompetitionId}/problems/${pid}`) as ApiResponse;
+      const data = await adminCompetitionApi.deleteProblem(currentCompetitionId!, pid) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除题目成功');
         loadCompetitionProblems(currentCompetitionId!);
@@ -436,10 +429,7 @@ const AdminCompetitions: React.FC = () => {
     setCompetitionProblems(nextProblems);
 
     try {
-      const data = await api.put(`/admin/competition/${currentCompetitionId}/problems/order`, {
-        cid: currentCompetitionId,
-        problemIds: nextProblems.map((problem) => problem.id),
-      }) as ApiResponse;
+      const data = await adminCompetitionApi.updateProblemOrder(currentCompetitionId!, nextProblems.map((problem) => problem.id)) as ApiResponse;
       if (data.code === 200) {
         toast.success('题目顺序已更新');
       } else {
@@ -472,10 +462,9 @@ const AdminCompetitions: React.FC = () => {
         ...(editingCompetition ? { id: editingCompetition.id } : {}),
       };
 
-      const url = editingCompetition ? '/admin/competition/update' : '/admin/competition/create';
-      const method = editingCompetition ? 'put' : 'post';
-
-      const data = await (api as any)[method](url, submitData) as ApiResponse;
+      const data = await (editingCompetition
+        ? adminCompetitionApi.update(submitData)
+        : adminCompetitionApi.create(submitData)) as ApiResponse;
 
       if (data.code === 200) {
         toast.success(editingCompetition ? '更新比赛成功' : '创建比赛成功');
@@ -510,7 +499,7 @@ const AdminCompetitions: React.FC = () => {
   const loadCompetitionTeams = async (cid: number) => {
     setTeamListLoading(true);
     try {
-      const data = await api.get(`/admin/competition/${cid}/teams`) as ApiResponse<CompetitionTeam[]>;
+      const data = await adminCompetitionApi.teams<CompetitionTeam[]>(cid) as ApiResponse<CompetitionTeam[]>;
       if (data.code === 200) {
         setCompetitionTeams(data.data || []);
       } else {
@@ -534,7 +523,7 @@ const AdminCompetitions: React.FC = () => {
       return;
     }
     try {
-      const data = await api.post(`/admin/competition/${teamImportCompetition.id}/teams`, {
+      const data = await adminCompetitionApi.saveTeam(teamImportCompetition.id, {
         ...teamForm,
         teamName: teamForm.teamName.trim(),
         leaderName: teamForm.leaderName.trim(),
@@ -566,7 +555,7 @@ const AdminCompetitions: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', teamExcelFile);
-      const data = await api.post(`/admin/competition/${teamImportCompetition.id}/teams/import/excel`, formData) as ApiResponse;
+      const data = await adminCompetitionApi.importTeams(teamImportCompetition.id, formData) as ApiResponse;
       if (data.code === 200) {
         toast.success('导入队伍成功');
         setTeamExcelFile(null);
@@ -595,7 +584,7 @@ const AdminCompetitions: React.FC = () => {
   const handleDeleteTeam = async (teamId: number) => {
     if (!teamImportCompetition) return;
     try {
-      const data = await api.delete(`/admin/competition/teams/${teamId}`) as ApiResponse;
+      const data = await adminCompetitionApi.deleteTeam(teamId) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除队伍成功');
         loadCompetitionTeams(teamImportCompetition.id);

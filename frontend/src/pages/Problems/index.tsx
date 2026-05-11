@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Pagination, Button } from 'antd';
 import toast from 'react-hot-toast';
 import { CheckCircle, ChevronDown, Circle, X } from 'lucide-react';
-import api from '../../utils/api';
+import { problemApi, tagApi, userApi } from '@/lib';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
 import Input from '../../components/input';
@@ -49,9 +49,7 @@ const Problems: React.FC = () => {
     try {
       const userInfo = getUserInfo();
       if (!userInfo?.id) return;
-      const res = await api.get('/user/solved-problems', { 
-        params: { uid: userInfo.id } 
-      }) as ApiResponse<{ problemId: number }[]>;
+      const res = await userApi.getSolvedProblems<{ problemId: number }[]>(userInfo.id) as ApiResponse<{ problemId: number }[]>;
       if (res.code === 200 && res.data) {
         setSolvedIds(new Set(res.data.map(p => p.problemId)));
       }
@@ -67,7 +65,7 @@ const Problems: React.FC = () => {
 
   const loadTags = async () => {
     try {
-      const data = await api.get('/tag/list') as ApiResponse<TagItem[]>;
+      const data = await tagApi.list<TagItem[]>() as ApiResponse<TagItem[]>;
       if (data.code === 200) {
         setTags(data.data || []);
       }
@@ -91,7 +89,7 @@ const Problems: React.FC = () => {
         params.tags = selectedTags.join(',');
       }
 
-      const data = await api.get('/problem/list', { params }) as ApiResponse<Problem[]>;
+      const data = await problemApi.list<Problem[]>(params) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         setProblems(data.data || []);
       }
@@ -103,7 +101,7 @@ const Problems: React.FC = () => {
       if (selectedTags.length > 0) {
         countParams.tags = selectedTags.join(',');
       }
-      const countData = await api.get('/problem/count', { params: countParams }) as ApiResponse<number>;
+      const countData = await problemApi.count(countParams) as ApiResponse<number>;
       if (countData.code === 200) {
         setTotal(countData.data || 0);
       }

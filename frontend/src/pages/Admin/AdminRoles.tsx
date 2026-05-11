@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Modal, Tag, Spin, Field, DataTable, DataColumn } from '@/components';
 import toast from 'react-hot-toast';
 import { RefreshCw, Plus, Trash2, Edit, Key } from 'lucide-react';
-import api from '@/utils/api';
+import { adminRoleApi } from '@/lib';
 import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
@@ -69,7 +69,7 @@ const AdminRoles: React.FC = () => {
   const loadRoles = async () => {
     setLoading(true);
     try {
-      const data = await api.get('/admin/permission/roles') as ApiResponse<Role[]>;
+      const data = await adminRoleApi.listRoles<Role[]>() as ApiResponse<Role[]>;
       if (data.code === 200) {
         setRoles(data.data || []);
       }
@@ -82,7 +82,7 @@ const AdminRoles: React.FC = () => {
 
   const loadPermissions = async () => {
     try {
-      const data = await api.get('/admin/permission/permissions') as ApiResponse<Permission[]>;
+      const data = await adminRoleApi.listPermissions<Permission[]>() as ApiResponse<Permission[]>;
       if (data.code === 200) {
         setPermissions(data.data || []);
       }
@@ -94,7 +94,7 @@ const AdminRoles: React.FC = () => {
   const loadRolePermissions = async (roleId: number) => {
     setRolePermissionsLoading(true);
     try {
-      const data = await api.get(`/admin/permission/role/${roleId}/permissions`) as ApiResponse<Permission[]>;
+      const data = await adminRoleApi.rolePermissions<Permission[]>(roleId) as ApiResponse<Permission[]>;
       if (data.code === 200) {
         setRolePermissions(data.data || []);
       }
@@ -134,7 +134,7 @@ const AdminRoles: React.FC = () => {
   const handleRoleSubmit = async (values: RoleFormValues) => {
     try {
       if (editingRole) {
-        const data = await api.put(`/admin/permission/role/${editingRole.id}`, values) as ApiResponse;
+        const data = await adminRoleApi.updateRole(editingRole.id, values) as ApiResponse;
         if (data.code === 200) {
           toast.success('更新角色成功');
           setRoleModalVisible(false);
@@ -143,7 +143,7 @@ const AdminRoles: React.FC = () => {
           toast.error((data as any).msg || '更新失败');
         }
       } else {
-        const data = await api.post('/admin/permission/role', values) as ApiResponse;
+        const data = await adminRoleApi.createRole(values) as ApiResponse;
         if (data.code === 200) {
           toast.success('创建角色成功');
           setRoleModalVisible(false);
@@ -159,7 +159,7 @@ const AdminRoles: React.FC = () => {
 
   const handleDeleteRole = async (roleId: number) => {
     try {
-      const data = await api.delete(`/admin/permission/role/${roleId}`) as ApiResponse;
+      const data = await adminRoleApi.deleteRole(roleId) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除角色成功');
         if (selectedRole?.id === roleId) {
@@ -183,7 +183,7 @@ const AdminRoles: React.FC = () => {
     try {
       const results = await Promise.allSettled(
         selectedPermissionsToAssign.map((permissionId) =>
-          api.post(`/admin/permission/role/${selectedRole.id}/permission/${permissionId}`) as Promise<ApiResponse>
+          adminRoleApi.assignPermission(selectedRole.id, permissionId) as Promise<ApiResponse>
         )
       );
       const successCount = results.filter(
@@ -211,7 +211,7 @@ const AdminRoles: React.FC = () => {
   const handleRemovePermissionFromRole = async (permissionId: number) => {
     if (!selectedRole) return;
     try {
-      const data = await api.delete(`/admin/permission/role/${selectedRole.id}/permission/${permissionId}`) as ApiResponse;
+      const data = await adminRoleApi.removePermission(selectedRole.id, permissionId) as ApiResponse;
       if (data.code === 200) {
         toast.success('移除权限成功');
         loadRolePermissions(selectedRole.id);
@@ -225,7 +225,7 @@ const AdminRoles: React.FC = () => {
 
   const handleCreatePermission = async (values: PermissionFormValues) => {
     try {
-      const data = await api.post('/admin/permission/permission', values) as ApiResponse;
+      const data = await adminRoleApi.createPermission(values) as ApiResponse;
       if (data.code === 200) {
         toast.success('创建权限成功');
         setPermissionModalVisible(false);

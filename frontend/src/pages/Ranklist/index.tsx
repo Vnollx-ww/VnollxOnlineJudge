@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Pagination } from 'antd';
-import api from '../../utils/api';
+import { userApi } from '@/lib';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
 
@@ -59,9 +59,7 @@ const Ranklist: React.FC = () => {
   const loadRanking = async (page = currentPage, size = pageSize) => {
     setLoading(true);
     try {
-      const data = await api.get('/user/list', {
-        params: { pageNum: page, pageSize: size },
-      }) as ApiResponse<UserListData>;
+      const data = await userApi.list<UserListData>({ pageNum: page, pageSize: size }) as ApiResponse<UserListData>;
       if (data.code === 200) {
         const records = Array.isArray(data.data) ? data.data : data.data.records || [];
         const ranked = records.map((user, index) => ({
