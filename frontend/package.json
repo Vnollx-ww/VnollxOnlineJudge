@@ -12,7 +12,6 @@
   "dependencies": {
     "@floating-ui/react-dom": "^2.1.8",
     "@monaco-editor/react": "^4.7.0",
-    "antd": "^5.21.0",
     "axios": "^1.7.7",
     "dayjs": "^1.11.19",
     "dompurify": "^3.1.7",
