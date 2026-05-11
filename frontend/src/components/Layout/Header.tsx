@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Dropdown, Avatar, Badge, Modal, message } from 'antd';
+import toast from 'react-hot-toast';
+import { confirm, Dropdown } from '../../components';
+import Avatar from '../avatar';
+import Badge from '../badge';
 import {
   Home,
   BookOpen,
@@ -33,8 +36,12 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
   const [notificationCount, setNotificationCount] = useState(0);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
-  const [modal, contextHolder] = Modal.useModal();
-  const [messageApi, messageContextHolder] = message.useMessage();
+  const messageApi = {
+    success: (msg: string) => toast.success(msg),
+    error: (msg: string) => toast.error(msg),
+    warning: (msg: string) => toast(msg, { icon: '⚠️' }),
+    info: (msg: string) => toast(msg),
+  };
 
   const openAuthModal = useCallback((mode: AuthMode) => {
     setAuthMode(mode);
@@ -113,12 +120,12 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
   );
 
   const handleLogoutConfirm = () => {
-    modal.confirm({
+    confirm({
       title: '确认退出登录？',
       content: '退出后需要重新登录才能继续操作。',
       okText: '退出',
       cancelText: '取消',
-      okType: 'danger',
+      okButtonProps: { danger: true },
       onOk: () => {
         removeToken();
         localStorage.removeItem('id');
@@ -191,9 +198,6 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
       }}
     >
-      {contextHolder}
-      {messageContextHolder}
-      
       <div className="max-w-7xl mx-auto h-full px-4 md:px-6 flex items-center justify-between">
         {/* Logo - Gemini 风格 */}
         <Link 

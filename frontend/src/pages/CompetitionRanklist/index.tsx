@@ -1,13 +1,7 @@
 import { Fragment, useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Typography,
-  Space,
-  Modal,
-  Spin,
-  Empty,
-} from 'antd';
-import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
+import { Spin, Empty, Modal, Space } from '../../components';
+import { ArrowLeft, Lock } from 'lucide-react';
 import Input from '../../components/input';
 import {
   useCompetitionRanklist,
@@ -18,7 +12,6 @@ import {
   type RankUser as User,
 } from '@/hooks/useCompetitionRanklist';
 
-const { Title, Text } = Typography;
 
 type DetailSubmission = {
   id: number;
@@ -522,7 +515,7 @@ const CompetitionRanklist: React.FC = () => {
   if (loading && !competition) {
     return createPortal(
       <div className="fixed inset-0 flex items-center justify-center bg-white" style={{ zIndex: 9999 }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin spinning />
       </div>,
       document.body
     );
@@ -550,7 +543,7 @@ const CompetitionRanklist: React.FC = () => {
                 title="返回比赛详情"
                 aria-label="返回比赛详情"
               >
-                <ArrowLeftOutlined />
+                <ArrowLeft className="w-5 h-5" />
               </button>
               <div
                 className="ml-2 hidden h-20 w-[19rem] shrink-0 bg-contain bg-left bg-no-repeat md:block"
@@ -558,9 +551,9 @@ const CompetitionRanklist: React.FC = () => {
               >
               </div>
               <div className="min-w-0 flex-1 text-center">
-                <Title level={1} className="!mb-0 truncate !text-xl !font-bold !tracking-[0.08em] !text-gray-800 sm:!text-2xl lg:!text-3xl lg:!tracking-[0.25em]">
+                <h1 className="m-0 truncate text-xl font-bold tracking-[0.08em] text-gray-800 sm:text-2xl lg:text-3xl lg:tracking-[0.25em]">
                   {competition.title}
-                </Title>
+                </h1>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-3">
                 <CountdownDisplay endTime={competition.endTime} />
@@ -569,7 +562,7 @@ const CompetitionRanklist: React.FC = () => {
 
             {loading ? (
               <div className="flex items-center justify-center rounded-lg py-16">
-                <Spin size="large" tip="榜单加载中..." />
+                <Spin spinning />
               </div>
             ) : users.length === 0 ? (
               <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg">
@@ -624,7 +617,7 @@ const CompetitionRanklist: React.FC = () => {
           </div>
         ) : (
           <div className="gemini-card text-center py-12">
-            <Text style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看排行榜</Text>
+            <span style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看排行榜</span>
           </div>
         )}
       </div>
@@ -632,7 +625,7 @@ const CompetitionRanklist: React.FC = () => {
       <Modal
         title={
           <Space>
-            <LockOutlined />
+            <Lock className="w-4 h-4" />
             <span>请输入比赛密码</span>
           </Space>
         }

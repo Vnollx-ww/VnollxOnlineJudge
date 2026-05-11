@@ -1,6 +1,6 @@
 import { Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Pagination } from 'antd';
+import { PageSurface, PagePagination } from '../../components';
 import { useRanklist } from '@/hooks/useRanklist';
 
 const Ranklist: React.FC = () => {
@@ -18,28 +18,15 @@ const Ranklist: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* 卡片容器 */}
-      <div 
-        className="rounded-3xl overflow-hidden"
-        style={{ 
-          backgroundColor: 'var(--gemini-surface)', 
-          boxShadow: 'var(--shadow-gemini)'
-        }}
-      >
-        {/* 卡片头部 */}
-        <div 
-          className="px-6 py-5 flex items-center justify-between"
-          style={{ borderBottom: '1px solid var(--gemini-border-light)' }}
-        >
-          <div className="flex items-center gap-3">
+      <PageSurface
+        variant="card"
+        title={
+          <span className="inline-flex items-center gap-3">
             <Trophy className="w-6 h-6" style={{ color: 'var(--gemini-accent-strong)' }} />
-            <h1 className="m-0 text-2xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
-              ACM 排名
-            </h1>
-          </div>
-        </div>
-
-        {/* 卡片内容 */}
+            <span>ACM 排名</span>
+          </span>
+        }
+      >
         <div className="p-4">
             {loading ? (
               <div className="py-20 text-center">
@@ -157,23 +144,20 @@ const Ranklist: React.FC = () => {
                 </div>
 
                 {/* 分页区域 */}
-                <div className="mt-4 flex items-center justify-end gap-3">
-                  <Pagination
-                    current={currentPage}
-                    pageSize={pageSize}
-                    total={total}
-                    onChange={handlePageChange}
-                    showSizeChanger
-                    pageSizeOptions={['10', '30', '50', '100', '200']}
-                    locale={{
-                      items_per_page: '条/页',
-                    }}
-                  />
-                </div>
+                <PagePagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={total}
+                  onChange={handlePageChange}
+                  showSizeChanger
+                  pageSizeOptions={['10', '30', '50', '100', '200']}
+                  align="end"
+                  className="mt-4"
+                />
               </>
             )}
         </div>
-      </div>
+      </PageSurface>
     </div>
   );
 };

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
-import { Layout } from 'antd';
 import toast from 'react-hot-toast';
 import { MessageCircle, Bell } from 'lucide-react';
 import Sidebar from './Sidebar';
@@ -10,8 +9,6 @@ import { notificationApi, userApi } from '@/lib';
 import { isAuthenticated, setUserInfo } from '../../utils/auth';
 import { useNotificationWebSocket, type NotificationMessage } from '../../hooks/useNotificationWebSocket';
 import type { User, ApiResponse } from '../../types';
-
-const { Content } = Layout;
 
 const AUTH_MODAL_EVENT = 'open-auth-modal';
 
@@ -165,8 +162,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   useNotificationWebSocket(handleNotificationMessage);
 
   return (
-    <Layout 
-      className="min-h-screen flex-row"
+    <div
+      className="min-h-screen flex flex-row"
       style={{ backgroundColor: 'transparent' }}
     >
       {/* 粒子背景 */}
@@ -181,8 +178,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       />
 
       {/* 主内容区 */}
-      <Layout 
-        className="relative z-10 min-w-0 overflow-x-hidden" 
+      <div
+        className="relative z-10 flex flex-col min-w-0 overflow-x-hidden"
         style={{ 
           background: 'transparent',
           marginLeft: '80px',
@@ -191,16 +188,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           transition: 'margin-left 0.3s ease'
         }}
       >
-        <Content
+        <main
           className="min-h-[calc(100vh-64px-80px)] min-w-0 overflow-x-hidden py-6"
           style={{ paddingLeft: '4vw', paddingRight: '4vw' }}
         >
           <div className="min-w-0 w-full max-w-full animate-fade-in overflow-x-hidden">
             {children}
           </div>
-        </Content>
-
-      </Layout>
+        </main>
+      </div>
 
       {/* 认证模态框 */}
       <AuthModal
@@ -211,7 +207,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       />
       {/* AI 助手 */}
       <AIAssistant />
-    </Layout>
+    </div>
   );
 };
 

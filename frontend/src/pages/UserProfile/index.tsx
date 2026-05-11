@@ -1,15 +1,6 @@
 import { Link } from 'react-router-dom';
-import {
-  Typography,
-  Avatar,
-  Statistic,
-  Tag,
-  Spin,
-  Tooltip,
-  Button,
-} from 'antd';
-import { CheckCircleOutlined } from '@ant-design/icons';
-import { TrendingUp, Target, Bot, BarChart3 } from 'lucide-react';
+import { Spin, Tag, Avatar, Button, Tooltip } from '../../components';
+import { TrendingUp, Target, Bot, BarChart3, CheckCircle2 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
@@ -18,8 +9,6 @@ import { PermissionCode } from '../../constants/permissions';
 import Select from '../../components/select';
 import { usePermission } from '../../contexts/PermissionContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
-
-const { Title, Text } = Typography;
 
 const CHART_COLORS = ['#1a73e8', '#34a853', '#f9ab00', '#d93025', '#9334e6', '#0d9488'];
 
@@ -40,7 +29,7 @@ const UserProfile: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-full w-full flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-        <Spin size="large" />
+        <Spin spinning />
       </div>
     );
   }
@@ -76,10 +65,10 @@ const UserProfile: React.FC = () => {
                 {user.name?.charAt(0)?.toUpperCase() || 'U'}
               </Avatar>
               <div>
-                <Title level={2} className="!mb-1" style={{ color: 'var(--gemini-text-primary)' }}>{user.name}</Title>
-                <Text style={{ color: 'var(--gemini-text-secondary)' }} className="text-base">
+                <h2 className="mb-1 text-2xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>{user.name}</h2>
+                <span style={{ color: 'var(--gemini-text-secondary)' }} className="text-base">
                   {user.signature || '这个人很懒，还没有个性签名'}
-                </Text>
+                </span>
               </div>
             </div>
             <div className="flex gap-4">
@@ -87,32 +76,28 @@ const UserProfile: React.FC = () => {
                 className="rounded-2xl min-w-[100px] p-4 text-center"
                 style={{ backgroundColor: 'var(--gemini-bg)' }}
               >
-                <Statistic
-                  title={<span style={{ color: 'var(--gemini-text-tertiary)' }}>提交次数</span>}
-                  value={user.submitCount || 0}
-                  valueStyle={{ color: 'var(--gemini-accent-strong)', fontWeight: 'bold' }}
-                />
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>提交次数</span>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--gemini-accent-strong)' }}>{user.submitCount || 0}</span>
+                </div>
               </div>
               <div 
                 className="rounded-2xl min-w-[100px] p-4 text-center"
                 style={{ backgroundColor: 'var(--gemini-bg)' }}
               >
-                <Statistic
-                  title={<span style={{ color: 'var(--gemini-text-tertiary)' }}>通过题目</span>}
-                  value={user.passCount || 0}
-                  valueStyle={{ color: 'var(--gemini-success)', fontWeight: 'bold' }}
-                />
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>通过题目</span>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--gemini-success)' }}>{user.passCount || 0}</span>
+                </div>
               </div>
               <div 
                 className="rounded-2xl min-w-[100px] p-4 text-center"
                 style={{ backgroundColor: 'var(--gemini-bg)' }}
               >
-                <Statistic
-                  title={<span style={{ color: 'var(--gemini-text-tertiary)' }}>通过率</span>}
-                  value={passRate}
-                  suffix="%"
-                  valueStyle={{ color: 'var(--gemini-warning)', fontWeight: 'bold' }}
-                />
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>通过率</span>
+                  <span className="text-2xl font-bold" style={{ color: 'var(--gemini-warning)' }}>{passRate}%</span>
+                </div>
               </div>
             </div>
           </div>
@@ -123,7 +108,7 @@ const UserProfile: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-              <Title level={3} className="!mb-0" style={{ color: 'var(--gemini-text-primary)' }}>学习进度管理</Title>
+              <h3 className="m-0 text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>学习进度管理</h3>
             </div>
             <div className="flex items-center gap-3">
               <Select
@@ -270,24 +255,18 @@ const UserProfile: React.FC = () => {
 
         {/* 已解决问题列表 - Gemini 风格 */}
         <div className="gemini-card">
-          <Title level={3} className="!mb-6" style={{ color: 'var(--gemini-text-primary)' }}>已解决问题列表</Title>
+          <h3 className="mb-6 text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>已解决问题列表</h3>
           {solvedProblems.length === 0 ? (
             <div className="py-12 text-center">
-              <Text style={{ color: 'var(--gemini-text-tertiary)' }}>暂无已解决问题</Text>
+              <span style={{ color: 'var(--gemini-text-tertiary)' }}>暂无已解决问题</span>
             </div>
           ) : (
             <div className="flex flex-wrap gap-3">
               {solvedProblems.map((problem) => (
                 <Tooltip key={problem.problemId} title={problem.problemName || '查看题目'}>
                   <Link to={`/problem/${problem.problemId}`}>
-                    <Tag 
-                      className="!text-sm !px-4 !py-1.5 cursor-pointer hover:opacity-80 transition-opacity !rounded-full !border-0"
-                      style={{ 
-                        backgroundColor: 'var(--gemini-accent)',
-                        color: 'var(--gemini-accent-text)'
-                      }}
-                    >
-                      <CheckCircleOutlined className="mr-1" /> #{problem.problemId}
+                    <Tag color="blue" className="cursor-pointer hover:opacity-80 transition-opacity">
+                      <CheckCircle2 className="inline w-3.5 h-3.5" /> #{problem.problemId}
                     </Tag>
                   </Link>
                 </Tooltip>

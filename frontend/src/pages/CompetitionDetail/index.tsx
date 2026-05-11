@@ -1,30 +1,12 @@
 import { Link } from 'react-router-dom';
-import {
-  Typography,
-  Table,
-  Tag,
-  Space,
-  Button,
-  Modal,
-  Spin,
-  Empty,
-} from 'antd';
-import {
-  TrophyOutlined,
-  ClockCircleOutlined,
-  LockOutlined,
-  UnorderedListOutlined,
-  HistoryOutlined,
-  FullscreenOutlined,
-} from '@ant-design/icons';
+import { Table, Tag, Spin, Empty, Modal, Button, Space } from '../../components';
+import { Trophy, Clock, Lock, List as ListIcon, History, Maximize2 } from 'lucide-react';
 import Input from '../../components/input';
 import {
   useCompetitionDetail,
   formatCompetitionDetailTime,
   type CompetitionProblem as Problem,
 } from '@/hooks/useCompetitionDetail';
-
-const { Title, Text, Paragraph } = Typography;
 
 const CompetitionDetail: React.FC = () => {
   const {
@@ -56,11 +38,11 @@ const CompetitionDetail: React.FC = () => {
   const getStatusTag = () => {
     switch (status) {
       case 'upcoming':
-        return <Tag color="orange" className="!rounded-full !px-3">未开始</Tag>;
+        return <Tag color="orange">未开始</Tag>;
       case 'running':
-        return <Tag color="green" className="!rounded-full !px-3">进行中</Tag>;
+        return <Tag color="green">进行中</Tag>;
       case 'ended':
-        return <Tag color="default" className="!rounded-full !px-3">已结束</Tag>;
+        return <Tag color="default">已结束</Tag>;
       default:
         return null;
     }
@@ -94,9 +76,9 @@ const CompetitionDetail: React.FC = () => {
       width: 100,
       render: (_: unknown, record: Problem) =>
         record.isSolved ? (
-          <Tag color="success" className="!rounded-full">已通过</Tag>
+          <Tag color="success">已通过</Tag>
         ) : (
-          <Tag className="!rounded-full">未通过</Tag>
+          <Tag>未通过</Tag>
         ),
     },
     {
@@ -128,7 +110,7 @@ const CompetitionDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Spin size="large" tip="加载中..." />
+        <Spin spinning />
       </div>
     );
   }
@@ -148,33 +130,31 @@ const CompetitionDetail: React.FC = () => {
         <div className="gemini-card mb-6">
           <div className="flex flex-wrap justify-between gap-6">
             <div className="flex-1 min-w-[300px]">
-              <Title level={2} className="!mb-4" style={{ color: 'var(--gemini-text-primary)' }}>
+              <h2 className="mb-4 text-2xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
                 {competition.title}
-              </Title>
-              <Space className="mb-4">
+              </h2>
+              <div className="mb-4 flex flex-wrap items-center gap-2">
                 {getStatusTag()}
                 {competition.needPassword && (
-                  <Tag icon={<LockOutlined />} color="purple" className="!rounded-full !px-3">
-                    需要密码
+                  <Tag color="red">
+                    <Lock className="inline w-3.5 h-3.5" />需要密码
                   </Tag>
                 )}
                 {isUserCompetitionEnded && (
-                  <Tag color="red" className="!rounded-full !px-3">
-                    你已结束比赛
-                  </Tag>
+                  <Tag color="red">你已结束比赛</Tag>
                 )}
-              </Space>
-              <Paragraph style={{ color: 'var(--gemini-text-secondary)' }} className="leading-relaxed">
+              </div>
+              <p className="leading-relaxed" style={{ color: 'var(--gemini-text-secondary)' }}>
                 {competition.description || '暂无描述'}
-              </Paragraph>
+              </p>
               <Space wrap>
                 <Link to={`/competition/${id}/ranklist`}>
-                  <Button icon={<TrophyOutlined />}>
+                  <Button icon={<Trophy className="w-4 h-4" />}>
                     排行榜
                   </Button>
                 </Link>
                 <Link to={`/competition/${id}/submissions`}>
-                  <Button icon={<HistoryOutlined />}>
+                  <Button icon={<History className="w-4 h-4" />}>
                     提交记录
                   </Button>
                 </Link>
@@ -187,32 +167,32 @@ const CompetitionDetail: React.FC = () => {
             </div>
             <div className="min-w-[250px]">
               <div className="mb-3">
-                <Text strong style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</Text>
+                <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</span>
                 <br />
-                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.beginTime)}</Text>
+                <span style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.beginTime)}</span>
               </div>
               <div className="mb-3">
-                <Text strong style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</Text>
+                <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</span>
                 <br />
-                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.endTime)}</Text>
+                <span style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.endTime)}</span>
               </div>
               {countdown && (
                 <div className="mt-4">
-                  <Space>
-                    <ClockCircleOutlined style={{ color: 'var(--gemini-accent-strong)' }} />
-                    <Text strong style={{ color: 'var(--gemini-text-primary)' }}>剩余时间：</Text>
-                  </Space>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
+                    <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>剩余时间：</span>
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {countdown.days > 0 && (
-                      <Tag color="blue" className="!rounded-full">{countdown.days}天</Tag>
+                      <Tag color="blue">{countdown.days}天</Tag>
                     )}
                     {countdown.hours > 0 && (
-                      <Tag color="cyan" className="!rounded-full">{countdown.hours}小时</Tag>
+                      <Tag color="blue">{countdown.hours}小时</Tag>
                     )}
                     {countdown.minutes > 0 && (
-                      <Tag color="orange" className="!rounded-full">{countdown.minutes}分钟</Tag>
+                      <Tag color="orange">{countdown.minutes}分钟</Tag>
                     )}
-                    <Tag color="red" className="!rounded-full">{countdown.seconds}秒</Tag>
+                    <Tag color="red">{countdown.seconds}秒</Tag>
                   </div>
                 </div>
               )}
@@ -224,27 +204,26 @@ const CompetitionDetail: React.FC = () => {
         {passwordVerified ? (
           <div className="gemini-card">
             <div className="flex items-center gap-2 mb-4">
-              <UnorderedListOutlined style={{ color: 'var(--gemini-accent-strong)' }} />
+              <ListIcon className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
               <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>比赛题目列表</span>
             </div>
             {problemsLoading ? (
               <div className="flex items-center justify-center py-16">
-                <Spin size="large" tip="题目加载中..." />
+                <Spin spinning />
               </div>
             ) : problems.length === 0 ? (
               <Empty description="暂无题目" />
             ) : (
-              <Table
+              <Table<Problem>
                 columns={problemColumns}
                 dataSource={problems}
                 rowKey="id"
-                pagination={false}
               />
             )}
           </div>
         ) : (
           <div className="gemini-card text-center py-12">
-            <Text style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看比赛题目</Text>
+            <span style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看比赛题目</span>
           </div>
         )}
       </div>
@@ -260,13 +239,13 @@ const CompetitionDetail: React.FC = () => {
         closable={false}
         maskClosable={false}
       >
-        <Space direction="vertical" size="middle">
+        <div className="flex flex-col gap-3">
           <div>
-            <FullscreenOutlined className="mr-2" />
+            <Maximize2 className="inline w-4 h-4 mr-2" />
             严格模式下比赛进行期间需要保持全屏模式。
           </div>
-          <Text type="danger">如果暂不进入或退出全屏，该行为会被记录到防作弊日志中。</Text>
-        </Space>
+          <span style={{ color: 'var(--gemini-error)' }}>如果暂不进入或退出全屏，该行为会被记录到防作弊日志中。</span>
+        </div>
       </Modal>
 
       <Modal
@@ -289,7 +268,7 @@ const CompetitionDetail: React.FC = () => {
       <Modal
         title={
           <Space>
-            <LockOutlined />
+            <Lock className="w-4 h-4" />
             <span>请输入比赛密码</span>
           </Space>
         }

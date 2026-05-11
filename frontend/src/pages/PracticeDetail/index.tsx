@@ -1,21 +1,8 @@
-import {
-  Typography,
-  Tag,
-  Button,
-  Progress,
-  Table,
-  Spin,
-} from 'antd';
-import {
-  BookOutlined,
-  ArrowLeftOutlined,
-  CheckCircleFilled,
-  MinusCircleOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { Button, Progress } from '../../components';
+import { BookOpen, ArrowLeft, CheckCircle2, MinusCircle, RotateCw } from 'lucide-react';
+import { DifficultyBadge } from '../../components/status-badge';
+import { Table, Spin, Tag } from '../../components';
 import { usePracticeDetail, type Problem } from '@/hooks/usePracticeDetail';
-
-const { Title, Text } = Typography;
 
 const PracticeDetail: React.FC = () => {
   const {
@@ -32,15 +19,6 @@ const PracticeDetail: React.FC = () => {
     handleProblemClick,
   } = usePracticeDetail();
 
-  const getDifficultyTag = (difficulty?: string) => {
-    const colors: Record<string, string> = {
-      简单: 'green',
-      中等: 'orange',
-      困难: 'red',
-    };
-    return <Tag color={colors[difficulty || ''] || 'default'} className="!rounded-full">{difficulty || '未知'}</Tag>;
-  };
-
   const columns = [
     {
       title: '状态',
@@ -50,9 +28,9 @@ const PracticeDetail: React.FC = () => {
       align: 'center' as const,
       render: (isSolved: boolean) => (
         isSolved ? (
-          <CheckCircleFilled style={{ color: 'var(--gemini-success)' }} className="text-lg" />
+          <CheckCircle2 size={18} style={{ color: 'var(--gemini-success)' }} />
         ) : (
-          <MinusCircleOutlined style={{ color: 'var(--gemini-text-disabled)' }} className="text-lg" />
+          <MinusCircle size={18} style={{ color: 'var(--gemini-text-disabled)' }} />
         )
       ),
     },
@@ -61,7 +39,7 @@ const PracticeDetail: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 100,
-      render: (id: number) => <Text strong style={{ color: 'var(--gemini-text-primary)' }}>#{id}</Text>,
+      render: (id: number) => <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>#{id}</span>,
     },
     {
       title: '题目',
@@ -82,7 +60,7 @@ const PracticeDetail: React.FC = () => {
       dataIndex: 'difficulty',
       key: 'difficulty',
       width: 100,
-      render: (difficulty: string) => getDifficultyTag(difficulty),
+      render: (difficulty: string) => <DifficultyBadge difficulty={difficulty || '未知'} />,
     },
     {
       title: '通过率',
@@ -92,7 +70,7 @@ const PracticeDetail: React.FC = () => {
         const rate = record.submitCount > 0 
           ? Math.round((record.passCount / record.submitCount) * 100) 
           : 0;
-        return <Text style={{ color: 'var(--gemini-text-secondary)' }}>{rate}%</Text>;
+        return <span style={{ color: 'var(--gemini-text-secondary)' }}>{rate}%</span>;
       },
     },
   ];
@@ -100,7 +78,7 @@ const PracticeDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-full w-full flex items-center justify-center" style={{ backgroundColor: 'var(--gemini-bg)' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin spinning />
       </div>
     );
   }
@@ -111,7 +89,7 @@ const PracticeDetail: React.FC = () => {
         <div className="w-full">
           <div className="gemini-card">
             <div className="py-12 text-center">
-              <Text style={{ color: 'var(--gemini-text-tertiary)' }}>练习不存在</Text>
+              <span style={{ color: 'var(--gemini-text-tertiary)' }}>练习不存在</span>
               <br />
               <Button 
                 type="primary" 
@@ -142,31 +120,22 @@ const PracticeDetail: React.FC = () => {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-4 mb-4">
-                <BookOutlined className="text-3xl" style={{ color: 'var(--gemini-accent-strong)' }} />
-                <Title level={2} className="!mb-0" style={{ color: 'var(--gemini-text-primary)' }}>{practice.title}</Title>
+                <BookOpen size={28} style={{ color: 'var(--gemini-accent-strong)' }} />
+                <h2 className="text-2xl font-semibold m-0" style={{ color: 'var(--gemini-text-primary)' }}>{practice.title}</h2>
               </div>
               <div className="flex items-center gap-3 mb-4">
-                <Tag 
-                  className="!rounded-full !px-3"
-                  style={{ 
-                    backgroundColor: 'var(--gemini-accent)',
-                    color: 'var(--gemini-accent-text)',
-                    border: 'none'
-                  }}
-                >
-                  练习
-                </Tag>
-                <Text style={{ color: 'var(--gemini-text-tertiary)' }}>创建于 {formatTime(practice.createTime)}</Text>
+                <Tag color="blue">练习</Tag>
+                <span className="text-sm" style={{ color: 'var(--gemini-text-tertiary)' }}>创建于 {formatTime(practice.createTime)}</span>
               </div>
               {practice.description && (
-                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{practice.description}</Text>
+                <span style={{ color: 'var(--gemini-text-secondary)' }}>{practice.description}</span>
               )}
             </div>
             <div className="flex gap-3">
-              <Button icon={<ReloadOutlined />} onClick={loadPracticeData}>
+              <Button icon={<RotateCw className="w-4 h-4" />} onClick={loadPracticeData}>
                 刷新
               </Button>
-              <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/practices')}>
+              <Button icon={<ArrowLeft className="w-4 h-4" />} onClick={() => navigate('/practices')}>
                 返回列表
               </Button>
             </div>
@@ -176,10 +145,10 @@ const PracticeDetail: React.FC = () => {
         {/* 进度卡片 - Gemini 风格 */}
         <div className="gemini-card">
           <div className="flex items-center justify-between mb-2">
-            <Text strong style={{ color: 'var(--gemini-text-primary)' }}>完成进度</Text>
-            <Text style={{ color: 'var(--gemini-text-secondary)' }}>
+            <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>完成进度</span>
+            <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
               {practice.solvedCount || 0} / {practice.problemCount || 0} 题
-            </Text>
+            </span>
           </div>
           <Progress
             percent={progress}
@@ -196,23 +165,21 @@ const PracticeDetail: React.FC = () => {
           <div className="flex items-center gap-2 mb-4">
             <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>题目列表</span>
           </div>
-          <Table
+          <Table<Problem>
             columns={columns}
             dataSource={problems}
             rowKey="id"
-            pagination={false}
-            locale={{ emptyText: '暂无题目' }}
           />
           {hasMoreProblems && (
             <div ref={loadMoreRef} className="flex justify-center py-4">
-              <Spin size="small" spinning={loadingMore} />
+              <Spin spinning={loadingMore} />
             </div>
           )}
           {practice.problemCount > 0 && !hasMoreProblems && problems.length > 0 && (
             <div className="py-4 text-center">
-              <Text style={{ color: 'var(--gemini-text-tertiary)' }}>
+              <span style={{ color: 'var(--gemini-text-tertiary)' }}>
                 已加载全部题目（{problems.length} / {practice.problemCount} 条）
-              </Text>
+              </span>
             </div>
           )}
         </div>

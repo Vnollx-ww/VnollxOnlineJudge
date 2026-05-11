@@ -1,16 +1,10 @@
-import {
-  Button,
-  Typography,
-  Space,
-  Modal,
-} from 'antd';
-import { ArrowLeftOutlined, EyeOutlined, SendOutlined } from '@ant-design/icons';
+import { Button, Modal } from '../../components';
+import { ArrowLeft, Eye, Send } from 'lucide-react';
 import Input from '../../components/input';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 import { useSolutionPublish } from '@/hooks/useSolutionPublish';
 
-const { Title, Paragraph } = Typography;
 const { TextArea } = Input;
 
 const SolutionPublishPage: React.FC = () => {
@@ -37,33 +31,33 @@ const SolutionPublishPage: React.FC = () => {
         <div className="gemini-card">
           <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
             <Button
-              icon={<ArrowLeftOutlined />}
+              icon={<ArrowLeft className="w-4 h-4" />}
               onClick={() => navigate(`/problem/${pid}/solutions`, { state: { title: problemInfo?.title } })}
               className="gemini-btn gemini-btn-outlined"
             >
               返回题解列表
             </Button>
           </div>
-          <Title level={2} style={{ color: 'var(--gemini-text-primary)' }}>发布题解</Title>
-          <Paragraph style={{ color: 'var(--gemini-text-secondary)' }}>
+          <h2 className="text-2xl font-semibold mb-2" style={{ color: 'var(--gemini-text-primary)' }}>发布题解</h2>
+          <p style={{ color: 'var(--gemini-text-secondary)' }}>
             分享你的解题思路，支持 Markdown / LaTeX。
-          </Paragraph>
-          <Paragraph style={{ color: 'var(--gemini-warning)' }}>
+          </p>
+          <p style={{ color: 'var(--gemini-warning)' }}>
             发布题解后需管理员审核通过才会发布，注意提前保存本地备份，避免内容丢失。
-          </Paragraph>
+          </p>
         </div>
 
         {/* Form Card - Gemini 风格 */}
         <div className="gemini-card">
-          <Space direction="vertical" size="large" className="w-full">
+          <div className="flex flex-col gap-6">
             <div>
-              <Title level={4} className="!mb-2" style={{ color: 'var(--gemini-text-primary)' }}>题目信息</Title>
-              <Paragraph className="!mb-0" style={{ color: 'var(--gemini-text-secondary)' }}>
+              <h4 className="mb-2 text-lg font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>题目信息</h4>
+              <p style={{ color: 'var(--gemini-text-secondary)' }}>
                 {problemInfo ? `${problemInfo.title} (#${pid})` : '加载中...'}
-              </Paragraph>
+              </p>
             </div>
             <div>
-              <Title level={4} className="!mb-2" style={{ color: 'var(--gemini-text-primary)' }}>题解标题</Title>
+              <h4 className="mb-2 text-lg font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>题解标题</h4>
               <Input
                 placeholder="请输入题解标题"
                 value={title}
@@ -75,15 +69,15 @@ const SolutionPublishPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Title level={4} className="!mb-0" style={{ color: 'var(--gemini-text-primary)' }}>题解内容</Title>
-                <Space>
+                <h4 className="m-0 text-lg font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>题解内容</h4>
+                <div className="flex items-center gap-2">
                   <span style={{ color: charCount > 4800 ? 'var(--gemini-error)' : 'var(--gemini-text-tertiary)' }}>
                     {charCount}/5000
                   </span>
-                  <Button icon={<EyeOutlined />} onClick={() => setPreviewVisible(true)}>
+                  <Button icon={<Eye className="w-4 h-4" />} onClick={() => setPreviewVisible(true)}>
                     预览
                   </Button>
-                </Space>
+                </div>
               </div>
               <TextArea
                 rows={16}
@@ -96,7 +90,7 @@ const SolutionPublishPage: React.FC = () => {
             <div className="text-right">
               <Button 
                 type="primary" 
-                icon={<SendOutlined />} 
+                icon={<Send className="w-4 h-4" />} 
                 loading={submitting} 
                 onClick={handleSubmit}
                 size="large"
@@ -110,7 +104,7 @@ const SolutionPublishPage: React.FC = () => {
                 发布题解
               </Button>
             </div>
-          </Space>
+          </div>
         </div>
 
         <Modal

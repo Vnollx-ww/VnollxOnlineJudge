@@ -1,6 +1,6 @@
-import { Input, Progress, Tag } from 'antd';
+import Input from '../../components/input';
 import { BookOpen, CalendarDays, FileText, Search } from 'lucide-react';
-import { Select } from '../../components';
+import { Select, PageSurface, Tag, Progress } from '../../components';
 import { usePractices } from '@/hooks/usePractices';
 
 const Practices: React.FC = () => {
@@ -18,12 +18,11 @@ const Practices: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="rounded-3xl" style={{ backgroundColor: 'var(--gemini-surface)', boxShadow: 'var(--shadow-gemini)' }}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-4" style={{ borderBottom: '1px solid var(--gemini-border-light)' }}>
-          <h1 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
-            全部练习
-          </h1>
-          <div className="flex flex-wrap items-center gap-3">
+      <PageSurface
+        variant="card"
+        title="全部练习"
+        extra={
+          <>
             <Select
               value={progressFilter}
               onChange={setProgressFilter}
@@ -42,9 +41,9 @@ const Practices: React.FC = () => {
               className="w-56"
               allowClear
             />
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <ol className="divide-y" style={{ borderColor: 'var(--gemini-border-light)' }}>
           {practices.map((practice) => {
           const progress = calculateProgress(practice.solvedCount, practice.problemCount);
@@ -77,7 +76,7 @@ const Practices: React.FC = () => {
                       <FileText className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
                       {practice.problemCount || 0} 道题目
                     </span>
-                    <Tag color="blue" className="!rounded-full">练习</Tag>
+                    <Tag color="blue">练习</Tag>
                   </div>
                 </div>
               </div>
@@ -106,7 +105,7 @@ const Practices: React.FC = () => {
             <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无练习数据</p>
           </div>
         )}
-      </div>
+      </PageSurface>
     </div>
   );
 };

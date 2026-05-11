@@ -1,24 +1,11 @@
 import { Link } from 'react-router-dom';
-import {
-  Typography,
-  Table,
-  Tag,
-  Space,
-  Button,
-  Modal,
-  Spin,
-  Empty,
-} from 'antd';
-import {
-  LockOutlined,
-  UnorderedListOutlined,
-  HistoryOutlined,
-} from '@ant-design/icons';
+import { Button, Space } from '../../components';
+import { Lock, List as ListIcon, History } from 'lucide-react';
 import Select from '../../components/select';
 import Input from '../../components/input';
+import { JudgeStatusBadge, LanguageBadge } from '../../components/status-badge';
+import { Table, Empty, Spin, Modal } from '../../components';
 import { useCompetitionSubmissions, type Submission } from '@/hooks/useCompetitionSubmissions';
-
-const { Title, Text } = Typography;
 
 const CompetitionSubmissions: React.FC = () => {
   const {
@@ -49,46 +36,6 @@ const CompetitionSubmissions: React.FC = () => {
   const formatTime = (timeStr: string) => {
     if (!timeStr) return '-';
     return new Date(timeStr).toLocaleString('zh-CN');
-  };
-
-  const getStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-      '答案正确': 'success',
-      '答案错误': 'error',
-      '超时': 'warning',
-      '内存超限': 'warning',
-      '运行错误': 'error',
-      '编译错误': 'error',
-      '等待中': 'processing',
-      '评测中': 'processing',
-    };
-    return statusMap[status] || 'default';
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap: Record<string, string> = {
-      ACCEPTED: '答案正确',
-      WRONG_ANSWER: '答案错误',
-      TIME_LIMIT_EXCEEDED: '超时',
-      MEMORY_LIMIT_EXCEEDED: '内存超限',
-      RUNTIME_ERROR: '运行错误',
-      COMPILATION_ERROR: '编译错误',
-      PENDING: '等待中',
-      JUDGING: '评测中',
-    };
-    return statusMap[status] || status;
-  };
-
-  const getLanguageColor = (language: string) => {
-    const langMap: Record<string, string> = {
-      Python: 'blue',
-      Java: 'orange',
-      'C++': 'purple',
-      C: 'cyan',
-      Golang: 'cyan',
-      JavaScript: 'gold',
-    };
-    return langMap[language] || 'default';
   };
 
   const columns = [
@@ -122,16 +69,14 @@ const CompetitionSubmissions: React.FC = () => {
       dataIndex: 'language',
       key: 'language',
       width: 120,
-      render: (lang: string) => <Tag color={getLanguageColor(lang)} className="!rounded-full">{lang}</Tag>,
+      render: (lang: string) => <LanguageBadge language={lang} />,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 150,
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)} className="!rounded-full">{getStatusText(status)}</Tag>
-      ),
+      render: (status: string) => <JudgeStatusBadge status={status} />,
     },
     {
       title: '时间',
@@ -159,7 +104,7 @@ const CompetitionSubmissions: React.FC = () => {
   if (loading && !competition) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Spin size="large" tip="加载中..." />
+        <Spin spinning />
       </div>
     );
   }
@@ -179,16 +124,16 @@ const CompetitionSubmissions: React.FC = () => {
         <div className="gemini-card mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
-              <Title level={2} className="!mb-4" style={{ color: 'var(--gemini-text-primary)' }}>{competition.title}</Title>
-              <Space>
-                <Text strong style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</Text>
-                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.beginTime)}</Text>
-                <Text strong className="ml-6" style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</Text>
-                <Text style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.endTime)}</Text>
-              </Space>
+              <h2 className="mb-4 text-2xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>{competition.title}</h2>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>开始时间：</span>
+                <span style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.beginTime)}</span>
+                <span className="ml-6 font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>结束时间：</span>
+                <span style={{ color: 'var(--gemini-text-secondary)' }}>{formatTime(competition.endTime)}</span>
+              </div>
             </div>
             <Link to={`/competition/${id}`}>
-              <Button icon={<UnorderedListOutlined />}>
+              <Button icon={<ListIcon className="w-4 h-4" />}>
                 返回比赛详情
               </Button>
             </Link>
@@ -199,7 +144,7 @@ const CompetitionSubmissions: React.FC = () => {
         {passwordVerified ? (
           <div className="gemini-card">
             <div className="flex items-center gap-2 mb-4">
-              <HistoryOutlined style={{ color: 'var(--gemini-accent-strong)' }} />
+              <History className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
               <span className="font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>比赛提交记录</span>
             </div>
             <div className="mb-4">
@@ -234,39 +179,35 @@ const CompetitionSubmissions: React.FC = () => {
               <Empty description="暂无提交记录" />
             ) : (
               <>
-                <Table
+                <Table<Submission>
                   columns={columns}
                   dataSource={submissions}
                   loading={loading}
                   rowKey="id"
-                  pagination={false}
-                  scroll={{ x: 1000 }}
                 />
-                <div className="mt-4 text-right">
-                  <Space>
-                    <Button
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      上一页
-                    </Button>
-                    <Text style={{ color: 'var(--gemini-text-secondary)' }}>
-                      第 {currentPage} 页，共 {Math.ceil(total / pageSize)} 页
-                    </Text>
-                    <Button
-                      disabled={currentPage >= Math.ceil(total / pageSize)}
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </Space>
+                <div className="mt-4 flex items-center justify-end gap-3">
+                  <Button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                  >
+                    上一页
+                  </Button>
+                  <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                    第 {currentPage} 页，共 {Math.ceil(total / pageSize)} 页
+                  </span>
+                  <Button
+                    disabled={currentPage >= Math.ceil(total / pageSize)}
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                  >
+                    下一页
+                  </Button>
                 </div>
               </>
             )}
           </div>
         ) : (
           <div className="gemini-card text-center py-12">
-            <Text style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看提交记录</Text>
+            <span style={{ color: 'var(--gemini-text-tertiary)' }}>请输入密码以查看提交记录</span>
           </div>
         )}
       </div>
@@ -275,7 +216,7 @@ const CompetitionSubmissions: React.FC = () => {
       <Modal
         title={
           <Space>
-            <LockOutlined />
+            <Lock className="w-4 h-4" />
             <span>请输入比赛密码</span>
           </Space>
         }

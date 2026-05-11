@@ -1,4 +1,4 @@
-import { Avatar, Badge, Empty, Spin, Tabs } from 'antd';
+import { Empty, Spin, Avatar, Badge, Tabs } from '../../components';
 import { Search, Send, UserPlus, Check, X, Trash2, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import Input from '../../components/input';
@@ -65,7 +65,7 @@ const Friends: React.FC = () => {
                 搜索结果
               </div>
               {searchResults.length === 0 ? (
-                <Empty description="未找到用户" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description="未找到用户" />
               ) : (
                 searchResults.map(user => (
                   <div 
@@ -122,9 +122,9 @@ const Friends: React.FC = () => {
                   children: (
                     <div className="px-2">
                       {loading ? (
-                        <div className="flex justify-center py-8"><Spin /></div>
+                        <div className="flex justify-center py-8"><Spin spinning /></div>
                       ) : friends.length === 0 ? (
-                        <Empty description="暂无好友" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                        <Empty description="暂无好友" />
                       ) : (
                         friends.map(friend => (
                           <div
@@ -209,7 +209,7 @@ const Friends: React.FC = () => {
                   children: (
                     <div className="px-2">
                       {pendingRequests.length === 0 ? (
-                        <Empty description="暂无好友请求" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                        <Empty description="暂无好友请求" />
                       ) : (
                         pendingRequests.map(request => (
                           <div
@@ -298,7 +298,7 @@ const Friends: React.FC = () => {
             {/* 聊天消息区域 */}
             <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
               {chatLoading ? (
-                <div className="flex justify-center py-8"><Spin /></div>
+                <div className="flex justify-center py-8"><Spin spinning /></div>
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <Empty description="暂无消息，发送第一条消息开始聊天吧" />
@@ -308,7 +308,7 @@ const Friends: React.FC = () => {
                   {/* 加载更多提示 - 仅在加载中显示 */}
                   {loadingMore && (
                     <div className="text-center py-2">
-                      <Spin size="small" />
+                      <Spin spinning />
                     </div>
                   )}
                   {!hasMoreMessages && messages.length > 0 && (

@@ -91,7 +91,7 @@ export function DataTable<T extends Record<string, any>>({
   );
 }
 
-function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey, loading = false, pagination = false, size = 'middle', className = '' }: TableProps<T>) {
+export function Table<T extends Record<string, any>>({ columns, dataSource = [], rowKey, loading = false, pagination = false, size = 'middle', className = '' }: TableProps<T>) {
   const current = pagination && pagination.current ? pagination.current : 1;
   const pageSize = pagination && pagination.pageSize ? pagination.pageSize : dataSource.length || 10;
   const total = pagination && pagination.total !== undefined ? pagination.total : dataSource.length;
@@ -189,8 +189,8 @@ const tagColorMap: Record<string, string> = {
   default: 'bg-slate-100 text-slate-600 ring-slate-200',
 };
 
-export function Tag({ color = 'default', closable = false, onClose, children }: { color?: string; closable?: boolean; onClose?: () => void; children?: ReactNode }) {
-  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tagColorMap[color] || tagColorMap.default}`}>{children}{closable ? <button type="button" onClick={onClose} className="rounded-full hover:bg-black/5"><X className="h-3 w-3" /></button> : null}</span>;
+export function Tag({ color = 'default', closable = false, onClose, children, className = '', style }: { color?: string; closable?: boolean; onClose?: () => void; children?: ReactNode; className?: string; style?: CSSProperties }) {
+  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tagColorMap[color] || tagColorMap.default} ${className}`} style={style}>{children}{closable ? <button type="button" onClick={onClose} className="rounded-full hover:bg-black/5"><X className="h-3 w-3" /></button> : null}</span>;
 }
 
 export function Spin({ spinning, children }: { spinning?: boolean; children?: ReactNode }) {
@@ -377,8 +377,8 @@ function ListItem({ children, actions }: { children?: ReactNode; actions?: React
 function ListItemMeta({ title, description }: { title?: ReactNode; description?: ReactNode }) { return <div className="min-w-0"><div className="truncate text-sm font-semibold text-slate-800">{title}</div>{description ? <div className="mt-1 text-sm text-slate-500">{description}</div> : null}</div>; }
 ListItem.Meta = ListItemMeta;
 export const List = Object.assign(ListRoot, { Item: ListItem });
-export function Drawer({ open, onClose, title, children, width = 560 }: { open?: boolean; onClose?: () => void; title?: ReactNode; children?: ReactNode; width?: number }) { return open ? <div className="fixed inset-0 z-[1000]"><div className="absolute inset-0 bg-slate-950/40" onClick={onClose} /><aside className="absolute right-0 top-0 h-full overflow-y-auto bg-white p-6 shadow-2xl" style={{ width }}><div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-semibold">{title}</h3><button onClick={onClose}><X /></button></div>{children}</aside></div> : null; }
-export function Tooltip({ children }: { title?: ReactNode; children?: ReactNode }) { return <>{children}</>; }
+// Drawer 已迁移至独立文件 ./drawer.tsx
+// Tooltip 已迁移至独立文件 ./tooltip.tsx
 export function Switch({ checked, defaultChecked, onChange, disabled }: { checked?: boolean; defaultChecked?: boolean; onChange?: (checked: boolean) => void; disabled?: boolean }) {
   const [innerChecked, setInnerChecked] = useState(Boolean(defaultChecked));
   const active = checked ?? innerChecked;

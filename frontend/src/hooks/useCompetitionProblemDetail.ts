@@ -5,14 +5,14 @@ import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import katex from 'katex';
-import { commentApi, competitionApi, judgeApi, problemApi, submissionApi } from '@/lib';
+import { commentApi, competitionApi, dictApi, judgeApi, problemApi, submissionApi } from '@/lib';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
 import { useCompetitionAntiCheat } from '@/hooks/useCompetitionAntiCheat';
 import { useCompetitionFirstBloodWebSocket } from '@/hooks/useCompetitionFirstBloodWebSocket';
 import { mapJudgeStatusToVariant } from '@/components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '@/components';
-import type { JudgeMessage } from '@/types';
+import type { ApiResponse, JudgeMessage } from '@/types';
 
 export interface ProblemExampleItem {
   id?: number;
@@ -79,33 +79,38 @@ export interface Submission {
   code?: string;
 }
 
-export const languageOptions = [
-  {
-    label: 'C++',
-    value: 'cpp',
-    template: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n\n    // 请在此处编写你的代码\n\n    return 0;\n}\n`,
-  },
-  {
-    label: 'Python 3',
-    value: 'python',
-    template: `# 请在此处编写你的代码\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()\n`,
-  },
-  {
-    label: 'Java',
-    value: 'java',
-    template: `import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) throws Exception {\n        // 请在此处编写你的代码\n    }\n}\n`,
-  },
-  {
-    label: 'Go',
-    value: 'golang',
-    template: `package main\n\nimport (\n    \"bufio\"\n    \"fmt\"\n    \"os\"\n)\n\nfunc main() {\n    in := bufio.NewReader(os.Stdin)\n    out := bufio.NewWriter(os.Stdout)\n    defer out.Flush()\n\n    // 请在此处编写你的代码\n    _ = in\n    fmt.Fprintln(out)\n}\n`,
-  },
-  {
-    label: 'JavaScript',
-    value: 'javascript',
-    template: `const fs = require('fs');\n\nconst input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);\nlet idx = 0;\n\n// 请在此处编写你的代码\n`,
-  },
-];
+export interface LanguageOption {
+  label: string;
+  value: string;
+  template: string;
+}
+
+interface DictData {
+  dictLabel: string;
+  dictValue: string;
+}
+
+const languageTemplates: Record<string, string> = {
+  cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n\n    // 请在此处编写你的代码\n\n    return 0;\n}\n`,
+  python: `# 请在此处编写你的代码\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()\n`,
+  java: `import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) throws Exception {\n        // 请在此处编写你的代码\n    }\n}\n`,
+  golang: `package main\n\nimport (\n    \"bufio\"\n    \"fmt\"\n    \"os\"\n)\n\nfunc main() {\n    in := bufio.NewReader(os.Stdin)\n    out := bufio.NewWriter(os.Stdout)\n    defer out.Flush()\n\n    // 请在此处编写你的代码\n    _ = in\n    fmt.Fprintln(out)\n}\n`,
+  javascript: `const fs = require('fs');\n\nconst input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);\nlet idx = 0;\n\n// 请在此处编写你的代码\n`,
+};
+
+const getLanguageTemplate = (language: string) =>
+  languageTemplates[language] || languageTemplates[language.toLowerCase()] || '';
+
+const buildSubmitLanguageOptions = (data?: DictData[]) => {
+  const options = (data || [])
+    .map((item) => {
+      const value = item.dictValue || item.dictLabel;
+      const template = getLanguageTemplate(value);
+      return { label: item.dictLabel, value, template };
+    })
+    .filter((item) => item.label && item.value);
+  return options;
+};
 
 export const MY_SUBMISSIONS_PAGE_SIZE = 10;
 
@@ -116,8 +121,9 @@ export const useCompetitionProblemDetail = () => {
   const [loading, setLoading] = useState(true);
   const [, setTags] = useState<string[]>([]);
   void setTags;
-  const [language, setLanguage] = useState(languageOptions[0].value);
-  const [code, setCode] = useState(languageOptions[0].template);
+  const [language, setLanguage] = useState('');
+  const [code, setCode] = useState('');
+  const [submitLanguageOptions, setSubmitLanguageOptions] = useState<LanguageOption[]>([]);
   const [runResult, setRunResult] = useState<WorkbenchResultData | null>(null);
   const [codeLoading, setCodeLoading] = useState({ test: false, submit: false });
   const [comments, setComments] = useState<Comment[]>([]);
@@ -410,7 +416,8 @@ export const useCompetitionProblemDetail = () => {
   }, [problem?.id, isCompetitionOpen]);
 
   useEffect(() => {
-    const template = languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
+    if (!language) return;
+    const template = submitLanguageOptions.find((item) => item.value === language)?.template || getLanguageTemplate(language);
     if (!codeStorageKey) { setCode(template); return; }
     try {
       const cachedCode = localStorage.getItem(codeStorageKey);
@@ -418,7 +425,23 @@ export const useCompetitionProblemDetail = () => {
     } catch {
       setCode(template);
     }
-  }, [language, codeStorageKey]);
+  }, [language, codeStorageKey, submitLanguageOptions]);
+
+  useEffect(() => {
+    const loadLanguageOptions = async () => {
+      try {
+        const res = (await dictApi.listData<DictData[]>('SUBMIT_LANGUAGE')) as ApiResponse<DictData[]>;
+        if (res.code === 200) {
+          const nextOptions = buildSubmitLanguageOptions(res.data);
+          setSubmitLanguageOptions(nextOptions);
+          setLanguage((current) => (nextOptions.some((item) => item.value === current) ? current : nextOptions[0].value));
+        }
+      } catch (error) {
+        console.error('加载提交语言字典失败:', error);
+      }
+    };
+    loadLanguageOptions();
+  }, []);
 
   useEffect(() => {
     if (!codeStorageKey) return;
@@ -670,6 +693,7 @@ export const useCompetitionProblemDetail = () => {
     userInfo,
     problem,
     loading,
+    languageOptions: submitLanguageOptions,
     language,
     setLanguage,
     code,

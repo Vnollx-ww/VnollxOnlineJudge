@@ -1,22 +1,12 @@
-import { Button, Input, Tag } from 'antd';
+import Input from '../../components/input';
 import { CalendarDays, Clock, Search } from 'lucide-react';
-import { Select } from '../../components';
+import { Select, CompetitionStatusBadge, PageSurface, Button } from '../../components';
 import {
   useCompetitions,
   calculateCompetitionStatus,
   formatCompetitionTime,
   formatCompetitionDuration,
 } from '@/hooks/useCompetitions';
-
-const getStatusTag = (status: string) => {
-  const configs: Record<string, { color: string; text: string }> = {
-    '进行中': { color: 'green', text: '进行中' },
-    '暂未开始': { color: 'blue', text: '暂未开始' },
-    '已结束': { color: 'red', text: '已结束' },
-  };
-  const config = configs[status] || configs['暂未开始'];
-  return <Tag color={config.color} className="!rounded-full !px-3">{config.text}</Tag>;
-};
 
 const Competitions: React.FC = () => {
   const {
@@ -34,14 +24,11 @@ const Competitions: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* 标题栏 */}
-      <div className="rounded-3xl" style={{ backgroundColor: 'var(--gemini-surface)', boxShadow: 'var(--shadow-gemini)' }}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-4" style={{ borderBottom: '1px solid var(--gemini-border-light)' }}>
-          <h1 className="text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
-            全部比赛
-          </h1>
-          <div className="flex flex-wrap items-center gap-3">
-  
+      <PageSurface
+        variant="card"
+        title="全部比赛"
+        extra={
+          <>
             <Select
               value={statusFilter}
               onChange={setStatusFilter}
@@ -61,9 +48,9 @@ const Competitions: React.FC = () => {
               className="w-56"
               allowClear
             />
-          </div>
-        </div>
-
+          </>
+        }
+      >
         {/* 比赛列表 - Gemini 卡片风格 */}
         <ol className="divide-y" style={{ borderColor: 'var(--gemini-border-light)' }}>
           {competitions.map((comp) => {
@@ -96,14 +83,14 @@ const Competitions: React.FC = () => {
                       <Clock className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
                       {formatDuration(comp.beginTime, comp.endTime)}
                     </span>
-                    <Button size="small" shape="round">
+                    <Button size="small">
                       ACM
                     </Button>
                   </div>
                 </div>
               </div>
               <div className="md:w-32 md:text-center">
-                {getStatusTag(status)}
+                <CompetitionStatusBadge status={status} />
               </div>
             </li>
           );
@@ -116,7 +103,7 @@ const Competitions: React.FC = () => {
             <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无比赛数据</p>
           </div>
         )}
-      </div>
+      </PageSurface>
     </div>
   );
 };

@@ -1,6 +1,10 @@
 import { useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Dropdown, Avatar, Badge, Modal, message, Tooltip } from 'antd';
+import toast from 'react-hot-toast';
+import { confirm, Dropdown } from '../../components';
+import Avatar from '../avatar';
+import Badge from '../badge';
+import Tooltip from '../tooltip';
 import {
   Home,
   BookOpen,
@@ -40,8 +44,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { hasAnyPermission } = usePermission();
-  const [modal, contextHolder] = Modal.useModal();
-  const [messageApi, messageContextHolder] = message.useMessage();
+  const messageApi = {
+    success: (msg: string) => toast.success(msg),
+    error: (msg: string) => toast.error(msg),
+    warning: (msg: string) => toast(msg, { icon: '⚠️' }),
+    info: (msg: string) => toast(msg),
+  };
 
   const handleGuardedNavigate = useCallback(
     (path: string, requireAuth = false) => {
@@ -56,12 +64,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   );
 
   const handleLogoutConfirm = () => {
-    modal.confirm({
+    confirm({
       title: '确认退出登录？',
       content: '退出后需要重新登录才能继续操作。',
       okText: '退出',
       cancelText: '取消',
-      okType: 'danger',
+      okButtonProps: { danger: true },
       onOk: () => {
         removeToken();
         localStorage.removeItem('id');
@@ -138,9 +146,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         boxShadow: 'var(--shadow-gemini)',
       }}
     >
-      {contextHolder}
-      {messageContextHolder}
-
       {/* Header */}
       <div
         className="h-16 flex items-center shrink-0 transition-[padding] duration-200"

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal, message } from 'antd';
+import toast from 'react-hot-toast';
+import { confirm } from '@/components';
 import { notificationApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
 
@@ -23,8 +24,14 @@ export const useNotifications = () => {
   const [keyword, setKeyword] = useState('');
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [modal, modalContextHolder] = Modal.useModal();
-  const [messageApi, messageContextHolder] = message.useMessage();
+  const modalContextHolder = null;
+  const messageApi = {
+    success: (msg: string) => toast.success(msg),
+    error: (msg: string) => toast.error(msg),
+    warning: (msg: string) => toast(msg, { icon: '⚠️' }),
+    info: (msg: string) => toast(msg),
+  };
+  const messageContextHolder = null;
 
   const loadNotificationsRef = useRef<((page?: number, overrides?: Record<string, any>) => Promise<void>) | null>(null);
 
@@ -113,7 +120,7 @@ export const useNotifications = () => {
   };
 
   const handleDelete = (id: number) => {
-    modal.confirm({
+    confirm({
       title: '确认删除该通知？',
       content: '删除后无法恢复。',
       okText: '删除',

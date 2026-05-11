@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { message as antMessage, Avatar } from 'antd';
+import toast from 'react-hot-toast';
+import Avatar from './avatar';
 import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, ChevronDown, Sparkles, Loader2, MessageSquarePlus, Menu, Plus, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -311,7 +312,12 @@ const AIAssistant: React.FC = () => {
   const skipNextHistoryLoadSessionRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [messageApi, contextHolder] = antMessage.useMessage();
+  const messageApi = {
+    info: (msg: string) => toast(msg),
+    success: (msg: string) => toast.success(msg),
+    error: (msg: string) => toast.error(msg),
+    warning: (msg: string) => toast(msg, { icon: '⚠️' }),
+  };
   const { hasPermission } = usePermission();
   const currentSessionIdRef = useRef<string | null>(currentSessionId);
   const streamSessionIdRef = useRef<string | null>(null);
@@ -1070,7 +1076,6 @@ const AIAssistant: React.FC = () => {
         .gemini-scrollbar-light::-webkit-scrollbar { width: 6px; }
         .gemini-scrollbar-light::-webkit-scrollbar-thumb { background: #e9ecef; border-radius: 10px; }
       `}</style>
-      {contextHolder}
 
       {/* 悬浮按钮 - 需要AI使用权限 */}
       {hasPermission(PermissionCode.AI_CHAT) && (

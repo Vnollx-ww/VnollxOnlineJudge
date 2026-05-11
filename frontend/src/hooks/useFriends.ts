@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Modal } from 'antd';
 import toast from 'react-hot-toast';
+import { confirm } from '@/components';
 import { friendApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
 import { useMessageWebSocket } from '@/contexts/MessageWebSocketContext';
@@ -65,7 +65,7 @@ export const useFriends = () => {
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const { subscribe, sendMessage: wsSendMessage } = useMessageWebSocket();
   const chatCacheRef = useRef<Map<number, PrivateMessage[]>>(new Map());
-  const [modal, contextHolder] = Modal.useModal();
+  const contextHolder = null;
   const [friendTyping, setFriendTyping] = useState<number | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingRef = useRef<number>(0);
@@ -272,12 +272,12 @@ export const useFriends = () => {
   };
 
   const clearChatHistory = (friendId: number) => {
-    modal.confirm({
+    confirm({
       title: '确认清除聊天记录？',
       content: '清除后无法恢复',
       okText: '清除',
       cancelText: '取消',
-      okType: 'danger',
+      okButtonProps: { danger: true },
       onOk: async () => {
         try {
           const data = (await friendApi.clearChat(friendId)) as ApiResponse<void>;

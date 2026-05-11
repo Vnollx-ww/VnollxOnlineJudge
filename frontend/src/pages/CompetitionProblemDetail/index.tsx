@@ -1,37 +1,16 @@
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
-import {
-  Card,
-  Tag,
-  Button,
-  Spin,
-  Space,
-  Divider,
-  Avatar,
-  Popconfirm,
-  Drawer,
-  Table,
-  Modal,
-  Pagination,
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  CommentOutlined,
-  HistoryOutlined,
-  FullscreenExitOutlined,
-  CopyOutlined,
-  TrophyOutlined,
-} from '@ant-design/icons';
-import { CheckCircle2 } from 'lucide-react';
+import { Card, Table, Tag, Avatar, Modal, Button, Space, Spin, Divider, Popconfirm, Drawer } from '../../components';
+import { JudgeStatusBadge, LanguageBadge } from '../../components/status-badge';
+import PagePagination from '@/components/page-pagination';
+import { ArrowLeft, MessageSquare, History, Minimize2, Copy, Trophy, CheckCircle2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { copyTextToClipboard } from '../../utils/clipboard';
-import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, WorkbenchResult } from '../../components';
+import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, SubmissionCodeBlock, WorkbenchResult } from '../../components';
 import SuccessCelebration from '../../components/success-celebration';
-import { useCompetitionProblemDetail, languageOptions, type Submission, type Comment } from '@/hooks/useCompetitionProblemDetail';
+import { useCompetitionProblemDetail, type Submission, type Comment } from '@/hooks/useCompetitionProblemDetail';
 
 const { TextArea } = Input;
 
@@ -43,6 +22,7 @@ const CompetitionProblemDetail: React.FC = () => {
     userInfo,
     problem,
     loading,
+    languageOptions,
     language,
     setLanguage,
     code,
@@ -149,7 +129,7 @@ const CompetitionProblemDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
-        <Spin size="large" />
+        <Spin spinning />
       </div>
     );
   }
@@ -169,29 +149,6 @@ const CompetitionProblemDetail: React.FC = () => {
     borderRadius: 9999,
     padding: '4px 12px',
     color: 'var(--gemini-text-secondary)',
-  };
-  const getSubmissionStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-      '答案正确': 'success',
-      '答案错误': 'error',
-      '超时': 'warning',
-      '时间超出限制': 'warning',
-      '内存超限': 'warning',
-      '内存超出限制': 'warning',
-      '运行时错误': 'error',
-      '运行错误': 'error',
-      '编译错误': 'error',
-      '等待中': 'processing',
-      '评测中': 'processing',
-    };
-    return statusMap[status] || 'default';
-  };
-  const getCodeHighlightLanguage = (lang?: string) => {
-    if (!lang) return 'plaintext';
-    if (lang === 'C++') return 'cpp';
-    if (lang === 'Golang') return 'go';
-    if (lang === 'JavaScript') return 'javascript';
-    return lang.toLowerCase();
   };
   const mySubmissionColumns = [
     {
@@ -214,14 +171,14 @@ const CompetitionProblemDetail: React.FC = () => {
       dataIndex: 'language',
       key: 'language',
       width: 110,
-      render: (lang: string) => <Tag>{lang}</Tag>,
+      render: (lang: string) => <LanguageBadge language={lang} />,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 130,
-      render: (status: string) => <Tag color={getSubmissionStatusColor(status)}>{status}</Tag>,
+      render: (status: string) => <JudgeStatusBadge status={status} />,
     },
     {
       title: '提交时间',
@@ -248,7 +205,7 @@ const CompetitionProblemDetail: React.FC = () => {
   const topBar = (
     <>
       <Button
-        icon={<ArrowLeftOutlined />}
+        icon={<ArrowLeft className="w-4 h-4" />}
         onClick={() => navigate(`/competition/${cid}`)}
       >
         返回题目列表
@@ -297,13 +254,13 @@ const CompetitionProblemDetail: React.FC = () => {
       <div className="flex-auto" />
       <div className="flex items-center gap-2 flex-none">
         {isCompetitionEnd && (
-          <Tag color="red" style={{ margin: 0 }}>比赛已结束</Tag>
+          <Tag color="red">比赛已结束</Tag>
         )}
         {isUserCompetitionEnded && (
-          <Tag color="red" style={{ margin: 0 }}>你已结束比赛</Tag>
+          <Tag color="red">你已结束比赛</Tag>
         )}
         <Button
-          icon={<TrophyOutlined />}
+          icon={<Trophy className="w-4 h-4" />}
           onClick={() => navigate(`/competition/${cid}/ranklist`, {
             state: { returnTo: `/competition/${cid}/problem/${problem.id}` },
           })}
@@ -311,14 +268,14 @@ const CompetitionProblemDetail: React.FC = () => {
           排行榜
         </Button>
         <Button
-          icon={<HistoryOutlined />}
+          icon={<History className="w-4 h-4" />}
           onClick={openMySubmissions}
         >
           本题我的提交记录
         </Button>
         {!isCompetitionOpen && (
           <Button
-            icon={<CommentOutlined />}
+            icon={<MessageSquare className="w-4 h-4" />}
             onClick={() => setCommentsOpen(true)}
           >
             评论 {comments.length ? `(${comments.length})` : ''}
@@ -370,7 +327,7 @@ const CompetitionProblemDetail: React.FC = () => {
                 <Button
                   type="text"
                   size="small"
-                  icon={<CopyOutlined />}
+                  icon={<Copy className="w-4 h-4" />}
                   className="!absolute !top-2 !right-2"
                   onClick={async () => {
                     const ok = await copyTextToClipboard(ex.input || '');
@@ -389,7 +346,7 @@ const CompetitionProblemDetail: React.FC = () => {
                 <Button
                   type="text"
                   size="small"
-                  icon={<CopyOutlined />}
+                  icon={<Copy className="w-4 h-4" />}
                   className="!absolute !top-2 !right-2"
                   onClick={async () => {
                     const ok = await copyTextToClipboard(ex.output || '');
@@ -568,7 +525,7 @@ const CompetitionProblemDetail: React.FC = () => {
       {isEditorFullscreen && createPortal(
         <div className="fixed inset-0 z-[99999] bg-white">
           <Button
-            icon={<FullscreenExitOutlined />}
+            icon={<Minimize2 className="w-4 h-4" />}
             onClick={() => {
               document.exitFullscreen();
               setIsEditorFullscreen(false);
@@ -597,27 +554,23 @@ const CompetitionProblemDetail: React.FC = () => {
         onClose={() => setMySubmissionsOpen(false)}
         destroyOnClose={false}
       >
-        <Table
+        <Table<Submission>
           columns={mySubmissionColumns}
           dataSource={mySubmissions}
           loading={mySubmissionsLoading}
           rowKey="id"
-          pagination={false}
-          scroll={{ x: 700 }}
         />
-        <div className="flex justify-center mt-4">
-          <Pagination
-            current={mySubmissionsPage}
-            total={mySubmissionsTotal}
-            pageSize={mySubmissionsPageSize}
-            showSizeChanger={false}
-            showTotal={(total) => `共 ${total} 条记录`}
-            onChange={(page) => {
-              setMySubmissionsPage(page);
-              loadMySubmissions(page);
-            }}
-          />
-        </div>
+        <PagePagination
+          current={mySubmissionsPage}
+          total={mySubmissionsTotal}
+          pageSize={mySubmissionsPageSize}
+          showQuickJumper={false}
+          onChange={(page) => {
+            setMySubmissionsPage(page);
+            loadMySubmissions(page);
+          }}
+          className="mt-4"
+        />
       </Drawer>
 
       <Modal
@@ -645,38 +598,18 @@ const CompetitionProblemDetail: React.FC = () => {
       >
         <div className="space-y-3">
           <Space wrap>
-            <Tag>{currentSubmission?.language || '-'}</Tag>
-            <Tag color={currentSubmission ? getSubmissionStatusColor(currentSubmission.status) : 'default'}>
-              {currentSubmission?.status || '-'}
-            </Tag>
+            {currentSubmission?.language ? <LanguageBadge language={currentSubmission.language} /> : <Tag>-</Tag>}
+            {currentSubmission?.status ? <JudgeStatusBadge status={currentSubmission.status} /> : <Tag>-</Tag>}
             <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
               {currentSubmission?.createTime ? dayjs(currentSubmission.createTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </span>
           </Space>
-          <div className="relative rounded-xl border border-gray-800 overflow-hidden">
-            <Button
-              size="small"
-              type="text"
-              icon={<CopyOutlined />}
-              className="!absolute !top-3 !right-3 !z-10"
-              style={{ backgroundColor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.35)', color: '#0f172a' }}
-              onClick={async () => {
-                const ok = await copyTextToClipboard(currentSubmission?.code || '');
-                if (ok) toast.success('代码已复制');
-                else toast.error('复制失败，请手动复制');
-              }}
-            />
-            <div className="max-h-[60vh] overflow-auto">
-              <SyntaxHighlighter
-                language={getCodeHighlightLanguage(currentSubmission?.language)}
-                style={vscDarkPlus}
-                showLineNumbers
-                customStyle={{ margin: 0, borderRadius: 12, fontSize: 14 }}
-              >
-                {currentSubmission?.code || '（暂无代码）'}
-              </SyntaxHighlighter>
-            </div>
-          </div>
+          <SubmissionCodeBlock
+            language={currentSubmission?.language}
+            code={currentSubmission?.code}
+            copySuccessText="代码已复制"
+            copyFailText="复制失败，请手动复制"
+          />
         </div>
       </Modal>
 
@@ -685,7 +618,7 @@ const CompetitionProblemDetail: React.FC = () => {
         <Drawer
           title={(
             <Space>
-              <CommentOutlined />
+              <MessageSquare className="w-4 h-4" />
               <span>评论讨论</span>
               <Tag color="blue">{comments.length}</Tag>
             </Space>
@@ -728,7 +661,7 @@ const CompetitionProblemDetail: React.FC = () => {
             <Divider />
             <div className="flex-auto overflow-auto">
               {commentLoading ? (
-                <Spin />
+                <Spin spinning />
               ) : comments.length ? (
                 renderComments(comments)
               ) : (

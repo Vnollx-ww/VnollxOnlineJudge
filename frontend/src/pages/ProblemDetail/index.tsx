@@ -1,16 +1,7 @@
 import { createPortal } from 'react-dom';
-import {
-  Button,
-  Spin,
-  Avatar,
-  Popconfirm,
-  Tag,
-  Drawer,
-  Table,
-  Modal,
-  Pagination,
-} from 'antd';
-import toast from 'react-hot-toast';
+import { Table, Tag, Avatar, Modal, Button, Spin, Popconfirm, Drawer } from '../../components';
+import { DifficultyBadge, JudgeStatusBadge, LanguageBadge } from '../../components/status-badge';
+import PagePagination from '@/components/page-pagination';
 import Input from '../../components/input';
 import {
   ArrowLeft,
@@ -25,18 +16,11 @@ import {
 import dayjs from 'dayjs';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { copyTextToClipboard } from '@/utils/clipboard';
-import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, WorkbenchResult } from '@/components';
+import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, SubmissionCodeBlock, WorkbenchResult } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
 import SuccessCelebration from '@/components/success-celebration';
 import {
   useProblemDetail,
-  languageOptions,
-  getDifficultyColor,
-  getSubmissionStatusColor,
-  getCodeHighlightLanguage,
   type Comment,
   type Submission,
 } from '@/hooks/useProblemDetail';
@@ -51,6 +35,7 @@ const ProblemDetail: React.FC = () => {
     problem,
     loading,
     tags,
+    languageOptions,
     language,
     setLanguage,
     code,
@@ -168,7 +153,7 @@ const ProblemDetail: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Spin size="large" />
+        <Spin spinning />
       </div>
     );
   }
@@ -208,14 +193,14 @@ const ProblemDetail: React.FC = () => {
       dataIndex: 'language',
       key: 'language',
       width: 110,
-      render: (lang: string) => <Tag>{lang}</Tag>,
+      render: (lang: string) => <LanguageBadge language={lang} />,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 130,
-      render: (status: string) => <Tag color={getSubmissionStatusColor(status)}>{status}</Tag>,
+      render: (status: string) => <JudgeStatusBadge status={status} />,
     },
     {
       title: '提交时间',
@@ -261,9 +246,7 @@ const ProblemDetail: React.FC = () => {
         >
           #{problem.id} · {problem.title}
         </span>
-        <Tag color={getDifficultyColor(problem.difficulty)} style={{ margin: 0, fontSize: 12, padding: '2px 10px' }}>
-          {problem.difficulty}
-        </Tag>
+        <DifficultyBadge difficulty={problem.difficulty} />
       </div>
       <div
         className="hidden lg:flex items-center gap-2 text-xs flex-none"
@@ -562,27 +545,23 @@ const ProblemDetail: React.FC = () => {
         onClose={() => setMySubmissionsOpen(false)}
         destroyOnClose={false}
       >
-        <Table
+        <Table<Submission>
           columns={mySubmissionColumns}
           dataSource={mySubmissions}
           loading={mySubmissionsLoading}
           rowKey="id"
-          pagination={false}
-          scroll={{ x: 700 }}
         />
-        <div className="flex justify-center mt-4">
-          <Pagination
-            current={mySubmissionsPage}
-            total={mySubmissionsTotal}
-            pageSize={mySubmissionsPageSize}
-            showSizeChanger={false}
-            showTotal={(total) => `共 ${total} 条记录`}
-            onChange={(page) => {
-              setMySubmissionsPage(page);
-              loadMySubmissions(page);
-            }}
-          />
-        </div>
+        <PagePagination
+          current={mySubmissionsPage}
+          total={mySubmissionsTotal}
+          pageSize={mySubmissionsPageSize}
+          showQuickJumper={false}
+          onChange={(page) => {
+            setMySubmissionsPage(page);
+            loadMySubmissions(page);
+          }}
+          className="mt-4"
+        />
       </Drawer>
 
       <Modal
@@ -594,38 +573,18 @@ const ProblemDetail: React.FC = () => {
       >
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Tag>{currentSubmission?.language || '-'}</Tag>
-            <Tag color={currentSubmission ? getSubmissionStatusColor(currentSubmission.status) : 'default'}>
-              {currentSubmission?.status || '-'}
-            </Tag>
+            {currentSubmission?.language ? <LanguageBadge language={currentSubmission.language} /> : <Tag>-</Tag>}
+            {currentSubmission?.status ? <JudgeStatusBadge status={currentSubmission.status} /> : <Tag>-</Tag>}
             <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
               {currentSubmission?.createTime ? dayjs(currentSubmission.createTime).format('YYYY-MM-DD HH:mm:ss') : '-'}
             </span>
           </div>
-          <div className="relative rounded-xl border border-gray-800 overflow-hidden">
-            <Button
-              size="small"
-              type="text"
-              icon={<Copy className="w-4 h-4" />}
-              className="!absolute !top-3 !right-3 !z-10"
-              style={{ backgroundColor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.35)', color: '#0f172a' }}
-              onClick={async () => {
-                const ok = await copyTextToClipboard(currentSubmission?.code || '');
-                if (ok) toast.success('代码已复制');
-                else toast.error('复制失败，请手动复制');
-              }}
-            />
-            <div className="max-h-[60vh] overflow-auto">
-              <SyntaxHighlighter
-                language={getCodeHighlightLanguage(currentSubmission?.language)}
-                style={vscDarkPlus}
-                showLineNumbers
-                customStyle={{ margin: 0, borderRadius: 12, fontSize: 14 }}
-              >
-                {currentSubmission?.code || '（暂无代码）'}
-              </SyntaxHighlighter>
-            </div>
-          </div>
+          <SubmissionCodeBlock
+            language={currentSubmission?.language}
+            code={currentSubmission?.code}
+            copySuccessText="代码已复制"
+            copyFailText="复制失败，请手动复制"
+          />
         </div>
       </Modal>
 
@@ -678,7 +637,7 @@ const ProblemDetail: React.FC = () => {
           <div className="flex-auto overflow-auto">
             {commentLoading ? (
               <div className="flex justify-center py-8">
-                <Spin />
+                <Spin spinning />
               </div>
             ) : comments.length ? (
               renderComments(comments)

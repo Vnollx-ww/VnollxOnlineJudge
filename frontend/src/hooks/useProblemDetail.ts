@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import katex from 'katex';
-import { commentApi, judgeApi, problemApi, submissionApi } from '@/lib';
+import { commentApi, dictApi, judgeApi, problemApi, submissionApi } from '@/lib';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
@@ -69,11 +69,13 @@ export interface LanguageOption {
   template: string;
 }
 
-export const languageOptions: LanguageOption[] = [
-  {
-    label: 'C++',
-    value: 'cpp',
-    template: `#include <bits/stdc++.h>
+interface DictData {
+  dictLabel: string;
+  dictValue: string;
+}
+
+const languageTemplates: Record<string, string> = {
+  cpp: `#include <bits/stdc++.h>
 using namespace std;
 
 int main() {
@@ -83,22 +85,14 @@ int main() {
     return 0;
 }
 `,
-  },
-  {
-    label: 'Python 3',
-    value: 'python',
-    template: `# 请在此处编写你的代码
+  python: `# 请在此处编写你的代码
 def main():
     pass
 
 if __name__ == "__main__":
     main()
 `,
-  },
-  {
-    label: 'Java',
-    value: 'java',
-    template: `import java.io.*;
+  java: `import java.io.*;
 import java.util.*;
 
 public class Main {
@@ -107,11 +101,7 @@ public class Main {
     }
 }
 `,
-  },
-  {
-    label: 'Go',
-    value: 'golang',
-    template: `package main
+  golang: `package main
 
 import (
     "bufio"
@@ -129,48 +119,27 @@ func main() {
     fmt.Fprintln(out)
 }
 `,
-  },
-  {
-    label: 'JavaScript',
-    value: 'javascript',
-    template: `const fs = require('fs');
+  javascript: `const fs = require('fs');
 
 const input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);
 let idx = 0;
 
 // 请在此处编写你的代码
 `,
-  },
-];
-
-export const getDifficultyColor = (difficulty: string) => {
-  switch (difficulty?.toLowerCase()) {
-    case '简单':
-      return 'green';
-    case '中等':
-      return 'orange';
-    case '困难':
-      return 'red';
-    default:
-      return 'default';
-  }
 };
 
-export const getSubmissionStatusColor = (status: string) => {
-  const statusMap: Record<string, string> = {
-    '答案正确': 'success',
-    '答案错误': 'error',
-    '超时': 'warning',
-    '时间超出限制': 'warning',
-    '内存超限': 'warning',
-    '内存超出限制': 'warning',
-    '运行时错误': 'error',
-    '运行错误': 'error',
-    '编译错误': 'error',
-    '等待中': 'processing',
-    '评测中': 'processing',
-  };
-  return statusMap[status] || 'default';
+const getLanguageTemplate = (language: string) =>
+  languageTemplates[language] || languageTemplates[language.toLowerCase()] || '';
+
+const buildSubmitLanguageOptions = (data?: DictData[]) => {
+  const options = (data || [])
+    .map((item) => {
+      const value = item.dictValue || item.dictLabel;
+      const template = getLanguageTemplate(value);
+      return { label: item.dictLabel, value, template };
+    })
+    .filter((item) => item.label && item.value);
+  return options;
 };
 
 export const getCodeHighlightLanguage = (lang?: string) => {
@@ -191,8 +160,9 @@ export const useProblemDetail = () => {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
   const [tags, setTags] = useState<string[]>([]);
-  const [language, setLanguage] = useState(languageOptions[0].value);
-  const [code, setCode] = useState(languageOptions[0].template);
+  const [language, setLanguage] = useState('');
+  const [code, setCode] = useState('');
+  const [submitLanguageOptions, setSubmitLanguageOptions] = useState<LanguageOption[]>([]);
 
   const getCodeCacheKey = useCallback((problemId: string, lang: string) => {
     return `problem_code_${problemId}_${lang}`;
@@ -484,16 +454,33 @@ export const useProblemDetail = () => {
   }, [searchParams, comments, commentLoading]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !language) return;
     const cachedCode = loadCodeFromCache(id, language);
     if (cachedCode) {
       setCode(cachedCode);
     } else {
-      const template =
-        languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
+      const template = submitLanguageOptions.find((item) => item.value === language)?.template || getLanguageTemplate(language);
       setCode(template);
     }
-  }, [language, id, loadCodeFromCache]);
+  }, [language, id, loadCodeFromCache, submitLanguageOptions]);
+
+  useEffect(() => {
+    const loadLanguageOptions = async () => {
+      try {
+        const res = (await dictApi.listData<DictData[]>('SUBMIT_LANGUAGE')) as ApiResponse<DictData[]>;
+        if (res.code === 200) {
+          const nextOptions = buildSubmitLanguageOptions(res.data);
+          setSubmitLanguageOptions(nextOptions);
+          if (nextOptions.length) {
+            setLanguage((current) => (nextOptions.some((item) => item.value === current) ? current : nextOptions[0].value));
+          }
+        }
+      } catch (error) {
+        console.error('加载提交语言字典失败:', error);
+      }
+    };
+    loadLanguageOptions();
+  }, []);
 
   useEffect(() => {
     if (!id || !code) return;
@@ -806,6 +793,7 @@ export const useProblemDetail = () => {
     loading,
     tags,
     // editor
+    languageOptions: submitLanguageOptions,
     language,
     setLanguage,
     code,

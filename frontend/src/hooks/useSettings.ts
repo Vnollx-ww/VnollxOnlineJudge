@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form } from 'antd';
-import type { UploadProps } from 'antd';
 import toast from 'react-hot-toast';
+import type { UploadProps } from '@/components';
 import { authApi, userApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
 
@@ -14,27 +13,58 @@ export interface SettingsUser {
   avatar?: string;
 }
 
+export interface ProfileFormState {
+  name: string;
+  signature: string;
+}
+export interface EmailFormState {
+  currentEmail: string;
+  newEmail: string;
+  verifyCode: string;
+}
+export interface PasswordFormState {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export const useSettings = () => {
   const navigate = useNavigate();
-  const [form] = Form.useForm();
-  const [emailForm] = Form.useForm();
-  const [passwordForm] = Form.useForm();
+  const [profileForm, setProfileForm] = useState<ProfileFormState>({ name: '', signature: '' });
+  const [profileErrors, setProfileErrors] = useState<Partial<Record<keyof ProfileFormState, string>>>({});
+  const [emailForm, setEmailFormState] = useState<EmailFormState>({ currentEmail: '', newEmail: '', verifyCode: '' });
+  const [emailErrors, setEmailErrors] = useState<Partial<Record<keyof EmailFormState, string>>>({});
+  const [passwordForm, setPasswordFormState] = useState<PasswordFormState>({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordErrors, setPasswordErrors] = useState<Partial<Record<keyof PasswordFormState, string>>>({});
   const [user, setUser] = useState<SettingsUser | null>(null);
   const [activeMenu, setActiveMenu] = useState('profile');
   const [codeLoading, setCodeLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [avatarLoading, setAvatarLoading] = useState(false);
 
+  const updateProfileField = <K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) => {
+    setProfileForm((prev) => ({ ...prev, [key]: value }));
+    setProfileErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+  const updateEmailField = <K extends keyof EmailFormState>(key: K, value: EmailFormState[K]) => {
+    setEmailFormState((prev) => ({ ...prev, [key]: value }));
+    setEmailErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+  const updatePasswordField = <K extends keyof PasswordFormState>(key: K, value: PasswordFormState[K]) => {
+    setPasswordFormState((prev) => ({ ...prev, [key]: value }));
+    setPasswordErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
   const loadUserInfo = async () => {
     try {
       const data = await userApi.getProfile<SettingsUser>();
       if (data.code === 200) {
         setUser(data.data);
-        form.setFieldsValue({
+        setProfileForm({
           name: data.data.name,
           signature: data.data.signature || localStorage.getItem('signature') || '个性签名',
         });
-        emailForm.setFieldsValue({ currentEmail: data.data.email });
+        setEmailFormState((prev) => ({ ...prev, currentEmail: data.data.email }));
       }
     } catch {
       toast.error('加载用户信息失败');
@@ -51,7 +81,17 @@ export const useSettings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleProfileSubmit = async (values: { name: string; signature: string }) => {
+  const validateProfile = (): boolean => {
+    const errors: Partial<Record<keyof ProfileFormState, string>> = {};
+    if (!profileForm.name.trim()) errors.name = '请输入用户名';
+    if (!profileForm.signature.trim()) errors.signature = '请输入个性签名';
+    setProfileErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleProfileSubmit = async () => {
+    if (!validateProfile()) return;
+    const values = profileForm;
     try {
       const formData = new FormData();
       formData.append('email', user!.email);
@@ -74,7 +114,18 @@ export const useSettings = () => {
     }
   };
 
-  const handleEmailSubmit = async (values: { newEmail: string; verifyCode: string }) => {
+  const validateEmail = (): boolean => {
+    const errors: Partial<Record<keyof EmailFormState, string>> = {};
+    if (!emailForm.newEmail) errors.newEmail = '请输入新邮箱地址';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForm.newEmail)) errors.newEmail = '请输入有效的邮箱地址';
+    if (!emailForm.verifyCode) errors.verifyCode = '请输入验证码';
+    setEmailErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleEmailSubmit = async () => {
+    if (!validateEmail()) return;
+    const values = emailForm;
     if (values.newEmail === user?.email) {
       toast.error('新邮箱地址不能与旧邮箱地址相同');
       return;
@@ -89,7 +140,7 @@ export const useSettings = () => {
       if (data.code === 200) {
         toast.success('邮箱更新成功');
         setUser({ ...user!, email: values.newEmail });
-        emailForm.setFieldsValue({ currentEmail: values.newEmail, verifyCode: '' });
+        setEmailFormState({ currentEmail: values.newEmail, newEmail: '', verifyCode: '' });
       } else {
         toast.error(data.msg || '更新失败');
       }
@@ -98,11 +149,20 @@ export const useSettings = () => {
     }
   };
 
-  const handlePasswordSubmit = async (values: {
-    oldPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  }) => {
+  const validatePassword = (): boolean => {
+    const errors: Partial<Record<keyof PasswordFormState, string>> = {};
+    if (!passwordForm.oldPassword) errors.oldPassword = '请输入当前密码';
+    if (!passwordForm.newPassword) errors.newPassword = '请输入新密码';
+    else if (passwordForm.newPassword.length < 6) errors.newPassword = '密码长度不能少于6位';
+    if (!passwordForm.confirmPassword) errors.confirmPassword = '请再次输入新密码';
+    else if (passwordForm.newPassword !== passwordForm.confirmPassword) errors.confirmPassword = '两次输入的密码不一致';
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handlePasswordSubmit = async () => {
+    if (!validatePassword()) return;
+    const values = passwordForm;
     if (values.newPassword !== values.confirmPassword) {
       toast.error('两次输入的密码不一致');
       return;
@@ -114,7 +174,8 @@ export const useSettings = () => {
       });
       if (data.code === 200) {
         toast.success('密码更新成功');
-        passwordForm.resetFields();
+        setPasswordFormState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+        setPasswordErrors({});
       } else {
         toast.error(data.msg || '更新失败');
       }
@@ -124,7 +185,7 @@ export const useSettings = () => {
   };
 
   const handleGetCode = async () => {
-    const newEmail = emailForm.getFieldValue('newEmail');
+    const newEmail = emailForm.newEmail;
     if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       toast.error('请输入有效的邮箱地址');
       return;
@@ -184,9 +245,15 @@ export const useSettings = () => {
   };
 
   return {
-    form,
+    profileForm,
+    profileErrors,
+    updateProfileField,
     emailForm,
+    emailErrors,
+    updateEmailField,
     passwordForm,
+    passwordErrors,
+    updatePasswordField,
     user,
     activeMenu,
     setActiveMenu,
