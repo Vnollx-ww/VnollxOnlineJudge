@@ -20,6 +20,7 @@ interface ModalProps {
   maskClosable?: boolean;
   confirmLoading?: boolean;
   okButtonProps?: { danger?: boolean; loading?: boolean; disabled?: boolean };
+  zIndex?: number;
 }
 
 function Modal({
@@ -40,6 +41,7 @@ function Modal({
   maskClosable = true,
   confirmLoading,
   okButtonProps,
+  zIndex = 1000,
 }: ModalProps) {
   const close = onClose || onCancel;
   useEffect(() => {
@@ -75,7 +77,7 @@ function Modal({
   const okDanger = okButtonProps?.danger;
 
   return createPortal(
-    <div className={`fixed inset-0 z-[1000] ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
+    <div className={`fixed inset-0 ${open ? '' : 'pointer-events-none'}`} style={{ zIndex }} aria-hidden={!open}>
       <div
         className={`absolute inset-0 bg-slate-950/45 backdrop-blur-sm transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}
         onMouseDown={handleMaskMouseDown}
