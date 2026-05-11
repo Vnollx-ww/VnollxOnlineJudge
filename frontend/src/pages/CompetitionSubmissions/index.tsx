@@ -5,6 +5,7 @@ import Select from '../../components/select';
 import Input from '../../components/input';
 import { JudgeStatusBadge, LanguageBadge } from '../../components/status-badge';
 import { Table, Empty, Spin, Modal } from '../../components';
+import PagePagination from '../../components/page-pagination';
 import { useCompetitionSubmissions, type Submission } from '@/hooks/useCompetitionSubmissions';
 
 const CompetitionSubmissions: React.FC = () => {
@@ -185,22 +186,14 @@ const CompetitionSubmissions: React.FC = () => {
                   loading={loading}
                   rowKey="id"
                 />
-                <div className="mt-4 flex items-center justify-end gap-3">
-                  <Button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                  >
-                    上一页
-                  </Button>
-                  <span className="text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-                    第 {currentPage} 页，共 {Math.ceil(total / pageSize)} 页
-                  </span>
-                  <Button
-                    disabled={currentPage >= Math.ceil(total / pageSize)}
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                  >
-                    下一页
-                  </Button>
+                <div className="mt-4">
+                  <PagePagination
+                    current={currentPage}
+                    total={total}
+                    pageSize={pageSize}
+                    onChange={(page) => setCurrentPage(page)}
+                    align="end"
+                  />
                 </div>
               </>
             )}

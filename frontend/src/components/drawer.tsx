@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface DrawerProps {
@@ -56,7 +57,7 @@ const Drawer: React.FC<DrawerProps> = ({
     bottom: `left-0 bottom-0 w-full ${open ? 'translate-y-0' : 'translate-y-full'}`,
   }[placement];
 
-  return (
+  return createPortal(
     <div className={`fixed inset-0 z-[1000] ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
       <div
         className={`absolute inset-0 bg-slate-950/40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}
@@ -85,7 +86,8 @@ const Drawer: React.FC<DrawerProps> = ({
         ) : null}
         <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

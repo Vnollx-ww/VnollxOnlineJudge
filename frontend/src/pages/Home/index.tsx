@@ -3,7 +3,6 @@ import {
   Users, 
   Code2, 
   Trophy, 
-  ArrowRight,
   Terminal,
   Sparkles,
 } from 'lucide-react';
@@ -11,13 +10,31 @@ import { CountUp, CodeWindow } from '../../components';
 import { useHome } from '@/hooks/useHome';
 
 const Home: React.FC = () => {
-  const { stats, handleStartCoding, handleViewRank, handleRegister } = useHome();
+  const { stats, handleStartCoding, handleViewRank } = useHome();
 
   const statItems = [
     { icon: BookOpen, value: stats.problemCount, label: '算法题目', bgColor: '#e8f0fe', iconColor: '#1a73e8' },
     { icon: Users, value: stats.userCount, label: '注册用户', bgColor: '#e6f4ea', iconColor: '#34a853' },
     { icon: Terminal, value: stats.submissionCount, label: '提交记录', bgColor: '#fef7e0', iconColor: '#f9ab00' },
     { icon: Trophy, value: stats.competitionCount, label: '竞赛场次', bgColor: '#f3e8fd', iconColor: '#9334e6' },
+  ];
+
+  const featureItems = [
+    {
+      icon: Code2,
+      title: '在线代码编辑',
+      description: '支持 C++、Python、Java 多种语言，内置智能代码补全',
+    },
+    {
+      icon: Trophy,
+      title: '竞赛系统',
+      description: '支持 ACM/OI 赛制，实时榜单更新，模拟真实比赛环境',
+    },
+    {
+      icon: Users,
+      title: '社区互动',
+      description: '题目评论讨论，题解分享，与其他选手交流心得',
+    },
   ];
 
   return (
@@ -144,37 +161,29 @@ const Home: React.FC = () => {
 
       
 
-      {/* CTA Section - Gemini 风格渐变 */}
+      {/* Feature Section - Gemini 风格渐变 */}
       <section className="py-16">
         <div 
-          className="relative overflow-hidden rounded-3xl p-12 lg:p-16 text-center"
-          style={{ 
-            background: 'linear-gradient(135deg, #1a73e8 0%, #041e49 100%)' 
-          }}
+          className="relative rounded-3xl"
         >
-          {/* Decorative Elements */}
-          <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-60 h-60 bg-white/10 rounded-full blur-3xl" />
-          
-          <div className="relative z-10 max-w-2xl mx-auto">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-              准备好接受挑战了吗？
-            </h2>
-            <p className="text-white/80 text-lg mb-8">
-              加入 Vnollx OJ，与数千名开发者一起提升编程能力。
-            </p>
-            <button
-              onClick={handleRegister}
-              className="gemini-btn inline-flex items-center gap-2 px-8 py-4 text-base transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-              style={{ 
-                backgroundColor: 'white', 
-                color: '#1a73e8',
-                fontWeight: 600
-              }}
-            >
-              立即免费注册
-              <ArrowRight className="w-5 h-5" />
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featureItems.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-3xl p-6 text-center transition-all duration-300 hover:-translate-y-1"
+                style={{ backgroundColor: 'var(--gemini-surface)', boxShadow: 'var(--shadow-gemini)' }}
+              >
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-strong)' }}>
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <h2 className="mb-2 text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
+                  {item.title}
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--gemini-text-secondary)' }}>
+                  {item.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

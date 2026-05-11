@@ -86,12 +86,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     {
       key: 'profile',
       icon: <User className="w-4 h-4" />,
-      label: <Link to={`/user/${user?.id}`}>我的主页</Link>,
+      label: '我的主页',
+      onClick: () => {
+        if (user?.id) navigate(`/user/${user.id}`);
+      },
     },
     {
       key: 'settings',
       icon: <Settings className="w-4 h-4" />,
-      label: <Link to="/settings">我的设置</Link>,
+      label: '我的设置',
+      onClick: () => navigate('/settings'),
     },
     ...(hasAnyPermission(
         PermissionCode.USER_MANAGE,
@@ -107,7 +111,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           {
             key: 'admin',
             icon: <Settings className="w-4 h-4" />,
-            label: <Link to="/admin">后台界面</Link>,
+            label: '后台界面',
+            onClick: () => navigate('/admin'),
           },
         ]
       : []),
@@ -219,6 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 key={item.key}
                 title={<span className="block text-center">{item.label}</span>}
                 placement="right"
+                className="block w-full"
               >
                 {menuButton}
               </Tooltip>
@@ -294,7 +300,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     </Badge>
                   </Link>
                 </Tooltip>
-                <Dropdown menu={{ items: userMenuItems }} placement="topRight" trigger={['click']}>
+                <Dropdown menu={{ items: userMenuItems }} placement="topLeft" trigger={['click']}>
                   <Tooltip title={<span className="block text-center">{user.name || '用户菜单'}</span>} placement="right">
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-200 shrink-0"

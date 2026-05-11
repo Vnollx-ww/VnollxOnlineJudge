@@ -2,6 +2,7 @@ import { Button, Modal, Field } from '@/components';
 import { Users, UserPlus, Search, RefreshCw, Edit3, Trash2, Filter, CheckCircle2, Clock } from 'lucide-react';
 import Select from '@/components/select';
 import Input from '@/components/input';
+import PagePagination from '@/components/page-pagination';
 import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -55,7 +56,6 @@ const AdminUsers: React.FC = () => {
     handleSubmit,
     getIdentityMeta,
     identityOptions,
-    totalPages,
     passRate,
     adminCount,
     formatLastLogin,
@@ -195,41 +195,22 @@ const AdminUsers: React.FC = () => {
           </table>
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-50 bg-gray-50/30 px-6 py-4">
-          <span className="text-xs font-medium text-gray-400">显示 {users.length} 个结果，共 {total} 条</span>
-          <div className="flex items-center gap-2">
-            <Select
-              className="w-32"
-              value={pageSize}
-              onChange={(value) => {
-                setPageSize(Number(value));
+        <div className="border-t border-gray-50 bg-gray-50/30 px-6 py-4">
+          <PagePagination
+            current={currentPage}
+            total={total}
+            pageSize={pageSize}
+            onChange={(page, nextPageSize) => {
+              if (nextPageSize !== pageSize) {
+                setPageSize(nextPageSize);
                 setCurrentPage(1);
-              }}
-              options={[10, 20, 50, 100].map((size) => ({
-                value: size,
-                label: `${size} 条/页`,
-              }))}
-            />
-            <button
-              type="button"
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
-              disabled={currentPage <= 1}
-              onClick={() => setCurrentPage(currentPage - 1)}
-            >
-              上一页
-            </button>
-            <button type="button" className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">
-              {currentPage} / {totalPages}
-            </button>
-            <button
-              type="button"
-              className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
-              disabled={currentPage >= totalPages}
-              onClick={() => setCurrentPage(currentPage + 1)}
-            >
-              下一页
-            </button>
-          </div>
+              } else {
+                setCurrentPage(page);
+              }
+            }}
+            align="end"
+            showSizeChanger
+          />
         </div>
       </div>
 

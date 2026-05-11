@@ -398,17 +398,6 @@ const AIAssistant: React.FC = () => {
   }, [clampButtonPosition, persistButtonPosition]);
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
-  useEffect(() => {
     currentSessionIdRef.current = currentSessionId;
   }, [currentSessionId]);
 
@@ -533,8 +522,8 @@ const AIAssistant: React.FC = () => {
       void loadMoreHistory();
     }
     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-    setInputCollapsed(!atBottom);
-  }, [hasMore, loadingMore, loadMoreHistory]);
+    setInputCollapsed(loading ? true : !atBottom);
+  }, [hasMore, loadingMore, loadMoreHistory, loading]);
 
   // 缓存选中的模型到 localStorage
   useEffect(() => {
@@ -882,6 +871,7 @@ const AIAssistant: React.FC = () => {
     streamSessionIdRef.current = sessionId;
     setLoading(true);
     setThinking(true);
+    setInputCollapsed(true);
     shouldScrollToBottomRef.current = true;
 
     // 捕获发送时的模型信息，避免用户在等待响应时切换模型导致 Logo 错乱
@@ -1051,6 +1041,7 @@ const AIAssistant: React.FC = () => {
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
   const [expandedThinking, setExpandedThinking] = useState<Record<number, boolean>>({});
+  const isInputCollapsed = loading || inputCollapsed;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1442,11 +1433,11 @@ const AIAssistant: React.FC = () => {
               <div className="max-w-[800px] w-full">
                 <div 
                   className="bg-[#f0f4f9] rounded-[28px] p-2 flex flex-col"
-                  onClick={() => inputCollapsed && setInputCollapsed(false)}
+                  onClick={() => isInputCollapsed && !loading && setInputCollapsed(false)}
                 >
                   <div
                     className="overflow-hidden transition-all duration-300 ease-in-out"
-                    style={{ maxHeight: inputCollapsed ? 0 : 200, opacity: inputCollapsed ? 0 : 1 }}
+                    style={{ maxHeight: isInputCollapsed ? 0 : 200, opacity: isInputCollapsed ? 0 : 1 }}
                   >
                     <textarea
                       value={inputValue}
@@ -1467,12 +1458,12 @@ const AIAssistant: React.FC = () => {
                       className="w-full bg-transparent px-6 pt-4 pb-2 text-base resize-none placeholder:text-gray-500 outline-none border-none disabled:cursor-not-allowed"
                     />
                   </div>
-                  <div className={`flex items-center justify-between px-3 pb-2 mt-1 ${inputCollapsed ? 'cursor-pointer' : ''}`}>
+                  <div className={`flex items-center justify-between px-3 pb-2 mt-1 ${isInputCollapsed && !loading ? 'cursor-pointer' : ''}`}>
                     <div className="flex items-center gap-1">
-                      {inputCollapsed && (
+                      {isInputCollapsed && (
                         <span className="text-sm text-gray-400 select-none px-2">点击展开输入框...</span>
                       )}
-                      {!inputCollapsed && problemContext && (
+                      {!isInputCollapsed && problemContext && (
                         <>
                           <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg shrink-0">
                             #{problemContext.problemId} {problemContext.title}

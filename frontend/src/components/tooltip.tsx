@@ -1,23 +1,56 @@
-import { useState, type ReactElement, type ReactNode, cloneElement } from 'react';
+import { useState, useRef, useLayoutEffect, type ReactElement, type ReactNode, cloneElement } from 'react';
+import { createPortal } from 'react-dom';
 
-interface TooltipProps {
+interface TooltipProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'title' | 'children'> {
   title?: ReactNode;
   children: ReactElement;
   placement?: 'top' | 'bottom' | 'left' | 'right';
   className?: string;
 }
 
-const placementClass: Record<NonNullable<TooltipProps['placement']>, string> = {
-  top: 'bottom-full left-1/2 -translate-x-1/2 mb-1.5',
-  bottom: 'top-full left-1/2 -translate-x-1/2 mt-1.5',
-  left: 'right-full top-1/2 -translate-y-1/2 mr-1.5',
-  right: 'left-full top-1/2 -translate-y-1/2 ml-1.5',
-};
-
-const Tooltip: React.FC<TooltipProps> = ({ title, children, placement = 'top', className = '' }) => {
+const Tooltip: React.FC<TooltipProps> = ({ title, children, placement = 'top', className = '', ...rest }) => {
   const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const tipRef = useRef<HTMLSpanElement>(null);
 
-  if (!title) return children;
+  useLayoutEffect(() => {
+    if (!open || !wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const tipRect = tipRef.current?.getBoundingClientRect();
+    const tw = tipRect?.width ?? 0;
+    const th = tipRect?.height ?? 0;
+    const gap = 6;
+    let top = 0;
+    let left = 0;
+    switch (placement) {
+      case 'top':
+        top = rect.top - th - gap;
+        left = rect.left + rect.width / 2 - tw / 2;
+        break;
+      case 'bottom':
+        top = rect.bottom + gap;
+        left = rect.left + rect.width / 2 - tw / 2;
+        break;
+      case 'left':
+        top = rect.top + rect.height / 2 - th / 2;
+        left = rect.left - tw - gap;
+        break;
+      case 'right':
+        top = rect.top + rect.height / 2 - th / 2;
+        left = rect.right + gap;
+        break;
+    }
+    setPos({ top, left });
+  }, [open, placement, title]);
+
+  if (!title) {
+    return (
+      <span ref={wrapperRef} className={`relative inline-flex ${className}`} {...rest}>
+        {children}
+      </span>
+    );
+  }
 
   const childWithEvents = cloneElement(children, {
     onMouseEnter: () => setOpen(true),
@@ -27,16 +60,21 @@ const Tooltip: React.FC<TooltipProps> = ({ title, children, placement = 'top', c
   } as Record<string, unknown>);
 
   return (
-    <span className={`relative inline-flex ${className}`}>
+    <span ref={wrapperRef} className={`relative inline-flex ${className}`} {...rest}>
       {childWithEvents}
-      {open ? (
-        <span
-          role="tooltip"
-          className={`pointer-events-none absolute z-[1100] whitespace-nowrap rounded-lg bg-slate-900/90 px-2.5 py-1 text-xs text-white shadow-lg ${placementClass[placement]}`}
-        >
-          {title}
-        </span>
-      ) : null}
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <span
+              ref={tipRef}
+              role="tooltip"
+              style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, position: 'fixed' }}
+              className="pointer-events-none z-[1100] whitespace-nowrap rounded-lg bg-slate-900/90 px-2.5 py-1 text-xs text-white shadow-lg"
+            >
+              {title}
+            </span>,
+            document.body
+          )
+        : null}
     </span>
   );
 };

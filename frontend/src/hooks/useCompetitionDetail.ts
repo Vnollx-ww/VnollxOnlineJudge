@@ -322,6 +322,7 @@ export const useCompetitionDetail = () => {
     countdown,
     status,
     isUserCompetitionEnded,
+    finishStatusLoaded,
     finishCompetitionLoading,
     finishCompetitionModalOpen,
     setFinishCompetitionModalOpen,

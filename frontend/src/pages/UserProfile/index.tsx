@@ -103,39 +103,39 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* 学习进度管理 */}
-        <div className="gemini-card">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
-              <h3 className="m-0 text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>学习进度管理</h3>
+        {isOwnProfile && (
+          <div className="gemini-card">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" style={{ color: 'var(--gemini-accent-strong)' }} />
+                <h3 className="m-0 text-xl font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>学习进度管理</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <Select
+                  value={learningDays}
+                  onChange={setLearningDays}
+                  options={[
+                    { value: 7, label: '最近 7 天' },
+                    { value: 14, label: '最近 14 天' },
+                    { value: 30, label: '最近 30 天' },
+                    { value: 60, label: '最近 60 天' },
+                  ]}
+                  style={{ width: 130 }}
+                />
+                {hasPermission(PermissionCode.AI_CHAT) && (
+                  <>
+                    <Button
+                      type="primary"
+                      icon={<Bot className="w-4 h-4" />}
+                      onClick={handleOpenAiLearningAdvice}
+                      style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
+                    >
+                      AI学习建议
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Select
-                value={learningDays}
-                onChange={setLearningDays}
-                options={[
-                  { value: 7, label: '最近 7 天' },
-                  { value: 14, label: '最近 14 天' },
-                  { value: 30, label: '最近 30 天' },
-                  { value: 60, label: '最近 60 天' },
-                ]}
-                style={{ width: 130 }}
-              />
-              {isOwnProfile && hasPermission(PermissionCode.AI_CHAT) && (
-                <>
-                  <Button
-                    type="primary"
-                    icon={<Bot className="w-4 h-4" />}
-                    onClick={handleOpenAiLearningAdvice}
-                    style={{ backgroundColor: 'var(--gemini-accent)', color: 'var(--gemini-accent-text)', border: 'none' }}
-                  >
-                    AI学习建议
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
 
           <Spin spinning={learningLoading}>
             {learningData && (
@@ -251,7 +251,8 @@ const UserProfile: React.FC = () => {
               <div className="text-center py-8" style={{ color: 'var(--gemini-text-disabled)' }}>暂无学习数据</div>
             )}
           </Spin>
-        </div>
+          </div>
+        )}
 
         {/* 已解决问题列表 - Gemini 风格 */}
         <div className="gemini-card">

@@ -1,6 +1,6 @@
 import Pagination from './pagination';
 import type { PaginationProps } from './pagination';
-import type { ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 
 export type PagePaginationProps = {
   current: number;
@@ -45,13 +45,20 @@ export default function PagePagination({
       )
     : undefined;
 
+  const handleChange = useCallback(
+    (page: number, nextPageSize: number) => {
+      onChange(page, nextPageSize);
+    },
+    [onChange],
+  );
+
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-center'} ${className}`}>
       <Pagination
         current={current}
         total={total}
         pageSize={pageSize}
-        onChange={onChange}
+        onChange={handleChange}
         showQuickJumper={showQuickJumper}
         showSizeChanger={showSizeChanger}
         pageSizeOptions={pageSizeOptions}

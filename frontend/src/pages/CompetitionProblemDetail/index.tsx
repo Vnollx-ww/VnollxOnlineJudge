@@ -39,6 +39,7 @@ const CompetitionProblemDetail: React.FC = () => {
     isCompetitionOpen,
     isCompetitionEnd,
     isUserCompetitionEnded,
+    competitionStatusLoaded,
     finishCompetitionLoading,
     finishCompetitionModalOpen,
     setFinishCompetitionModalOpen,
@@ -256,9 +257,6 @@ const CompetitionProblemDetail: React.FC = () => {
         {isCompetitionEnd && (
           <Tag color="red">比赛已结束</Tag>
         )}
-        {isUserCompetitionEnded && (
-          <Tag color="red">你已结束比赛</Tag>
-        )}
         <Button
           icon={<Trophy className="w-4 h-4" />}
           onClick={() => navigate(`/competition/${cid}/ranklist`, {
@@ -281,7 +279,15 @@ const CompetitionProblemDetail: React.FC = () => {
             评论 {comments.length ? `(${comments.length})` : ''}
           </Button>
         )}
-        {!isCompetitionEnd && !isUserCompetitionEnded && (
+        {!competitionStatusLoaded ? (
+          <Button disabled loading>
+            状态加载中
+          </Button>
+        ) : isUserCompetitionEnded ? (
+          <Button disabled danger>
+            你已结束比赛
+          </Button>
+        ) : !isCompetitionEnd && (
           <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
             结束比赛
           </Button>
@@ -458,10 +464,10 @@ const CompetitionProblemDetail: React.FC = () => {
     <Button
       loading={codeLoading.test}
       onClick={handleTestCode}
-      disabled={isCompetitionEnd || isUserCompetitionEnded || !problem.examples?.length}
+      disabled={isCompetitionEnd || isUserCompetitionEnded || codeLoading.submit || !problem.examples?.length}
       style={{ padding: '0 16px', height: 32, fontSize: 14 }}
     >
-      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : '自测运行'}
+      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : codeLoading.test ? '运行中...' : '自测运行'}
     </Button>
   );
 
@@ -471,10 +477,10 @@ const CompetitionProblemDetail: React.FC = () => {
       type="primary"
       loading={codeLoading.submit}
       onClick={handleSubmitCode}
-      disabled={isCompetitionEnd || isUserCompetitionEnded}
+      disabled={isCompetitionEnd || isUserCompetitionEnded || codeLoading.test}
       style={{ padding: '0 18px', height: 34, fontSize: 14, fontWeight: 500 }}
     >
-      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : '保存并提交'}
+      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : codeLoading.submit ? '提交中...' : '保存并提交'}
     </Button>
   );
 

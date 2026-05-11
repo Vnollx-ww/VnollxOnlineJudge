@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { confirm } from '@/components';
@@ -25,12 +25,15 @@ export const useNotifications = () => {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const modalContextHolder = null;
-  const messageApi = {
-    success: (msg: string) => toast.success(msg),
-    error: (msg: string) => toast.error(msg),
-    warning: (msg: string) => toast(msg, { icon: '⚠️' }),
-    info: (msg: string) => toast(msg),
-  };
+  const messageApi = useMemo(
+    () => ({
+      success: (msg: string) => toast.success(msg),
+      error: (msg: string) => toast.error(msg),
+      warning: (msg: string) => toast(msg, { icon: '⚠️' }),
+      info: (msg: string) => toast(msg),
+    }),
+    [],
+  );
   const messageContextHolder = null;
 
   const loadNotificationsRef = useRef<((page?: number, overrides?: Record<string, any>) => Promise<void>) | null>(null);

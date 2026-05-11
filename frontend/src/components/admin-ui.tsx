@@ -2,7 +2,7 @@ import { cloneElement, isValidElement, useLayoutEffect, useRef, useState, type C
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import Button from './button';
-import Select from './select';
+import PagePagination from './page-pagination';
 
 type Key = string | number;
 
@@ -95,37 +95,23 @@ export function Table<T extends Record<string, any>>({ columns, dataSource = [],
   const current = pagination && pagination.current ? pagination.current : 1;
   const pageSize = pagination && pagination.pageSize ? pagination.pageSize : dataSource.length || 10;
   const total = pagination && pagination.total !== undefined ? pagination.total : dataSource.length;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const getKey = (record: T, index: number) => {
     if (typeof rowKey === 'function') return rowKey(record);
     if (rowKey) return record[rowKey];
     return record.key ?? index;
   };
   const isActionColumn = (column: Column<T>) => column.key === 'action' || column.dataIndex === 'action' || String(column.title) === '操作';
-  const handlePageChange = (page: number, nextPageSize: number) => {
-    const scrollY = window.scrollY;
-    pagination && pagination.onChange?.(page, nextPageSize);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => window.scrollTo({ top: scrollY, left: window.scrollX }));
-    });
-  };
   const renderPagination = (position: 'top' | 'bottom') => pagination ? (
-    <div className={`shrink-0 flex flex-wrap items-center justify-between gap-3 bg-gray-50/30 px-6 py-4 text-xs font-medium text-gray-400 ${position === 'bottom' ? 'border-t border-gray-50' : 'border-b border-gray-50'}`}>
-      <div>{pagination.showTotal ? pagination.showTotal(total) : `共 ${total} 条记录`}</div>
-      <div className="flex items-center gap-2">
-        {pagination.showSizeChanger ? (
-          <Select
-            size="small"
-            value={pageSize}
-            onChange={(next: number) => handlePageChange(1, next)}
-            options={[10, 20, 50, 100].map((sizeOption) => ({ value: sizeOption, label: `${sizeOption} 条/页` }))}
-            style={{ width: 100 }}
-          />
-        ) : null}
-        <button type="button" className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300" disabled={current <= 1} onClick={() => handlePageChange(current - 1, pageSize)}>上一页</button>
-        <span className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">{current} / {totalPages}</span>
-        <button type="button" className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300" disabled={current >= totalPages} onClick={() => handlePageChange(current + 1, pageSize)}>下一页</button>
-      </div>
+    <div className={`shrink-0 bg-gray-50/30 px-6 py-4 ${position === 'bottom' ? 'border-t border-gray-50' : 'border-b border-gray-50'}`}>
+      <PagePagination
+        current={current}
+        total={total}
+        pageSize={pageSize}
+        onChange={(page, nextPageSize) => pagination.onChange?.(page, nextPageSize)}
+        showSizeChanger={pagination.showSizeChanger}
+        unit="条记录"
+        align="end"
+      />
     </div>
   ) : null;
 
@@ -146,8 +132,8 @@ export function Table<T extends Record<string, any>>({ columns, dataSource = [],
               ))}
             </tr>
           </thead>
-          <tbody>
-            {loading ? (
+          <tbody className={loading && dataSource.length > 0 ? 'opacity-60' : undefined}>
+            {loading && dataSource.length === 0 ? (
               <tr><td colSpan={columns.length} className="px-6 py-16 text-center text-sm font-medium text-gray-400"><Spin spinning /> 加载中...</td></tr>
             ) : dataSource.length === 0 ? (
               <tr><td colSpan={columns.length} className="px-6 py-16"><Empty description="暂无数据" /></td></tr>
@@ -173,6 +159,13 @@ export function Table<T extends Record<string, any>>({ columns, dataSource = [],
             ))}
           </tbody>
         </table>
+        {loading && dataSource.length > 0 ? (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center bg-white/40 backdrop-blur-[1px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/90 px-4 py-2 text-sm font-medium text-gray-500 shadow-sm">
+              <Spin spinning /> 加载中...
+            </div>
+          </div>
+        ) : null}
       </div>
       {renderPagination('bottom')}
     </div>

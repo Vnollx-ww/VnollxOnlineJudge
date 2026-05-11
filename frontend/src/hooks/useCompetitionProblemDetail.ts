@@ -135,6 +135,7 @@ export const useCompetitionProblemDetail = () => {
   const [isCompetitionOpen, setIsCompetitionOpen] = useState(true);
   const [isCompetitionEnd, setIsCompetitionEnd] = useState(false);
   const [isUserCompetitionEnded, setIsUserCompetitionEnded] = useState(false);
+  const [competitionStatusLoaded, setCompetitionStatusLoaded] = useState(false);
   const [finishCompetitionLoading, setFinishCompetitionLoading] = useState(false);
   const [finishCompetitionModalOpen, setFinishCompetitionModalOpen] = useState(false);
   const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
@@ -320,6 +321,7 @@ export const useCompetitionProblemDetail = () => {
   };
 
   const loadCompetitionStatus = async () => {
+    setCompetitionStatusLoaded(false);
     try {
       const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
       const openRes = await competitionApi.judgeIsOpen(now, cid);
@@ -330,6 +332,8 @@ export const useCompetitionProblemDetail = () => {
       setIsUserCompetitionEnded(Boolean(finishRes.data));
     } catch (err) {
       console.warn('比赛状态判断失败', err);
+    } finally {
+      setCompetitionStatusLoaded(true);
     }
   };
 
@@ -712,6 +716,7 @@ export const useCompetitionProblemDetail = () => {
     isCompetitionOpen,
     isCompetitionEnd,
     isUserCompetitionEnded,
+    competitionStatusLoaded,
     finishCompetitionLoading,
     finishCompetitionModalOpen,
     setFinishCompetitionModalOpen,

@@ -23,9 +23,9 @@ interface SearchProps extends BaseInputProps {
 }
 
 const sizeClassMap: Record<Size, string> = {
-  small: 'h-8 px-3 text-sm',
-  middle: 'h-10 px-3.5 text-sm',
-  large: 'h-11 px-4 text-base',
+  small: 'h-8 px-3 py-1.5 text-sm leading-5',
+  middle: 'h-10 px-3.5 py-2 text-sm leading-5',
+  large: 'h-11 px-4 py-2.5 text-base leading-6',
 };
 
 const baseClass = 'w-full border border-slate-200 bg-white/90 text-slate-800 shadow-sm outline-none backdrop-blur transition-all duration-200 placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400';

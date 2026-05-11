@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Select from './select';
 
 export interface PaginationProps {
   current: number;
@@ -109,17 +110,17 @@ const Pagination: React.FC<PaginationProps> = ({
       </button>
 
       {showSizeChanger ? (
-        <select
+        <Select
+          size="small"
           value={String(pageSize)}
-          onChange={(e) => handleSizeChange(e.target.value)}
-          className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-600 outline-none transition hover:border-blue-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        >
-          {pageSizeOptions.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt} 条/页
-            </option>
-          ))}
-        </select>
+          onChange={handleSizeChange}
+          className="w-32"
+          dropdownWidth={128}
+          options={pageSizeOptions.map((opt) => ({
+            value: opt,
+            label: `${opt} 条/页`,
+          }))}
+        />
       ) : null}
 
       {showQuickJumper ? (

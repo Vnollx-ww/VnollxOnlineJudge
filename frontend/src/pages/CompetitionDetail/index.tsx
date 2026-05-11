@@ -23,6 +23,7 @@ const CompetitionDetail: React.FC = () => {
     countdown,
     status,
     isUserCompetitionEnded,
+    finishStatusLoaded,
     finishCompetitionLoading,
     finishCompetitionModalOpen,
     setFinishCompetitionModalOpen,
@@ -140,30 +141,37 @@ const CompetitionDetail: React.FC = () => {
                     <Lock className="inline w-3.5 h-3.5" />需要密码
                   </Tag>
                 )}
-                {isUserCompetitionEnded && (
-                  <Tag color="red">你已结束比赛</Tag>
-                )}
               </div>
               <p className="leading-relaxed" style={{ color: 'var(--gemini-text-secondary)' }}>
                 {competition.description || '暂无描述'}
               </p>
-              <Space wrap>
-                <Link to={`/competition/${id}/ranklist`}>
-                  <Button icon={<Trophy className="w-4 h-4" />}>
-                    排行榜
-                  </Button>
-                </Link>
-                <Link to={`/competition/${id}/submissions`}>
-                  <Button icon={<History className="w-4 h-4" />}>
-                    提交记录
-                  </Button>
-                </Link>
-                {status === 'running' && !isUserCompetitionEnded && (
-                  <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
-                    结束比赛
-                  </Button>
-                )}
-              </Space>
+              <div className="mt-8">
+                <Space wrap>
+                  <Link to={`/competition/${id}/ranklist`}>
+                    <Button icon={<Trophy className="w-4 h-4" />}>
+                      排行榜
+                    </Button>
+                  </Link>
+                  <Link to={`/competition/${id}/submissions`}>
+                    <Button icon={<History className="w-4 h-4" />}>
+                      提交记录
+                    </Button>
+                  </Link>
+                  {status === 'running' && !finishStatusLoaded ? (
+                    <Button disabled loading>
+                      状态加载中
+                    </Button>
+                  ) : status === 'running' && isUserCompetitionEnded ? (
+                    <Button disabled danger>
+                      你已结束比赛
+                    </Button>
+                  ) : status === 'running' && (
+                    <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
+                      结束比赛
+                    </Button>
+                  )}
+                </Space>
+              </div>
             </div>
             <div className="min-w-[250px]">
               <div className="mb-3">

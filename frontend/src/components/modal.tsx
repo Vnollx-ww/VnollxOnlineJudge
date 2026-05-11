@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -73,7 +74,7 @@ function Modal({
   const okLoading = confirmLoading || okButtonProps?.loading;
   const okDanger = okButtonProps?.danger;
 
-  return (
+  return createPortal(
     <div className={`fixed inset-0 z-[1000] ${open ? '' : 'pointer-events-none'}`} aria-hidden={!open}>
       <div
         className={`absolute inset-0 bg-slate-950/45 backdrop-blur-sm transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0'}`}
@@ -118,7 +119,8 @@ function Modal({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
