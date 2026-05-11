@@ -1,91 +1,20 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Input, Progress, Tag } from 'antd';
-import toast from 'react-hot-toast';
 import { BookOpen, CalendarDays, FileText, Search } from 'lucide-react';
 import { Select } from '../../components';
-import { practiceApi } from '@/lib';
-import { isAuthenticated } from '../../utils/auth';
-import type { ApiResponse } from '../../types';
-
-interface Practice {
-  id: number;
-  title: string;
-  description?: string;
-  createTime: string;
-  problemCount: number;
-  solvedCount?: number;
-}
+import { usePractices } from '@/hooks/usePractices';
 
 const Practices: React.FC = () => {
-  const navigate = useNavigate();
-  const [practices, setPractices] = useState<Practice[]>([]);
-  const [allPractices, setAllPractices] = useState<Practice[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [progressFilter, setProgressFilter] = useState('all');
-  const [keyword, setKeyword] = useState('');
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      toast.error('请先登录！');
-      navigate('/');
-      return;
-    }
-    loadPractices();
-  }, []);
-
-  useEffect(() => {
-    filterPractices();
-  }, [progressFilter, keyword, allPractices]);
-
-  const loadPractices = async () => {
-    setLoading(true);
-    try {
-      const data = await practiceApi.list<Practice[]>() as ApiResponse<Practice[]>;
-      if (data.code === 200) {
-        setAllPractices(data.data || []);
-        setPractices(data.data || []);
-      }
-    } catch (error) {
-      toast.error('加载练习列表失败');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterPractices = () => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
-    const filtered = allPractices.filter((practice) => {
-      const progress = calculateProgress(practice.solvedCount, practice.problemCount);
-      const matchKeyword = !normalizedKeyword || practice.title.toLowerCase().includes(normalizedKeyword);
-      const matchProgress =
-        progressFilter === 'all' ||
-        (progressFilter === 'unfinished' && progress < 100) ||
-        (progressFilter === 'finished' && progress === 100);
-      return matchKeyword && matchProgress;
-    });
-    setPractices(filtered);
-  };
-
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return '-';
-    const date = new Date(timeStr);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
-
-  const calculateProgress = (solvedCount: number = 0, problemCount: number) => {
-    if (problemCount === 0) return 0;
-    return Math.round((solvedCount / problemCount) * 100);
-  };
-
-  const handleEnter = (id: number) => {
-    navigate(`/practice/${id}`);
-  };
+  const {
+    practices,
+    loading,
+    progressFilter,
+    setProgressFilter,
+    keyword,
+    setKeyword,
+    formatTime,
+    calculateProgress,
+    handleEnter,
+  } = usePractices();
 
   return (
     <div className="w-full">

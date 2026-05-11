@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
 
   const loadNotificationCount = useCallback(async () => {
     try {
-      const data = await notificationApi.count('false') as ApiResponse<number>;
+      const data = await notificationApi.count({ status: 'false' }) as ApiResponse<number>;
       if (data.code === 200) {
         setNotificationCount(data.data || 0);
       }

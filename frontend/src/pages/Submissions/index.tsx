@@ -1,186 +1,38 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Modal, Table, Button, Tag, Pagination, Switch } from 'antd';
 import toast from 'react-hot-toast';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, AlertCircle, Clock, HardDrive, Layers, Hash, User, CalendarDays } from 'lucide-react';
-import { dictApi, submissionApi, userApi } from '@/lib';
-import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
-import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
-import type { ApiResponse, JudgeMessage } from '../../types';
 import Select from '../../components/select';
 import Input from '../../components/input';
-
-interface Submission {
-  id: number;
-  snowflakeId: string;
-  pid: number;
-  problemName: string;
-  userName: string;
-  language: string;
-  status: string;
-  time: number | null;
-  memory: number | null;
-  createTime: string;
-  code?: string;
-  errorInfo?: string;
-  passCount?: number | null;
-  testCount?: number | null;
-}
-
-interface DictData {
-  dictLabel: string;
-  dictValue: string;
-}
+import { useSubmissions, type Submission } from '@/hooks/useSubmissions';
 
 const Submissions: React.FC = () => {
-  const navigate = useNavigate();
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [problemId, setProblemId] = useState('');
-  const [status, setStatus] = useState<string | undefined>(undefined);
-  const [language, setLanguage] = useState<string | undefined>(undefined);
-  const [statusOptions, setStatusOptions] = useState<{ value: string; label: string }[]>([]);
-  const [languageOptions, setLanguageOptions] = useState<{ value: string; label: string }[]>([]);
-  const [onlyMine, setOnlyMine] = useState(false);
-  const [codeModalVisible, setCodeModalVisible] = useState(false);
-  const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
-
-  const pageSize = 15;
-  const currentPageRef = useRef(currentPage);
-
-  useEffect(() => {
-    currentPageRef.current = currentPage;
-  }, [currentPage]);
-
-  const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
-    const wsMsg = msg as JudgeMessage;
-    if (!wsMsg?.snowflakeId) return;
-
-    setSubmissions((prev) =>
-        prev.map((item) => {
-          if (String(item.snowflakeId) === String(wsMsg.snowflakeId)) {
-            return {
-              ...item,
-              status: (wsMsg.status as string) || item.status,
-              time: wsMsg.time ?? item.time,
-              memory: wsMsg.memory ?? item.memory,
-              passCount: wsMsg.passCount ?? item.passCount,
-              testCount: wsMsg.testCount ?? item.testCount,
-            };
-          }
-          return item;
-        })
-    );
-
-    if (wsMsg.status != null && wsMsg.status !== '评测中') {
-      setTimeout(() => {
-        loadSubmissions(currentPageRef.current);
-      }, 500);
-    }
-  }, []);
-
-  useJudgeWebSocket(handleWebSocketMessage);
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      toast.error('请先登录！');
-      navigate('/');
-      return;
-    }
-    setCurrentPage(1);
-    loadSubmissions(1);
-  }, [onlyMine, problemId, status, language]);
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      return;
-    }
-    loadDictOptions();
-  }, []);
-
-  const loadDictOptions = async () => {
-    try {
-      const [statusRes, languageRes] = await Promise.all([
-        dictApi.listData<DictData[]>('JUDGE_RESULT_STATUS') as Promise<ApiResponse<DictData[]>>,
-        dictApi.listData<DictData[]>('SUBMIT_LANGUAGE') as Promise<ApiResponse<DictData[]>>,
-      ]);
-      if (statusRes.code === 200) {
-        setStatusOptions((statusRes.data || []).map((item) => ({ value: item.dictValue, label: item.dictLabel })));
-      }
-      if (languageRes.code === 200) {
-        setLanguageOptions((languageRes.data || []).map((item) => ({
-          value: item.dictLabel,
-          label: item.dictLabel,
-        })));
-      }
-    } catch (error) {
-      console.error('加载提交筛选字典失败:', error);
-    }
-  };
-
-  const loadSubmissions = async (page: number) => {
-    setLoading(true);
-    try {
-      let currentUid: string | null = null;
-      if (onlyMine) {
-        const userInfo = getUserInfo();
-        if (userInfo?.id) {
-          currentUid = userInfo.id;
-        } else {
-          try {
-            const res = await userApi.getProfile<{ id: string; name: string; identity: string }>() as ApiResponse<{ id: string; name: string; identity: string }>;
-            if (res.code === 200) {
-              setUserInfo({ id: res.data.id, name: res.data.name, identity: res.data.identity });
-              currentUid = res.data.id;
-            }
-          } catch (e) {
-            console.error('获取用户信息失败', e);
-          }
-        }
-      }
-
-      const params: Record<string, string> = {
-        pageNum: String(page),
-        pageSize: String(pageSize),
-      };
-      if (problemId) params.keyword = problemId;
-      if (status) params.status = status;
-      if (language) params.language = language;
-      if (currentUid) params.uid = currentUid;
-
-      const data = await submissionApi.list<Submission[]>(params) as ApiResponse<Submission[]>;
-      if (data.code === 200) {
-        setSubmissions(data.data || []);
-      }
-
-      const countParams: Record<string, string> = {};
-      if (problemId) countParams.keyword = problemId;
-      if (status) countParams.status = status;
-      if (language) countParams.language = language;
-      if (currentUid) countParams.uid = currentUid;
-
-      const countData = await submissionApi.count(countParams) as ApiResponse<number>;
-      if (countData.code === 200) {
-        setTotal(countData.data || 0);
-      }
-    } catch (error) {
-      toast.error('加载提交记录失败');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    loadSubmissions(page);
-  };
+  const {
+    submissions,
+    loading,
+    currentPage,
+    total,
+    pageSize,
+    problemId,
+    setProblemId,
+    status,
+    setStatus,
+    language,
+    setLanguage,
+    statusOptions,
+    languageOptions,
+    onlyMine,
+    setOnlyMine,
+    codeModalVisible,
+    currentSubmission,
+    handlePageChange,
+    resetFilters,
+    openSubmissionDetail,
+    closeSubmissionDetail,
+    navigate,
+  } = useSubmissions();
 
   const getStatusStyle = (status: string) => {
     const statusMap: Record<string, { color: string; bg: string }> = {
@@ -243,10 +95,7 @@ const Submissions: React.FC = () => {
       width: 100,
       render: (id: number, record: Submission) => (
           <button
-              onClick={() => {
-                setCurrentSubmission(record);
-                setCodeModalVisible(true);
-              }}
+              onClick={() => openSubmissionDetail(record)}
               className="font-mono transition-colors hover:underline"
               style={{ color: 'var(--gemini-accent-strong)' }}
           >
@@ -383,12 +232,7 @@ const Submissions: React.FC = () => {
             </div>
             <div className="flex shrink-0 items-center gap-3">
               <Button
-                  onClick={() => {
-                    setProblemId('');
-                    setStatus(undefined);
-                    setLanguage(undefined);
-                    setOnlyMine(false);
-                  }}
+                  onClick={resetFilters}
               >
                 重置
               </Button>
@@ -422,10 +266,7 @@ const Submissions: React.FC = () => {
         <Modal
             title={`提交详情 #${currentSubmission?.id}`}
             open={codeModalVisible}
-            onCancel={() => {
-              setCodeModalVisible(false);
-              setCurrentSubmission(null);
-            }}
+            onCancel={closeSubmissionDetail}
             footer={null}
             width="80%"
             centered

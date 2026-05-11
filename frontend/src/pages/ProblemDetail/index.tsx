@@ -1,12 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Button,
   Spin,
   Avatar,
   Popconfirm,
-  App,
   Tag,
   Drawer,
   Table,
@@ -26,829 +23,90 @@ import {
   History,
 } from 'lucide-react';
 import dayjs from 'dayjs';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
-import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { commentApi, judgeApi, problemApi, submissionApi } from '@/lib';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { getUserInfo, isAuthenticated } from '@/utils/auth';
-import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
-import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, WorkbenchResult, mapJudgeStatusToVariant } from '@/components';
-import type { OnlineIdeSettings } from '@/components';
-import type { WorkbenchResultData } from '@/components';
+import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, WorkbenchResult } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
 import SuccessCelebration from '@/components/success-celebration';
-import type { ApiResponse, JudgeMessage } from '@/types';
+import {
+  useProblemDetail,
+  languageOptions,
+  getDifficultyColor,
+  getSubmissionStatusColor,
+  getCodeHighlightLanguage,
+  type Comment,
+  type Submission,
+} from '@/hooks/useProblemDetail';
 
 const { TextArea } = Input;
 
-// 配置 marked
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-});
-
-interface ProblemExampleItem {
-  id?: number;
-  input: string;
-  output: string;
-  sortOrder?: number;
-}
-
-interface Problem {
-  id: number;
-  title: string;
-  difficulty: string;
-  timeLimit: number;
-  memoryLimit: number;
-  description: string;
-  inputFormat: string;
-  outputFormat: string;
-  /** 多组样例 */
-  examples?: ProblemExampleItem[];
-  inputExample?: string;
-  outputExample?: string;
-  hint: string;
-  submitCount: number;
-  passCount: number;
-}
-
-interface Comment {
-  id: number;
-  userId: number;
-  username: string;
-  userAvatar?: string;
-  content: string;
-  createTime: string;
-  subcommentList?: Comment[];
-  children?: Comment[];
-}
-
-interface Submission {
-  id: number;
-  pid: number;
-  problemName?: string;
-  userName: string;
-  language: string;
-  status: string;
-  createTime: string;
-  time?: number | null;
-  memory?: number | null;
-  code?: string;
-}
-
-interface LanguageOption {
-  label: string;
-  value: string;
-  template: string;
-}
-
-const languageOptions: LanguageOption[] = [
-  {
-    label: 'C++',
-    value: 'cpp',
-    template: `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-
-    // 请在此处编写你的代码
-
-    return 0;
-}
-`,
-  },
-  {
-    label: 'Python 3',
-    value: 'python',
-    template: `# 请在此处编写你的代码
-def main():
-    pass
-
-if __name__ == "__main__":
-    main()
-`,
-  },
-  {
-    label: 'Java',
-    value: 'java',
-    template: `import java.io.*;
-import java.util.*;
-
-public class Main {
-    public static void main(String[] args) throws Exception {
-        // 请在此处编写你的代码
-    }
-}
-`,
-  },
-  {
-    label: 'Go',
-    value: 'golang',
-    template: `package main
-
-import (
-    "bufio"
-    "fmt"
-    "os"
-)
-
-func main() {
-    in := bufio.NewReader(os.Stdin)
-    out := bufio.NewWriter(os.Stdout)
-    defer out.Flush()
-
-    // 请在此处编写你的代码
-    _ = in
-    fmt.Fprintln(out)
-}
-`,
-  },
-  {
-    label: 'JavaScript',
-    value: 'javascript',
-    template: `const fs = require('fs');
-
-const input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);
-let idx = 0;
-
-// 请在此处编写你的代码
-`,
-  },
-];
-
-const getDifficultyColor = (difficulty: string) => {
-  switch (difficulty?.toLowerCase()) {
-    case '简单':
-      return 'green';
-    case '中等':
-      return 'orange';
-    case '困难':
-      return 'red';
-    default:
-      return 'default';
-  }
-};
-
 const ProblemDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const _app = App.useApp();
-  void _app;
-  const [problem, setProblem] = useState<Problem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [tags, setTags] = useState<string[]>([]);
-  const [language, setLanguage] = useState(languageOptions[0].value);
-  const [code, setCode] = useState(languageOptions[0].template);
-
-  // 生成代码缓存的key
-  const getCodeCacheKey = useCallback((problemId: string, lang: string) => {
-    return `problem_code_${problemId}_${lang}`;
-  }, []);
-
-  // 保存代码到LocalStorage
-  const saveCodeToCache = useCallback((problemId: string, lang: string, codeContent: string) => {
-    try {
-      const key = getCodeCacheKey(problemId, lang);
-      localStorage.setItem(key, codeContent);
-    } catch (e) {
-      console.warn('保存代码缓存失败:', e);
-    }
-  }, [getCodeCacheKey]);
-
-  // 从LocalStorage读取代码
-  const loadCodeFromCache = useCallback((problemId: string, lang: string): string | null => {
-    try {
-      const key = getCodeCacheKey(problemId, lang);
-      return localStorage.getItem(key);
-    } catch (e) {
-      console.warn('读取代码缓存失败:', e);
-      return null;
-    }
-  }, [getCodeCacheKey]);
-  const [runResult, setRunResult] = useState<WorkbenchResultData | null>(null);
-  const [codeLoading, setCodeLoading] = useState({ test: false, submit: false });
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [commentLoading, setCommentLoading] = useState(false);
-  const [commentContent, setCommentContent] = useState('');
-  const [replyTarget, setReplyTarget] = useState<Comment | null>(null);
-  const [commentSubmitting, setCommentSubmitting] = useState(false);
-  const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
-  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
-  const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true, theme: 'dark' });
-  const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const commentRefs = useRef<Record<number, HTMLDivElement | null>>({});
-  /** 调试输入：默认第一组样例输入，用户可修改 */
-  const [exampleInputs, setExampleInputs] = useState<Record<number, string>>({});
-  /** 当前选中的样例 Tab 索引 */
-  const [activeExampleTab, setActiveExampleTab] = useState(0);
-  /** 记录每个样例是否被修改过（用于显示"自定义"标识） */
-  const [modifiedExamples, setModifiedExamples] = useState<Record<number, boolean>>({});
-  /** 工作台底部 Tab：运行结果 / 自测输入 */
-  const [activeBottomTab, setActiveBottomTab] = useState<'result' | 'input'>('result');
-  /** 评论抽屉开关 */
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [mySubmissionsOpen, setMySubmissionsOpen] = useState(false);
-  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
-  const [mySubmissionsLoading, setMySubmissionsLoading] = useState(false);
-  const [mySubmissionsPage, setMySubmissionsPage] = useState(1);
-  const [mySubmissionsTotal, setMySubmissionsTotal] = useState(0);
-  const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
-  const optimisticCountedSubmissionsRef = useRef<Set<string>>(new Set());
-  const userInfo = getUserInfo();
-  const mySubmissionsPageSize = 10;
-  const editorOptions = useMemo(() => ({
-    fontSize: ideSettings.fontSize,
-    wordWrap: ideSettings.wordWrap ? 'on' : 'off',
-  }), [ideSettings]);
-
-  const toggleEditorFullscreen = useCallback(() => {
-    if (!isEditorFullscreen) {
-      document.documentElement.requestFullscreen();
-      setIsEditorFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsEditorFullscreen(false);
-    }
-  }, [isEditorFullscreen]);
-
-  // 监听浏览器全屏状态变化
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        setIsEditorFullscreen(false);
-      }
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
-  // 监听 AI 助手同步代码到编辑器的事件
-  useEffect(() => {
-    const handleSyncCode = (event: CustomEvent<{ code: string; language: string }>) => {
-      const { code, language: lang } = event.detail;
-      // 如果语言匹配或可以转换，则设置代码
-      const langMap: Record<string, string> = {
-        'cpp': 'cpp', 'c++': 'cpp', 'c': 'cpp',
-        'python': 'python', 'py': 'python', 'python3': 'python',
-        'java': 'java'
-      };
-      const mappedLang = langMap[lang.toLowerCase()] || language;
-      if (mappedLang !== language) {
-        setLanguage(mappedLang);
-      }
-      setCode(code);
-      toast.success('代码已同步到编辑器');
-    };
-
-    window.addEventListener('sync-code-to-editor', handleSyncCode as EventListener);
-    return () => {
-      window.removeEventListener('sync-code-to-editor', handleSyncCode as EventListener);
-    };
-  }, [language]);
-
-  const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
-    if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
-      const status = msg.status || '未知状态';
-      if (status === '评测中') {
-        setRunResult({
-          variant: 'info',
-          source: 'submit',
-          headline: status,
-          bodyText: '正在进行评测...',
-        });
-      } else {
-        const hasTests = msg.testCount != null && msg.testCount > 0;
-        setRunResult({
-          variant: mapJudgeStatusToVariant(status),
-          source: 'submit',
-          headline: status,
-          description: msg.description || status,
-          metrics: {
-            timeMs: msg.time ?? 0,
-            memoryMb: msg.memory ?? 0,
-            ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
-          },
-          errorInfo: msg.errorInfo || undefined,
-        });
-      }
-
-      // 答案正确时触发庆祝动画
-      if (status === '答案正确') {
-        setShowCelebration(true);
-      }
-
-      if (status !== '评测中') {
-        const snowflakeId = String(msg.snowflakeId);
-        if (!optimisticCountedSubmissionsRef.current.has(snowflakeId)) {
-          optimisticCountedSubmissionsRef.current.add(snowflakeId);
-          setProblem((current) => current ? {
-            ...current,
-            submitCount: (current.submitCount ?? 0) + 1,
-            passCount: status === '答案正确' ? (current.passCount ?? 0) + 1 : (current.passCount ?? 0),
-          } : current);
-        }
-        window.dispatchEvent(new Event('notification-updated'));
-      }
-    }
-  }, [currentSnowflakeId]);
-
-  useJudgeWebSocket(handleWebSocketMessage);
-
-  // 渲染 LaTeX 公式
-  const renderLatex = useCallback((text: string): string => {
-    text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, formula) => {
-      try {
-        return katex.renderToString(formula.trim(), { displayMode: true, throwOnError: false });
-      } catch {
-        return match;
-      }
-    });
-    text = text.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
-      try {
-        return katex.renderToString(formula.trim(), { displayMode: false, throwOnError: false });
-      } catch {
-        return match;
-      }
-    });
-    return text;
-  }, []);
-
-  const renderMarkdown = useCallback((content: string, fallback = '暂无内容') => {
-    const raw = content && content.trim() ? content : fallback;
-    const withLatex = renderLatex(raw);
-    const html = marked.parse(withLatex) as string;
-    // 配置 DOMPurify 允许更多标签和属性
-    return DOMPurify.sanitize(html, {
-      ALLOWED_TAGS: [
-        'p', 'br', 'strong', 'em', 'u', 's', 'del', 'code', 'pre', 
-        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'ul', 'ol', 'li', 'blockquote',
-        'a', 'img', 'hr',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'div', 'span'
-      ],
-      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'id', 'style'],
-      ALLOW_DATA_ATTR: false,
-    });
-  }, [renderLatex]);
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      toast.error('请先登录！');
-      navigate('/');
-      return;
-    }
-    loadProblem();
-  }, [id, navigate]);
-
-  useEffect(() => {
-    if (problem?.id) {
-      loadTags(problem.id);
-      loadComments(problem.id);
-    }
-  }, [problem?.id]);
-
-  // 处理 URL 中的 commentId 参数，滚动到目标评论并高亮
-  useEffect(() => {
-    const commentId = searchParams.get('commentId');
-    if (commentId && comments.length > 0 && !commentLoading) {
-      const targetId = Number(commentId);
-      setHighlightedCommentId(targetId);
-      
-      // 延迟执行滚动，确保 DOM 已渲染
-      setTimeout(() => {
-        const targetElement = commentRefs.current[targetId];
-        if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
-
-      // 5秒后取消高亮
-      const timer = setTimeout(() => {
-        setHighlightedCommentId(null);
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams, comments, commentLoading]);
-
-  // 语言切换时，优先使用缓存的代码，否则使用模板
-  useEffect(() => {
-    if (!id) return;
-    const cachedCode = loadCodeFromCache(id, language);
-    if (cachedCode) {
-      setCode(cachedCode);
-    } else {
-      const template = languageOptions.find((item) => item.value === language)?.template || languageOptions[0].template;
-      setCode(template);
-    }
-  }, [language, id, loadCodeFromCache]);
-
-  // 代码变化时保存到缓存（防抖）
-  useEffect(() => {
-    if (!id || !code) return;
-    const timer = setTimeout(() => {
-      saveCodeToCache(id, language, code);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [code, id, language, saveCodeToCache]);
-
-  const loadProblem = async () => {
-    setLoading(true);
-    try {
-      const data = await problemApi.get<Problem>(id) as ApiResponse<Problem>;
-      if (data.code === 200) {
-        setProblem(data.data);
-      } else {
-        toast.error((data as any).msg || '加载题目失败');
-      }
-    } catch {
-      toast.error('加载题目失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadTags = async (pid: number) => {
-    try {
-      const data = await problemApi.tags<string[]>(pid) as ApiResponse<string[]>;
-      if (data.code === 200) {
-        setTags(data.data || []);
-      }
-    } catch (error) {
-      console.warn('加载标签失败:', error);
-    }
-  };
-
-  const loadMySubmissions = async (page = 1) => {
-    if (!problem?.id || !userInfo?.id) {
-      setMySubmissions([]);
-      setMySubmissionsTotal(0);
-      return;
-    }
-    setMySubmissionsLoading(true);
-    try {
-      const params = {
-        pageNum: String(page),
-        pageSize: String(mySubmissionsPageSize),
-        cid: '0',
-        uid: String(userInfo.id),
-        keyword: String(problem.id),
-      };
-      const data = await submissionApi.list<Submission[]>(params) as ApiResponse<Submission[]>;
-      if (data.code === 200) {
-        setMySubmissions(data.data || []);
-      }
-      const countData = await submissionApi.count({ cid: params.cid, uid: params.uid, keyword: params.keyword }) as ApiResponse<number>;
-      if (countData.code === 200) {
-        setMySubmissionsTotal(countData.data || 0);
-      }
-    } catch {
-      toast.error('加载本题提交记录失败');
-    } finally {
-      setMySubmissionsLoading(false);
-    }
-  };
-
-  const openMySubmissions = () => {
-    setMySubmissionsOpen(true);
-    setMySubmissionsPage(1);
-    loadMySubmissions(1);
-  };
-
-  const formatComments = (list: Comment[] = []): Comment[] =>
-    list.map((item) => ({
-      ...item,
-      children: formatComments(item.subcommentList || []),
-    }));
-
-  const loadComments = async (pid: number) => {
-    setCommentLoading(true);
-    try {
-      const data = await commentApi.list<Comment[]>(pid) as ApiResponse<Comment[]>;
-      if (data.code === 200) {
-        setComments(formatComments(data.data || []));
-      }
-    } catch {
-      toast.error('加载评论失败');
-    } finally {
-      setCommentLoading(false);
-    }
-  };
-
-  // 当前选中的样例（用于测试）
-  const currentExample = useMemo(() => {
-    if (problem?.examples?.length && activeExampleTab < problem.examples.length) {
-      return { 
-        input: problem.examples[activeExampleTab].input, 
-        output: problem.examples[activeExampleTab].output,
-        index: activeExampleTab
-      };
-    }
-    return null;
-  }, [problem?.examples, activeExampleTab]);
-
-  const normalizeTestText = useCallback((text?: string | null) => (text ?? '').replace(/\r\n/g, '\n').trim(), []);
-  const currentTestInput = exampleInputs[activeExampleTab] ?? '';
-
-  const matchedExample = useMemo(() => {
-    if (!problem?.examples?.length) {
-      return null;
-    }
-    const normalizedInput = normalizeTestText(currentTestInput);
-    return problem.examples.find((example) => normalizeTestText(example.input) === normalizedInput) ?? null;
-  }, [currentTestInput, problem?.examples, normalizeTestText]);
-
-  // 判断当前输入是否为自定义（与当前选中的样例不同）
-  const isCustomTest = useMemo(() => {
-    if (!problem?.examples?.length || !currentExample) return false;
-    return normalizeTestText(currentTestInput) !== normalizeTestText(currentExample.input);
-  }, [currentTestInput, currentExample, problem?.examples?.length, normalizeTestText]);
-
-  // 题目变化时，重置所有状态
-  useEffect(() => {
-    if (problem?.examples?.length) {
-      setExampleInputs(
-        problem.examples.reduce<Record<number, string>>((acc, example, index) => {
-          acc[index] = example.input || '';
-          return acc;
-        }, {})
-      );
-      setActiveExampleTab(0);
-      setModifiedExamples({});
-    } else {
-      setExampleInputs({});
-    }
-  }, [problem?.id]);
-
-  // 输入内容变化时，检查是否被修改
-  const handleTestInputChange = useCallback((value: string) => {
-    setExampleInputs((prev) => ({ ...prev, [activeExampleTab]: value }));
-    // 检查当前输入是否与当前样例原始输入不同
-    if (currentExample && normalizeTestText(value) !== normalizeTestText(currentExample.input)) {
-      setModifiedExamples(prev => ({ ...prev, [activeExampleTab]: true }));
-    } else {
-      setModifiedExamples(prev => ({ ...prev, [activeExampleTab]: false }));
-    }
-  }, [currentExample, activeExampleTab, normalizeTestText]);
-
-  const handleTestCode = async () => {
-    setActiveBottomTab('result');
-    if (!code.trim()) {
-      toast('请先输入代码');
-      return;
-    }
-    if (!currentExample?.output) {
-      toast('该题目没有提供样例，无法测试');
-      return;
-    }
-    setCodeLoading((prev) => ({ ...prev, test: true }));
-    setRunResult({
-      variant: 'info',
-      source: 'test',
-      headline: '评测中',
-      description: '评测中：正在执行自测运行，请稍候…',
-    });
-    try {
-      const payload = {
-        code,
-        option: language,
-        pid: String(problem!.id),
-        inputExample: currentTestInput,
-        outputExample: matchedExample?.output ?? currentExample.output,
-        time: String(problem!.timeLimit || 1000),
-        memory: String(problem!.memoryLimit || 256),
-        customTest: isCustomTest,
-      };
-      const data = await judgeApi.test<{
-        status?: string;
-        description?: string;
-        errorInfo?: string;
-        input?: string;
-        expectedOutput?: string;
-        actualOutput?: string;
-        passCount?: number | null;
-        testCount?: number | null;
-      }>(payload) as ApiResponse<{
-        status?: string;
-        description?: string;
-        errorInfo?: string;
-        input?: string;
-        expectedOutput?: string;
-        actualOutput?: string;
-        passCount?: number | null;
-        testCount?: number | null;
-      }>;
-      if (data.code === 200) {
-        if (isCustomTest) {
-          setRunResult({
-            variant: 'info',
-            source: 'test',
-            headline: '自定义测试完成',
-            description: '已使用自定义输入运行你的程序，下方为程序实际输出。',
-            diff: {
-              input: currentTestInput,
-              actual: data.data.actualOutput || '',
-            },
-          });
-        } else {
-          const hasTests = data.data.testCount != null && data.data.testCount > 0;
-          const status = data.data.status || '测试完成';
-          const isCompileError = status === '编译错误' || status === 'Compile Error';
-          setRunResult({
-            variant: mapJudgeStatusToVariant(status),
-            source: 'test',
-            headline: status,
-            description: data.data.description || status,
-            metrics: hasTests
-              ? { passCount: data.data.passCount ?? 0, testCount: data.data.testCount! }
-              : undefined,
-            errorInfo: data.data.errorInfo || undefined,
-            diff: isCompileError
-              ? undefined
-              : {
-                  input: data.data.input ?? currentTestInput,
-                  expected: data.data.expectedOutput ?? (matchedExample?.output ?? currentExample.output ?? ''),
-                  actual: data.data.actualOutput ?? '',
-                },
-          });
-        }
-      } else {
-        setRunResult({
-          variant: 'error',
-          source: 'test',
-          headline: (data as any).msg || '测试失败',
-        });
-      }
-    } catch (error: any) {
-      setRunResult({
-        variant: 'error',
-        source: 'test',
-        headline: error?.response?.data?.msg || '测试失败，请稍后重试',
-      });
-    } finally {
-      setCodeLoading((prev) => ({ ...prev, test: false }));
-    }
-  };
-
-  const handleSubmitCode = async () => {
-    setActiveBottomTab('result');
-    if (!code.trim()) {
-      toast('请先输入代码');
-      return;
-    }
-    if (!problem) return;
-    
-    setCodeLoading((prev) => ({ ...prev, submit: true }));
-    setRunResult({
-      variant: 'info',
-      source: 'submit',
-      headline: '等待评测',
-      description: '等待评测：正在保存提交并加入评测队列…',
-    });
-    try {
-      const payload = {
-        code,
-        option: language,
-        pid: String(problem.id),
-        title: problem.title,
-        uname: userInfo.name,
-        cid: '0',
-        create_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-        time: String(problem.timeLimit || 1000),
-        memory: String(problem.memoryLimit || 256),
-      };
-      const data = await judgeApi.submit<{
-        snowflakeId?: string;
-        status?: string;
-        description?: string;
-        queueAhead?: number | null;
-      }>(payload) as ApiResponse<{
-        snowflakeId?: string;
-        status?: string;
-        description?: string;
-        queueAhead?: number | null;
-      }>;
-      if (data.code === 200) {
-        if (data.data.snowflakeId) {
-          setCurrentSnowflakeId(data.data.snowflakeId);
-        }
-        setRunResult({
-          variant: 'info',
-          source: 'submit',
-          headline: data.data.status || '等待评测',
-          description: data.data.description || '等待评测：已加入评测队列。',
-        });
-        window.dispatchEvent(new Event('notification-updated'));
-      } else {
-        setRunResult({
-          variant: 'error',
-          source: 'submit',
-          headline: (data as any).msg || '提交失败',
-        });
-      }
-    } catch (error: any) {
-      setRunResult({
-        variant: 'error',
-        source: 'submit',
-        headline: error?.response?.data?.msg || '提交失败，请稍后重试',
-      });
-    } finally {
-      setCodeLoading((prev) => ({ ...prev, submit: false }));
-    }
-  };
-
-  const handleSubmitComment = async () => {
-    if (!commentContent.trim()) {
-      toast('请输入评论内容');
-      return;
-    }
-    if (!userInfo?.id || !problem) {
-      toast.error('请先登录后再发表评论');
-      return;
-    }
-    setCommentSubmitting(true);
-    try {
-      const payload = {
-        problemId: Number(problem.id),
-        parentId: replyTarget?.id || null,
-        receiveUserId: replyTarget?.userId || null,
-        username: userInfo.name,
-        content: commentContent.trim(),
-        createTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      };
-      const data = await commentApi.publish(payload) as ApiResponse;
-      if (data.code === 200) {
-        toast.success('发布成功');
-        setCommentContent('');
-        setReplyTarget(null);
-        loadComments(problem.id);
-      } else {
-        toast.error((data as any).msg || '发布失败');
-      }
-    } catch (error: any) {
-      toast.error(error?.response?.data?.msg || '发布失败，请稍后重试');
-    } finally {
-      setCommentSubmitting(false);
-    }
-  };
-
-  const handleDeleteComment = async (commentId: number) => {
-    if (!problem) return;
-    try {
-      const data = await commentApi.delete(commentId) as ApiResponse;
-      if (data.code === 200) {
-        toast.success('删除成功');
-        loadComments(problem.id);
-      } else {
-        toast.error((data as any).msg || '删除失败');
-      }
-    } catch (error: any) {
-      toast.error(error?.response?.data?.msg || '删除失败，请稍后重试');
-    }
-  };
-
-  // 打开 AI 助手并发送分析请求
-  const handleOpenAiAnalysis = () => {
-    if (!problem) return;
-
-    window.dispatchEvent(new CustomEvent('open-ai-assistant', {
-      detail: {
-        forceNewSession: true,
-        problemContext: {
-          problemId: problem.id,
-          title: problem.title,
-          difficulty: problem.difficulty,
-          description: problem.description || '',
-          inputFormat: problem.inputFormat || '',
-          outputFormat: problem.outputFormat || '',
-          hint: problem.hint || '',
-          timeLimit: problem.timeLimit,
-          memoryLimit: problem.memoryLimit,
-          language,
-          code,
-        },
-      },
-    }));
-  };
-
-  const copyToClipboard = async (text: string, label: string) => {
-    const ok = await copyTextToClipboard(text);
-    if (ok) {
-      toast.success(`已复制${label}`);
-    } else {
-      toast.error('复制失败，请手动选择文本复制');
-    }
-  };
-
+  const {
+    id,
+    navigate,
+    location,
+    problem,
+    loading,
+    tags,
+    language,
+    setLanguage,
+    code,
+    setCode,
+    codeLoading,
+    runResult,
+    ideSettings,
+    setIdeSettings,
+    isEditorFullscreen,
+    setIsEditorFullscreen,
+    toggleEditorFullscreen,
+    editorOptions,
+    comments,
+    commentLoading,
+    commentContent,
+    setCommentContent,
+    replyTarget,
+    setReplyTarget,
+    commentSubmitting,
+    highlightedCommentId,
+    commentRefs,
+    handleSubmitComment,
+    handleDeleteComment,
+    activeExampleTab,
+    modifiedExamples,
+    activeBottomTab,
+    setActiveBottomTab,
+    currentTestInput,
+    isCustomTest,
+    handleTestInputChange,
+    handleTestCode,
+    handleSubmitCode,
+    loadExampleInput,
+    commentsOpen,
+    setCommentsOpen,
+    mySubmissionsOpen,
+    setMySubmissionsOpen,
+    mySubmissions,
+    mySubmissionsLoading,
+    mySubmissionsPage,
+    setMySubmissionsPage,
+    mySubmissionsTotal,
+    mySubmissionsPageSize,
+    currentSubmission,
+    setCurrentSubmission,
+    openMySubmissions,
+    loadMySubmissions,
+    showCelebration,
+    setShowCelebration,
+    userInfo,
+    handleOpenAiAnalysis,
+    copyToClipboard,
+    renderMarkdown,
+  } = useProblemDetail();
+  void id;
+  void location;
   const renderComments = (items: Comment[] = []): React.ReactNode =>
     items.map((item) => (
       <div 
@@ -932,29 +190,6 @@ const ProblemDetail: React.FC = () => {
     borderRadius: 9999,
     padding: '4px 12px',
     color: 'var(--gemini-text-secondary)',
-  };
-  const getSubmissionStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-      '答案正确': 'success',
-      '答案错误': 'error',
-      '超时': 'warning',
-      '时间超出限制': 'warning',
-      '内存超限': 'warning',
-      '内存超出限制': 'warning',
-      '运行时错误': 'error',
-      '运行错误': 'error',
-      '编译错误': 'error',
-      '等待中': 'processing',
-      '评测中': 'processing',
-    };
-    return statusMap[status] || 'default';
-  };
-  const getCodeHighlightLanguage = (lang?: string) => {
-    if (!lang) return 'plaintext';
-    if (lang === 'C++') return 'cpp';
-    if (lang === 'Golang') return 'go';
-    if (lang === 'JavaScript') return 'javascript';
-    return lang.toLowerCase();
   };
   const mySubmissionColumns = [
     {
@@ -1172,14 +407,6 @@ const ProblemDetail: React.FC = () => {
       onToggleFullscreen={toggleEditorFullscreen}
     />
   );
-
-  // 载入指定示例到自测输入
-  const loadExampleInput = (i: number) => {
-    if (!problem.examples?.[i]) return;
-    setActiveExampleTab(i);
-    setExampleInputs((prev) => ({ ...prev, [i]: problem.examples![i].input || '' }));
-    setModifiedExamples((prev) => ({ ...prev, [i]: false }));
-  };
 
   // ---- 自测输入区域 ----
   const inputArea = (

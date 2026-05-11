@@ -1,40 +1,8 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { authApi, userApi } from '@/lib';
-import { setToken, setUserInfo } from '@/utils/auth';
+import { Link } from 'react-router-dom';
+import { useLogin } from '@/hooks/useLogin';
 
 const Login: React.FC = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const data = await authApi.login(formData);
-      if (data.code === 200) {
-        setToken(data.data);
-        const userRes = await userApi.getProfile<{ id: string; name: string; identity: string }>();
-        if (userRes.code === 200) setUserInfo(userRes.data);
-        toast.success('登录成功', { duration: 2000 });
-        // 使用 replace 并在导航后触发自定义事件，让 Header 组件重新获取用户信息
-        setTimeout(() => {
-          navigate('/', { replace: true });
-          // 触发存储事件，通知其他组件用户信息已更新
-          window.dispatchEvent(new Event('storage'));
-        }, 500);
-      } else {
-        toast.error(data.msg || '登录失败', { duration: 3000 });
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('登录失败:', error);
-      toast.error('网络请求失败', { duration: 3000 });
-      setLoading(false);
-    }
-  };
+  const { loading, formData, setFormData, handleLogin } = useLogin();
 
   return (
     // 页面背景底色

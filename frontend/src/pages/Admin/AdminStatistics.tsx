@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Card, Spin, Progress, Statistic, Button, DataTable, DataColumn, Grid } from '@/components';
 import {
   PieChart,
@@ -16,171 +15,42 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, TrendingUp } from 'lucide-react';
-import { adminStatisticsApi, adminUserApi } from '@/lib';
 import Select from '@/components/select';
-import type { ApiResponse } from '@/types';
-
-interface SolvedProblemItem {
-  problemId: number;
-  title: string;
-  difficulty?: string;
-  tags?: string[];
-}
-
-interface LearningAnalytics {
-  userId: number;
-  userName: string;
-  totalSolved: number;
-  totalSubmit: number;
-  passRate: number;
-  dailySubmissions: DailySubmission[];
-  solvedProblems: SolvedProblemItem[];
-}
-
-interface ErrorPatternStat {
-  status: string;
-  count: number;
-}
-
-interface LanguageStat {
-  language: string;
-  count: number;
-}
-
-interface DailySubmission {
-  date: string;
-  count: number;
-}
-
-interface PlatformStats {
-  problemCount: number;
-  userCount: number;
-  submissionCount: number;
-  competitionCount: number;
-  dailySubmissions: DailySubmission[];
-  languageDistribution: LanguageStat[];
-}
-
-const CHART_COLORS = ['#1a73e8', '#34a853', '#f9ab00', '#d93025', '#9334e6', '#0d9488', '#ea580c', '#4f46e5'];
-
-const CHART_ANIMATION = {
-  duration: 1200,
-  easing: 'ease-out' as const,
-  begin: 0,
-};
+import {
+  useAdminStatistics,
+  CHART_ANIMATION,
+  type DailySubmission,
+  type ErrorPatternStat,
+  type LanguageStat,
+  type SolvedProblemItem,
+} from '@/hooks/useAdminStatistics';
 
 const AdminStatistics: React.FC = () => {
-  const [errorPatterns, setErrorPatterns] = useState<ErrorPatternStat[]>([]);
-  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null);
-  const [loadingError, setLoadingError] = useState(false);
-  const [loadingPlatform, setLoadingPlatform] = useState(false);
-  const [platformDays, setPlatformDays] = useState(30);
-  const [learningData, setLearningData] = useState<LearningAnalytics | null>(null);
-  const [loadingLearning, setLoadingLearning] = useState(false);
-  const [learningDays, setLearningDays] = useState(30);
-  const [learningUid, setLearningUid] = useState<number>(0);
-  const [userOptions, setUserOptions] = useState<{ id: number; name: string }[]>([]);
-  const [loadingUserOptions, setLoadingUserOptions] = useState(false);
-  const [activeTab, setActiveTab] = useState<'error' | 'platform' | 'learning'>('error');
-
-  const loadErrorPatterns = async () => {
-    setLoadingError(true);
-    try {
-      const res = await adminStatisticsApi.errorPatterns<ErrorPatternStat[]>() as ApiResponse<ErrorPatternStat[]>;
-      if (res.code === 200 && res.data) {
-        setErrorPatterns(res.data);
-      }
-    } catch {
-      setErrorPatterns([]);
-    } finally {
-      setLoadingError(false);
-    }
-  };
-
-  const loadPlatformStats = async () => {
-    setLoadingPlatform(true);
-    try {
-      const res = await adminStatisticsApi.platform<PlatformStats>(platformDays) as ApiResponse<PlatformStats>;
-      if (res.code === 200 && res.data) {
-        setPlatformStats(res.data);
-      } else {
-        setPlatformStats(null);
-      }
-    } catch {
-      setPlatformStats(null);
-    } finally {
-      setLoadingPlatform(false);
-    }
-  };
-
-  useEffect(() => {
-    loadErrorPatterns();
-  }, []);
-
-  useEffect(() => {
-    loadPlatformStats();
-  }, [platformDays]);
-
-  useEffect(() => {
-    loadUserOptions();
-  }, []);
-
-  useEffect(() => {
-    loadLearningAnalytics();
-  }, [learningDays, learningUid]);
-
-  const loadUserOptions = async () => {
-    setLoadingUserOptions(true);
-    try {
-      const res = await adminUserApi.list<{ id: number; name: string }[]>({ pageNum: 1, pageSize: 500 }) as ApiResponse<{ id: number; name: string }[]>;
-      if (res.code === 200 && res.data) {
-        setUserOptions(res.data);
-      } else {
-        setUserOptions([]);
-      }
-    } catch {
-      setUserOptions([]);
-    } finally {
-      setLoadingUserOptions(false);
-    }
-  };
-
-  const loadLearningAnalytics = async () => {
-    setLoadingLearning(true);
-    try {
-      const params: Record<string, string | number> = { days: learningDays };
-      if (learningUid > 0) params.uid = learningUid;
-      const res = await adminStatisticsApi.learning<LearningAnalytics>(params) as ApiResponse<LearningAnalytics>;
-      if (res.code === 200 && res.data) {
-        setLearningData(res.data);
-      } else {
-        setLearningData(null);
-      }
-    } catch {
-      setLearningData(null);
-    } finally {
-      setLoadingLearning(false);
-    }
-  };
-
-  const totalError = errorPatterns.reduce((s, i) => s + (i.count || 0), 0);
-
-  const errorChartData = errorPatterns.map((item, idx) => ({
-    name: item.status || '(空)',
-    value: item.count || 0,
-    fill: CHART_COLORS[idx % CHART_COLORS.length],
-  }));
-
-  const languageChartData = (platformStats?.languageDistribution || []).map((item, idx) => ({
-    name: item.language || '(空)',
-    count: item.count || 0,
-    fill: CHART_COLORS[idx % CHART_COLORS.length],
-  }));
-
-  const dailyChartData = (platformStats?.dailySubmissions || []).map((d) => ({
-    date: d.date,
-    count: d.count,
-  }));
+  const {
+    errorPatterns,
+    platformStats,
+    loadingError,
+    loadingPlatform,
+    platformDays,
+    setPlatformDays,
+    learningData,
+    loadingLearning,
+    learningDays,
+    setLearningDays,
+    learningUid,
+    setLearningUid,
+    userOptions,
+    loadingUserOptions,
+    activeTab,
+    setActiveTab,
+    loadErrorPatterns,
+    loadPlatformStats,
+    loadLearningAnalytics,
+    totalError,
+    errorChartData,
+    languageChartData,
+    dailyChartData,
+  } = useAdminStatistics();
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
