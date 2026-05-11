@@ -1,6 +1,7 @@
 package com.example.vnollxonlinejudge.config;
 
 import io.minio.MinioClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -40,7 +41,7 @@ public class MinioConfig {
 
     @Bean
     @Primary
-    public MinioClient minioClient(List<MinioClient> minioClients) {
+    public MinioClient minioClient(@Qualifier("minioClients") List<MinioClient> minioClients) {
         return minioClients.get(0);
     }
 }

@@ -10,6 +10,7 @@ import io.minio.errors.ErrorResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,22 +38,26 @@ public class MinioServiceImpl implements OssService {
     private final List<MinioClient> minioClients;
     private final MinioClient primaryClient;
     private final String primaryEndpoint;
+    private final List<MinioProperties.Endpoint> endpoints;
 
     @Autowired
-    public MinioServiceImpl(List<MinioClient> minioClients, MinioProperties properties) {
+    public MinioServiceImpl(@Qualifier("minioClients") List<MinioClient> minioClients, MinioProperties properties) {
         if (minioClients == null || minioClients.isEmpty()) {
             throw new IllegalStateException("MinIO 客户端列表为空");
         }
         this.minioClients = minioClients;
         this.primaryClient = minioClients.get(0);
         this.primaryEndpoint = properties.primary().getUrl();
+        this.endpoints = properties.getEndpoints();
     }
 
     @Override
     public void uploadFile(String fileUrl, MultipartFile testCaseFile) throws IOException {
         byte[] bytes = testCaseFile.getBytes();
         String contentType = testCaseFile.getContentType();
-        for (MinioClient client : minioClients) {
+        for (int i = 0; i < minioClients.size(); i++) {
+            MinioClient client = minioClients.get(i);
+            String endpoint = endpoints != null && i < endpoints.size() ? endpoints.get(i).getUrl() : "unknown";
             try {
                 client.putObject(PutObjectArgs.builder()
                         .bucket(PROBLEM_BUCKET)
@@ -60,8 +65,9 @@ public class MinioServiceImpl implements OssService {
                         .stream(new ByteArrayInputStream(bytes), bytes.length, -1)
                         .contentType(contentType)
                         .build());
+                logger.info("文件上传成功 [{}] endpoint={} size={}", fileUrl, endpoint, bytes.length);
             } catch (Exception e) {
-                logger.error("文件上传失败 [{}]: {}", fileUrl, e.getMessage());
+                logger.error("文件上传失败 [{}] endpoint={}: {}", fileUrl, endpoint, e.getMessage());
                 throw new IOException("文件上传失败: " + e.getMessage(), e);
             }
         }

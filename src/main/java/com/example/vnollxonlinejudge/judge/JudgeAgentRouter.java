@@ -18,6 +18,7 @@ public class JudgeAgentRouter {
     private static final Logger log = LoggerFactory.getLogger(JudgeAgentRouter.class);
     private static final int FAILURE_THRESHOLD = 3;
     private static final long OPEN_DURATION_MS = 30_000L;
+    private final AtomicInteger requestSeq = new AtomicInteger();
 
     public static final class Endpoint {
         private final String baseUrl;
@@ -63,21 +64,30 @@ public class JudgeAgentRouter {
      * 全满时阻塞等待容量最大的端点释放。调用方必须在 finally 中调用 release。
      */
     public Endpoint acquire() throws InterruptedException {
-        for (Endpoint ep : endpoints) {
-            if (ep.isHealthy() && ep.semaphore.tryAcquire()) {
-                return ep;
-            }
+        Endpoint primary = endpoints.get(0);
+        Endpoint secondary = endpoints.size() > 1 ? endpoints.get(1) : null;
+        int seq = requestSeq.getAndIncrement();
+        boolean preferSecondary = seq % 2 == 1
+                && secondary != null
+                && primary.availablePermits() < primary.getCapacity();
+
+        if (preferSecondary && secondary.isHealthy() && secondary.semaphore.tryAcquire()) {
+            return secondary;
         }
-        for (Endpoint ep : endpoints) {
-            if (!ep.isHealthy() && ep.semaphore.tryAcquire()) {
-                log.warn("所有健康 judge-agent 端点已满，回退到熔断端点: {}", ep.baseUrl);
-                return ep;
-            }
+        if (primary.isHealthy()) {
+            primary.semaphore.acquire();
+            return primary;
         }
-        Endpoint biggest = endpoints.get(0);
-        log.debug("所有 judge-agent 端点已满，阻塞等待: {}", biggest.baseUrl);
-        biggest.semaphore.acquire();
-        return biggest;
+        if (secondary != null && secondary.isHealthy() && secondary.semaphore.tryAcquire()) {
+            return secondary;
+        }
+        if (primary.semaphore.tryAcquire()) {
+            log.warn("所有健康 judge-agent 端点不可用，回退到熔断主端点: {}", primary.baseUrl);
+            return primary;
+        }
+        log.debug("主 judge-agent 端点已满，阻塞等待: {}", primary.baseUrl);
+        primary.semaphore.acquire();
+        return primary;
     }
 
     public void release(Endpoint ep) {
