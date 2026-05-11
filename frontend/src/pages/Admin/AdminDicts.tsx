@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import toast from 'react-hot-toast';
-import { CheckCircle2, Edit, Layers3, Plus, RefreshCw, Search, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react';
+import { CheckCircle2, Edit, Layers3, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { Button, Empty, Field, InputNumber, Modal, Spin, Tag } from '@/components';
 import Input from '@/components/Input';
 import Select from '@/components/Select';
@@ -101,8 +101,6 @@ const AdminDicts: React.FC = () => {
     if (!keyword) return types;
     return types.filter((item) => item.dictName.toLowerCase().includes(keyword) || item.dictType.toLowerCase().includes(keyword));
   }, [types, typeKeyword]);
-
-  const enabledTypeCount = useMemo(() => types.filter((item) => item.status === 1).length, [types]);
 
   const loadTypes = async () => {
     setTypeLoading(true);
@@ -267,42 +265,6 @@ const AdminDicts: React.FC = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden text-slate-900">
-      <div className="mb-4 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-        <div className="overflow-hidden rounded-[28px] border border-blue-100 bg-gradient-to-br from-blue-600 via-indigo-600 to-sky-500 p-6 text-white shadow-lg shadow-blue-100">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
-                <Sparkles className="h-3.5 w-3.5" />
-                系统配置中心
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight">字典管理</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">统一维护业务枚举、状态标签和前端回显文案，左侧选择类型，右侧以卡片网格查看和维护字典数据。</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="rounded-2xl bg-white/15 px-4 py-3 text-center backdrop-blur">
-                <div className="text-2xl font-bold">{types.length}</div>
-                <div className="text-xs text-blue-50">类型总数</div>
-              </div>
-              <div className="rounded-2xl bg-white/15 px-4 py-3 text-center backdrop-blur">
-                <div className="text-2xl font-bold">{enabledTypeCount}</div>
-                <div className="text-xs text-blue-50">启用类型</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-              <SlidersHorizontal className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-slate-900">当前类型</div>
-              <div className="mt-1 text-xs text-slate-400">{selectedType ? `${selectedType.dictName} / ${selectedType.dictType}` : '请选择字典类型'}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden xl:grid-cols-[320px_1fr]">
         <aside className="flex min-h-0 flex-col overflow-hidden rounded-[28px] border border-slate-100 bg-white shadow-sm">
           <div className="border-b border-slate-100 p-4">

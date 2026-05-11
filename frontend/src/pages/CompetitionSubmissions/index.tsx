@@ -44,6 +44,11 @@ interface Submission {
   memory?: number;
 }
 
+interface DictData {
+  dictLabel: string;
+  dictValue: string;
+}
+
 const CompetitionSubmissions: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -57,6 +62,8 @@ const CompetitionSubmissions: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState<string | null>(null);
   const [language, setLanguage] = useState<string | null>(null);
+  const [statusOptions, setStatusOptions] = useState<{ value: string; label: string }[]>([]);
+  const [languageOptions, setLanguageOptions] = useState<{ value: string; label: string }[]>([]);
   useCompetitionFirstBloodWebSocket(id, passwordVerified);
 
   const pageSize = 10;
@@ -67,8 +74,26 @@ const CompetitionSubmissions: React.FC = () => {
       navigate('/login');
       return;
     }
+    loadDictOptions();
     loadCompetition();
   }, [id, navigate]);
+
+  const loadDictOptions = async () => {
+    try {
+      const [statusRes, languageRes] = await Promise.all([
+        api.get('/dict/data/list', { params: { dictType: 'JUDGE_RESULT_STATUS' } }),
+        api.get('/dict/data/list', { params: { dictType: 'SUBMIT_LANGUAGE' } }),
+      ]);
+      if (statusRes.code === 200) {
+        setStatusOptions(((statusRes.data || []) as DictData[]).map((item) => ({ value: item.dictValue, label: item.dictLabel })));
+      }
+      if (languageRes.code === 200) {
+        setLanguageOptions(((languageRes.data || []) as DictData[]).map((item) => ({ value: item.dictLabel, label: item.dictLabel })));
+      }
+    } catch (error) {
+      console.error('加载提交筛选字典失败:', error);
+    }
+  };
 
   useEffect(() => {
     if (competition) {
@@ -346,16 +371,8 @@ const CompetitionSubmissions: React.FC = () => {
                   onChange={setStatus}
                   className="w-36"
                   allowClear
-                  options={[
-                    { value: '答案正确', label: '答案正确' },
-                    { value: '答案错误', label: '答案错误' },
-                    { value: '时间超出限制', label: '时间超出限制' },
-                    { value: '内存超出限制', label: '内存超出限制' },
-                    { value: '运行时错误', label: '运行时错误' },
-                    { value: '编译错误', label: '编译错误' },
-                    { value: '等待中', label: '等待中' },
-                    { value: '评测中', label: '评测中' },
-                  ]}
+                  dropdownWidth={144}
+                  options={statusOptions}
                 />
                 <Select
                   placeholder="语言"
@@ -363,13 +380,8 @@ const CompetitionSubmissions: React.FC = () => {
                   onChange={setLanguage}
                   className="w-36"
                   allowClear
-                  options={[
-                    { value: 'Python', label: 'Python' },
-                    { value: 'Java', label: 'Java' },
-                    { value: 'C++', label: 'C++' },
-                    { value: 'Golang', label: 'Golang' },
-                    { value: 'JavaScript', label: 'JavaScript' },
-                  ]}
+                  dropdownWidth={144}
+                  options={languageOptions}
                 />
                 <Button
                   onClick={() => {

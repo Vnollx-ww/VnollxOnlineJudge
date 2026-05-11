@@ -119,17 +119,27 @@ const BalloonIcon = memo(({ color, className = 'h-9 w-9', style }: { color: stri
   </svg>
 ));
 
+const LED_RECTS = [
+  <rect key="0" x="20" y="10" width="80" height="14" rx="5" />,  // 0: Top
+  <rect key="1" x="96" y="20" width="14" height="75" rx="5" />,  // 1: TR
+  <rect key="2" x="96" y="105" width="14" height="75" rx="5" />, // 2: BR
+  <rect key="3" x="20" y="176" width="80" height="14" rx="5" />, // 3: Bottom
+  <rect key="4" x="10" y="105" width="14" height="75" rx="5" />, // 4: BL
+  <rect key="5" x="10" y="20" width="14" height="75" rx="5" />,  // 5: TL
+  <rect key="6" x="20" y="93" width="80" height="14" rx="5" />,  // 6: Middle
+];
+
 const digitSegments = [
-  [1, 2, 3, 4, 5, 6],
-  [2, 3],
-  [1, 2, 7, 5, 4],
-  [1, 2, 7, 3, 4],
-  [6, 7, 2, 3],
-  [1, 6, 7, 3, 4],
-  [1, 3, 4, 5, 6, 7],
-  [1, 2, 3],
-  [1, 2, 3, 4, 5, 6, 7],
-  [1, 2, 3, 4, 6, 7],
+  [0, 1, 2, 3, 4, 5],       // 0
+  [1, 2],                   // 1
+  [0, 1, 6, 4, 3],          // 2
+  [0, 1, 6, 2, 3],          // 3
+  [5, 6, 1, 2],             // 4
+  [0, 5, 6, 2, 3],          // 5
+  [0, 2, 3, 4, 5, 6],       // 6
+  [0, 1, 2],                // 7
+  [0, 1, 2, 3, 4, 5, 6],    // 8
+  [0, 1, 2, 3, 5, 6],       // 9
 ];
 
 const getActiveSegments = (digit: string) => {
@@ -137,77 +147,50 @@ const getActiveSegments = (digit: string) => {
   return Number.isNaN(num) ? [] : digitSegments[num];
 };
 
-const SEGMENT_STYLES: React.CSSProperties[] = [
-  { top: 10, left: 20, right: 20, height: 14 },
-  { top: 20, right: 10, width: 14, height: 75 },
-  { bottom: 20, right: 10, width: 14, height: 75 },
-  { bottom: 10, left: 20, right: 20, height: 14 },
-  { bottom: 20, left: 10, width: 14, height: 75 },
-  { top: 20, left: 10, width: 14, height: 75 },
-  { bottom: 95, left: 20, right: 20, height: 14 },
-];
-
-const LedDigit = memo(({ digit, fontSize, digitColor, glowColor }: { digit: string; fontSize: number; digitColor: string; glowColor: string }) => {
-  const scale = fontSize / 200;
+const LedDigitSvg = memo(({ digit, fontSize, digitColor, withGlow, glowColor }: { digit: string; fontSize: number; digitColor: string; withGlow?: boolean; glowColor?: string }) => {
   const activeSegments = getActiveSegments(digit);
-  const segmentBaseStyle: React.CSSProperties = {
-    position: 'absolute',
-    background: digitColor,
-    borderRadius: 5,
-    opacity: 0,
-    transition: 'opacity 0.2s',
-  };
-  const activeStyle: React.CSSProperties = {
-    opacity: 1,
-    boxShadow: `0 0 6px ${glowColor}`,
-    transition: 'opacity 0s',
-  };
+  const isOne = digit === '1';
+  const viewBox = isOne ? "70 0 50 200" : "0 0 120 200";
 
   return (
-    <div
-      className="relative inline-block"
-      style={{ width: 120 * scale, height: fontSize, margin: `0 ${5 * scale}px` }}
+    <svg
+      viewBox={viewBox}
+      preserveAspectRatio="xMidYMid meet"
+      style={{
+        height: fontSize,
+        width: fontSize * 0.6,
+        margin: `0 ${fontSize * 0.05}px`,
+        filter: withGlow ? `drop-shadow(0 0 6px ${glowColor})` : 'none',
+        transform: 'translateZ(0)',
+      }}
+      className="inline-block flex-shrink-0"
     >
-      <div className="relative h-[200px] w-[120px] origin-top-left" style={{ transform: digit === '1' ? `scale(${scale}) translateX(-43px)` : `scale(${scale})` }}>
-        {SEGMENT_STYLES.map((style, index) => (
-          <div
-            key={index}
-            style={{
-              ...segmentBaseStyle,
-              ...style,
-              ...(activeSegments.includes(index + 1) ? activeStyle : null),
-            }}
-          />
-        ))}
-      </div>
-    </div>
+      <g fill={digitColor} opacity={0.06}>
+        {LED_RECTS}
+      </g>
+      <g fill={digitColor}>
+        {activeSegments.map(i => LED_RECTS[i])}
+      </g>
+    </svg>
   );
 });
 
-const LedSeparator = memo(({ fontSize, digitColor, glowColor }: { fontSize: number; digitColor: string; glowColor: string }) => {
-  const dotSize = fontSize * 0.12;
-  const gap = fontSize * 0.36;
-  const sideMargin = fontSize * 0.14;
-  return (
-    <div
-      className="inline-flex flex-col justify-center"
-      style={{ height: fontSize, margin: `0 ${sideMargin}px`, gap, color: digitColor }}
-    >
-      {[0, 1].map((item) => (
-        <span
-          key={item}
-          className="block rounded-full"
-          style={{
-            width: dotSize,
-            height: dotSize,
-            background: 'currentColor',
-            boxShadow: `0 0 ${Math.min(fontSize * 0.25, 4)}px ${glowColor}`,
-          }}
-        />
-      ))}
-    </div>
-  );
-});
+const LedSeparatorSvg = memo(({ fontSize, digitColor, withGlow, glowColor }: { fontSize: number; digitColor: string; withGlow?: boolean; glowColor?: string }) => (
+  <svg
+    viewBox="0 0 40 200"
+    style={{
+      height: fontSize,
+      width: fontSize * 0.2,
+      margin: `0 ${fontSize * 0.05}px`,
+      filter: withGlow ? `drop-shadow(0 0 4px ${glowColor})` : 'none',
+      transform: 'translateZ(0)'
+    }}
+    className="inline-block flex-shrink-0"
+  >
+    <circle cx="20" cy="55" r="14" fill={digitColor} />
+    <circle cx="20" cy="145" r="14" fill={digitColor} />
+  </svg>
+));
 
 const LedTimeDisplay = memo(({ value, fontSize = 42, digitColor = '#00ff00', glowColor = 'rgba(0,255,0,0.7)' }: { value: string; fontSize?: number; digitColor?: string; glowColor?: string }) => {
   const [hours = '00', minutes = '00', seconds = '00'] = value.split(':');
@@ -215,47 +198,44 @@ const LedTimeDisplay = memo(({ value, fontSize = 42, digitColor = '#00ff00', glo
 
   return (
     <div
-      className="flex items-center rounded border-4 border-inset border-[#333] bg-black px-2 py-1 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
+      className="flex items-center justify-center rounded border-4 border-inset border-[#333] bg-black px-2 py-1 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
       style={{ height: fontSize + 18 }}
     >
-      <LedDigit digit={digits[0]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedDigit digit={digits[1]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedSeparator fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedDigit digit={digits[2]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedDigit digit={digits[3]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedSeparator fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedDigit digit={digits[4]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
-      <LedDigit digit={digits[5]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} />
+      <LedDigitSvg digit={digits[0]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedDigitSvg digit={digits[1]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedSeparatorSvg fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedDigitSvg digit={digits[2]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedDigitSvg digit={digits[3]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedSeparatorSvg fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedDigitSvg digit={digits[4]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
+      <LedDigitSvg digit={digits[5]} fontSize={fontSize} digitColor={digitColor} glowColor={glowColor} withGlow={true} />
     </div>
   );
 });
 
 const InlineLedNumber = memo(({ value, fontSize = 19, digitColor = '#000' }: { value?: string | number; fontSize?: number; digitColor?: string }) => {
   const text = String(value ?? '');
-  const glowColor = 'transparent';
 
   return (
     <span className="inline-flex items-center justify-center align-middle" style={{ height: fontSize }}>
       {Array.from(text).map((char, index) => {
         if (/\d/.test(char)) {
           return (
-            <LedDigit
+            <LedDigitSvg
               key={`${char}-${index}`}
               digit={char}
               fontSize={fontSize}
               digitColor={digitColor}
-              glowColor={glowColor}
             />
           );
         }
 
         if (char === ':') {
           return (
-            <LedSeparator
+            <LedSeparatorSvg
               key={`${char}-${index}`}
               fontSize={fontSize}
               digitColor={digitColor}
-              glowColor={glowColor}
             />
           );
         }
@@ -505,25 +485,6 @@ const RanklistRow = memo(function RanklistRow({
 
   const handleClick = useCallback(() => onToggle(user), [onToggle, user]);
 
-  const [mounted, setMounted] = useState(expanded);
-  const [open, setOpen] = useState(expanded);
-  useEffect(() => {
-    if (expanded) {
-      setMounted(true);
-      let raf2 = 0;
-      const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => setOpen(true));
-      });
-      return () => {
-        cancelAnimationFrame(raf1);
-        if (raf2) cancelAnimationFrame(raf2);
-      };
-    }
-    setOpen(false);
-    const timer = window.setTimeout(() => setMounted(false), 260);
-    return () => window.clearTimeout(timer);
-  }, [expanded]);
-
   return (
     <Fragment>
       <tr className="cursor-pointer" onClick={handleClick}>
@@ -553,110 +514,105 @@ const RanklistRow = memo(function RanklistRow({
           );
         })}
       </tr>
-      {mounted ? (
+      
+      {/* 彻底剥离所有动画状态，基于 expanded 属性直接渲染内容 */}
+      {expanded ? (
         <tr>
           <td colSpan={4} className="sticky left-0 z-10 bg-[#f3f4f8] p-0" id={`detail-${user.id}`}>
-            <div
-              className={`overflow-hidden will-change-[max-height] transition-[max-height] duration-200 ease-out ${open ? 'max-h-[430px]' : 'max-h-0'}`}
-            >
-              <div className="px-4 py-5">
-                <div className="relative flex h-[390px] w-full flex-col rounded-xl bg-white p-5 text-gray-800 shadow-sm">
-                  <div className="flex min-h-0 flex-1 gap-4">
-                    <div className="flex w-24 shrink-0 flex-col justify-between">
-                      {[0, 1, 2].map((memberIndex) => {
-                        const member = teamMembers[memberIndex];
-                        return (
-                          <div key={member?.userId || memberIndex}>
-                            <div className="mb-1 text-[14px] text-gray-400">成员 {memberIndex + 1}</div>
-                            <div className="truncate text-[17px] text-gray-700">{member ? (member.realName || member.userName) : '-'}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
+            <div className="w-[515px] px-4 py-5" style={{ height: 430, contain: 'strict' }}>
+              <div className="relative flex h-[390px] w-full flex-col rounded-xl bg-white p-5 text-gray-800 shadow-sm">
+                <div className="flex min-h-0 flex-1 gap-4">
+                  <div className="flex w-24 shrink-0 flex-col justify-between">
+                    {[0, 1, 2].map((memberIndex) => {
+                      const member = teamMembers[memberIndex];
+                      return (
+                        <div key={member?.userId || memberIndex}>
+                          <div className="mb-1 text-[14px] text-gray-400">成员 {memberIndex + 1}</div>
+                          <div className="truncate text-[17px] text-gray-700">{member ? (member.realName || member.userName) : '-'}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
 
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                      <div className="mb-2 text-[14px] text-gray-400">最近提交</div>
-                      <div data-recent-submissions className="min-h-0 flex-1 overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
-                        {recentSubmissions.map((submission) => (
-                          <div
-                            key={submission.id}
-                            className="flex items-center text-[16px] rounded px-1 -mx-1 py-[7px] border-b border-gray-200 last:border-b-0 transition-colors"
-                            id={`rs-${submission.id}`}
-                            data-submission-id={submission.id}
-                            data-problem-id={submission.problem.id}
-                            onMouseEnter={() => setRecentSubmissionHighlighted(submission.id, true)}
-                            onMouseLeave={() => setRecentSubmissionHighlighted(submission.id, false)}
-                          >
-                            <BalloonIcon color={submission.color} className="h-[28px] w-7" />
-                            <span className="ml-1 w-3 text-gray-800">{submission.label}</span>
-                            <span className="ml-auto text-gray-500"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
-                            <span className="ml-3 w-5 text-center">{renderDetailStatus(submission.status)}</span>
-                          </div>
-                        ))}
-                        {recentSubmissions.length === 0 ? (
-                          <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
-                            {submissionsLoading ? (
-                              <>
-                                <svg className="h-6 w-6 animate-spin text-gray-300" viewBox="0 0 24 24" fill="none">
-                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-                                  <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                                </svg>
-                                <span className="text-[13px]">提交记录加载中</span>
-                              </>
-                            ) : (
-                              <>
-                                <svg className="h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
-                                  <path d="M14 3v6h6" />
-                                  <path d="M9 14h6" />
-                                  <path d="M9 17h4" />
-                                </svg>
-                                <span className="text-[13px]">暂无提交记录</span>
-                              </>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                    <div className="mb-2 text-[14px] text-gray-400">最近提交</div>
+                    <div data-recent-submissions className="min-h-0 flex-1 overflow-y-auto pr-2 -mr-2 [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
+                      {recentSubmissions.map((submission) => (
+                        <div
+                          key={submission.id}
+                          className="flex items-center text-[16px] rounded px-1 -mx-1 py-[7px] border-b border-gray-200 last:border-b-0 transition-colors"
+                          id={`rs-${submission.id}`}
+                          data-submission-id={submission.id}
+                          data-problem-id={submission.problem.id}
+                          onMouseEnter={() => setRecentSubmissionHighlighted(submission.id, true)}
+                          onMouseLeave={() => setRecentSubmissionHighlighted(submission.id, false)}
+                        >
+                          <BalloonIcon color={submission.color} className="h-[28px] w-7" />
+                          <span className="ml-1 w-3 text-gray-800">{submission.label}</span>
+                          <span className="ml-auto text-gray-500"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
+                          <span className="ml-3 w-5 text-center">{renderDetailStatus(submission.status)}</span>
+                        </div>
+                      ))}
+                      {recentSubmissions.length === 0 ? (
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+                          {submissionsLoading ? (
+                            <>
+                              <svg className="h-6 w-6 animate-spin text-gray-300" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                                <path d="M4 12a8 8 0 0 1 8-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                              </svg>
+                              <span className="text-[13px]">提交记录加载中</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg className="h-10 w-10 text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                                <path d="M14 3v6h6" />
+                                <path d="M9 14h6" />
+                                <path d="M9 17h4" />
+                              </svg>
+                              <span className="text-[13px]">暂无提交记录</span>
+                            </>
+                          )}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </td>
+          
           {problemHeaders.map((problem) => {
             const problemSubmissions = submissionsByProblem.get(problem.id) || [];
             return (
               <td key={`score-${rank}-${problem.id}`} className="w-[90px] bg-[#f3f4f8] p-0 align-top">
-                <div
-                  className={`overflow-hidden will-change-[max-height] transition-[max-height] duration-200 ease-out ${open ? 'pointer-events-auto max-h-[430px]' : 'pointer-events-none max-h-0'}`}
-                >
-                  <div className="h-[430px] overflow-hidden">
-                    <div className="score flex max-h-[423px] flex-col gap-px overflow-y-auto bg-white [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
-                      {problemSubmissions.map((submission) => (
-                        <button
-                          key={submission.id}
-                          type="button"
-                          className="flex h-[52px] w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 bg-[#f3f4f8] px-1 font-['Digital-7',sans-serif] text-[20px] leading-none transition-colors hover:bg-blue-100"
-                          id={`ps-${submission.id}`}
-                          data-submission-id={submission.id}
-                          data-problem-id={problem.id}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            scrollToRecentSubmission(submission.id);
-                          }}
-                          onMouseEnter={() => setRecentSubmissionHighlighted(submission.id, true)}
-                          onMouseLeave={() => setRecentSubmissionHighlighted(submission.id, false)}
-                        >
-                          <span className="text-[#495057]"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
-                          <span className={`font-mono text-[19px] font-normal leading-none underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
-                            {submission.status}
-                          </span>
-                        </button>
-                      ))}
-                      {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
-                        <div key={`empty-${problem.id}-${emptyIndex}`} className="flex h-[52px] w-full shrink-0 items-center justify-center bg-[#f3f4f8] font-mono text-[15px] text-[#ccc]">-</div>
-                      ))}
-                    </div>
+                <div className="w-[90px]" style={{ height: 430, contain: 'strict' }}>
+                  <div className="score flex h-[423px] flex-col gap-px overflow-y-auto bg-white [&::-webkit-scrollbar-thumb:hover]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1">
+                    {problemSubmissions.map((submission) => (
+                      <button
+                        key={submission.id}
+                        type="button"
+                        className="flex h-[52px] w-full shrink-0 cursor-pointer items-center justify-center gap-1.5 bg-[#f3f4f8] px-1 font-['Digital-7',sans-serif] text-[20px] leading-none transition-colors hover:bg-blue-100"
+                        id={`ps-${submission.id}`}
+                        data-submission-id={submission.id}
+                        data-problem-id={problem.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          scrollToRecentSubmission(submission.id);
+                        }}
+                        onMouseEnter={() => setRecentSubmissionHighlighted(submission.id, true)}
+                        onMouseLeave={() => setRecentSubmissionHighlighted(submission.id, false)}
+                      >
+                        <span className="text-[#495057]"><InlineLedNumber value={submission.time} fontSize={19} digitColor="currentColor" /></span>
+                        <span className={`font-mono text-[19px] font-normal leading-none underline underline-offset-2 ${submission.status === 'AC' ? 'text-[#16a34a]' : 'text-[#dc2626]'}`}>
+                          {submission.status}
+                        </span>
+                      </button>
+                    ))}
+                    {problemSubmissions.length < 8 && Array.from({ length: 8 - problemSubmissions.length }).map((_, emptyIndex) => (
+                      <div key={`empty-${problem.id}-${emptyIndex}`} className="flex h-[52px] w-full shrink-0 items-center justify-center bg-[#f3f4f8] font-mono text-[15px] text-[#ccc]">-</div>
+                    ))}
                   </div>
                 </div>
               </td>

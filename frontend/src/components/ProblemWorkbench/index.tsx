@@ -201,7 +201,7 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
     >
       {/* 顶部操作栏 */}
       <div
-        className="flex-none flex items-center gap-3 px-5 border-b"
+        className="flex-none flex items-center gap-2 px-3 border-b"
         style={{
           minHeight: 56,
           backgroundColor: 'var(--gemini-surface, #fff)',
@@ -220,11 +220,11 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
         <div
           className="flex flex-col min-h-0 overflow-hidden"
           style={{
-            width: `calc(${leftPct}% - 4px)`,
+            width: `calc(${leftPct}% - 2px)`,
             backgroundColor: 'var(--gemini-surface, #fff)',
           }}
         >
-          <div className="flex-auto overflow-auto px-5 py-4">{leftPanel}</div>
+          <div className="flex-auto overflow-auto px-3 py-3">{leftPanel}</div>
         </div>
 
         {/* 垂直分割条 */}
@@ -234,13 +234,13 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
           onMouseDown={startDrag('v')}
           className="flex-none flex items-center justify-center cursor-col-resize select-none group"
           style={{
-            width: 8,
+            width: 4,
             backgroundColor: 'var(--gemini-bg, #f7f8fa)',
           }}
           title="拖动调整宽度"
         >
           <div
-            className="w-[2px] h-12 rounded-full transition-colors group-hover:opacity-100 opacity-50"
+            className="w-px h-12 rounded-full transition-colors group-hover:opacity-100 opacity-50"
             style={{ backgroundColor: 'var(--gemini-border, #cbd5e1)' }}
           />
         </div>
@@ -254,7 +254,7 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
           {/* 编辑器顶部工具栏 */}
           {editorHeader && (
             <div
-              className="flex-none flex items-center gap-2 px-3 py-2 border-b"
+              className="flex-none flex items-center gap-2 px-2 py-2 border-b"
               style={{
                 borderColor: 'var(--gemini-border-light, #e5e7eb)',
                 backgroundColor: 'var(--gemini-surface, #fff)',
@@ -299,7 +299,7 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
             }}
           >
             <div
-              className="flex-none flex items-center px-3 gap-3"
+              className="flex-none flex items-center px-2 gap-2"
               style={{
                 height: MIN_BOTTOM_PX,
                 borderBottom: bottomCollapsed
@@ -367,7 +367,7 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
               </span>
             </div>
             {!bottomCollapsed && (
-              <div className="flex-auto min-h-0 overflow-auto px-3 py-3">
+              <div className="flex-auto min-h-0 overflow-auto px-2 py-2">
                 {bottomContent}
               </div>
             )}

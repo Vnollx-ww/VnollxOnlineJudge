@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 真正的 7 段数码管字体（DSEG7 Classic，keshikan/DSEG）
+   用于比赛排行榜的 LED 数字渲染。jsDelivr CDN，国内可达。
+   `font-display: swap` + 仅加载常用字符避免首屏阻塞。 */
+@font-face {
+  font-family: 'DSEG7';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+003A, U+002B, U+002D, U+002E, U+0020;
+}
+@font-face {
+  font-family: 'DSEG7';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/dseg@0.46.0/fonts/DSEG7-Classic/DSEG7Classic-Bold.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+003A, U+002B, U+002D, U+002E, U+0020;
+}
+
+/* 用于比赛排行榜数字单元格的工具类。把 `font-['Digital-7',...]` 的写法集中到这里，
+   保证 Tailwind JIT 不会因为 arbitrary value 里的引号/逗号解析失败，导致字体不生效。 */
+.led-font {
+  font-family: 'DSEG7', 'Digital-7', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
 /* ========================================
    Google Gemini 风格设计系统
    Material Design 3 inspired

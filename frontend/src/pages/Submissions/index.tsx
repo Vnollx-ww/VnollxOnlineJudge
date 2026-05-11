@@ -30,6 +30,11 @@ interface Submission {
   testCount?: number | null;
 }
 
+interface DictData {
+  dictLabel: string;
+  dictValue: string;
+}
+
 const Submissions: React.FC = () => {
   const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -39,6 +44,8 @@ const Submissions: React.FC = () => {
   const [problemId, setProblemId] = useState('');
   const [status, setStatus] = useState<string | undefined>(undefined);
   const [language, setLanguage] = useState<string | undefined>(undefined);
+  const [statusOptions, setStatusOptions] = useState<{ value: string; label: string }[]>([]);
+  const [languageOptions, setLanguageOptions] = useState<{ value: string; label: string }[]>([]);
   const [onlyMine, setOnlyMine] = useState(false);
   const [codeModalVisible, setCodeModalVisible] = useState(false);
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
@@ -88,6 +95,33 @@ const Submissions: React.FC = () => {
     setCurrentPage(1);
     loadSubmissions(1);
   }, [onlyMine, problemId, status, language]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      return;
+    }
+    loadDictOptions();
+  }, []);
+
+  const loadDictOptions = async () => {
+    try {
+      const [statusRes, languageRes] = await Promise.all([
+        api.get('/dict/data/list', { params: { dictType: 'JUDGE_RESULT_STATUS' } }) as Promise<ApiResponse<DictData[]>>,
+        api.get('/dict/data/list', { params: { dictType: 'SUBMIT_LANGUAGE' } }) as Promise<ApiResponse<DictData[]>>,
+      ]);
+      if (statusRes.code === 200) {
+        setStatusOptions((statusRes.data || []).map((item) => ({ value: item.dictValue, label: item.dictLabel })));
+      }
+      if (languageRes.code === 200) {
+        setLanguageOptions((languageRes.data || []).map((item) => ({
+          value: item.dictLabel,
+          label: item.dictLabel,
+        })));
+      }
+    } catch (error) {
+      console.error('加载提交筛选字典失败:', error);
+    }
+  };
 
   const loadSubmissions = async (page: number) => {
     setLoading(true);
@@ -334,14 +368,8 @@ const Submissions: React.FC = () => {
                   onChange={setStatus}
                   className="w-40"
                   allowClear
-                  options={[
-                    { value: '答案正确', label: '答案正确' },
-                    { value: '答案错误', label: '答案错误' },
-                    { value: '时间超出限制', label: '时间超出限制' },
-                    { value: '内存超出限制', label: '内存超出限制' },
-                    { value: '运行时错误', label: '运行时错误' },
-                    { value: '编译错误', label: '编译错误' },
-                  ]}
+                  dropdownWidth={160}
+                  options={statusOptions}
               />
               <Select
                   placeholder="语言"
@@ -349,13 +377,8 @@ const Submissions: React.FC = () => {
                   onChange={setLanguage}
                   className="w-32"
                   allowClear
-                  options={[
-                    { value: 'Python', label: 'Python' },
-                    { value: 'Java', label: 'Java' },
-                    { value: 'C++', label: 'C++' },
-                    { value: 'Golang', label: 'Golang' },
-                    { value: 'JavaScript', label: 'JavaScript' },
-                  ]}
+                  dropdownWidth={128}
+                  options={languageOptions}
               />
             </div>
             <div className="flex shrink-0 items-center gap-3">

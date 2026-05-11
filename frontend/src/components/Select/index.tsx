@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, X } from 'lucide-react';
+import { autoUpdate, flip, offset, shift, size as sizeMiddleware, useFloating } from '@floating-ui/react-dom';
 
 type SelectValue = string | number;
 
@@ -26,6 +27,7 @@ interface SelectProps<T extends SelectValue = SelectValue> {
   loading?: boolean;
   optionFilterProp?: string;
   filterOption?: (input: string, option: unknown) => boolean;
+  dropdownWidth?: number;
 }
 
 const sizeClassMap = {
@@ -33,6 +35,10 @@ const sizeClassMap = {
   middle: 'min-h-10 px-3.5 py-2 text-sm',
   large: 'min-h-11 px-4 py-2.5 text-base',
 };
+
+const OPTION_HEIGHT = 45;
+const MAX_VISIBLE_OPTIONS = 5.5;
+const DROPDOWN_VERTICAL_PADDING = 12;
 
 function CustomSelect<T extends SelectValue = SelectValue>({
   value,
@@ -49,14 +55,43 @@ function CustomSelect<T extends SelectValue = SelectValue>({
   loading: _loading = false,
   optionFilterProp: _optionFilterProp,
   filterOption: _filterOption,
+  dropdownWidth: preferredDropdownWidth,
 }: SelectProps<T>) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
-  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+  const [listMaxHeight, setListMaxHeight] = useState<number>(
+    OPTION_HEIGHT * MAX_VISIBLE_OPTIONS + DROPDOWN_VERTICAL_PADDING,
+  );
   const multiple = mode === 'multiple';
+
+  const { refs, floatingStyles } = useFloating<HTMLButtonElement>({
+    open,
+    placement: 'bottom-start',
+    strategy: 'fixed',
+    whileElementsMounted: autoUpdate,
+    middleware: [
+      offset(8),
+      flip({ padding: 12 }),
+      shift({ padding: 12 }),
+      sizeMiddleware({
+        padding: 12,
+        apply({ rects, availableHeight, elements }) {
+          const triggerWidth = rects.reference.width;
+          const desiredWidth = Math.max(triggerWidth, preferredDropdownWidth ?? 320);
+          const cappedWidth = Math.min(desiredWidth, 640);
+          const maxList = OPTION_HEIGHT * MAX_VISIBLE_OPTIONS + DROPDOWN_VERTICAL_PADDING;
+          const maxHeight = Math.max(OPTION_HEIGHT, Math.min(maxList, availableHeight));
+          Object.assign(elements.floating.style, {
+            width: `${cappedWidth}px`,
+            maxHeight: `${maxHeight}px`,
+          });
+          setListMaxHeight(maxHeight - (showSearch ? 58 : 12));
+        },
+      }),
+    ],
+  });
 
   const selectedValues = useMemo<T[]>(() => {
     if (Array.isArray(value)) return value;
@@ -83,47 +118,6 @@ function CustomSelect<T extends SelectValue = SelectValue>({
       return groups;
     }, []);
   }, [filteredOptions]);
-
-  const updateDropdownPosition = useCallback(() => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const viewportPadding = 12;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const maxDropdownWidth = Math.min(640, viewportWidth - viewportPadding * 2);
-    const dropdownWidth = Math.min(Math.max(rect.width, 320), maxDropdownWidth);
-    const left = Math.min(Math.max(rect.left, viewportPadding), viewportWidth - dropdownWidth - viewportPadding);
-    const availableBelow = viewportHeight - rect.bottom - viewportPadding;
-    const availableAbove = rect.top - viewportPadding;
-    const openAbove = availableBelow < 280 && availableAbove > availableBelow;
-    const maxDropdownHeight = Math.max(180, Math.min(360, openAbove ? availableAbove - 8 : availableBelow - 8));
-    setDropdownStyle({
-      position: 'fixed',
-      top: openAbove ? undefined : rect.bottom + 8,
-      bottom: openAbove ? viewportHeight - rect.top + 8 : undefined,
-      left,
-      width: dropdownWidth,
-      maxWidth: `calc(100vw - ${viewportPadding * 2}px)`,
-      maxHeight: maxDropdownHeight,
-      '--select-dropdown-list-max-height': `${showSearch ? maxDropdownHeight - 58 : maxDropdownHeight - 12}px`,
-      zIndex: 9999,
-    } as CSSProperties);
-  }, [showSearch]);
-
-  useLayoutEffect(() => {
-    if (open) updateDropdownPosition();
-  }, [open, updateDropdownPosition]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handleScroll = () => updateDropdownPosition();
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, [open, updateDropdownPosition]);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -169,7 +163,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
   return (
     <div ref={rootRef} className={`relative inline-block align-middle ${className}`} style={style}>
       <button
-        ref={triggerRef}
+        ref={refs.setReference}
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen((current) => !current)}
@@ -207,7 +201,14 @@ function CustomSelect<T extends SelectValue = SelectValue>({
       </button>
 
       {open && createPortal(
-        <div ref={dropdownRef} className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/70 backdrop-blur-xl" style={dropdownStyle}>
+        <div
+          ref={(node) => {
+            refs.setFloating(node);
+            dropdownRef.current = node;
+          }}
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/70 backdrop-blur-xl"
+          style={{ ...floatingStyles, zIndex: 9999 }}
+        >
           {showSearch && (
             <div className="border-b border-slate-100 p-2">
               <input
@@ -218,7 +219,7 @@ function CustomSelect<T extends SelectValue = SelectValue>({
               />
             </div>
           )}
-          <div className="select-dropdown-scroll overflow-auto p-1.5" style={{ maxHeight: 'var(--select-dropdown-list-max-height)' }}>
+          <div className="select-dropdown-scroll overflow-auto p-1.5" style={{ maxHeight: listMaxHeight }}>
             {groupedOptions.length ? (
               groupedOptions.map((group, groupIndex) => (
                 <div key={`${group.group ?? 'default'}-${groupIndex}`}>

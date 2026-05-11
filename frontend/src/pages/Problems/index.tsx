@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Table, Pagination, Button } from 'antd';
 import toast from 'react-hot-toast';
-import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Filter, Loader2, Search, X } from 'lucide-react';
+import { CheckCircle, ChevronDown, Circle, X } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
+import Input from '../../components/Input';
 
 interface Problem {
   id: number;
@@ -12,12 +14,12 @@ interface Problem {
   difficulty: string;
   submitCount: number;
   passCount: number;
-  tags?: string[];
 }
 
 interface TagItem {
   name: string;
 }
+
 
 const Problems: React.FC = () => {
   const navigate = useNavigate();
@@ -28,10 +30,10 @@ const Problems: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagPanelOpen, setTagPanelOpen] = useState(false);
   const [solvedIds, setSolvedIds] = useState<Set<number>>(new Set());
 
   const pageSize = 15;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -42,11 +44,6 @@ const Problems: React.FC = () => {
     loadTags();
     loadSolvedProblems();
   }, []);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    loadProblems(1);
-  }, [searchKeyword, selectedTags]);
 
   const loadSolvedProblems = async () => {
     try {
@@ -62,6 +59,11 @@ const Problems: React.FC = () => {
       console.error('加载已解决题目失败:', error);
     }
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+    loadProblems(1);
+  }, [searchKeyword, selectedTags]);
 
   const loadTags = async () => {
     try {
@@ -91,19 +93,7 @@ const Problems: React.FC = () => {
 
       const data = await api.get('/problem/list', { params }) as ApiResponse<Problem[]>;
       if (data.code === 200) {
-        const list = data.data || [];
-        const enriched = await Promise.all(
-          list.map(async (problem) => {
-            if (problem.tags) return problem;
-            try {
-              const tagData = await api.get('/problem/tags', { params: { pid: problem.id } }) as ApiResponse<string[]>;
-              return { ...problem, tags: tagData.code === 200 ? tagData.data || [] : [] };
-            } catch {
-              return { ...problem, tags: [] };
-            }
-          })
-        );
-        setProblems(enriched);
+        setProblems(data.data || []);
       }
 
       const countParams: Record<string, string> = {};
@@ -125,10 +115,10 @@ const Problems: React.FC = () => {
     }
   };
 
+
   const handlePageChange = (page: number) => {
-    const nextPage = Math.min(Math.max(page, 1), totalPages);
-    setCurrentPage(nextPage);
-    loadProblems(nextPage);
+    setCurrentPage(page);
+    loadProblems(page);
   };
 
   const toggleTag = (tag: string) => {
@@ -137,21 +127,17 @@ const Problems: React.FC = () => {
     ));
   };
 
-  const clearFilters = () => {
-    setSearchKeyword('');
-    setSelectedTags([]);
-  };
 
-  const getDifficultyClassName = (difficulty: string) => {
+  const getDifficultyStyle = (difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
       case '简单':
-        return 'bg-green-50 text-green-600';
+        return { color: 'var(--gemini-success)', bg: 'var(--gemini-success-bg)' };
       case '中等':
-        return 'bg-yellow-50 text-yellow-600';
+        return { color: 'var(--gemini-warning)', bg: 'var(--gemini-warning-bg)' };
       case '困难':
-        return 'bg-red-50 text-red-500';
+        return { color: 'var(--gemini-error)', bg: 'var(--gemini-error-bg)' };
       default:
-        return 'bg-slate-100 text-slate-500';
+        return { color: 'var(--gemini-text-secondary)', bg: 'var(--gemini-surface-hover)' };
     }
   };
 
@@ -160,177 +146,249 @@ const Problems: React.FC = () => {
     return `${Math.round((passCount / submitCount) * 10000) / 100}%`;
   };
 
+  const columns = [
+    {
+      title: '状态',
+      key: 'status',
+      width: 80,
+      align: 'center' as const,
+      render: (_: unknown, record: Problem) => (
+        <div className="flex items-center justify-center">
+          {solvedIds.has(record.id) ? (
+            <CheckCircle className="w-5 h-5" style={{ color: 'var(--gemini-success)' }} />
+          ) : (
+            <Circle className="w-5 h-5" style={{ color: 'var(--gemini-text-disabled)' }} />
+          )}
+        </div>
+      ),
+    },
+    {
+      title: '题号',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      render: (id: number) => (
+        <span 
+          className="font-mono"
+          style={{ color: 'var(--gemini-text-secondary)' }}
+        >
+          #{id}
+        </span>
+      ),
+    },
+    {
+      title: '题目名称',
+      dataIndex: 'title',
+      key: 'title',
+      render: (title: string, record: Problem) => (
+        <button
+          onClick={() => navigate(`/problem/${record.id}`)}
+          className="text-left font-medium transition-colors duration-200"
+          style={{ 
+            color: 'var(--gemini-text-primary)',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = 'var(--gemini-accent-strong)'}
+          onMouseLeave={(e) => e.currentTarget.style.color = 'var(--gemini-text-primary)'}
+        >
+          {title}
+        </button>
+      ),
+    },
+    {
+      title: '难度',
+      dataIndex: 'difficulty',
+      key: 'difficulty',
+      width: 120,
+      render: (difficulty: string) => {
+        const style = getDifficultyStyle(difficulty);
+        return (
+          <span 
+            className="inline-flex px-3 py-1 rounded-full text-sm font-medium"
+            style={{ backgroundColor: style.bg, color: style.color }}
+          >
+            {difficulty}
+          </span>
+        );
+      },
+    },
+    {
+      title: '提交次数',
+      dataIndex: 'submitCount',
+      key: 'submitCount',
+      width: 120,
+      align: 'center' as const,
+      render: (count: number) => (
+        <span style={{ color: 'var(--gemini-text-secondary)' }}>{count}</span>
+      ),
+    },
+    {
+      title: '通过次数',
+      dataIndex: 'passCount',
+      key: 'passCount',
+      width: 120,
+      align: 'center' as const,
+      render: (count: number) => (
+        <span style={{ color: 'var(--gemini-text-secondary)' }}>{count}</span>
+      ),
+    },
+    {
+      title: '通过率',
+      key: 'passRate',
+      width: 120,
+      align: 'center' as const,
+      render: (_: unknown, record: Problem) => {
+        const rate = calculatePassRate(record.submitCount, record.passCount);
+        const rateNum = parseFloat(rate);
+        let bgColor = 'var(--gemini-error-bg)';
+        let textColor = 'var(--gemini-error)';
+        if (rateNum >= 60) {
+          bgColor = 'var(--gemini-success-bg)';
+          textColor = 'var(--gemini-success)';
+        } else if (rateNum >= 30) {
+          bgColor = 'var(--gemini-warning-bg)';
+          textColor = 'var(--gemini-warning)';
+        }
+        return (
+          <span 
+            className="inline-flex px-3 py-1 rounded-full text-sm font-medium"
+            style={{ backgroundColor: bgColor, color: textColor }}
+          >
+            {rate}
+          </span>
+        );
+      },
+    },
+  ];
+
   return (
-    <div className="min-h-full text-slate-800">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">题目列表</h1>
-        </header>
+    <div className="space-y-6">
+      {/* 页面标题卡片 - Gemini 风格 */}
+      <div 
+        className="flex min-h-[calc(100vh-3rem)] flex-col rounded-3xl p-6"
+        style={{ 
+          backgroundColor: 'var(--gemini-surface)',
+          boxShadow: 'var(--shadow-gemini)'
+        }}
+      >
+        <h1 
+          className="text-2xl font-semibold mb-6"
+          style={{ color: 'var(--gemini-text-primary)' }}
+        >
+          题目列表
+        </h1>
 
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="flex flex-col gap-4 lg:w-[70%]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="输入题目编号、名称..."
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 shadow-sm outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-blue-500"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-              />
-            </div>
+        {/* 搜索栏 - Gemini 风格 */}
+        <div className="flex flex-row items-center gap-3 mb-6">
+          <Input
+            placeholder="输入题目编号或名称和标签"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            className="min-w-0 flex-1"
+            size="large"
+          />
+          <div className="relative w-60 shrink-0">
+            <button
+              type="button"
+              onClick={() => setTagPanelOpen((open) => !open)}
+              className="flex h-10 w-full items-center justify-between rounded-full border px-4 text-sm transition-all"
+              style={{
+                borderColor: tagPanelOpen ? 'var(--gemini-accent)' : 'var(--gemini-border)',
+                backgroundColor: 'var(--gemini-surface)',
+                color: selectedTags.length > 0 ? 'var(--gemini-text-primary)' : 'var(--gemini-text-secondary)',
+                boxShadow: tagPanelOpen ? '0 0 0 3px var(--gemini-accent)' : 'none',
+              }}
+            >
+              <span className="truncate">
+                {selectedTags.length > 0 ? `已选择 ${selectedTags.length} 个标签` : '选择标签'}
+              </span>
+              <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${tagPanelOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <table className="w-full border-collapse text-left">
-                <thead className="border-b border-slate-100 bg-slate-50/70 text-sm text-slate-500">
-                  <tr>
-                    <th className="w-16 px-6 py-4 text-center font-semibold">状态</th>
-                    <th className="w-16 px-4 py-4 font-semibold">题号</th>
-                    <th className="px-4 py-4 font-semibold">题目名称</th>
-                    <th className="w-24 px-4 py-4 font-semibold">难度</th>
-                    <th className="w-24 px-4 py-4 text-right font-semibold">通过率</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {loading && (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
-                        <div className="inline-flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          加载题目中...
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {!loading && problems.map((problem) => {
-                    const rate = calculatePassRate(problem.submitCount, problem.passCount);
-                    return (
-                      <tr
-                        key={problem.id}
-                        className="group cursor-pointer transition-colors hover:bg-blue-50/30"
-                        onClick={() => navigate(`/problem/${problem.id}`)}
+            {tagPanelOpen && (
+              <div
+                className="absolute right-0 top-12 z-30 w-[360px] rounded-2xl border p-4 shadow-xl"
+                style={{
+                  borderColor: 'var(--gemini-border)',
+                  backgroundColor: 'var(--gemini-surface)',
+                }}
+              >
+                {selectedTags.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2 border-b pb-3" style={{ borderColor: 'var(--gemini-border)' }}>
+                    {selectedTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-white"
+                        style={{ backgroundColor: '#3b82f6' }}
                       >
-                        <td className="px-6 py-4 text-center">
-                          {solvedIds.has(problem.id) ? (
-                            <CheckCircle2 className="inline h-5 w-5 text-green-500" />
-                          ) : (
-                            <Circle className="inline h-5 w-5 text-slate-300" />
-                          )}
-                        </td>
-                        <td className="px-4 py-4 font-mono text-sm text-slate-400">#{problem.id}</td>
-                        <td className="px-4 py-4">
-                          <div className="font-medium text-slate-700 transition-colors group-hover:text-blue-600">
-                            {problem.title}
-                          </div>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {(problem.tags || []).slice(0, 3).map((tag) => (
-                              <span key={tag} className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-sm">
-                          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${getDifficultyClassName(problem.difficulty)}`}>
-                            {problem.difficulty}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <span className={`text-sm font-medium ${parseFloat(rate) < 15 ? 'text-red-400' : 'text-slate-600'}`}>
-                            {rate}
-                          </span>
-                        </td>
-                      </tr>
+                        {tag}
+                        <button type="button" onClick={() => toggleTag(tag)} className="rounded-full hover:bg-white/20">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="custom-scrollbar flex max-h-72 flex-wrap gap-2 overflow-y-auto pr-2">
+                  {tags.map((tag) => {
+                    const selected = selectedTags.includes(tag.name);
+                    return (
+                      <button
+                        key={tag.name}
+                        type="button"
+                        onClick={() => toggleTag(tag.name)}
+                        className="rounded-xl border px-3 py-1.5 text-sm transition-all duration-200"
+                        style={{
+                          borderColor: selected ? '#93c5fd' : 'var(--gemini-border)',
+                          backgroundColor: selected ? '#dbeafe' : 'var(--gemini-surface)',
+                          color: selected ? '#1d4ed8' : 'var(--gemini-text-secondary)',
+                          boxShadow: selected ? '0 0 0 2px rgba(59, 130, 246, 0.16)' : 'none',
+                          fontWeight: selected ? 500 : 400,
+                        }}
+                      >
+                        {tag.name}
+                      </button>
                     );
                   })}
-                  {!loading && problems.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-20 text-center text-slate-400">
-                        未找到符合条件的题目
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-500 shadow-sm sm:flex-row">
-              <span>共 {total} 题，当前第 {currentPage} / {totalPages} 页</span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={currentPage <= 1 || loading}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  上一页
-                </button>
-                <button
-                  type="button"
-                  disabled={currentPage >= totalPages || loading}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  下一页
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
+          <Button
+            onClick={() => {
+              setSearchKeyword('');
+              setSelectedTags([]);
+            }}
+            size="large"
+          >
+            重置
+          </Button>
+        </div>
 
-          <aside className="lg:w-[30%]">
-            <div className="sticky top-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-2 font-bold text-slate-700">
-                  <Filter className="h-4 w-4" />
-                  标签筛选
-                </div>
-                {(selectedTags.length > 0 || searchKeyword) && (
-                  <button type="button" onClick={clearFilters} className="text-xs font-medium text-blue-500 hover:text-blue-600">
-                    重置
-                  </button>
-                )}
-              </div>
+        {/* 表格 */}
+        <div className="flex-1">
+          <Table
+            columns={columns}
+            dataSource={problems}
+            loading={loading}
+            rowKey="id"
+            pagination={false}
+          />
+        </div>
 
-              {selectedTags.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-50 pb-4">
-                  {selectedTags.map((tag) => (
-                    <span key={tag} className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2 py-1 text-xs text-white">
-                      {tag}
-                      <button type="button" onClick={() => toggleTag(tag)} className="rounded-full hover:bg-white/20">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className="custom-scrollbar flex max-h-[500px] flex-wrap gap-2 overflow-y-auto pr-2">
-                {tags.map((tag) => {
-                  const selected = selectedTags.includes(tag.name);
-                  return (
-                    <button
-                      key={tag.name}
-                      type="button"
-                      onClick={() => toggleTag(tag.name)}
-                      className={`rounded-xl border px-3 py-1.5 text-sm transition-all duration-200 ${
-                        selected
-                          ? 'border-blue-200 bg-blue-50 font-medium text-blue-600 shadow-sm ring-2 ring-blue-100'
-                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      {tag.name}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-6 border-t border-slate-50 pt-4 text-[11px] text-slate-400">
-                <p>点击标签进行多选过滤。系统将显示同时包含所有已选标签的题目。</p>
-              </div>
-            </div>
-          </aside>
+        {/* 分页 */}
+        <div className="mt-auto flex justify-center pt-6">
+          <Pagination
+            current={currentPage}
+            total={total}
+            pageSize={pageSize}
+            onChange={handlePageChange}
+            showSizeChanger={false}
+            showQuickJumper
+            showTotal={(total) => (
+              <span style={{ color: 'var(--gemini-text-secondary)' }}>共 {total} 题</span>
+            )}
+          />
         </div>
       </div>
 
