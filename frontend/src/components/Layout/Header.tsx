@@ -19,7 +19,7 @@ import {
 import api from '../../utils/api';
 import { isAuthenticated, removeToken } from '../../utils/auth';
 import type { User as UserType, ApiResponse } from '../../types';
-import { AuthModal, type AuthMode } from '../Auth';
+import AuthModal, { type AuthMode } from '../auth-modal';
 
 interface HeaderProps {
   layoutMode: 'top' | 'left';

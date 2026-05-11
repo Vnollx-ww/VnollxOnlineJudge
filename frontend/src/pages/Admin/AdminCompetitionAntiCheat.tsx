@@ -4,8 +4,8 @@ import toast from 'react-hot-toast';
 import { Download, Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import dayjs from 'dayjs';
 import api from '@/utils/api';
-import Input from '@/components/Input';
-import Select from '@/components/Select';
+import Input from '@/components/input';
+import Select from '@/components/select';
 import type { ApiResponse } from '@/types';
 
 interface AntiCheatSummary {

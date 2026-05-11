@@ -22,7 +22,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
-import PermissionGuard from '@/components/PermissionGuard';
+import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 
 const { Title, Paragraph, Text } = Typography;

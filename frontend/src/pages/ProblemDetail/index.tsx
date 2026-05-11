@@ -14,7 +14,7 @@ import {
   Pagination,
 } from 'antd';
 import toast from 'react-hot-toast';
-import Input from '../../components/Input';
+import Input from '../../components/input';
 import {
   ArrowLeft,
   MessageSquare,
@@ -41,7 +41,7 @@ import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, Workbe
 import type { OnlineIdeSettings } from '@/components';
 import type { WorkbenchResultData } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
-import SuccessCelebration from '@/components/SuccessCelebration';
+import SuccessCelebration from '@/components/success-celebration';
 import type { ApiResponse, JudgeMessage } from '@/types';
 
 const { TextArea } = Input;

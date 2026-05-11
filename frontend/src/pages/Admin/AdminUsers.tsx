@@ -3,9 +3,9 @@ import { Button, Modal, Field } from '@/components';
 import toast from 'react-hot-toast';
 import { Users, UserPlus, Search, RefreshCw, Edit3, Trash2, Filter, CheckCircle2, Clock } from 'lucide-react';
 import api from '@/utils/api';
-import Select from '@/components/Select';
-import Input from '@/components/Input';
-import PermissionGuard from '@/components/PermissionGuard';
+import Select from '@/components/select';
+import Input from '@/components/input';
+import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 

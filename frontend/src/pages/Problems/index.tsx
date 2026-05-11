@@ -6,7 +6,7 @@ import { CheckCircle, ChevronDown, Circle, X } from 'lucide-react';
 import api from '../../utils/api';
 import { isAuthenticated, getUserInfo } from '../../utils/auth';
 import type { ApiResponse } from '../../types';
-import Input from '../../components/Input';
+import Input from '../../components/input';
 
 interface Problem {
   id: number;

@@ -10,8 +10,8 @@ import api from '../../utils/api';
 import { isAuthenticated, getUserInfo, setUserInfo } from '../../utils/auth';
 import { useJudgeWebSocket } from '../../hooks/useJudgeWebSocket';
 import type { ApiResponse, JudgeMessage } from '../../types';
-import Select from '../../components/Select';
-import Input from '../../components/Input';
+import Select from '../../components/select';
+import Input from '../../components/input';
 
 interface Submission {
   id: number;

@@ -41,7 +41,7 @@ import { useCompetitionAntiCheat } from '../../hooks/useCompetitionAntiCheat';
 import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, WorkbenchResult, mapJudgeStatusToVariant } from '../../components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '../../components';
-import SuccessCelebration from '../../components/SuccessCelebration';
+import SuccessCelebration from '../../components/success-celebration';
 import type { JudgeMessage } from '../../types';
 
 const { TextArea } = Input;
@@ -1030,11 +1030,14 @@ const CompetitionProblemDetail: React.FC = () => {
         {isUserCompetitionEnded && (
           <Tag color="red" style={{ margin: 0 }}>你已结束比赛</Tag>
         )}
-        {!isCompetitionEnd && !isUserCompetitionEnded && (
-          <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
-            结束比赛
-          </Button>
-        )}
+        <Button
+          icon={<TrophyOutlined />}
+          onClick={() => navigate(`/competition/${cid}/ranklist`, {
+            state: { returnTo: `/competition/${cid}/problem/${problem.id}` },
+          })}
+        >
+          排行榜
+        </Button>
         <Button
           icon={<HistoryOutlined />}
           onClick={openMySubmissions}
@@ -1049,12 +1052,11 @@ const CompetitionProblemDetail: React.FC = () => {
             评论 {comments.length ? `(${comments.length})` : ''}
           </Button>
         )}
-        <Button
-          icon={<TrophyOutlined />}
-          onClick={() => navigate(`/competition/${cid}/ranklist`)}
-        >
-          排行榜
-        </Button>
+        {!isCompetitionEnd && !isUserCompetitionEnded && (
+          <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
+            结束比赛
+          </Button>
+        )}
       </div>
     </>
   );

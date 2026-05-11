@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, TrendingUp } from 'lucide-react';
 import api from '@/utils/api';
-import Select from '@/components/Select';
+import Select from '@/components/select';
 import type { ApiResponse } from '@/types';
 
 interface SolvedProblemItem {

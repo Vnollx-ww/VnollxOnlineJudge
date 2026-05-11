@@ -19,7 +19,7 @@ import {
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
 import { PermissionCode } from '../../constants/permissions';
-import Select from '../../components/Select';
+import Select from '../../components/select';
 import { usePermission } from '../../contexts/PermissionContext';
 import type { ApiResponse } from '../../types';
 

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import toast from 'react-hot-toast';
 import { CheckCircle2, Edit, Layers3, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { Button, Empty, Field, InputNumber, Modal, Spin, Tag } from '@/components';
-import Input from '@/components/Input';
-import Select from '@/components/Select';
+import Input from '@/components/input';
+import Select from '@/components/select';
 import api from '@/utils/api';
 import type { ApiResponse } from '@/types';
 

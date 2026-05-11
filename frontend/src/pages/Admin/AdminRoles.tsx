@@ -3,9 +3,9 @@ import { Button, Modal, Tag, Spin, Field, DataTable, DataColumn } from '@/compon
 import toast from 'react-hot-toast';
 import { RefreshCw, Plus, Trash2, Edit, Key } from 'lucide-react';
 import api from '@/utils/api';
-import Select from '@/components/Select';
-import Input from '@/components/Input';
-import PermissionGuard from '@/components/PermissionGuard';
+import Select from '@/components/select';
+import Input from '@/components/input';
+import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 

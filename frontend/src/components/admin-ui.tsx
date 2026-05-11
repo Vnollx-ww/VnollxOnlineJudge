@@ -1,8 +1,8 @@
 import { cloneElement, isValidElement, useLayoutEffect, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type ReactElement, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import Button from '../Button';
-import Select from '../Select';
+import Button from './button';
+import Select from './select';
 
 type Key = string | number;
 

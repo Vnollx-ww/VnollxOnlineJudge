@@ -3,8 +3,8 @@ import { Button, Modal, Tag, Spin, Descriptions, Divider, Empty, DataTable, Data
 import toast from 'react-hot-toast';
 import { RefreshCw, Users, Shield, Key, Plus, Trash2, RotateCw } from 'lucide-react';
 import api from '@/utils/api';
-import Select from '@/components/Select';
-import PermissionGuard from '@/components/PermissionGuard';
+import Select from '@/components/select';
+import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 

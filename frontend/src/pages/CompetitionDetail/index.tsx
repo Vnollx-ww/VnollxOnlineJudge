@@ -22,7 +22,7 @@ import {
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
-import Input from '../../components/Input';
+import Input from '../../components/input';
 import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 
 const { Title, Text, Paragraph } = Typography;

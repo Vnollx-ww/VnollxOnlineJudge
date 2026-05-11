@@ -21,8 +21,8 @@ import {
 import dayjs from 'dayjs';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
-import Select from '../../components/Select';
-import Input from '../../components/Input';
+import Select from '../../components/select';
+import Input from '../../components/input';
 
 const { Title, Text, Paragraph } = Typography;
 

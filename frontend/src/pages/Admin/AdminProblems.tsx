@@ -30,9 +30,9 @@ import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import api from '@/utils/api';
-import Select from '@/components/Select';
-import Input from '@/components/Input';
-import PermissionGuard from '@/components/PermissionGuard';
+import Select from '@/components/select';
+import Input from '@/components/input';
+import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 

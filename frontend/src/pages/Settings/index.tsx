@@ -19,7 +19,7 @@ import {
 } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
-import Input from '../../components/Input';
+import Input from '../../components/input';
 
 const { Title, Text } = Typography;
 

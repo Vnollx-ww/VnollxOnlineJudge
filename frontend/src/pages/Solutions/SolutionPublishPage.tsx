@@ -14,7 +14,7 @@ import hljs from 'highlight.js';
 import katex from 'katex';
 import api from '../../utils/api';
 import { getUserInfo, isAuthenticated } from '../../utils/auth';
-import Input from '../../components/Input';
+import Input from '../../components/input';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 

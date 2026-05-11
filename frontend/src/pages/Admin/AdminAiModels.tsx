@@ -3,9 +3,9 @@ import { Button, Modal, InputNumber, FilePicker, Field, Empty, Spin } from '@/co
 import toast from 'react-hot-toast';
 import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon } from 'lucide-react';
 import api from '@/utils/api';
-import Select from '@/components/Select';
-import Input from '@/components/Input';
-import PermissionGuard from '@/components/PermissionGuard';
+import Select from '@/components/select';
+import Input from '@/components/input';
+import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import type { ApiResponse } from '@/types';
 

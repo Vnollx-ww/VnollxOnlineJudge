@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Typography,
   Space,
@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
 import api from '../../utils/api';
 import { isAuthenticated } from '../../utils/auth';
-import Input from '../../components/Input';
+import Input from '../../components/input';
 import { useCompetitionFirstBloodWebSocket } from '../../hooks/useCompetitionFirstBloodWebSocket';
 
 const { Title, Text } = Typography;
@@ -627,6 +627,7 @@ const RanklistRow = memo(function RanklistRow({
 const CompetitionRanklist: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [competition, setCompetition] = useState<Competition | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -638,6 +639,9 @@ const CompetitionRanklist: React.FC = () => {
   const [ranklistSubmissions, setRanklistSubmissions] = useState<Record<string, SubmissionRank[]>>({});
   const [loadingSubmissionKeys, setLoadingSubmissionKeys] = useState<Set<string>>(() => new Set());
   useCompetitionFirstBloodWebSocket(id, passwordVerified);
+  const returnTo = typeof location.state?.returnTo === 'string' && location.state.returnTo.startsWith(`/competition/${id}/problem/`)
+    ? location.state.returnTo
+    : `/competition/${id}`;
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -855,7 +859,7 @@ const CompetitionRanklist: React.FC = () => {
             <div className="mb-6 flex min-w-0 max-w-full items-center justify-between gap-4 overflow-hidden">
               <button
                 type="button"
-                onClick={() => navigate(`/competition/${id}`)}
+                onClick={() => navigate(returnTo)}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900"
                 title="返回比赛详情"
                 aria-label="返回比赛详情"
