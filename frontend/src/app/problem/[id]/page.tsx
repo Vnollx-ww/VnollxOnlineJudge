@@ -227,6 +227,8 @@ const ProblemDetail: React.FC = () => {
   const topBar = (
     <>
       <Button
+        variant="outlined"
+        className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
         icon={<ArrowLeft className="w-4 h-4" />}
         onClick={() => {
           if (locationState?.from === 'practice' && locationState?.practiceId) {
@@ -259,29 +261,42 @@ const ProblemDetail: React.FC = () => {
       <div className="flex-auto" />
       <div className="flex items-center gap-2 flex-none">
         <PermissionGuard permission={PermissionCode.AI_CHAT}>
-          <Button icon={<Bot className="w-4 h-4" />} onClick={handleOpenAiAnalysis}>
+          <Button
+            variant="outlined"
+            className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
+            icon={<Bot className="w-4 h-4" />}
+            onClick={handleOpenAiAnalysis}
+          >
             AI分析
           </Button>
         </PermissionGuard>
         <Button
+          variant="outlined"
+          className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
           icon={<History className="w-4 h-4" />}
           onClick={openMySubmissions}
         >
           本题我的提交记录
         </Button>
         <Button
+          variant="outlined"
+          className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
           icon={<BookOpen className="w-4 h-4" />}
           onClick={() => navigate(`/problem/${problem.id}/solutions`, { state: { title: problem.title } })}
         >
           题解
         </Button>
         <Button
+          variant="outlined"
+          className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
           icon={<Edit className="w-4 h-4" />}
           onClick={() => navigate(`/problem/${problem.id}/solutions/publish`, { state: { title: problem.title } })}
         >
           发布题解
         </Button>
         <Button
+          variant="outlined"
+          className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
           icon={<MessageSquare className="w-4 h-4" />}
           onClick={() => setCommentsOpen(true)}
         >
@@ -394,19 +409,20 @@ const ProblemDetail: React.FC = () => {
   // ---- 自测输入区域 ----
   const inputArea = (
     <div className="flex flex-col h-full min-h-0">
-      <Input.TextArea
-        value={currentTestInput}
-        onChange={(e) => handleTestInputChange(e.target.value)}
-        placeholder="请输入示例或载入测试用例"
-        className="!flex-auto !rounded-xl font-mono text-sm"
-        style={{
-          backgroundColor: '#fff',
-          borderColor: 'var(--gemini-border-light)',
-          resize: 'none',
-          minHeight: 80,
-        }}
-      />
-      <div className="flex items-center gap-2 mt-2 flex-wrap">
+      <div className="flex-1 min-h-0 [&>div]:h-full">
+        <Input.TextArea
+          value={currentTestInput}
+          onChange={(e) => handleTestInputChange(e.target.value)}
+          placeholder="请输入示例或载入测试用例"
+          className="!h-full !min-h-0 !rounded-xl font-mono text-sm"
+          style={{
+            backgroundColor: '#fff',
+            borderColor: 'var(--gemini-border-light)',
+            resize: 'none',
+          }}
+        />
+      </div>
+      <div className="flex shrink-0 items-center gap-2 mt-1 flex-wrap">
         {problem.examples?.length ? (
           problem.examples.map((_, i) => (
             <button

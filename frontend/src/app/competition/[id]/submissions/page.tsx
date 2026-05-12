@@ -52,8 +52,14 @@ const CompetitionSubmissions: React.FC = () => {
       render: (_: any, record: Submission) => (
         <Link
           to={`/competition/${id}/problem/${record.pid}`}
-          className="font-medium hover:opacity-70 transition-opacity"
-          style={{ color: 'var(--gemini-accent-strong)' }}
+          className="font-normal transition-colors hover:underline"
+          style={{ color: 'var(--gemini-text-primary)' }}
+          onMouseEnter={(event) => {
+            event.currentTarget.style.color = 'var(--gemini-accent-strong)';
+          }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.color = 'var(--gemini-text-primary)';
+          }}
         >
           #{record.pid} - {record.problemName || '未知题目'}
         </Link>

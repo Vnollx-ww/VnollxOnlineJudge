@@ -206,6 +206,8 @@ const CompetitionProblemDetail: React.FC = () => {
   const topBar = (
     <>
       <Button
+        variant="outlined"
+        className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
         icon={<ArrowLeft className="w-4 h-4" />}
         onClick={() => navigate(`/competition/${cid}`)}
       >
@@ -258,6 +260,8 @@ const CompetitionProblemDetail: React.FC = () => {
           <Tag color="red">比赛已结束</Tag>
         )}
         <Button
+          variant="outlined"
+          className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
           icon={<Trophy className="w-4 h-4" />}
           onClick={() => navigate(`/competition/${cid}/ranklist`, {
             state: { returnTo: `/competition/${cid}/problem/${problem.id}` },
@@ -266,6 +270,8 @@ const CompetitionProblemDetail: React.FC = () => {
           排行榜
         </Button>
         <Button
+          variant="outlined"
+          className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
           icon={<History className="w-4 h-4" />}
           onClick={openMySubmissions}
         >
@@ -273,6 +279,8 @@ const CompetitionProblemDetail: React.FC = () => {
         </Button>
         {!isCompetitionOpen && (
           <Button
+            variant="outlined"
+            className="!text-[var(--gemini-text-primary)] hover:!text-[var(--gemini-accent-strong)]"
             icon={<MessageSquare className="w-4 h-4" />}
             onClick={() => setCommentsOpen(true)}
           >
@@ -288,7 +296,12 @@ const CompetitionProblemDetail: React.FC = () => {
             你已结束比赛
           </Button>
         ) : !isCompetitionEnd && (
-          <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
+          <Button
+            danger
+            loading={finishCompetitionLoading}
+            className="!text-red-700 hover:!text-red-800"
+            onClick={() => setFinishCompetitionModalOpen(true)}
+          >
             结束比赛
           </Button>
         )}
@@ -403,19 +416,20 @@ const CompetitionProblemDetail: React.FC = () => {
   // ---- 自测输入区域 ----
   const inputArea = (
     <div className="flex flex-col h-full min-h-0">
-      <Input.TextArea
-        value={currentTestInput}
-        onChange={(e) => handleTestInputChange(e.target.value)}
-        placeholder="请输入示例或载入测试用例"
-        className="!flex-auto !rounded-xl font-mono text-sm"
-        style={{
-          backgroundColor: '#fff',
-          borderColor: 'var(--gemini-border-light)',
-          resize: 'none',
-          minHeight: 80,
-        }}
-      />
-      <div className="flex items-center gap-2 mt-2 flex-wrap">
+      <div className="flex-1 min-h-0 [&>div]:h-full">
+        <Input.TextArea
+          value={currentTestInput}
+          onChange={(e) => handleTestInputChange(e.target.value)}
+          placeholder="请输入示例或载入测试用例"
+          className="!h-full !min-h-0 !rounded-xl font-mono text-sm"
+          style={{
+            backgroundColor: '#fff',
+            borderColor: 'var(--gemini-border-light)',
+            resize: 'none',
+          }}
+        />
+      </div>
+      <div className="flex shrink-0 items-center gap-2 mt-1 flex-wrap">
         {problem.examples?.length ? (
           problem.examples.map((_, i) => (
             <button

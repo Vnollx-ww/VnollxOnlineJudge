@@ -66,7 +66,7 @@ const Competitions: React.FC = () => {
             >
               <div className="flex items-center gap-5 min-w-0 flex-1">
                 <img
-                  src="https://oss.vnollx.top/markdown/微信图片_20260509104335_470_9.jpg"
+                  src="http://111.230.105.54:9000/markdown/微信图片_20260509104335_470_9.jpg"
                   alt="比赛"
                   className="h-16 w-16 flex-shrink-0 rounded-2xl object-cover"
                 />
@@ -99,7 +99,7 @@ const Competitions: React.FC = () => {
 
         {competitions.length === 0 && !loading && (
           <div className="text-center py-12">
-            <img src="https://oss.vnollx.top/markdown/微信图片_20260509104335_470_9.jpg" alt="比赛" className="mx-auto mb-4 h-12 w-12 rounded-2xl object-cover opacity-60" />
+            <img src="http://111.230.105.54:9000/markdown/微信图片_20260509104335_470_9.jpg" alt="比赛" className="mx-auto mb-4 h-12 w-12 rounded-2xl object-cover opacity-60" />
             <p style={{ color: 'var(--gemini-text-secondary)' }}>暂无比赛数据</p>
           </div>
         )}

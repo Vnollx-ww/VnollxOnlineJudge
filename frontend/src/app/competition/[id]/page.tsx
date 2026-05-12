@@ -64,8 +64,14 @@ const CompetitionDetail: React.FC = () => {
         <button
           type="button"
           onClick={(event) => handleOpenProblem(record.id, event)}
-          className="font-medium hover:opacity-70 transition-opacity text-left"
-          style={{ color: 'var(--gemini-accent-strong)' }}
+          className="font-normal text-left transition-colors hover:underline"
+          style={{ color: 'var(--gemini-text-primary)' }}
+          onMouseEnter={(event) => {
+            event.currentTarget.style.color = 'var(--gemini-accent-strong)';
+          }}
+          onMouseLeave={(event) => {
+            event.currentTarget.style.color = 'var(--gemini-text-primary)';
+          }}
         >
           {title}
         </button>
@@ -148,12 +154,20 @@ const CompetitionDetail: React.FC = () => {
               <div className="mt-8">
                 <Space wrap>
                   <Link to={`/competition/${id}/ranklist`}>
-                    <Button icon={<Trophy className="w-4 h-4" />}>
+                    <Button
+                      variant="outlined"
+                      className="text-[var(--gemini-text-primary)] hover:text-[var(--gemini-accent-strong)]"
+                      icon={<Trophy className="w-4 h-4" />}
+                    >
                       排行榜
                     </Button>
                   </Link>
                   <Link to={`/competition/${id}/submissions`}>
-                    <Button icon={<History className="w-4 h-4" />}>
+                    <Button
+                      variant="outlined"
+                      className="text-[var(--gemini-text-primary)] hover:text-[var(--gemini-accent-strong)]"
+                      icon={<History className="w-4 h-4" />}
+                    >
                       提交记录
                     </Button>
                   </Link>
@@ -166,7 +180,12 @@ const CompetitionDetail: React.FC = () => {
                       你已结束比赛
                     </Button>
                   ) : status === 'running' && (
-                    <Button danger loading={finishCompetitionLoading} onClick={() => setFinishCompetitionModalOpen(true)}>
+                    <Button
+                      danger
+                      loading={finishCompetitionLoading}
+                      className="text-red-700 hover:text-red-800"
+                      onClick={() => setFinishCompetitionModalOpen(true)}
+                    >
                       结束比赛
                     </Button>
                   )}
