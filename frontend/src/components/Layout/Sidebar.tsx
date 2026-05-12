@@ -15,9 +15,7 @@ import {
   User,
   Settings,
   LogOut,
-  Info,
   Zap,
-  // Users,
 } from 'lucide-react';
 import { isAuthenticated, removeToken } from '@/utils/auth';
 import { usePermission } from '@/contexts/PermissionContext';

@@ -1,7 +1,7 @@
 import api from './http';
 
 export interface LoginPayload {
-  email: string;
+  account: string;
   password: string;
 }
 

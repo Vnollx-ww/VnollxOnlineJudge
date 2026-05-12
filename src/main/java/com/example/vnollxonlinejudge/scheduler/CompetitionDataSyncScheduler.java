@@ -5,16 +5,19 @@ import com.example.vnollxonlinejudge.model.entity.Competition;
 import com.example.vnollxonlinejudge.model.entity.CompetitionProblem;
 import com.example.vnollxonlinejudge.mapper.CompetitionMapper;
 import com.example.vnollxonlinejudge.service.CompetitionProblemService;
+import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import com.example.vnollxonlinejudge.service.RedisService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 比赛数据定时同步任务
@@ -27,20 +30,26 @@ public class CompetitionDataSyncScheduler {
 
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d";
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d";
+    private static final String USER_PASS_COUNT_KEY = "competition_user_pass:%d:%s";
+    private static final String USER_PENALTY_KEY = "competition_user_penalty:%d:%s";
+    private static final String RANKING_KEY = "competition_ranking:%d";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final CompetitionMapper competitionMapper;
     private final CompetitionProblemService competitionProblemService;
+    private final CompetitionUserService competitionUserService;
     private final RedisService redisService;
 
     @Autowired
     public CompetitionDataSyncScheduler(
             CompetitionMapper competitionMapper,
             CompetitionProblemService competitionProblemService,
+            CompetitionUserService competitionUserService,
             RedisService redisService
     ) {
         this.competitionMapper = competitionMapper;
         this.competitionProblemService = competitionProblemService;
+        this.competitionUserService = competitionUserService;
         this.redisService = redisService;
     }
 
@@ -59,10 +68,16 @@ public class CompetitionDataSyncScheduler {
             }
 
             for (Competition competition : ongoingCompetitions) {
+                Long cid = competition.getId();
                 try {
-                    syncCompetitionProblemData(competition.getId());
+                    syncCompetitionProblemData(cid);
                 } catch (Exception e) {
-                    logger.error("同步比赛 ID={} 数据时发生异常", competition.getId(), e);
+                    logger.error("同步比赛 ID={} 题目数据时发生异常", cid, e);
+                }
+                try {
+                    syncCompetitionUserData(cid);
+                } catch (Exception e) {
+                    logger.error("同步比赛 ID={} 用户数据时发生异常", cid, e);
                 }
             }
             logger.info("比赛数据定时同步任务执行完成，共同步 {} 场比赛", ongoingCompetitions.size());
@@ -79,8 +94,49 @@ public class CompetitionDataSyncScheduler {
         QueryWrapper<Competition> wrapper = new QueryWrapper<>();
         wrapper.le("begin_time", now)
                .ge("end_time", now)
-               .select("id", "title", "begin_time", "end_time");
+               .select("id", "title", "begin_time", "end_time", "participant_type");
         return competitionMapper.selectList(wrapper);
+    }
+
+    /**
+     * 同步单个比赛的用户通过数 / 罚时。
+     * 个人赛按用户账号同步；团队赛按队长账号同步。
+     * Redis 排行榜 ZSet 是当前比赛中所有参赛主体的快照，遍历它就能拿到 name 列表。
+     */
+    private void syncCompetitionUserData(Long cid) {
+        String rankingKey = String.format(RANKING_KEY, cid);
+        Set<ZSetOperations.TypedTuple<String>> userTuples = redisService.getZset(rankingKey);
+        if (userTuples == null || userTuples.isEmpty()) {
+            logger.info("比赛 ID={} Redis 排行榜为空，跳过用户数据同步", cid);
+            return;
+        }
+
+        int syncedCount = 0;
+        int skippedCount = 0;
+        for (ZSetOperations.TypedTuple<String> tuple : userTuples) {
+            String name = tuple.getValue();
+            if (name == null) {
+                skippedCount++;
+                continue;
+            }
+            String passKey = String.format(USER_PASS_COUNT_KEY, cid, name);
+            String penaltyKey = String.format(USER_PENALTY_KEY, cid, name);
+            String passCountStr = redisService.getValueByKey(passKey);
+            String penaltyTimeStr = redisService.getValueByKey(penaltyKey);
+
+            // 与题目同步同样原则：两个 key 都不存在时跳过，避免 Redis 丢失时把 DB 覆盖为 0
+            if (passCountStr == null && penaltyTimeStr == null) {
+                skippedCount++;
+                continue;
+            }
+
+            int passCount = passCountStr != null ? safeParseInt(passCountStr) : 0;
+            int penaltyTime = penaltyTimeStr != null ? safeParseInt(penaltyTimeStr) : 0;
+            competitionUserService.setStats(cid, name, passCount, penaltyTime);
+            syncedCount++;
+        }
+        logger.info("比赛 ID={} 用户数据同步完成：成功 {} 人，跳过 {} 人（共 {} 人）",
+                cid, syncedCount, skippedCount, userTuples.size());
     }
 
     /**

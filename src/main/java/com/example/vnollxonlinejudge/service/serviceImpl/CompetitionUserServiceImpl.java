@@ -30,22 +30,6 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
                 .list();
     }
     @Override
-    public void updatePassCount(String name, int ok) {
-        update(new LambdaUpdateWrapper<CompetitionUser>()
-                .setSql("pass_count = pass_count + " + ok)
-                .eq(CompetitionUser::getName, name));
-    }
-
-    @Override
-    public void updatePenaltyTime(String name, Long cid, int time) {
-        update(new LambdaUpdateWrapper<CompetitionUser>()
-                .setSql("penalty_time = penalty_time + " + time)
-                .eq(CompetitionUser::getName, name)
-                .eq(CompetitionUser::getCompetitionId, cid));
-    }
-
-
-    @Override
     public void createRecord(Long cid, Long uid, String name) {
         try {
             CompetitionUser record = new CompetitionUser();
@@ -56,7 +40,10 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
             record.setUserId(uid);
             record.setIsEnded(false);
             save(record);
-            competitionService.addNumber(cid);
+            // 仅个人赛通过 createRecord 累加 number；团队赛在团队注册时已经计入，避免重复累加导致计数膨胀。
+            if (!"TEAM".equalsIgnoreCase(competitionService.getCompetitionById(cid).getParticipantType())) {
+                competitionService.addNumber(cid);
+            }
         } catch (DuplicateKeyException e) {
             // 记录已存在，忽略异常（用户之前已参加过该比赛）
             // 这是正常情况，不需要抛出异常
@@ -100,5 +87,14 @@ public class CompetitionUserServiceImpl extends ServiceImpl<CompetitionUserMappe
         QueryWrapper<CompetitionUser> wrapper=new QueryWrapper<>();
         wrapper.eq("competition_id",id);
         this.baseMapper.delete(wrapper);
+    }
+
+    @Override
+    public void setStats(Long cid, String name, int passCount, int penaltyTime) {
+        update(new LambdaUpdateWrapper<CompetitionUser>()
+                .set(CompetitionUser::getPassCount, passCount)
+                .set(CompetitionUser::getPenaltyTime, penaltyTime)
+                .eq(CompetitionUser::getName, name)
+                .eq(CompetitionUser::getCompetitionId, cid));
     }
 }

@@ -14,10 +14,8 @@ import {
   User,
   Settings,
   LogOut,
-  Info,
   ArrowLeftRight,
   Zap,
-  Users,
 } from 'lucide-react';
 import { notificationApi, userApi } from '@/lib';
 import { isAuthenticated, removeToken } from '../../utils/auth';

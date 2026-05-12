@@ -56,77 +56,29 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
 }
 
-// 使用 CDN 加载 Monaco Editor
-const MONACO_VERSION = '0.45.0';
-const MONACO_CDN = `https://cdn.jsdelivr.net/npm/monaco-editor@${MONACO_VERSION}/min/vs`;
-
 let monacoPromise: Promise<Monaco> | null = null;
 let preloadStarted = false;
 
 const loadMonaco = (): Promise<Monaco> => {
   if (monacoPromise) return monacoPromise;
 
-  monacoPromise = new Promise((resolve, reject) => {
-    // 检查是否已加载
-    if ((window as any).monaco) {
-      resolve((window as any).monaco);
-      return;
-    }
-
-    // 配置 Monaco 路径 - 使用 CDN
-    const loaderScript = document.createElement('script');
-    loaderScript.src = `${MONACO_CDN}/loader.js`;
-    loaderScript.onload = () => {
-      const amdRequire = (window as any).require;
-      amdRequire.config({
-        paths: {
-          'vs': MONACO_CDN
-        }
-      });
-      amdRequire(['vs/editor/editor.main'], (monaco: Monaco) => {
-        (window as any).monaco = monaco;
-        resolve(monaco);
-      });
-    };
-    loaderScript.onerror = () => {
-      monacoPromise = null; // 允许重试
-      reject(new Error('Monaco loader 加载失败，请检查网络连接'));
-    };
-    document.head.appendChild(loaderScript);
-  });
+  monacoPromise = import('monaco-editor')
+    .then((monaco) => monaco as unknown as Monaco)
+    .catch((error) => {
+      monacoPromise = null;
+      throw error;
+    });
 
   return monacoPromise;
 };
 
 /**
  * 预加载 Monaco Editor - 应用启动时调用
- * 添加 preconnect 和 prefetch 优化 CDN 资源加载
  */
 export const preloadMonacoEditor = (): void => {
   if (preloadStarted) return;
   preloadStarted = true;
 
-  // 添加 preconnect 提前建立连接
-  const preconnect = document.createElement('link');
-  preconnect.rel = 'preconnect';
-  preconnect.href = 'https://cdn.jsdelivr.net';
-  preconnect.crossOrigin = 'anonymous';
-  document.head.appendChild(preconnect);
-
-  // 添加 dns-prefetch 作为回退
-  const dnsPrefetch = document.createElement('link');
-  dnsPrefetch.rel = 'dns-prefetch';
-  dnsPrefetch.href = 'https://cdn.jsdelivr.net';
-  document.head.appendChild(dnsPrefetch);
-
-  // 预加载 Monaco loader 脚本
-  const prefetchLoader = document.createElement('link');
-  prefetchLoader.rel = 'prefetch';
-  prefetchLoader.href = `${MONACO_CDN}/loader.js`;
-  prefetchLoader.as = 'script';
-  document.head.appendChild(prefetchLoader);
-
-  // 延迟预加载完整 Monaco（不阻塞首屏）
   if ('requestIdleCallback' in window) {
     (window as any).requestIdleCallback(() => {
       loadMonaco().catch(() => {});

@@ -77,12 +77,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     //@DS("master")
     @Override
-    public String login(String email, String password) {
-        /*List<User> userList=this.list();
-        for (User user:userList){
-            System.out.println(JwtToken.generateToken(String.valueOf(user.getId()),user.getIdentity()));
-        }*/
-        User user = lambdaQuery().eq(User::getEmail, email).one();
+    public String login(String account, String password) {
+        User user;
+        if (account != null && account.contains("@")) {
+            user = lambdaQuery().eq(User::getEmail, account).one();
+        } else {
+            user = lambdaQuery().eq(User::getName, account).one();
+        }
 
         validateUserExists(user);
 

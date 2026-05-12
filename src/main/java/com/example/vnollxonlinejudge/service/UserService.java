@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface UserService {
-    String login(String email, String password);
+    String login(String account, String password);
     void register(String name,String password,String email,String verifyCode);
     void forgetPassword(String newPassword,String email,String verifyCode);
     UserVo getUserById(Long id);

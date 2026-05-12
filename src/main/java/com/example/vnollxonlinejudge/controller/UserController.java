@@ -39,7 +39,7 @@ public class UserController {
     }
     @PostMapping("/login")
     public Result<String> login(@RequestBody LoginDTO request){
-        String token = userService.login(request.getEmail(), request.getPassword());
+        String token = userService.login(request.getAccount(), request.getPassword());
         return Result.Success(token, "登录成功");
     }
 

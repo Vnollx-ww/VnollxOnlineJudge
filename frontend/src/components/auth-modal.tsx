@@ -15,7 +15,7 @@ interface AuthModalProps {
 }
 
 interface LoginFormValues {
-  email: string;
+  account: string;
   password: string;
 }
 
@@ -37,7 +37,7 @@ interface ForgotFormValues {
 type FormErrors<T> = Partial<Record<keyof T, string>>;
 
 const initialLoginForm: LoginFormValues = {
-  email: '',
+  account: '',
   password: '',
 };
 
@@ -248,7 +248,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
 
   const validateLogin = () => {
     const errors: FormErrors<LoginFormValues> = {
-      email: validateEmail(loginForm.email),
+      account: loginForm.account.trim() ? '' : '请输入邮箱或用户名',
       password: loginForm.password ? '' : '请输入密码',
     };
     setLoginErrors(errors);
@@ -463,14 +463,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
               {mode === 'login' && (
                 <form className="space-y-6" onSubmit={handleLogin}>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-widest">电子邮箱</label>
+                    <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-widest">邮箱或用户名</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <User size={20} />
                       </div>
-                      <input type="email" placeholder="name@example.com" value={loginForm.email} onChange={updateLogin('email')} className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type="text" autoComplete="username" placeholder="请输入邮箱或用户名" value={loginForm.account} onChange={updateLogin('account')} className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     </div>
-                    {renderError(loginErrors.email)}
+                    {renderError(loginErrors.account)}
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-widest">账户密码</label>

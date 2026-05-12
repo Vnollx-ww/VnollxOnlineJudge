@@ -4,7 +4,6 @@ import {
   Code2, 
   Trophy, 
   Terminal,
-  Sparkles,
 } from 'lucide-react';
 import { CountUp, CodeWindow } from '@/components';
 import { useHome } from '@/hooks/useHome';

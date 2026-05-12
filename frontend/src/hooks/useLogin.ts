@@ -5,14 +5,14 @@ import { authApi, userApi } from '@/lib';
 import { setToken, setUserInfo } from '@/utils/auth';
 
 export interface LoginFormData {
-  email: string;
+  account: string;
   password: string;
 }
 
 export const useLogin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
+  const [formData, setFormData] = useState<LoginFormData>({ account: '', password: '' });
 
   const updateField = <K extends keyof LoginFormData>(key: K, value: LoginFormData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));

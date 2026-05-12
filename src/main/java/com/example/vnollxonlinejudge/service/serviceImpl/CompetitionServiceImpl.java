@@ -16,6 +16,7 @@ import com.example.vnollxonlinejudge.model.vo.user.UserVo;
 import com.example.vnollxonlinejudge.model.entity.*;
 import com.example.vnollxonlinejudge.exception.BusinessException;
 import com.example.vnollxonlinejudge.mapper.*;
+import com.example.vnollxonlinejudge.model.base.RoleCode;
 import com.example.vnollxonlinejudge.service.*;
 import com.example.vnollxonlinejudge.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     private final CompetitionTeamMapper competitionTeamMapper;
     private final CompetitionTeamMemberMapper competitionTeamMemberMapper;
     private final CompetitionTeamService competitionTeamService;
+    private final UserService userService;
 
     @Autowired
     public CompetitionServiceImpl(
@@ -58,7 +60,8 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             SubmissionMapper submissionMapper,
             CompetitionTeamMapper competitionTeamMapper,
             CompetitionTeamMemberMapper competitionTeamMemberMapper,
-            @Lazy CompetitionTeamService competitionTeamService
+            @Lazy CompetitionTeamService competitionTeamService,
+            UserService userService
     ) {
         this.competitionUserService=competitionUserService;
         this.competitionProblemService=competitionProblemService;
@@ -70,6 +73,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         this.competitionTeamMapper=competitionTeamMapper;
         this.competitionTeamMemberMapper=competitionTeamMemberMapper;
         this.competitionTeamService=competitionTeamService;
+        this.userService=userService;
     }
     private static final String PROBLEM_PASS_KEY = "competition_problem_pass:%d:%d"; // cid:pid
     private static final String PROBLEM_SUBMIT_KEY = "competition_problem_submit:%d:%d"; // cid:pid
@@ -78,6 +82,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
     private static final String TIME_BEGIN_KEY="competition_time_begin:%d";
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
+    private static final long COMPETITION_CACHE_EXTRA_SECONDS = 60 * 60L;
     @Override
     public CompetitionVo getCompetitionById(Long id) {
         Competition competition = this.baseMapper.selectById(id);
@@ -177,7 +182,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         Set<Long> solvedIds = userSolvedProblemService.getSolvedProblemIdsInCompetition(userId, cid);
         List<CompetitionProblem> ordered = competitionProblemService.getProblemList(cid);
 
-        if (problemsJson != null && redisService.getTtl(cacheKey) > 600) {
+        if (problemsJson != null && redisService.getTtl(cacheKey) > COMPETITION_CACHE_EXTRA_SECONDS) {
             TypeReference<Map<Long, CompetitionProblemBriefVo>> typeRef = new TypeReference<>() {};
             Map<Long, CompetitionProblemBriefVo> problemMap = JSON.parseObject(problemsJson, typeRef);
             List<CompetitionProblemBriefVo> problems = new ArrayList<>();
@@ -192,7 +197,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             String updatedProblemsJson = JSON.toJSONString(copyBriefMapForCache(problems));
             String endTimeStr = redisService.getValueByKey(timeOutKey);
             Long ttlSeconds = TimeUtils.calculateTTL(endTimeStr);
-            redisService.setKey(cacheKey, updatedProblemsJson, ttlSeconds + 600);
+            redisService.setKey(cacheKey, updatedProblemsJson, ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
             return problems;
         }
 
@@ -218,8 +223,8 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                 vo.setPassCount(competitionProblem.getPassCount());
             } else {
                 if (!redisService.IsExists(problemSubmitKey)) {
-                    redisService.setKey(problemSubmitKey, "0", ttlSeconds + 600);
-                    redisService.setKey(problemPassKey, "0", ttlSeconds + 600);
+                    redisService.setKey(problemSubmitKey, "0", ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
+                    redisService.setKey(problemPassKey, "0", ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
                 }
                 String passStr = redisService.getValueByKey(problemPassKey);
                 String submitStr = redisService.getValueByKey(problemSubmitKey);
@@ -231,8 +236,8 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         }
         if (!problems.isEmpty() && ttlSeconds > 0) {
             String updatedProblemsJson = JSON.toJSONString(copyBriefMapForCache(problems));
-            redisService.setKey(cacheKey, updatedProblemsJson, ttlSeconds + 600);
-            redisService.setKey(timeOutKey, endTimeStr, ttlSeconds);
+            redisService.setKey(cacheKey, updatedProblemsJson, ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
+            redisService.setKey(timeOutKey, endTimeStr, ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
             String timeBeginKey = String.format(TIME_BEGIN_KEY, cid);
             redisService.setKey(timeBeginKey, beginTimeStr, ttlSeconds);
         }
@@ -252,9 +257,20 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         if (!"TEAM".equalsIgnoreCase(competition.getParticipantType())) {
             return;
         }
+        if (isAdminOrSuperAdmin(userId)) {
+            return;
+        }
         if (competitionTeamService.getTeamByMember(cid, userId) == null) {
             throw new BusinessException("无权参加该比赛");
         }
+    }
+
+    private boolean isAdminOrSuperAdmin(Long userId) {
+        User user = userService.getUserEntityById(userId);
+        if (user == null) {
+            return false;
+        }
+        return RoleCode.ADMIN.equals(user.getIdentity()) || RoleCode.SUPER_ADMIN.equals(user.getIdentity());
     }
 
     private void attachCompetitionProblemCountsAndSolved(Long cid, CompetitionProblemBriefVo p, Set<Long> solvedIds) {
@@ -286,7 +302,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             String rankingKey = String.format(RANKING_KEY, cid);
             List<User> users = new ArrayList<>();
         // 从Redis获取排名
-            if (redisService.getTtl(rankingKey) >600) {
+            if (redisService.getTtl(rankingKey) > COMPETITION_CACHE_EXTRA_SECONDS) {
                 Set<ZSetOperations.TypedTuple<String>> userTuples = redisService.getZset(rankingKey);
                 userTuples.forEach(tuple -> {
                     User user = new User();
@@ -368,9 +384,21 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         if (teamCompetition) {
             QueryWrapper<CompetitionTeam> teamWrapper = new QueryWrapper<>();
             teamWrapper.eq("competition_id", cid).orderByAsc("id");
+            Map<String, UserVo> leaderStatMap = new HashMap<>();
+            for (UserVo user : getUserList(cid)) {
+                leaderStatMap.put(user.getName(), user);
+            }
             for (CompetitionTeam team : competitionTeamMapper.selectList(teamWrapper)) {
+                User leader = userService.getUserByEmail(team.getEmail());
                 CompetitionRanklistVo.UserRankVo userRankVo = createEmptyRankUser(team.getId(), team.getTeamName(), problemList);
                 userRankVo.setType("TEAM");
+                if (leader != null) {
+                    UserVo leaderStat = leaderStatMap.get(leader.getName());
+                    if (leaderStat != null) {
+                        userRankVo.setPassCount(leaderStat.getPassCount() == null ? 0 : leaderStat.getPassCount());
+                        userRankVo.setPenaltyTime(leaderStat.getPenaltyTime() == null ? 0 : leaderStat.getPenaltyTime());
+                    }
+                }
                 QueryWrapper<CompetitionTeamMember> memberWrapper = new QueryWrapper<>();
                 memberWrapper.eq("team_id", team.getId()).orderByAsc("id");
                 for (CompetitionTeamMember member : competitionTeamMemberMapper.selectList(memberWrapper)) {
@@ -389,70 +417,65 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
             }
         }
 
-        QueryWrapper<Submission> submissionWrapper = new QueryWrapper<>();
-        submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("id");
-        List<Submission> submissions = submissionMapper.selectList(submissionWrapper);
         Map<Long, String> firstAcceptedMap = new HashMap<>();
 
-        for (Submission submission : submissions) {
-            if (!problemOrderMap.containsKey(submission.getPid())) {
-                continue;
-            }
-            String rankKey = teamCompetition && submission.getTeamId() != null ? getTeamRankKey(submission.getTeamId()) : submission.getUserName();
-            CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(rankKey);
-            if (userRankVo == null) {
-                userRankVo = createEmptyRankUser(
-                        teamCompetition && submission.getTeamId() != null ? submission.getTeamId() : submission.getUid(),
-                        submission.getUserName(),
-                        problemList
-                );
-                if (teamCompetition) {
-                    userRankVo.setType("TEAM");
+        if (!teamCompetition) {
+            QueryWrapper<Submission> submissionWrapper = new QueryWrapper<>();
+            submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("id");
+            List<Submission> submissions = submissionMapper.selectList(submissionWrapper);
+            for (Submission submission : submissions) {
+                if (!problemOrderMap.containsKey(submission.getPid())) {
+                    continue;
                 }
-                userMap.put(rankKey, userRankVo);
-            }
-            if (!teamCompetition && userRankVo.getId() == null && submission.getUid() != null) {
-                userRankVo.setId(submission.getUid());
-            }
+                String rankKey = submission.getUserName();
+                CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(rankKey);
+                if (userRankVo == null) {
+                    userRankVo = createEmptyRankUser(submission.getUid(), submission.getUserName(), problemList);
+                    userMap.put(rankKey, userRankVo);
+                }
+                if (userRankVo.getId() == null && submission.getUid() != null) {
+                    userRankVo.setId(submission.getUid());
+                }
 
-            CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(submission.getPid()));
-            if (Boolean.TRUE.equals(resultVo.getSolved())) {
-                continue;
-            }
-            if ("答案正确".equals(submission.getStatus())) {
-                int solveMinutes = calculateSolveMinutes(competition.getBeginTime(), submission.getCreateTime());
-                resultVo.setSolved(true);
-                resultVo.setSolveMinutes(solveMinutes);
-                resultVo.setSolveTime(formatSolveTime(solveMinutes));
-                firstAcceptedMap.putIfAbsent(submission.getPid(), rankKey);
-            } else if (isFinishedWrongSubmission(submission.getStatus())) {
-                resultVo.setWrongCount((resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) + 1);
-            }
-        }
-
-        for (Map.Entry<Long, String> firstAccepted : firstAcceptedMap.entrySet()) {
-            CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(firstAccepted.getValue());
-            if (userRankVo == null || !problemOrderMap.containsKey(firstAccepted.getKey())) {
-                continue;
-            }
-            CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(firstAccepted.getKey()));
-            resultVo.setFirstSolve(true);
-        }
-
-        List<CompetitionRanklistVo.UserRankVo> rankUsers = new ArrayList<>(userMap.values());
-        for (CompetitionRanklistVo.UserRankVo userRankVo : rankUsers) {
-            int passCount = 0;
-            int penaltyTime = 0;
-            for (CompetitionRanklistVo.ProblemResultVo resultVo : userRankVo.getProblems()) {
+                CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(submission.getPid()));
                 if (Boolean.TRUE.equals(resultVo.getSolved())) {
-                    passCount++;
-                    penaltyTime += (resultVo.getSolveMinutes() == null ? 0 : resultVo.getSolveMinutes())
-                            + (resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) * 20;
+                    continue;
+                }
+                if ("答案正确".equals(submission.getStatus())) {
+                    int solveMinutes = calculateSolveMinutes(competition.getBeginTime(), submission.getCreateTime());
+                    resultVo.setSolved(true);
+                    resultVo.setSolveMinutes(solveMinutes);
+                    resultVo.setSolveTime(formatSolveTime(solveMinutes));
+                    firstAcceptedMap.putIfAbsent(submission.getPid(), rankKey);
+                } else if (isFinishedWrongSubmission(submission.getStatus())) {
+                    resultVo.setWrongCount((resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) + 1);
                 }
             }
-            userRankVo.setPassCount(passCount);
-            userRankVo.setPenaltyTime(penaltyTime);
+
+            for (Map.Entry<Long, String> firstAccepted : firstAcceptedMap.entrySet()) {
+                CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(firstAccepted.getValue());
+                if (userRankVo == null || !problemOrderMap.containsKey(firstAccepted.getKey())) {
+                    continue;
+                }
+                CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(firstAccepted.getKey()));
+                resultVo.setFirstSolve(true);
+            }
+
+            for (CompetitionRanklistVo.UserRankVo userRankVo : userMap.values()) {
+                int passCount = 0;
+                int penaltyTime = 0;
+                for (CompetitionRanklistVo.ProblemResultVo resultVo : userRankVo.getProblems()) {
+                    if (Boolean.TRUE.equals(resultVo.getSolved())) {
+                        passCount++;
+                        penaltyTime += (resultVo.getSolveMinutes() == null ? 0 : resultVo.getSolveMinutes())
+                                + (resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) * 20;
+                    }
+                }
+                userRankVo.setPassCount(passCount);
+                userRankVo.setPenaltyTime(penaltyTime);
+            }
         }
+        List<CompetitionRanklistVo.UserRankVo> rankUsers = new ArrayList<>(userMap.values());
         rankUsers.sort((a, b) -> {
             int passCompare = Integer.compare(
                     b.getPassCount() == null ? 0 : b.getPassCount(),

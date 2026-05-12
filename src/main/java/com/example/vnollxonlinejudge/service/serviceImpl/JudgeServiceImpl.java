@@ -3,8 +3,10 @@ package com.example.vnollxonlinejudge.service.serviceImpl;
 import com.example.vnollxonlinejudge.judge.AgentSampleRequest;
 import com.example.vnollxonlinejudge.judge.JudgeAgentClient;
 import com.example.vnollxonlinejudge.judge.JudgeStatusDescriber;
+import com.example.vnollxonlinejudge.model.base.RoleCode;
 import com.example.vnollxonlinejudge.model.dto.judge.SubmitCodeDTO;
 import com.example.vnollxonlinejudge.model.dto.judge.TestCodeDTO;
+import com.example.vnollxonlinejudge.model.entity.User;
 import com.example.vnollxonlinejudge.model.entity.JudgeInfo;
 import com.example.vnollxonlinejudge.model.entity.Submission;
 import com.example.vnollxonlinejudge.model.result.RunResult;
@@ -16,6 +18,7 @@ import com.example.vnollxonlinejudge.service.CompetitionUserService;
 import com.example.vnollxonlinejudge.producer.JudgeProducer;
 import com.example.vnollxonlinejudge.service.JudgeService;
 import com.example.vnollxonlinejudge.service.SubmissionService;
+import com.example.vnollxonlinejudge.service.UserService;
 import com.example.vnollxonlinejudge.utils.SnowflakeIdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +35,7 @@ public class JudgeServiceImpl implements JudgeService {
     private final CompetitionUserService competitionUserService;
     private final CompetitionService competitionService;
     private final CompetitionTeamService competitionTeamService;
+    private final UserService userService;
     private static final SnowflakeIdGenerator gen =
             new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
@@ -41,7 +45,8 @@ public class JudgeServiceImpl implements JudgeService {
             SubmissionService submissionService,
             CompetitionUserService competitionUserService,
             CompetitionService competitionService,
-            CompetitionTeamService competitionTeamService
+            CompetitionTeamService competitionTeamService,
+            UserService userService
     ) {
         this.judgeProducer=judgeProducer;
         this.judgeAgentClient=judgeAgentClient;
@@ -49,6 +54,7 @@ public class JudgeServiceImpl implements JudgeService {
         this.competitionUserService=competitionUserService;
         this.competitionService=competitionService;
         this.competitionTeamService=competitionTeamService;
+        this.userService=userService;
     }
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
@@ -134,11 +140,22 @@ public class JudgeServiceImpl implements JudgeService {
         if (!"TEAM".equalsIgnoreCase(competitionService.getCompetitionById(cid).getParticipantType())) {
             return null;
         }
+        if (isAdminOrSuperAdmin(uid)) {
+            return null;
+        }
         com.example.vnollxonlinejudge.model.entity.CompetitionTeam team = competitionTeamService.getTeamByMember(cid, uid);
         if (team == null) {
             throw new BusinessException("团队赛需要管理员预先导入队伍后才能提交");
         }
         return team.getId();
+    }
+
+    private boolean isAdminOrSuperAdmin(Long uid) {
+        User user = userService.getUserEntityById(uid);
+        if (user == null) {
+            return false;
+        }
+        return RoleCode.ADMIN.equals(user.getIdentity()) || RoleCode.SUPER_ADMIN.equals(user.getIdentity());
     }
 
     @Override

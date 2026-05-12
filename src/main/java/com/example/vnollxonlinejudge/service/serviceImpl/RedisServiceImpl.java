@@ -67,7 +67,7 @@ public class RedisServiceImpl implements RedisService {
             if (Boolean.FALSE.equals(stringRedisTemplate.hasKey(key))) {
                 Long initialScore = GetScore.calculateScore(0L, 0L);
                 redisTemplate.opsForZSet().add(key, userName, initialScore);
-                redisTemplate.expire(key, seconds + 600, TimeUnit.SECONDS);
+                redisTemplate.expire(key, seconds, TimeUnit.SECONDS);
                 return true;
             }
         } catch (Exception e) {

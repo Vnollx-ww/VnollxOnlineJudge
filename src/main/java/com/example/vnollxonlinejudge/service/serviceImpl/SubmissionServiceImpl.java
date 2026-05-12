@@ -79,6 +79,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     private static final String RANKING_KEY = "competition_ranking:%d"; // cid
     private static final String TIME_OUT_KEY = "competition_time_out:%d"; // cid
     private static final String TIME_BEGIN_KEY="competition_time_begin:%d";
+    private static final long COMPETITION_CACHE_EXTRA_SECONDS = 60 * 60L;
 
     public SubmissionVo getSubmissionById(Long id){
             Submission submission = this.getById(id);
@@ -117,6 +118,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         Long cid=judgeinfo.getCid();
         String userName=judgeinfo.getUname();
         String participantName=userName;
+        String participantDisplayName=userName;
         String createTime=judgeinfo.getCreateTime();
         ProblemVo problem;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
@@ -126,7 +128,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 if (teamVo == null) {
                     throw new BusinessException("团队赛提交缺少队伍信息");
                 }
-                participantName = teamVo.getTeamName();
+                participantDisplayName = teamVo.getTeamName();
             }
             timeOutKey=String.format(TIME_OUT_KEY,cid);
             timeBeginKey=String.format(TIME_BEGIN_KEY,cid);
@@ -137,11 +139,13 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             problemSubmitKey = String.format(PROBLEM_SUBMIT_KEY, cid, pid);
             String endTimeStr=redisService.getValueByKey(timeOutKey);
             Long ttlSeconds= TimeUtils.calculateTTL(endTimeStr);
-            redisService.setKey(userPassKey,"0",ttlSeconds+600);
-            redisService.setKey(userPenaltyKey,"0",ttlSeconds+600);
-            if (redisService.addToSetByKey(rankingKey,calculateScore(0L,0L),participantName,ttlSeconds+600)){
-                competitionUserService.createRecord(cid,uid,userName);
-            }
+            redisService.setKey(userPassKey,"0",ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
+            redisService.setKey(userPenaltyKey,"0",ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
+            redisService.addToSetByKey(rankingKey,calculateScore(0L,0L),participantName,ttlSeconds + COMPETITION_CACHE_EXTRA_SECONDS);
+            // 每个提交者都需要在 competition_user 中存在一行，否则 5 分钟定时同步与比赛结束同步会因
+            // UPDATE 找不到行而静默失败，导致除首提者外所有人的成绩无法落库。
+            // createRecord 内部捕获 DuplicateKeyException，配合 (competition_id, user_id) 唯一索引，可幂等调用。
+            competitionUserService.createRecord(cid,uid,userName);
 
         }
         //初始化所有键和信息！！！
@@ -172,7 +176,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     String beginTimeStr=redisService.getValueByKey(timeBeginKey);
                     Long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
                     redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,participantName,penalty);//如果是比赛那就需要更新缓存了
-                    pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantName);
+                    pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantDisplayName);
                 }
             } else { //已经 AC 过，再次 AC：只累加 submit/pass 计数，不动榜单分数和罚时
                 if (cid == 0) {
@@ -235,6 +239,23 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         List<Submission> records = result.getRecords();
         List<SubmissionVo> submissionVos = submissionConvert.toVoList(records);
         if (submissionQuery.getCid() != null && submissionQuery.getCid() != 0) {
+            boolean teamCompetition = "TEAM".equalsIgnoreCase(
+                    competitionService.getCompetitionById(submissionQuery.getCid()).getParticipantType()
+            );
+            if (teamCompetition) {
+                Map<Long, String> teamNameCache = new HashMap<>();
+                for (int i = 0; i < records.size(); i++) {
+                    Long teamId = records.get(i).getTeamId();
+                    if (teamId == null) continue;
+                    String teamName = teamNameCache.computeIfAbsent(teamId, tid -> {
+                        com.example.vnollxonlinejudge.model.vo.competition.CompetitionTeamVo teamVo = competitionTeamService.getTeamVoById(tid);
+                        return teamVo != null ? teamVo.getTeamName() : null;
+                    });
+                    if (teamName != null) {
+                        submissionVos.get(i).setUserName(teamName);
+                    }
+                }
+            }
             Long currentUserId = UserContextHolder.getCurrentUserId();
             submissionVos.forEach(submissionVo -> {
                 if (currentUserId == null || !currentUserId.equals(submissionVo.getUid())) {

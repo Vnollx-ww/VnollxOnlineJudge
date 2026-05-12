@@ -32,15 +32,6 @@ public class CompetitionProblemServiceImpl  extends ServiceImpl<CompetitionProbl
     }
 
     @Override
-    public void updateCount(Long pid, int ok1, int ok2, Long cid) {
-        update(new LambdaUpdateWrapper<CompetitionProblem>()
-                .setSql("pass_count = pass_count + " + ok1)
-                .setSql("submit_count = submit_count + " + ok2)
-                .eq(CompetitionProblem::getProblemId, pid)
-                .eq(CompetitionProblem::getCompetitionId, cid));
-    }
-
-    @Override
     public void setCount(Long pid, int passCount, int submitCount, Long cid) {
         update(new LambdaUpdateWrapper<CompetitionProblem>()
                 .set(CompetitionProblem::getPassCount, passCount)

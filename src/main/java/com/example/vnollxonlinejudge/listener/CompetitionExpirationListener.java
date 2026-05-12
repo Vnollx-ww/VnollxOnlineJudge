@@ -107,10 +107,9 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
             
             int passCount = passCountStr != null ? Integer.parseInt(passCountStr) : 0;
             int penaltyTime = penaltyTimeStr != null ? Integer.parseInt(penaltyTimeStr) : 0;
-            
-            // 更新数据库记录
-            competitionUserService.updatePenaltyTime(userName,cid,penaltyTime);
-            competitionUserService.updatePassCount(userName,passCount);
+
+            // 覆盖式更新：与 5 分钟定时同步保持一致，避免在定时器写完 DB 后再次累加导致重复计数
+            competitionUserService.setStats(cid, userName, passCount, penaltyTime);
         }
     }
 
@@ -135,7 +134,8 @@ public class CompetitionExpirationListener extends KeyExpirationEventMessageList
                 int passCount = passCountStr != null ? Integer.parseInt(passCountStr) : 0;
                 int submitCount = submitCountStr != null ? Integer.parseInt(submitCountStr) : 0;
 
-                competitionProblemService.updateCount(pid,passCount,submitCount,cid);
+                // 覆盖式更新，避免和 5 分钟定时同步重复计数
+                competitionProblemService.setCount(pid, passCount, submitCount, cid);
             }
         }
     }

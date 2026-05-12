@@ -157,6 +157,7 @@ export const useCompetitionProblemDetail = () => {
   const [exampleInputs, setExampleInputs] = useState<Record<number, string>>({});
   const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage>>({});
   const optimisticCountedSubmissionsRef = useRef<Set<string>>(new Set());
+  const loadedCodeStorageKeyRef = useRef<string | null>(null);
   useCompetitionFirstBloodWebSocket(cid, !!cid);
 
   const userInfo = getUserInfo();
@@ -421,14 +422,20 @@ export const useCompetitionProblemDetail = () => {
 
   useEffect(() => {
     if (!language) return;
+    if (codeStorageKey && loadedCodeStorageKeyRef.current === codeStorageKey) return;
     const template = submitLanguageOptions.find((item) => item.value === language)?.template || getLanguageTemplate(language);
-    if (!codeStorageKey) { setCode(template); return; }
+    if (!codeStorageKey) {
+      loadedCodeStorageKeyRef.current = null;
+      setCode(template);
+      return;
+    }
     try {
       const cachedCode = localStorage.getItem(codeStorageKey);
-      setCode(cachedCode ?? template);
+      setCode(cachedCode && cachedCode.trim() ? cachedCode : template);
     } catch {
       setCode(template);
     }
+    loadedCodeStorageKeyRef.current = codeStorageKey;
   }, [language, codeStorageKey, submitLanguageOptions]);
 
   useEffect(() => {
@@ -449,6 +456,7 @@ export const useCompetitionProblemDetail = () => {
 
   useEffect(() => {
     if (!codeStorageKey) return;
+    if (loadedCodeStorageKeyRef.current !== codeStorageKey) return;
     if (typeof code !== 'string') return;
     const timer = window.setTimeout(() => {
       try { localStorage.setItem(codeStorageKey, code); } catch { return; }
