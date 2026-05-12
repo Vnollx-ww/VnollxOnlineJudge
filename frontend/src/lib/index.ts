@@ -5,6 +5,8 @@ export { aiApi } from './ai';
 export { problemApi, tagApi } from './problem';
 export { submissionApi } from './submission';
 export { dictApi } from './dict';
+export { readCachedDict, fetchDictWithCache } from './dictCache';
+export type { DictDataItem } from './dictCache';
 export { solutionApi } from './solution';
 export { judgeApi } from './judge';
 export { commentApi } from './comment';

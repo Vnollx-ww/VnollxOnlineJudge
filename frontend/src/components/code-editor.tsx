@@ -74,20 +74,13 @@ const loadMonaco = (): Promise<Monaco> => {
 
 /**
  * 预加载 Monaco Editor - 应用启动时调用
+ * 直接触发 dynamic import 即可，浏览器会与 React 渲染并行下载/解析 Monaco chunk；
+ * 不再走 requestIdleCallback，避免刷新场景下 idle 排队过晚导致编辑器冷启动
  */
 export const preloadMonacoEditor = (): void => {
   if (preloadStarted) return;
   preloadStarted = true;
-
-  if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(() => {
-      loadMonaco().catch(() => {});
-    }, { timeout: 3000 });
-  } else {
-    setTimeout(() => {
-      loadMonaco().catch(() => {});
-    }, 1000);
-  }
+  loadMonaco().catch(() => {});
 };
 
 const normalizeLanguage = (lang?: string): string => {
@@ -542,6 +535,12 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   const monacoLanguage = useMemo(() => normalizeLanguage(language), [language]);
 
+  // 始终持有最新 value，避免初始化 effect 闭包捕获旧值导致刷新后编辑器为空
+  const valueRef = useRef(value);
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
   useEffect(() => {
     if (!storageKey) return;
     if (typeof value !== 'string') return;
@@ -576,7 +575,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         ensureProviders(monaco);
 
         const editor = monaco.editor.create(containerRef.current, {
-          value: value || '',
+          value: valueRef.current || '',
           language: monacoLanguage,
           theme: theme === 'dark' ? 'vs-dark' : 'vs',
           readOnly,
@@ -585,6 +584,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         });
 
         editorRef.current = editor;
+
+        // 编辑器创建过程中 value 可能再次更新（如缓存代码异步加载），此处补一次同步
+        if (valueRef.current && editor.getValue() !== valueRef.current) {
+          editor.setValue(valueRef.current);
+        }
 
         const refreshStats = () => {
           const text = editor.getValue();

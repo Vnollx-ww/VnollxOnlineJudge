@@ -11,6 +11,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+
+  // dev 下让 esbuild 预打包 Monaco，避免按需切几百个 module 导致刷新冷启动巨慢
+  optimizeDeps: {
+    include: [
+      'monaco-editor/esm/vs/editor/editor.api',
+      'monaco-editor/esm/vs/editor/editor.worker?worker',
+      'monaco-editor/esm/vs/language/json/json.worker?worker',
+      'monaco-editor/esm/vs/language/css/css.worker?worker',
+      'monaco-editor/esm/vs/language/html/html.worker?worker',
+      'monaco-editor/esm/vs/language/typescript/ts.worker?worker',
+    ],
+  },
   
   build: {
     // 代码分割优化

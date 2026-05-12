@@ -5,14 +5,14 @@ import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import katex from 'katex';
-import { commentApi, competitionApi, dictApi, judgeApi, problemApi, submissionApi } from '@/lib';
+import { commentApi, competitionApi, fetchDictWithCache, judgeApi, problemApi, readCachedDict, submissionApi } from '@/lib';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
 import { useCompetitionAntiCheat } from '@/hooks/useCompetitionAntiCheat';
 import { useCompetitionFirstBloodWebSocket } from '@/hooks/useCompetitionFirstBloodWebSocket';
 import { mapJudgeStatusToVariant } from '@/components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '@/components';
-import type { ApiResponse, JudgeMessage } from '@/types';
+import type { JudgeMessage } from '@/types';
 
 export interface ProblemExampleItem {
   id?: number;
@@ -138,7 +138,7 @@ export const useCompetitionProblemDetail = () => {
   const [competitionStatusLoaded, setCompetitionStatusLoaded] = useState(false);
   const [finishCompetitionLoading, setFinishCompetitionLoading] = useState(false);
   const [finishCompetitionModalOpen, setFinishCompetitionModalOpen] = useState(false);
-  const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
+  const currentSnowflakeIdRef = useRef<string | null>(null);
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true, theme: 'dark' });
   const [showCelebration, setShowCelebration] = useState(false);
@@ -155,7 +155,7 @@ export const useCompetitionProblemDetail = () => {
   const [activeExampleTab, setActiveExampleTab] = useState(0);
   const [modifiedExamples, setModifiedExamples] = useState<Record<number, boolean>>({});
   const [exampleInputs, setExampleInputs] = useState<Record<number, string>>({});
-  const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage>>({});
+  const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage[]>>({});
   const optimisticCountedSubmissionsRef = useRef<Set<string>>(new Set());
   const loadedCodeStorageKeyRef = useRef<string | null>(null);
   useCompetitionFirstBloodWebSocket(cid, !!cid);
@@ -261,12 +261,15 @@ export const useCompetitionProblemDetail = () => {
   const handleWebSocketMessage = useCallback((msg: JudgeMessage) => {
     if (!msg?.snowflakeId) return;
     const messageSnowflakeId = String(msg.snowflakeId);
-    if (!currentSnowflakeId || messageSnowflakeId !== String(currentSnowflakeId)) {
-      pendingJudgeMessagesRef.current[messageSnowflakeId] = msg;
+    const currentId = currentSnowflakeIdRef.current;
+    if (!currentId || messageSnowflakeId !== currentId) {
+      const queue = pendingJudgeMessagesRef.current[messageSnowflakeId] || [];
+      queue.push(msg);
+      pendingJudgeMessagesRef.current[messageSnowflakeId] = queue;
       return;
     }
     applyJudgeMessage(msg);
-  }, [applyJudgeMessage, currentSnowflakeId]);
+  }, [applyJudgeMessage]);
 
   useJudgeWebSocket(handleWebSocketMessage);
 
@@ -322,14 +325,21 @@ export const useCompetitionProblemDetail = () => {
   };
 
   const loadCompetitionStatus = async () => {
+    if (!cid) {
+      setCompetitionStatusLoaded(true);
+      return;
+    }
     setCompetitionStatusLoaded(false);
     try {
       const now = dayjs().format('YYYY-MM-DD HH:mm:ss');
-      const openRes = await competitionApi.judgeIsOpen(now, cid);
+      // 三个状态接口互不依赖，并行发起以减少刷新时的累计往返
+      const [openRes, endRes, finishRes] = await Promise.all([
+        competitionApi.judgeIsOpen(now, cid),
+        competitionApi.judgeIsEnd(now, cid),
+        competitionApi.finishStatus<boolean>(cid),
+      ]);
       setIsCompetitionOpen(openRes.code === 200);
-      const endRes = await competitionApi.judgeIsEnd(now, cid);
       setIsCompetitionEnd(endRes.code !== 200);
-      const finishRes = await competitionApi.finishStatus<boolean>(cid);
       setIsUserCompetitionEnded(Boolean(finishRes.data));
     } catch (err) {
       console.warn('比赛状态判断失败', err);
@@ -439,19 +449,23 @@ export const useCompetitionProblemDetail = () => {
   }, [language, codeStorageKey, submitLanguageOptions]);
 
   useEffect(() => {
-    const loadLanguageOptions = async () => {
-      try {
-        const res = (await dictApi.listData<DictData[]>('SUBMIT_LANGUAGE')) as ApiResponse<DictData[]>;
-        if (res.code === 200) {
-          const nextOptions = buildSubmitLanguageOptions(res.data);
-          setSubmitLanguageOptions(nextOptions);
-          setLanguage((current) => (nextOptions.some((item) => item.value === current) ? current : nextOptions[0].value));
-        }
-      } catch (error) {
-        console.error('加载提交语言字典失败:', error);
-      }
+    let cancelled = false;
+    const apply = (data: DictData[] | null | undefined) => {
+      if (cancelled || !data || !data.length) return;
+      const nextOptions = buildSubmitLanguageOptions(data);
+      if (!nextOptions.length) return;
+      setSubmitLanguageOptions(nextOptions);
+      setLanguage((current) =>
+        nextOptions.some((item) => item.value === current) ? current : nextOptions[0].value,
+      );
     };
-    loadLanguageOptions();
+    apply(readCachedDict('SUBMIT_LANGUAGE') as DictData[] | null);
+    fetchDictWithCache('SUBMIT_LANGUAGE')
+      .then((data) => apply(data as DictData[] | null))
+      .catch((error) => console.error('加载提交语言字典失败:', error));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -606,11 +620,11 @@ export const useCompetitionProblemDetail = () => {
         let hasAppliedPendingMessage = false;
         if (data.data.snowflakeId) {
           const snowflakeId = String(data.data.snowflakeId);
-          setCurrentSnowflakeId(snowflakeId);
-          const pendingMessage = pendingJudgeMessagesRef.current[snowflakeId];
-          if (pendingMessage) {
+          currentSnowflakeIdRef.current = snowflakeId;
+          const pendingMessages = pendingJudgeMessagesRef.current[snowflakeId];
+          if (pendingMessages && pendingMessages.length > 0) {
             delete pendingJudgeMessagesRef.current[snowflakeId];
-            applyJudgeMessage(pendingMessage);
+            pendingMessages.forEach((m) => applyJudgeMessage(m));
             hasAppliedPendingMessage = true;
           }
         }

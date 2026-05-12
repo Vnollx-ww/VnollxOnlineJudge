@@ -122,14 +122,30 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         String createTime=judgeinfo.getCreateTime();
         ProblemVo problem;
         String userPassKey = null,userPenaltyKey=null,rankingKey=null,problemPassKey=null,problemSubmitKey=null,timeOutKey=null,timeBeginKey=null;
+        boolean rankCompetition = cid != 0;
         if (cid != 0) {
             if ("TEAM".equalsIgnoreCase(competitionService.getCompetitionById(cid).getParticipantType())) {
-                com.example.vnollxonlinejudge.model.vo.competition.CompetitionTeamVo teamVo = competitionTeamService.getTeamVoById(judgeinfo.getTeamId());
-                if (teamVo == null) {
-                    throw new BusinessException("团队赛提交缺少队伍信息");
+                Long teamId = judgeinfo.getTeamId();
+                if (teamId == null) {
+                    // 管理员/超管在团队赛中没有队伍，仅作为测试提交，不计入排名与统计
+                    logger.info("团队赛提交缺少 teamId，跳过排名统计: snowflakeId={}, uid={}, cid={}",
+                            judgeinfo.getSnowflakeId(), uid, cid);
+                    rankCompetition = false;
+                } else {
+                    com.example.vnollxonlinejudge.model.vo.competition.CompetitionTeamVo teamVo = competitionTeamService.getTeamVoById(teamId);
+                    if (teamVo == null) {
+                        logger.warn("团队赛提交对应队伍不存在，跳过排名统计: snowflakeId={}, uid={}, cid={}, teamId={}",
+                                judgeinfo.getSnowflakeId(), uid, cid, teamId);
+                        rankCompetition = false;
+                    } else {
+                        participantDisplayName = teamVo.getTeamName();
+                    }
                 }
-                participantDisplayName = teamVo.getTeamName();
             }
+            if (!rankCompetition) {
+                // 不参与排名（管理员等），跳过缓存初始化与 competition_user 写入
+                // 但仍需走下面的题目信息加载与个人统计逻辑（在 rankCompetition=false 时按非比赛分支处理）
+            } else {
             timeOutKey=String.format(TIME_OUT_KEY,cid);
             timeBeginKey=String.format(TIME_BEGIN_KEY,cid);
             userPassKey = String.format(USER_PASS_COUNT_KEY, cid, participantName);
@@ -146,6 +162,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
             // UPDATE 找不到行而静默失败，导致除首提者外所有人的成绩无法落库。
             // createRecord 内部捕获 DuplicateKeyException，配合 (competition_id, user_id) 唯一索引，可幂等调用。
             competitionUserService.createRecord(cid,uid,userName);
+            }
 
         }
         //初始化所有键和信息！！！
@@ -169,7 +186,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 List<String> tagList=problemTagService.getTagNames(problem.getId());
                 userTagService.updateTagPassStatus(uid,tagList,1L);
                 problemService.addUserSolveRecord(pid,uid,cid,problem.getTitle()); //对问题添加通过记录
-                if (cid == 0) { //如果非比赛
+                if (!rankCompetition) { //如果非比赛，或团队赛中管理员等无队伍的提交
                     userService.updateSubmitCount(uid,1);//用户通过数加一，用户自己不太可能同时提交多次，所以无需加锁
                     problemService.updatePassCount(pid,1);//题目通过数也加一
                 } else {
@@ -179,7 +196,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantDisplayName);
                 }
             } else { //已经 AC 过，再次 AC：只累加 submit/pass 计数，不动榜单分数和罚时
-                if (cid == 0) {
+                if (!rankCompetition) {
                     userService.updateSubmitCount(uid,1);
                     problemService.updatePassCount(pid,1);
                 } else {
@@ -191,7 +208,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                 List<String> tagList=problemTagService.getTagNames(problem.getId());
                 userTagService.updateTagPassStatus(uid,tagList,1L);
             }
-            if (cid == 0) {
+            if (!rankCompetition) {
                 userService.updateSubmitCount(uid,0);//如果非比赛，提交总数加1
                 problemService.updatePassCount(pid,0);//问题提交数也加一
             } else if (!ok) {

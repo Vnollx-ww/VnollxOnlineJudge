@@ -384,21 +384,10 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         if (teamCompetition) {
             QueryWrapper<CompetitionTeam> teamWrapper = new QueryWrapper<>();
             teamWrapper.eq("competition_id", cid).orderByAsc("id");
-            Map<String, UserVo> leaderStatMap = new HashMap<>();
-            for (UserVo user : getUserList(cid)) {
-                leaderStatMap.put(user.getName(), user);
-            }
             for (CompetitionTeam team : competitionTeamMapper.selectList(teamWrapper)) {
-                User leader = userService.getUserByEmail(team.getEmail());
                 CompetitionRanklistVo.UserRankVo userRankVo = createEmptyRankUser(team.getId(), team.getTeamName(), problemList);
                 userRankVo.setType("TEAM");
-                if (leader != null) {
-                    UserVo leaderStat = leaderStatMap.get(leader.getName());
-                    if (leaderStat != null) {
-                        userRankVo.setPassCount(leaderStat.getPassCount() == null ? 0 : leaderStat.getPassCount());
-                        userRankVo.setPenaltyTime(leaderStat.getPenaltyTime() == null ? 0 : leaderStat.getPenaltyTime());
-                    }
-                }
+                String rankKey = getTeamRankKey(team.getId());
                 QueryWrapper<CompetitionTeamMember> memberWrapper = new QueryWrapper<>();
                 memberWrapper.eq("team_id", team.getId()).orderByAsc("id");
                 for (CompetitionTeamMember member : competitionTeamMemberMapper.selectList(memberWrapper)) {
@@ -406,7 +395,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
                     memberVo.setRealName(member.getRealName());
                     userRankVo.getMembers().add(memberVo);
                 }
-                userMap.put(getTeamRankKey(team.getId()), userRankVo);
+                userMap.put(rankKey, userRankVo);
             }
         } else {
             for (UserVo user : userList) {
@@ -419,61 +408,71 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
 
         Map<Long, String> firstAcceptedMap = new HashMap<>();
 
-        if (!teamCompetition) {
-            QueryWrapper<Submission> submissionWrapper = new QueryWrapper<>();
-            submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("id");
-            List<Submission> submissions = submissionMapper.selectList(submissionWrapper);
-            for (Submission submission : submissions) {
-                if (!problemOrderMap.containsKey(submission.getPid())) {
+        QueryWrapper<Submission> submissionWrapper = new QueryWrapper<>();
+        submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("id");
+        List<Submission> submissions = submissionMapper.selectList(submissionWrapper);
+        for (Submission submission : submissions) {
+            if (!problemOrderMap.containsKey(submission.getPid())) {
+                continue;
+            }
+            String rankKey;
+            if (teamCompetition) {
+                // 团队赛：按 submission.team_id 直接定位团队行；无 team_id（如管理员测试提交）或队伍不存在则跳过
+                if (submission.getTeamId() == null) {
                     continue;
                 }
-                String rankKey = submission.getUserName();
-                CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(rankKey);
-                if (userRankVo == null) {
-                    userRankVo = createEmptyRankUser(submission.getUid(), submission.getUserName(), problemList);
-                    userMap.put(rankKey, userRankVo);
+                rankKey = getTeamRankKey(submission.getTeamId());
+            } else {
+                rankKey = submission.getUserName();
+            }
+            CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(rankKey);
+            if (userRankVo == null) {
+                if (teamCompetition) {
+                    continue;
                 }
-                if (userRankVo.getId() == null && submission.getUid() != null) {
-                    userRankVo.setId(submission.getUid());
-                }
+                userRankVo = createEmptyRankUser(submission.getUid(), submission.getUserName(), problemList);
+                userMap.put(rankKey, userRankVo);
+            }
+            if (!teamCompetition && userRankVo.getId() == null && submission.getUid() != null) {
+                userRankVo.setId(submission.getUid());
+            }
 
-                CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(submission.getPid()));
+            CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(submission.getPid()));
+            if (Boolean.TRUE.equals(resultVo.getSolved())) {
+                continue;
+            }
+            if ("答案正确".equals(submission.getStatus())) {
+                int solveMinutes = calculateSolveMinutes(competition.getBeginTime(), submission.getCreateTime());
+                resultVo.setSolved(true);
+                resultVo.setSolveMinutes(solveMinutes);
+                resultVo.setSolveTime(formatSolveTime(solveMinutes));
+                firstAcceptedMap.putIfAbsent(submission.getPid(), rankKey);
+            } else if (isFinishedWrongSubmission(submission.getStatus())) {
+                resultVo.setWrongCount((resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) + 1);
+            }
+        }
+
+        for (Map.Entry<Long, String> firstAccepted : firstAcceptedMap.entrySet()) {
+            CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(firstAccepted.getValue());
+            if (userRankVo == null || !problemOrderMap.containsKey(firstAccepted.getKey())) {
+                continue;
+            }
+            CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(firstAccepted.getKey()));
+            resultVo.setFirstSolve(true);
+        }
+
+        for (CompetitionRanklistVo.UserRankVo userRankVo : userMap.values()) {
+            int passCount = 0;
+            int penaltyTime = 0;
+            for (CompetitionRanklistVo.ProblemResultVo resultVo : userRankVo.getProblems()) {
                 if (Boolean.TRUE.equals(resultVo.getSolved())) {
-                    continue;
-                }
-                if ("答案正确".equals(submission.getStatus())) {
-                    int solveMinutes = calculateSolveMinutes(competition.getBeginTime(), submission.getCreateTime());
-                    resultVo.setSolved(true);
-                    resultVo.setSolveMinutes(solveMinutes);
-                    resultVo.setSolveTime(formatSolveTime(solveMinutes));
-                    firstAcceptedMap.putIfAbsent(submission.getPid(), rankKey);
-                } else if (isFinishedWrongSubmission(submission.getStatus())) {
-                    resultVo.setWrongCount((resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) + 1);
+                    passCount++;
+                    penaltyTime += (resultVo.getSolveMinutes() == null ? 0 : resultVo.getSolveMinutes())
+                            + (resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) * 20;
                 }
             }
-
-            for (Map.Entry<Long, String> firstAccepted : firstAcceptedMap.entrySet()) {
-                CompetitionRanklistVo.UserRankVo userRankVo = userMap.get(firstAccepted.getValue());
-                if (userRankVo == null || !problemOrderMap.containsKey(firstAccepted.getKey())) {
-                    continue;
-                }
-                CompetitionRanklistVo.ProblemResultVo resultVo = userRankVo.getProblems().get(problemOrderMap.get(firstAccepted.getKey()));
-                resultVo.setFirstSolve(true);
-            }
-
-            for (CompetitionRanklistVo.UserRankVo userRankVo : userMap.values()) {
-                int passCount = 0;
-                int penaltyTime = 0;
-                for (CompetitionRanklistVo.ProblemResultVo resultVo : userRankVo.getProblems()) {
-                    if (Boolean.TRUE.equals(resultVo.getSolved())) {
-                        passCount++;
-                        penaltyTime += (resultVo.getSolveMinutes() == null ? 0 : resultVo.getSolveMinutes())
-                                + (resultVo.getWrongCount() == null ? 0 : resultVo.getWrongCount()) * 20;
-                    }
-                }
-                userRankVo.setPassCount(passCount);
-                userRankVo.setPenaltyTime(penaltyTime);
-            }
+            userRankVo.setPassCount(passCount);
+            userRankVo.setPenaltyTime(penaltyTime);
         }
         List<CompetitionRanklistVo.UserRankVo> rankUsers = new ArrayList<>(userMap.values());
         rankUsers.sort((a, b) -> {

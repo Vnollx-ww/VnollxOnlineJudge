@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import katex from 'katex';
-import { commentApi, dictApi, judgeApi, problemApi, submissionApi } from '@/lib';
+import { commentApi, fetchDictWithCache, judgeApi, problemApi, readCachedDict, submissionApi } from '@/lib';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
 import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
@@ -427,17 +427,16 @@ export const useProblemDetail = () => {
       navigate('/');
       return;
     }
+    // 题目主体、标签、评论三路接口并行触发：tags/comments 仅需 pid（即 URL id），
+    // 不必等 loadProblem 回来再串行发请求
     loadProblem();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, navigate]);
-
-  useEffect(() => {
-    if (problem?.id) {
-      loadTags(problem.id);
-      loadComments(problem.id);
+    const pid = Number(id);
+    if (!Number.isNaN(pid) && pid > 0) {
+      loadTags(pid);
+      loadComments(pid);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problem?.id]);
+  }, [id, navigate]);
 
   useEffect(() => {
     const commentId = searchParams.get('commentId');
@@ -465,21 +464,25 @@ export const useProblemDetail = () => {
   }, [language, id, loadCodeFromCache, submitLanguageOptions]);
 
   useEffect(() => {
-    const loadLanguageOptions = async () => {
-      try {
-        const res = (await dictApi.listData<DictData[]>('SUBMIT_LANGUAGE')) as ApiResponse<DictData[]>;
-        if (res.code === 200) {
-          const nextOptions = buildSubmitLanguageOptions(res.data);
-          setSubmitLanguageOptions(nextOptions);
-          if (nextOptions.length) {
-            setLanguage((current) => (nextOptions.some((item) => item.value === current) ? current : nextOptions[0].value));
-          }
-        }
-      } catch (error) {
-        console.error('加载提交语言字典失败:', error);
-      }
+    let cancelled = false;
+    const apply = (data: DictData[] | null | undefined) => {
+      if (cancelled || !data || !data.length) return;
+      const nextOptions = buildSubmitLanguageOptions(data);
+      if (!nextOptions.length) return;
+      setSubmitLanguageOptions(nextOptions);
+      setLanguage((current) =>
+        nextOptions.some((item) => item.value === current) ? current : nextOptions[0].value,
+      );
     };
-    loadLanguageOptions();
+    // 命中 localStorage 缓存就立即就位，避免刷新时等接口才出语言/模板
+    apply(readCachedDict('SUBMIT_LANGUAGE') as DictData[] | null);
+    // 后台 revalidate
+    fetchDictWithCache('SUBMIT_LANGUAGE')
+      .then((data) => apply(data as DictData[] | null))
+      .catch((error) => console.error('加载提交语言字典失败:', error));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

@@ -140,14 +140,14 @@ public class JudgeServiceImpl implements JudgeService {
         if (!"TEAM".equalsIgnoreCase(competitionService.getCompetitionById(cid).getParticipantType())) {
             return null;
         }
-        if (isAdminOrSuperAdmin(uid)) {
-            return null;
-        }
         com.example.vnollxonlinejudge.model.entity.CompetitionTeam team = competitionTeamService.getTeamByMember(cid, uid);
-        if (team == null) {
+        if (team != null) {
+            return team.getId();
+        }
+        if (!isAdminOrSuperAdmin(uid)) {
             throw new BusinessException("团队赛需要管理员预先导入队伍后才能提交");
         }
-        return team.getId();
+        return null;
     }
 
     private boolean isAdminOrSuperAdmin(Long uid) {
