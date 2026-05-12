@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Spin, Empty, Modal, Space } from '@/components';
+import { Spin, Empty, Modal, Space, BalloonIcon } from '@/components';
 import { ArrowLeft, Lock } from 'lucide-react';
 import Input from '@/components/input';
 import {
@@ -23,28 +23,6 @@ type DetailSubmission = {
   submitTimestamp: number;
   status: 'AC' | 'WA';
 };
-
-const BalloonIcon = memo(({ color, className = 'h-9 w-9', style }: { color: string; className?: string; style?: React.CSSProperties }) => (
-  <svg className={`${className} shrink-0`} viewBox="0 0 48 48" fill="none" style={style}>
-    <title>{color}</title>
-    <path
-      d="M34 16C35 8 31.1274 4 24.1274 4C17.1274 4 13 9 14 16C15 23 21.2548 28 24.1274 28C27 28 33 24 34 16Z"
-      fill={color}
-      stroke="#888"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M25 28C23 28.9697 20 31.8889 20 35C20 38.1111 30 36.4444 30 39.5556C30 42.6667 19 44 19 44"
-      fill="none"
-      stroke="#888"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-));
 
 const LED_RECTS = [
   <rect key="0" x="20" y="10" width="80" height="14" rx="5" />,  // 0: Top
@@ -573,12 +551,12 @@ const CompetitionRanklist: React.FC = () => {
                 <table className="table-fixed border-separate border-spacing-[1px]" style={{ width: ranklistTableWidth, minWidth: ranklistTableWidth }}>
                   <thead>
                     <tr>
-                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white py-2.5 text-center text-[16px] font-normal text-black">排名</th>
-                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white py-2.5 pl-5 text-left text-[16px] font-normal text-black">队伍</th>
-                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white py-2.5 text-center text-[16px] font-normal text-black">过题数</th>
-                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white py-2.5 text-center text-[16px] font-normal text-black">总用时</th>
+                      <th className="sticky left-0 top-0 z-30 w-[55px] bg-white/70 backdrop-blur-md py-2.5 text-center text-[16px] font-normal text-black">排名</th>
+                      <th className="sticky left-[55px] top-0 z-30 w-[300px] bg-white/70 backdrop-blur-md py-2.5 pl-5 text-left text-[16px] font-normal text-black">队伍</th>
+                      <th className="sticky left-[355px] top-0 z-30 w-20 bg-white/70 backdrop-blur-md py-2.5 text-center text-[16px] font-normal text-black">过题数</th>
+                      <th className="sticky left-[435px] top-0 z-30 w-20 bg-white/70 backdrop-blur-md py-2.5 text-center text-[16px] font-normal text-black">总用时</th>
                       {problemHeaders.map((problem) => (
-                        <th key={problem.id} className="group cursor-pointer sticky top-0 z-20 w-[90px] bg-white py-2.5 text-center text-[13px] font-normal text-[#777]">
+                        <th key={problem.id} className="group cursor-pointer sticky top-0 z-20 w-[90px] bg-white/70 backdrop-blur-md py-2.5 text-center text-[13px] font-normal text-[#777]">
                           <div className="flex items-center justify-center -space-x-1">
                             <span className="inline-block transition-transform duration-150 ease-out group-hover:-translate-y-1">
                               <BalloonIcon color={problem.color} />

@@ -61,8 +61,8 @@ export interface RankUser {
 export type ProblemHeader = Problem & { color: string; label: string; stat: string };
 
 export const balloonColors = [
-  '#ef4444', '#f97316', '#eab308', '#22c55e', '#38bdf8', '#2563eb',
-  '#a855f7', '#dc2626', '#92400e', '#0f766e', '#db2777', '#0891b2', '#4c0519',
+  '#965441', '#D79BBE', '#B7D8CF', '#6B941F', '#B4B7D9', '#8CD1D1',
+  '#D95B9A', '#EED2C5', '#9A78DB', '#EAEBCC', '#9D7FE0', '#EEAB9C', '#2143B8',
 ];
 
 const isProblemSame = (a: Problem, b: Problem) =>

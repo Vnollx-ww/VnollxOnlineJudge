@@ -135,6 +135,10 @@ export {
   PassRateBadge,
 } from './status-badge';
 
+// Balloon Icon (比赛气球)
+export { default as BalloonIcon } from './balloon-icon';
+export type { BalloonIconProps } from './balloon-icon';
+
 // Workbench Result View (inline, borderless)
 export { default as WorkbenchResult, mapJudgeStatusToVariant } from './workbench-result';
 export type {

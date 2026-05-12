@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Table, Tag, Spin, Empty, Modal, Button, Space } from '@/components';
+import { Table, Tag, Spin, Empty, Modal, Button, Space, BalloonIcon } from '@/components';
 import { Trophy, Clock, Lock, List as ListIcon, History, Maximize2 } from 'lucide-react';
 import Input from '@/components/input';
 import {
@@ -7,6 +7,7 @@ import {
   formatCompetitionDetailTime,
   type CompetitionProblem as Problem,
 } from '@/hooks/useCompetitionDetail';
+import { balloonColors } from '@/hooks/useCompetitionRanklist';
 
 const CompetitionDetail: React.FC = () => {
   const {
@@ -53,8 +54,17 @@ const CompetitionDetail: React.FC = () => {
     {
       title: '题号',
       key: 'index',
-      width: 80,
-      render: (_: any, __: any, index: number) => String.fromCharCode('A'.charCodeAt(0) + index),
+      width: 96,
+      render: (_: any, __: any, index: number) => {
+        const label = String.fromCharCode('A'.charCodeAt(0) + index);
+        const color = balloonColors[index % balloonColors.length];
+        return (
+          <div className="flex items-center gap-2">
+            <BalloonIcon color={color} className="h-7 w-7" />
+            <span>{label}</span>
+          </div>
+        );
+      },
     },
     {
       title: '题目名称',
