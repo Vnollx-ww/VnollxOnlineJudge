@@ -183,8 +183,8 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
     { key: '/ranklist', icon: <Trophy className="w-4 h-4" />, label: '排行榜' },
     { key: '/competitions', icon: <Flag className="w-4 h-4" />, label: '比赛' },
     { key: '/practices', icon: <BookOpen className="w-4 h-4" />, label: '练习' },
-    { key: '/friends', icon: <Users className="w-4 h-4" />, label: '好友' },
-    { key: '/about', icon: <Info className="w-4 h-4" />, label: '关于' },
+    // { key: '/friends', icon: <Users className="w-4 h-4" />, label: '好友' },
+    // { key: '/about', icon: <Info className="w-4 h-4" />, label: '关于' },
   ];
 
   return (

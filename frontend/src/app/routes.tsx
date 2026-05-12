@@ -4,7 +4,6 @@ import HomePage from './page';
 import LoginPage from './login/page';
 import RegisterPage from './register/page';
 import ForgotPasswordPage from './forgot-password/page';
-import VnollxPage from './vnollx/page';
 import AdminPage from './admin/page';
 import ProblemsPage from './problems/page';
 import ProblemDetailPage from './problem/[id]/page';
@@ -34,7 +33,6 @@ export default function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/vnollx" element={<VnollxPage />} />
       <Route path="/admin/*" element={<AdminPage />} />
       <Route
         path="/*"

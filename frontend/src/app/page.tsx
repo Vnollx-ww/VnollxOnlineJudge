@@ -52,8 +52,6 @@ const Home: React.FC = () => {
                 color: 'var(--gemini-accent-text)' 
               }}
             >
-              <Sparkles className="w-4 h-4" style={{ color: 'var(--gemini-accent-strong)' }} />
-              Vnollx OJ 2.0 全新上线
             </div>
 
             {/* Title */}
