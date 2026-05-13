@@ -1489,15 +1489,15 @@ const AIAssistant: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {models.length > 0 && (
-                        <div ref={modelDropdownRef} className="relative">
+                        <div ref={modelDropdownRef} className="relative inline-block max-w-full">
                           <button
                             type="button"
                             onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white rounded-full text-sm hover:bg-gray-50 transition-colors"
+                            className="flex max-w-full items-center gap-2 px-4 py-2 bg-white rounded-full text-sm hover:bg-gray-50 transition-colors"
                           >
                             {(() => {
                               const m = models.find((x) => x.id === selectedModelId);
-                              if (!m) return <span className="text-gray-400">选择模型</span>;
+                              if (!m) return <span className="text-left text-gray-400">选择模型</span>;
                               return (
                                 <>
                                   {m.logoUrl ? (
@@ -1507,7 +1507,7 @@ const AIAssistant: React.FC = () => {
                                       <Bot className="w-2.5 h-2.5 text-white" />
                                     </div>
                                   )}
-                                  <span className="truncate text-[#5f6368] max-w-[120px]">{m.name}</span>
+                                  <span className="min-w-0 truncate text-left text-[#5f6368]">{m.name}</span>
                                 </>
                               );
                             })()}
@@ -1515,7 +1515,7 @@ const AIAssistant: React.FC = () => {
                           </button>
                           {modelDropdownOpen && (
                             <div 
-                              className="absolute bottom-full right-0 mb-3 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 p-2 min-w-[200px] z-50"
+                              className="absolute bottom-full right-0 mb-3 w-[280px] max-w-[90vw] bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 p-2 z-50"
                               style={{ animation: 'fadeScaleIn 0.15s ease-out' }}
                             >
                               <div className="px-3 py-2 border-b border-gray-100 mb-1">
@@ -1542,9 +1542,9 @@ const AIAssistant: React.FC = () => {
                                       <Bot className="w-3.5 h-3.5 text-white" />
                                     </div>
                                   )}
-                                  <span className="flex-1 text-left font-medium">{m.name}</span>
+                                  <span className="min-w-0 flex-1 truncate whitespace-nowrap text-left font-medium">{m.name}</span>
                                   {selectedModelId === m.id && (
-                                    <Check className="w-4 h-4 text-blue-500" />
+                                    <Check className="w-4 h-4 shrink-0 text-blue-500" />
                                   )}
                                 </button>
                               ))}

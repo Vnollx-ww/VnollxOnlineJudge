@@ -202,7 +202,8 @@ export const useProblemDetail = () => {
   const [commentContent, setCommentContent] = useState('');
   const [replyTarget, setReplyTarget] = useState<Comment | null>(null);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
-  const [currentSnowflakeId, setCurrentSnowflakeId] = useState<string | null>(null);
+  const currentSnowflakeIdRef = useRef<string | null>(null);
+  const pendingJudgeMessagesRef = useRef<Record<string, JudgeMessage[]>>({});
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
   const [ideSettings, setIdeSettings] = useState<OnlineIdeSettings>({ fontSize: 14, wordWrap: true, theme: 'dark' });
   const [highlightedCommentId, setHighlightedCommentId] = useState<number | null>(null);
@@ -267,56 +268,70 @@ export const useProblemDetail = () => {
     return () => window.removeEventListener('sync-code-to-editor', handleSyncCode as EventListener);
   }, [language]);
 
+  const applyJudgeMessage = useCallback((msg: JudgeMessage) => {
+    const status = msg.status || '未知状态';
+    if (status === '评测中') {
+      setRunResult({ variant: 'info', source: 'submit', headline: status, bodyText: '正在进行评测...' });
+    } else {
+      const hasTests = msg.testCount != null && msg.testCount > 0;
+      const hasFailureDiff =
+        status !== '答案正确' &&
+        (msg.caseInput != null || msg.caseExpected != null || msg.actualOutput != null);
+      setRunResult({
+        variant: mapJudgeStatusToVariant(status),
+        source: 'submit',
+        headline: status,
+        description: msg.description || status,
+        metrics: {
+          timeMs: msg.time ?? 0,
+          memoryMb: msg.memory ?? 0,
+          ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
+        },
+        errorInfo: msg.errorInfo || undefined,
+        diff: hasFailureDiff
+          ? {
+              input: msg.caseInput ?? undefined,
+              expected: msg.caseExpected ?? undefined,
+              actual: msg.actualOutput ?? undefined,
+            }
+          : undefined,
+      });
+    }
+    if (status === '答案正确') setShowCelebration(true);
+    if (status !== '评测中') {
+      const snowflakeId = String(msg.snowflakeId);
+      if (!optimisticCountedSubmissionsRef.current.has(snowflakeId)) {
+        optimisticCountedSubmissionsRef.current.add(snowflakeId);
+        setProblem((current) =>
+          current
+            ? {
+                ...current,
+                submitCount: (current.submitCount ?? 0) + 1,
+                passCount: status === '答案正确' ? (current.passCount ?? 0) + 1 : current.passCount ?? 0,
+              }
+            : current,
+        );
+      }
+    }
+  }, []);
+
   const handleWebSocketMessage = useCallback(
     (msg: JudgeMessage) => {
-      if (msg && currentSnowflakeId && String(msg.snowflakeId) === String(currentSnowflakeId)) {
-        const status = msg.status || '未知状态';
-        if (status === '评测中') {
-          setRunResult({ variant: 'info', source: 'submit', headline: status, bodyText: '正在进行评测...' });
-        } else {
-          const hasTests = msg.testCount != null && msg.testCount > 0;
-          const hasFailureDiff =
-            status !== '答案正确' &&
-            (msg.caseInput != null || msg.caseExpected != null || msg.actualOutput != null);
-          setRunResult({
-            variant: mapJudgeStatusToVariant(status),
-            source: 'submit',
-            headline: status,
-            description: msg.description || status,
-            metrics: {
-              timeMs: msg.time ?? 0,
-              memoryMb: msg.memory ?? 0,
-              ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
-            },
-            errorInfo: msg.errorInfo || undefined,
-            diff: hasFailureDiff
-              ? {
-                  input: msg.caseInput ?? undefined,
-                  expected: msg.caseExpected ?? undefined,
-                  actual: msg.actualOutput ?? undefined,
-                }
-              : undefined,
-          });
-        }
-        if (status === '答案正确') setShowCelebration(true);
-        if (status !== '评测中') {
-          const snowflakeId = String(msg.snowflakeId);
-          if (!optimisticCountedSubmissionsRef.current.has(snowflakeId)) {
-            optimisticCountedSubmissionsRef.current.add(snowflakeId);
-            setProblem((current) =>
-              current
-                ? {
-                    ...current,
-                    submitCount: (current.submitCount ?? 0) + 1,
-                    passCount: status === '答案正确' ? (current.passCount ?? 0) + 1 : current.passCount ?? 0,
-                  }
-                : current,
-            );
-          }
-        }
+      if (!msg?.snowflakeId) return;
+      const messageSnowflakeId = String(msg.snowflakeId);
+      const currentId = currentSnowflakeIdRef.current;
+      // 如果 snowflakeId 还没拿到（提交响应未到达）或不匹配，先入队缓存，
+      // 等 handleSubmitCode 拿到 snowflakeId 后再统一回放，避免“评测中”消息因
+      // 状态闭包过期被直接丢掉。
+      if (!currentId || messageSnowflakeId !== currentId) {
+        const queue = pendingJudgeMessagesRef.current[messageSnowflakeId] || [];
+        queue.push(msg);
+        pendingJudgeMessagesRef.current[messageSnowflakeId] = queue;
+        return;
       }
+      applyJudgeMessage(msg);
     },
-    [currentSnowflakeId],
+    [applyJudgeMessage],
   );
 
   useJudgeWebSocket(handleWebSocketMessage);
@@ -688,13 +703,27 @@ export const useProblemDetail = () => {
         queueAhead?: number | null;
       }>;
       if (data.code === 200) {
-        if (data.data.snowflakeId) setCurrentSnowflakeId(data.data.snowflakeId);
-        setRunResult({
-          variant: 'info',
-          source: 'submit',
-          headline: data.data.status || '等待评测',
-          description: data.data.description || '等待评测：已加入评测队列。',
-        });
+        let hasAppliedPendingMessage = false;
+        if (data.data.snowflakeId) {
+          const snowflakeId = String(data.data.snowflakeId);
+          // 同步写入 ref，避免 setState 异步导致 WS 回调读到的还是 null
+          currentSnowflakeIdRef.current = snowflakeId;
+          const pendingMessages = pendingJudgeMessagesRef.current[snowflakeId];
+          if (pendingMessages && pendingMessages.length > 0) {
+            delete pendingJudgeMessagesRef.current[snowflakeId];
+            pendingMessages.forEach((m) => applyJudgeMessage(m));
+            hasAppliedPendingMessage = true;
+          }
+        }
+        // 没有提前到达的消息时再回退到“等待评测”，否则会盖掉刚回放的“评测中/结果”状态
+        if (!hasAppliedPendingMessage) {
+          setRunResult({
+            variant: 'info',
+            source: 'submit',
+            headline: data.data.status || '等待评测',
+            description: data.data.description || '等待评测：已加入评测队列。',
+          });
+        }
       } else {
         setRunResult({ variant: 'error', source: 'submit', headline: (data as any).msg || '提交失败' });
       }

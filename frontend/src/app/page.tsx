@@ -4,6 +4,7 @@ import {
   Code2, 
   Trophy, 
   Terminal,
+  Bot,
 } from 'lucide-react';
 import { CountUp, CodeWindow } from '@/components';
 import { useHome } from '@/hooks/useHome';
@@ -33,6 +34,11 @@ const Home: React.FC = () => {
       icon: Users,
       title: '社区互动',
       description: '题目评论讨论，题解分享，与其他选手交流心得',
+    },
+    {
+      icon: Bot,
+      title: '多 AI 辅助学习',
+      description: '系统接入 Gemini、DeepSeek V4 等多种 AI 模型，辅助理解题目、优化思路与提升学习效率',
     },
   ];
 
@@ -163,7 +169,7 @@ const Home: React.FC = () => {
         <div 
           className="relative rounded-3xl"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {featureItems.map((item) => (
               <div
                 key={item.title}
