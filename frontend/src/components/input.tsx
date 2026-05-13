@@ -56,9 +56,10 @@ const InputBase = forwardRef<HTMLInputElement, BaseInputProps>(({
     onChange?.(event);
   };
 
+  const nativePasswordRevealClass = type === 'password' ? '[&::-ms-clear]:hidden [&::-ms-reveal]:hidden' : '';
   const inputClassName = hasAddon
-    ? 'h-full min-w-0 flex-1 border-0 bg-transparent px-0 text-slate-800 outline-none placeholder:text-slate-400 focus:ring-0 disabled:cursor-not-allowed disabled:text-slate-400'
-    : `${baseClass} ${sizeClassMap[size]} rounded-2xl ${normalizedClassName}`;
+    ? `h-full min-w-0 flex-1 border-0 bg-transparent px-0 text-slate-800 outline-none placeholder:text-slate-400 focus:ring-0 disabled:cursor-not-allowed disabled:text-slate-400 ${nativePasswordRevealClass}`
+    : `${baseClass} ${sizeClassMap[size]} rounded-2xl ${nativePasswordRevealClass} ${normalizedClassName}`;
 
   const input = (
     <input

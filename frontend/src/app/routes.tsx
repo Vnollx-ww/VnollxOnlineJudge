@@ -34,6 +34,7 @@ export default function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/admin/*" element={<AdminPage />} />
+      <Route path="/competition/:id/ranklist" element={<CompetitionRanklistPage />} />
       <Route
         path="/*"
         element={
@@ -46,7 +47,6 @@ export default function AppRoutes() {
               <Route path="/ranklist" element={<RanklistPage />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/competition/:id" element={<CompetitionDetailPage />} />
-              <Route path="/competition/:id/ranklist" element={<CompetitionRanklistPage />} />
               <Route path="/competition/:id/submissions" element={<CompetitionSubmissionsPage />} />
               <Route path="/competition/:cid/problem/:id" element={<CompetitionProblemDetailPage />} />
               <Route path="/practices" element={<PracticesPage />} />

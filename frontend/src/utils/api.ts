@@ -15,6 +15,21 @@ const axiosInstance: AxiosInstance = axios.create({
   timeout: 30000,
 });
 
+const isPublicPage = (pathname: string): boolean => {
+  return (
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password' ||
+    pathname === '/problems' ||
+    pathname === '/ranklist' ||
+    pathname === '/competitions' ||
+    /^\/problem\/\d+(\/solutions(\/\d+)?|\/solutions\/publish)?$/.test(pathname) ||
+    /^\/competition\/\d+$/.test(pathname) ||
+    /^\/competition\/\d+\/ranklist$/.test(pathname)
+  );
+};
+
 // 请求拦截器 - 添加 token
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -52,7 +67,7 @@ axiosInstance.interceptors.response.use(
         setTimeout(() => {
           window.location.href = '/login';
         }, 200);
-      } else if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+      } else if (!isPublicPage(window.location.pathname)) {
         // 其他页面，正常跳转
         setTimeout(() => {
           window.location.href = '/login';
