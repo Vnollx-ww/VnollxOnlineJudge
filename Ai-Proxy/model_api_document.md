@@ -38,6 +38,7 @@ Content-Type: application/json
 | 智谱 GLM | https://open.bigmodel.cn/api/paas/v4 |
 | 阿里云百炼 (Qwen / DeepSeek / Kimi / MiniMax 等) | https://dashscope.aliyuncs.com/compatible-mode/v1 |
 | Groq | https://api.groq.com/openai/v1 |
+| NVIDIA NIM (GLM-5.1) | https://integrate.api.nvidia.com/v1 |
 | OpenAI 官方 / 其他 OpenAI 兼容服务 | 自行配置 |
 
 厂商专属参数（如 DeepSeek 的 `enable_thinking: false`）通过请求体 `extra_body` 透传；

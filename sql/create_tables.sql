@@ -727,4 +727,5 @@ VALUES
 (1, 'Mistral Large',   'openai_compatible', 'mistral-large-latest', 'https://api.mistral.ai/v1',                              NULL, '',                       NULL,                                          0, 1, 'overseas'),
 (2, 'GLM-4.7',         'openai_compatible', 'glm-4.7',              'https://open.bigmodel.cn/api/paas/v4',                  NULL, 'your-zhipu-api-key',     NULL,                                          2, 0, 'domestic'),
 (3, 'Qwen Plus',       'openai_compatible', 'qwen-plus',            'https://dashscope.aliyuncs.com/compatible-mode/v1',     NULL, 'your-dashscope-api-key', NULL,                                          1, 1, 'domestic'),
-(4, 'DeepSeek v3.1',   'openai_compatible', 'deepseek-v3.1',        'https://dashscope.aliyuncs.com/compatible-mode/v1',     NULL, 'your-dashscope-api-key', JSON_OBJECT('enable_thinking', false),         3, 1, 'domestic');
+(4, 'DeepSeek v3.1',   'openai_compatible', 'deepseek-v3.1',        'https://dashscope.aliyuncs.com/compatible-mode/v1',     NULL, 'your-dashscope-api-key', JSON_OBJECT('enable_thinking', false),         3, 1, 'domestic'),
+(5, 'GLM-5.1 (NVIDIA)', 'openai_compatible', 'z-ai/glm-5.1',        'https://integrate.api.nvidia.com/v1',                   NULL, '',                       JSON_OBJECT('top_p', 1),                       4, 1, 'overseas');

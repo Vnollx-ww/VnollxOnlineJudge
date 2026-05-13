@@ -117,6 +117,11 @@ const isUserSame = (a: RankUser, b: RankUser) => {
 
 export const getUserKey = (user: RankUser) => String(user.id ?? user.name);
 
+const hasCompetitionEnded = (competition: Competition) => {
+  const endTime = new Date(competition.endTime).getTime();
+  return Number.isFinite(endTime) && Date.now() >= endTime;
+};
+
 export const useCompetitionRanklist = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -247,7 +252,14 @@ export const useCompetitionRanklist = () => {
 
   useEffect(() => {
     if (!passwordVerified || !competition) return;
-    const timer = window.setInterval(() => loadRanklist(false), 10000);
+    if (hasCompetitionEnded(competition)) return;
+    const timer = window.setInterval(() => {
+      if (hasCompetitionEnded(competition)) {
+        window.clearInterval(timer);
+        return;
+      }
+      loadRanklist(false);
+    }, 10000);
     return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [passwordVerified, competition, id]);
