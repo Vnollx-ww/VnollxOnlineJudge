@@ -8,10 +8,8 @@ import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.ai.AdminAiModelDetailVo;
 import com.example.vnollxonlinejudge.model.vo.ai.AdminAiModelConversationVo;
 import com.example.vnollxonlinejudge.model.vo.ai.AiModelVo;
-import com.example.vnollxonlinejudge.model.vo.ai.AiPlatformVo;
 import com.example.vnollxonlinejudge.service.AdminAiModelConversationService;
 import com.example.vnollxonlinejudge.service.AiModelService;
-import com.example.vnollxonlinejudge.service.AiPlatformService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,23 +25,14 @@ import java.util.List;
 public class AdminAiModelController {
     private static final Logger logger = LoggerFactory.getLogger(AdminAiModelController.class);
     private final AiModelService aiModelService;
-    private final AiPlatformService aiPlatformService;
     private final AdminAiModelConversationService adminAiModelConversationService;
 
     public AdminAiModelController(
             AiModelService aiModelService,
-            AiPlatformService aiPlatformService,
             AdminAiModelConversationService adminAiModelConversationService
     ) {
         this.aiModelService = aiModelService;
-        this.aiPlatformService = aiPlatformService;
         this.adminAiModelConversationService = adminAiModelConversationService;
-    }
-
-    @GetMapping("/platforms")
-    @RequirePermission(PermissionCode.AI_CONFIG_VIEW)
-    public Result<List<AiPlatformVo>> listPlatforms() {
-        return Result.Success(aiPlatformService.listEnabled());
     }
 
     @GetMapping("/list")
@@ -59,6 +48,9 @@ public class AdminAiModelController {
         AdminAiModelDetailVo vo = AdminAiModelDetailVo.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .provider(entity.getProvider())
+                .modelCode(entity.getModelCode())
+                .baseUrl(entity.getBaseUrl())
                 .logoUrl(entity.getLogoUrl())
                 .extraConfig(entity.getExtraConfig())
                 .sortOrder(entity.getSortOrder())

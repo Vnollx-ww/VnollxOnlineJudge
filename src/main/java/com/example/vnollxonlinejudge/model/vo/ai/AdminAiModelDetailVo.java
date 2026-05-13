@@ -15,6 +15,12 @@ import lombok.NoArgsConstructor;
 public class AdminAiModelDetailVo {
     private Long id;
     private String name;
+    /** 适配器类型：openai_compatible / gemini 等 */
+    private String provider;
+    /** 真实厂商模型名（透传给上游 SDK） */
+    private String modelCode;
+    /** 上游 API base URL */
+    private String baseUrl;
     private String logoUrl;
     private String extraConfig;
     private Integer sortOrder;

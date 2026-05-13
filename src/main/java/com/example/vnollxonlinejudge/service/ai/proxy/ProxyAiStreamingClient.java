@@ -69,19 +69,58 @@ public class ProxyAiStreamingClient {
     /**
      * 流式对话（带工具调用）
      * @param proxyBaseUrl 代理根地址（国内/国外由调用方根据 ai_model.proxy_type 选择）
+     * @param provider     适配器类型（openai_compatible / gemini 等）
+     * @param model        真实厂商模型名（透传给上游 SDK）
+     * @param upstreamBaseUrl 上游 API base URL（openai_compatible 必填）
      */
     public Flux<String> streamChat(
             String proxyBaseUrl,
+            String provider,
             String model,
+            String upstreamBaseUrl,
             String apiKey,
             List<ChatMessage> messages,
             Long currentUserId,
             Double temperature,
             Integer maxTokens
     ) {
+        return streamChat(proxyBaseUrl, provider, model, upstreamBaseUrl, apiKey,
+                messages, currentUserId, temperature, maxTokens, null);
+    }
+
+    /**
+     * 重载：额外传 extra_body（如 DeepSeek 的 {"enable_thinking": false}）。
+     * extraConfigJson 是 ai_model.extra_config 的原始 JSON 字符串；解析失败会被静默忽略。
+     */
+    public Flux<String> streamChat(
+            String proxyBaseUrl,
+            String provider,
+            String model,
+            String upstreamBaseUrl,
+            String apiKey,
+            List<ChatMessage> messages,
+            Long currentUserId,
+            Double temperature,
+            Integer maxTokens,
+            String extraConfigJson
+    ) {
         Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("provider", provider);
         requestBody.put("model", model);
         requestBody.put("api_key", apiKey);
+        if (upstreamBaseUrl != null && !upstreamBaseUrl.isBlank()) {
+            requestBody.put("base_url", upstreamBaseUrl);
+        }
+        if (extraConfigJson != null && !extraConfigJson.isBlank()) {
+            try {
+                JSONObject extraBody = JSON.parseObject(extraConfigJson);
+                if (extraBody != null && !extraBody.isEmpty()) {
+                    requestBody.put("extra_body", extraBody);
+                }
+            } catch (Exception e) {
+                logger.warn("[ProxyAI] 解析 ai_model.extra_config 失败，已忽略: {}", e.getMessage());
+            }
+        }
 
         List<Map<String, String>> msgList = new ArrayList<>();
         for (ChatMessage msg : messages) {
@@ -106,7 +145,7 @@ public class ProxyAiStreamingClient {
 
         String base = (proxyBaseUrl != null && !proxyBaseUrl.isBlank()) ? proxyBaseUrl.trim() : proxyUrl;
         String url = base.replaceAll("/$", "") + "/v1/chat/stream/tools";
-        logger.info("[ProxyAI] 调用代理: url={}, model={}", url, model);
+        logger.info("[ProxyAI] 调用代理: url={}, provider={}, model={}", url, provider, model);
 
         ParameterizedTypeReference<ServerSentEvent<String>> typeRef =
                 new ParameterizedTypeReference<>() {};

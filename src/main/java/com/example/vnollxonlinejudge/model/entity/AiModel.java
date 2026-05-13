@@ -23,6 +23,12 @@ public class AiModel {
     private Long id;
     /** 模型显示名称 */
     private String name;
+    /** 适配器类型：openai_compatible / gemini 等 */
+    private String provider;
+    /** 真实厂商模型名（透传给上游 SDK，如 mistral-large-latest、glm-4.7） */
+    private String modelCode;
+    /** 上游 API base URL（openai_compatible 必填） */
+    private String baseUrl;
     /** 模型 Logo 图片地址 */
     private String logoUrl;
     /** API 密钥 */

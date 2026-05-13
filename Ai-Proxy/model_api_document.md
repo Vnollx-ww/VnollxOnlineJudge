@@ -1,7 +1,54 @@
 # 模型 API 对接文档
 
-本文档记录当前项目需要兼容的模型厂商、对应依赖，以及官方示例代码。  
-项目约定是：根据传入的模型名，路由到对应的 `py` 文件，再由该文件调用对应厂商 SDK 或 API，并将流式结果返回给上游服务。
+本服务为 Java 后端与各家大模型之间的**纯转发代理**，**不再根据模型名猜测厂商**。
+调用方（Java 后端）需要在请求体里同时指定：
+
+- `provider`：适配器类型，目前支持 `openai_compatible` / `gemini`
+- `model`：真实厂商模型名，原样透传给上游 SDK
+- `base_url`：上游 API base URL（`openai_compatible` 必填）
+- `api_key`：上游 API Key
+
+`(provider, model)` 由 Java 端 `ai_model` 表的 `(provider, model_code)` 唯一组合管理；
+新增模型一般不需要改本服务的 Python 代码，只需在 `ai_model` 表里加一行配置。
+
+## 请求示例
+
+```http
+POST /v1/chat/stream
+Content-Type: application/json
+
+{
+  "provider": "openai_compatible",
+  "model": "mistral-large-latest",
+  "base_url": "https://api.mistral.ai/v1",
+  "api_key": "sk-xxx",
+  "messages": [{"role": "user", "content": "你好"}],
+  "temperature": 0.7
+}
+```
+
+## Provider 适配器
+
+### `openai_compatible`
+通用 OpenAI 协议适配器，靠 `base_url` 区分接入点。覆盖：
+
+| 厂商 | base_url |
+|---|---|
+| Mistral | https://api.mistral.ai/v1 |
+| 智谱 GLM | https://open.bigmodel.cn/api/paas/v4 |
+| 阿里云百炼 (Qwen / DeepSeek / Kimi / MiniMax 等) | https://dashscope.aliyuncs.com/compatible-mode/v1 |
+| Groq | https://api.groq.com/openai/v1 |
+| OpenAI 官方 / 其他 OpenAI 兼容服务 | 自行配置 |
+
+厂商专属参数（如 DeepSeek 的 `enable_thinking: false`）通过请求体 `extra_body` 透传；
+Java 端可在 `ai_model.extra_config` JSON 中维护，调用时拼到 `extra_body` 即可。
+
+### `gemini`
+保留位，目前仍走 OpenAI 协议（适配 hiapi.online 等中转）。
+`base_url` **可选**，未填则用默认中转地址 `https://hiapi.online/v1`，与重构前行为一致。
+将来若需要切换到官方 `google-genai` SDK 在此实现里替换即可。
+
+## 历史厂商示例（已不再单独列适配器，仅作模型/SDK 参考）
 
 ## 依赖总览
 

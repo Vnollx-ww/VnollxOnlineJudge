@@ -11,9 +11,10 @@ class ChatMessage(BaseModel):
 
 
 class ChatStreamRequest(BaseModel):
-    model: str = Field(min_length=1)
+    provider: str = Field(min_length=1, description="适配器类型：openai_compatible / gemini 等")
+    model: str = Field(min_length=1, description="真实厂商模型名，透传给上游 SDK")
     api_key: str = Field(min_length=1)
-    base_url: str | None = None
+    base_url: str | None = Field(default=None, description="上游 API base URL（openai_compatible 必填）")
     messages: list[ChatMessage] = Field(min_length=1)
     temperature: float | None = None
     max_tokens: int | None = Field(default=None, gt=0)

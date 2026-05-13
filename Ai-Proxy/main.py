@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from app.database import close_db_pool, init_db_pool
 from app.oj_tools import TOOL_DEFINITIONS, execute_tool
-from app.provider_registry import ProviderNotFoundError, get_provider, normalize_model_name
+from app.provider_registry import ProviderNotFoundError, get_provider
 from app.providers.base import ProviderError
 from app.schemas import ChatMessage, ChatStreamRequest
 
@@ -30,7 +30,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-SYSTEM_PROMPT = """你是VnollxOnlineJudge在线判题系统的智能助手，名字叫小V，你是由Vnollx(吴恩宇)开发的。
+SYSTEM_PROMPT = """你是在线判题系统的智能助手，名字叫小V。
 
 你可以帮助用户：
 1. 查询个人信息、提交记录、通过的题目等
@@ -72,24 +72,21 @@ async def health() -> dict:
 @app.post("/v1/chat/stream")
 async def chat_stream(request: ChatStreamRequest) -> StreamingResponse:
     try:
-        provider = get_provider(request.model)
-        actual_model = normalize_model_name(request.model)
+        provider = get_provider(request.provider)
     except ProviderNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    normalized_request = request.model_copy(update={"model": actual_model})
 
     async def event_stream() -> AsyncIterator[bytes]:
         yield sse_event(
             {
                 "type": "meta",
                 "provider": provider.provider_name,
-                "model": actual_model,
+                "model": request.model,
             }
         )
 
         try:
-            async for chunk in provider.stream(normalized_request):
+            async for chunk in provider.stream(request):
                 if chunk:
                     yield sse_event({"type": "content", "delta": chunk})
         except ProviderError as exc:
@@ -123,8 +120,7 @@ if __name__ == "__main__":
 async def chat_stream_with_tools(request: ChatStreamRequest) -> StreamingResponse:
     """带 OJ 工具调用的流式聊天端点"""
     try:
-        provider = get_provider(request.model)
-        actual_model = normalize_model_name(request.model)
+        provider = get_provider(request.provider)
     except ProviderNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -137,7 +133,7 @@ async def chat_stream_with_tools(request: ChatStreamRequest) -> StreamingRespons
             {
                 "type": "meta",
                 "provider": provider.provider_name,
-                "model": actual_model,
+                "model": request.model,
             }
         )
 
@@ -146,7 +142,7 @@ async def chat_stream_with_tools(request: ChatStreamRequest) -> StreamingRespons
 
         for round_num in range(max_tool_rounds + 1):
             current_request = request.model_copy(
-                update={"model": actual_model, "messages": current_messages}
+                update={"messages": current_messages}
             )
 
             try:

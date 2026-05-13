@@ -54,6 +54,8 @@ public class AiModelServiceImpl implements AiModelService {
 
     @Override
     public Long create(AdminAiModelSaveDTO dto) {
+        validateSaveDto(dto);
+        ensureProviderModelCodeUnique(dto.getProvider(), dto.getModelCode(), null);
         AiModel entity = toEntity(dto);
         entity.setId(null);
         aiModelMapper.insert(entity);
@@ -69,6 +71,8 @@ public class AiModelServiceImpl implements AiModelService {
         if (existing == null) {
             throw new BusinessException("AI 模型不存在");
         }
+        validateSaveDto(dto);
+        ensureProviderModelCodeUnique(dto.getProvider(), dto.getModelCode(), dto.getId());
         AiModel entity = toEntity(dto);
         entity.setId(dto.getId());
         if (dto.getApiKey() == null || dto.getApiKey().trim().isEmpty()) {
@@ -78,6 +82,35 @@ public class AiModelServiceImpl implements AiModelService {
             entity.setProxyType(existing.getProxyType() != null ? existing.getProxyType() : "overseas");
         }
         aiModelMapper.updateById(entity);
+    }
+
+    private void validateSaveDto(AdminAiModelSaveDTO dto) {
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            throw new BusinessException("模型显示名称不能为空");
+        }
+        if (dto.getProvider() == null || dto.getProvider().trim().isEmpty()) {
+            throw new BusinessException("provider 不能为空");
+        }
+        if (dto.getModelCode() == null || dto.getModelCode().trim().isEmpty()) {
+            throw new BusinessException("modelCode 不能为空");
+        }
+        if ("openai_compatible".equalsIgnoreCase(dto.getProvider().trim())
+                && (dto.getBaseUrl() == null || dto.getBaseUrl().trim().isEmpty())) {
+            throw new BusinessException("openai_compatible 适配器必须填写 baseUrl");
+        }
+    }
+
+    private void ensureProviderModelCodeUnique(String provider, String modelCode, Long excludeId) {
+        LambdaQueryWrapper<AiModel> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiModel::getProvider, provider.trim())
+                .eq(AiModel::getModelCode, modelCode.trim());
+        if (excludeId != null) {
+            wrapper.ne(AiModel::getId, excludeId);
+        }
+        Long count = aiModelMapper.selectCount(wrapper);
+        if (count != null && count > 0) {
+            throw new BusinessException("已存在相同 (provider, modelCode) 的模型记录");
+        }
     }
 
     @Override
@@ -100,7 +133,10 @@ public class AiModelServiceImpl implements AiModelService {
     private AiModel toEntity(AdminAiModelSaveDTO dto) {
         return AiModel.builder()
                 .id(dto.getId())
-                .name(dto.getName())
+                .name(dto.getName() != null ? dto.getName().trim() : null)
+                .provider(dto.getProvider() != null ? dto.getProvider().trim() : null)
+                .modelCode(dto.getModelCode() != null ? dto.getModelCode().trim() : null)
+                .baseUrl(dto.getBaseUrl() != null ? dto.getBaseUrl().trim() : null)
                 .logoUrl(dto.getLogoUrl())
                 .apiKey(dto.getApiKey())
                 .extraConfig(dto.getExtraConfig())

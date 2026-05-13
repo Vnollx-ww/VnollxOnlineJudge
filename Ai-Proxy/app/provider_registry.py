@@ -1,148 +1,32 @@
+"""Provider 路由表。
+
+请求体显式指定 provider 字段，本模块仅做字典查表，没有任何模型名猜测/前缀解析逻辑。
+要新增一个适配器：实现一个 BaseProvider 子类，在 PROVIDER_FACTORIES 里注册。
+要新增一个模型：直接在 Java 端 ai_model 表里加一行 (provider, model_code, base_url, api_key) 即可，无需改本模块。
+"""
 from app.providers.base import BaseProvider
-from app.providers.deepseek import DeepSeekProvider
 from app.providers.gemini import GeminiProvider
-from app.providers.groq import GroqProvider
-from app.providers.kimi import KimiProvider
-from app.providers.minimax import MiniMaxProvider
-from app.providers.mistral import MistralProvider
-from app.providers.qwen import QwenProvider
-from app.providers.zhipu import ZhipuProvider
+from app.providers.openai_compatible import OpenAICompatibleProvider
 
 
 class ProviderNotFoundError(ValueError):
-    """找不到可用的模型提供方。"""
+    """找不到可用的 provider。"""
 
 
 PROVIDER_FACTORIES: dict[str, type[BaseProvider]] = {
-    "mistral": MistralProvider,
+    "openai_compatible": OpenAICompatibleProvider,
     "gemini": GeminiProvider,
-    "glm": ZhipuProvider,
-    "zhipu": ZhipuProvider,
-    "qwen": QwenProvider,
-    "deepseek": DeepSeekProvider,
-    "groq": GroqProvider,
-    "kimi": KimiProvider,
-    "minimax": MiniMaxProvider,
-}
-
-PROVIDER_DEFAULT_MODELS: dict[str, str] = {
-    "mistral": "mistral-large-latest",
-    "gemini": "gemini-3-flash",
-    "glm": "glm-4.7",
-    "zhipu": "glm-4.7",
-    "qwen": "qwen-plus",
-    "deepseek": "deepseek-v3.1",
-    "groq": "llama-3.3-70b-versatile",
-    "kimi": "kimi-k2.5",
-    "minimax": "MiniMax-M2.5",
-}
-
-MODEL_ALIASES: dict[str, tuple[str, str]] = {
-    "mistral": ("mistral", "mistral-large-latest"),
-    "mistral large": ("mistral", "mistral-large-latest"),
-    "mistral-large": ("mistral", "mistral-large-latest"),
-    "gemini": ("gemini", "gemini-2.5-pro"),
-    "glm": ("glm", "glm-4.7"),
-    "zhipu": ("zhipu", "glm-4.7"),
-    "智谱": ("zhipu", "glm-4.7"),
-    "智谱glm": ("zhipu", "glm-4.7"),
-    "智谱 glm": ("zhipu", "glm-4.7"),
-    "智谱 glm-4": ("zhipu", "glm-4.7"),
-    "智谱 glm-4.7": ("zhipu", "glm-4.7"),
-    "zhipu glm": ("zhipu", "glm-4.7"),
-    "zhipu glm-4": ("zhipu", "glm-4.7"),
-    "zhipu glm-4.7": ("zhipu", "glm-4.7"),
-    "glm-4.7": ("glm", "glm-4.7"),
-    "qwen": ("qwen", "qwen-plus"),
-    "通义千问": ("qwen", "qwen-plus"),
-    "qwen plus": ("qwen", "qwen-plus"),
-    "qwen-plus": ("qwen", "qwen-plus"),
-    "deepseek": ("deepseek", "deepseek-v3.1"),
-    "deepseek v3.1": ("deepseek", "deepseek-v3.1"),
-    "deepseek-v3.1": ("deepseek", "deepseek-v3.1"),
-    "groq": ("groq", "llama-3.3-70b-versatile"),
-    "grok": ("groq", "llama-3.3-70b-versatile"),
-    "llama-3.3-70b-versatile": ("groq", "llama-3.3-70b-versatile"),
-    "kimi": ("kimi", "kimi-k2.5"),
-    "kimi-k2.5": ("kimi", "kimi-k2.5"),
-    "minimax": ("minimax", "MiniMax-M2.5"),
-    "minimax-m2.5": ("minimax", "MiniMax-M2.5"),
 }
 
 
-def split_vendor_prefix(model: str) -> tuple[str | None, str]:
-    for separator in (":", "/"):
-        if separator in model:
-            prefix, rest = model.split(separator, 1)
-            return prefix.strip().lower(), rest.strip()
-    return None, model.strip()
-
-
-def infer_provider_key(model: str) -> str:
-    explicit_vendor, model_name = split_vendor_prefix(model)
-    if explicit_vendor in PROVIDER_FACTORIES:
-        return explicit_vendor
-
-    normalized = model_name.lower()
-    alias = MODEL_ALIASES.get(normalized)
-    if alias:
-        return alias[0]
-
-    if ("智谱" in model_name or "zhipu" in normalized) and "glm" in normalized:
-        return "zhipu"
-    if normalized.startswith("mistral") or normalized.startswith("ministral") or normalized.startswith("pixtral"):
-        return "mistral"
-    if normalized.startswith("gemini"):
-        return "gemini"
-    if normalized.startswith("glm"):
-        return "glm"
-    if normalized.startswith("qwen"):
-        return "qwen"
-    if normalized.startswith("deepseek"):
-        return "deepseek"
-    if normalized.startswith("groq"):
-        return "groq"
-    if normalized.startswith("llama"):
-        return "groq"
-    if normalized.startswith("kimi"):
-        return "kimi"
-    if normalized.startswith("minimax"):
-        return "minimax"
-
-    raise ProviderNotFoundError(
-        "无法根据模型名匹配提供方，请使用 `mistral:`、`gemini:`、`glm:`、`qwen:`、`deepseek:`、`groq:`、`kimi:`、`minimax:` 前缀。"
-    )
-
-
-def get_provider(model: str) -> BaseProvider:
-    provider_key = infer_provider_key(model)
-    return PROVIDER_FACTORIES[provider_key]()
-
-
-def normalize_model_name(model: str) -> str:
-    explicit_vendor, model_name = split_vendor_prefix(model)
-    if explicit_vendor in PROVIDER_FACTORIES and model_name:
-        if model_name:
-            alias = MODEL_ALIASES.get(model_name.lower())
-            if alias and alias[0] == explicit_vendor:
-                return alias[1]
-            return model_name
-        return PROVIDER_DEFAULT_MODELS[explicit_vendor]
-
-    alias = MODEL_ALIASES.get(model.strip().lower())
-    if alias:
-        return alias[1]
-
-    normalized_input = model.strip().lower()
-    if ("智谱" in model.strip() or "zhipu" in normalized_input) and "glm" in normalized_input:
-        if "glm-4.7" in normalized_input:
-            return "glm-4.7"
-        if "glm-4" in normalized_input:
-            return "glm-4.7"
-        return PROVIDER_DEFAULT_MODELS["zhipu"]
-
-    provider_key = infer_provider_key(model)
-    normalized = model.strip()
-    if normalized.lower() == provider_key:
-        return PROVIDER_DEFAULT_MODELS[provider_key]
-    return PROVIDER_DEFAULT_MODELS[provider_key]
+def get_provider(provider: str) -> BaseProvider:
+    if not provider:
+        raise ProviderNotFoundError("请求缺少 provider 字段")
+    key = provider.strip().lower()
+    factory = PROVIDER_FACTORIES.get(key)
+    if factory is None:
+        supported = ", ".join(sorted(PROVIDER_FACTORIES.keys()))
+        raise ProviderNotFoundError(
+            f"未注册的 provider：{provider!r}，目前支持：{supported}"
+        )
+    return factory()

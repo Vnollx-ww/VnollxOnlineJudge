@@ -197,6 +197,12 @@ public class AiServiceImpl implements AiService {
         if (aiModel.getApiKey() == null || aiModel.getApiKey().trim().isEmpty()) {
             return Flux.just("[ERROR] 该模型未配置 API Key");
         }
+        if (aiModel.getProvider() == null || aiModel.getProvider().trim().isEmpty()) {
+            return Flux.just("[ERROR] 该模型未配置 provider");
+        }
+        if (aiModel.getModelCode() == null || aiModel.getModelCode().trim().isEmpty()) {
+            return Flux.just("[ERROR] 该模型未配置 modelCode");
+        }
 
         String cacheKey = sessionCacheKey(userId, sessionId);
         List<ProxyAiStreamingClient.ChatMessage> history = sessionMessageHistories.getOrDefault(cacheKey, Collections.emptyList());
@@ -209,12 +215,15 @@ public class AiServiceImpl implements AiService {
         String proxyBaseUrl = resolveProxyBaseUrl(aiModel);
         return proxyClient.streamChat(
                         proxyBaseUrl,
-                        aiModel.getName(),
+                        aiModel.getProvider().trim(),
+                        aiModel.getModelCode().trim(),
+                        aiModel.getBaseUrl() != null ? aiModel.getBaseUrl().trim() : null,
                         aiModel.getApiKey().trim(),
                         messages,
                         userId,
                         null,
-                        null
+                        null,
+                        aiModel.getExtraConfig()
                 )
                 .doOnNext(token -> {
                     if (token.startsWith("[THINKING]")) {

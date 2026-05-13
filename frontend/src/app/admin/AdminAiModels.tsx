@@ -5,7 +5,7 @@ import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useAdminAiModels } from '@/hooks/useAdminAiModels';
+import { useAdminAiModels, PROVIDER_OPTIONS } from '@/hooks/useAdminAiModels';
 import type { AdminAiModelRecordItem } from '@/hooks/useAdminAiModels';
 
 const formatTime = (value?: number) => {
@@ -206,6 +206,28 @@ const AdminAiModels: React.FC = () => {
         >
           <Field label="显示名称">
             <Input value={modelForm.name} onChange={(event) => updateModelForm('name', event.target.value)} placeholder="如：GPT-4" />
+          </Field>
+          <Field label="Provider（适配器类型）">
+            <Select
+              value={modelForm.provider}
+              onChange={(value) => updateModelForm('provider', value)}
+              options={PROVIDER_OPTIONS}
+              placeholder="选择适配器类型"
+            />
+          </Field>
+          <Field label="Model Code（真实厂商模型名）">
+            <Input
+              value={modelForm.modelCode}
+              onChange={(event) => updateModelForm('modelCode', event.target.value)}
+              placeholder="如：mistral-large-latest、glm-4.7、qwen-plus"
+            />
+          </Field>
+          <Field label="Base URL（上游 API 地址）">
+            <Input
+              value={modelForm.baseUrl}
+              onChange={(event) => updateModelForm('baseUrl', event.target.value)}
+              placeholder="如：https://api.mistral.ai/v1"
+            />
           </Field>
           <Field label="Logo 图片">
             <div className="flex gap-2 items-center flex-wrap">

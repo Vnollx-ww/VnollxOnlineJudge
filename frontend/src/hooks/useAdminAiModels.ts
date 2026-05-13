@@ -55,6 +55,9 @@ export interface AdminAiModelConversationData {
 export interface AdminAiModelDetail {
   id: number;
   name: string;
+  provider?: string;
+  modelCode?: string;
+  baseUrl?: string;
   logoUrl?: string;
   sortOrder?: number;
   status?: number;
@@ -63,6 +66,9 @@ export interface AdminAiModelDetail {
 
 export interface AiModelFormValues {
   name: string;
+  provider: string;
+  modelCode: string;
+  baseUrl: string;
   logoUrl: string;
   apiKey: string;
   sortOrder: number | string;
@@ -72,12 +78,20 @@ export interface AiModelFormValues {
 
 export const defaultModelForm: AiModelFormValues = {
   name: '',
+  provider: 'openai_compatible',
+  modelCode: '',
+  baseUrl: '',
   logoUrl: '',
   apiKey: '',
   sortOrder: 0,
   status: 1,
   proxyType: 'overseas',
 };
+
+export const PROVIDER_OPTIONS: { value: string; label: string }[] = [
+  { value: 'openai_compatible', label: 'OpenAI 兼容 (openai_compatible)' },
+  { value: 'gemini', label: 'Gemini (gemini)' },
+];
 
 export const useAdminAiModels = () => {
   const [list, setList] = useState<AiModelVo[]>([]);
@@ -126,6 +140,9 @@ export const useAdminAiModels = () => {
         const d = res.data;
         setModelForm({
           name: d.name,
+          provider: d.provider || 'openai_compatible',
+          modelCode: d.modelCode || '',
+          baseUrl: d.baseUrl || '',
           logoUrl: d.logoUrl || '',
           apiKey: '',
           sortOrder: d.sortOrder ?? 0,
@@ -207,10 +224,29 @@ export const useAdminAiModels = () => {
   };
 
   const handleSubmit = async (values: AiModelFormValues) => {
+    if (!values.name?.trim()) {
+      toast.error('请填写显示名称');
+      return;
+    }
+    if (!values.provider?.trim()) {
+      toast.error('请选择 provider');
+      return;
+    }
+    if (!values.modelCode?.trim()) {
+      toast.error('请填写 Model Code（真实厂商模型名）');
+      return;
+    }
+    if (values.provider === 'openai_compatible' && !values.baseUrl?.trim()) {
+      toast.error('openai_compatible 需要填写 Base URL');
+      return;
+    }
     try {
       const payload = {
         id: editingId ?? undefined,
-        name: values.name,
+        name: values.name.trim(),
+        provider: values.provider.trim(),
+        modelCode: values.modelCode.trim(),
+        baseUrl: values.baseUrl?.trim() || undefined,
         logoUrl: values.logoUrl || undefined,
         apiKey: values.apiKey || undefined,
         sortOrder: values.sortOrder ?? 0,

@@ -1135,19 +1135,21 @@ const AIAssistant: React.FC = () => {
                           }`}
                         >
                           <span className="truncate flex-1">{session.title || '新会话'}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSession(session.id);
-                            }}
-                            className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[#c8d4e6] text-[#5f6368] hover:text-[#202124] transition-all shrink-0"
-                            title="删除会话"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {!session.isPending && !session.id.startsWith('pending_') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSession(session.id);
+                              }}
+                              className="p-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-[#c8d4e6] text-[#5f6368] hover:text-[#202124] transition-all shrink-0"
+                              title="删除会话"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
 
-                        {deletingSessionId === session.id && (
+                        {!session.isPending && !session.id.startsWith('pending_') && deletingSessionId === session.id && (
                           <div
                             className="mx-2 mt-1 mb-1 p-3 rounded-xl bg-white border border-gray-200/80 shadow-lg"
                             style={{ animation: 'fadeScaleIn 0.15s ease-out', transformOrigin: 'top center' }}

@@ -536,6 +536,9 @@ create table ai_model
     id           bigint auto_increment comment '模型ID'
         primary key,
     name         varchar(100)                        not null comment '模型显示名称',
+    provider     varchar(32) default 'openai_compatible' not null comment '适配器类型：openai_compatible / gemini 等',
+    model_code   varchar(128)                        not null comment '真实厂商模型名（透传给上游 SDK，如 mistral-large-latest、glm-4.7）',
+    base_url     varchar(512)                        null comment '上游 API base URL（openai_compatible 必填）',
     logo_url     varchar(512)                        null comment '模型 Logo 图片地址',
     api_key      varchar(512)                        null comment 'API 密钥(加密存储)',
     extra_config json                                null comment '扩展配置(JSON)',
@@ -544,6 +547,7 @@ create table ai_model
     proxy_type   varchar(20) default 'overseas'       null comment '代理类型：domestic-国内，overseas-国外',
     create_time  datetime default CURRENT_TIMESTAMP  null comment '创建时间',
     update_time  datetime default CURRENT_TIMESTAMP  null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_ai_model_provider_code unique (provider, model_code),
     index idx_status (status),
     index idx_sort_order (sort_order)
 ) comment 'AI 模型配置表' collate = utf8mb4_unicode_ci;
@@ -716,11 +720,11 @@ INSERT INTO `tag` (`id`, `name`) VALUES
 (26, '并查集'), (27, '字典树'), (28, '线段树'), (29, '单调栈'), (30, '单调队列');
 
 -- =====================================================
--- 初始化 AI 模型（示例：LangChain4j-Mistral + 智谱 GLM-4.7）
+-- 初始化 AI 模型（示例：provider + model_code 唯一组合）
 -- =====================================================
-INSERT INTO ai_model (id, name, logo_url, api_key, sort_order, status, proxy_type)
+INSERT INTO ai_model (id, name, provider, model_code, base_url, logo_url, api_key, extra_config, sort_order, status, proxy_type)
 VALUES
-(1, 'Mistral', NULL, '', 0, 1, 'overseas'),
-(2, 'GLM-4.7', NULL, 'your-zhipu-api-key', 2, 0, 'domestic'),
-(3, 'Qwen Plus', NULL, 'your-dashscope-api-key', 1, 1, 'domestic'),
-(4, 'DeepSeek v3.1', NULL, 'your-dashscope-api-key', 3, 1, 'domestic');
+(1, 'Mistral Large',   'openai_compatible', 'mistral-large-latest', 'https://api.mistral.ai/v1',                              NULL, '',                       NULL,                                          0, 1, 'overseas'),
+(2, 'GLM-4.7',         'openai_compatible', 'glm-4.7',              'https://open.bigmodel.cn/api/paas/v4',                  NULL, 'your-zhipu-api-key',     NULL,                                          2, 0, 'domestic'),
+(3, 'Qwen Plus',       'openai_compatible', 'qwen-plus',            'https://dashscope.aliyuncs.com/compatible-mode/v1',     NULL, 'your-dashscope-api-key', NULL,                                          1, 1, 'domestic'),
+(4, 'DeepSeek v3.1',   'openai_compatible', 'deepseek-v3.1',        'https://dashscope.aliyuncs.com/compatible-mode/v1',     NULL, 'your-dashscope-api-key', JSON_OBJECT('enable_thinking', false),         3, 1, 'domestic');

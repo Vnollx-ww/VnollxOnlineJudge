@@ -1,3 +1,11 @@
+"""Gemini 适配器（保留位）。
+
+当前通过 OpenAI 协议兼容的中转 API 调用，与 openai_compatible 行为相近，
+预留作将来切换到官方 google-genai SDK 的入口。
+
+`base_url` 可选：未传则使用默认中转地址 https://hiapi.online/v1
+（与重构前 GeminiProvider 行为保持一致）。
+"""
 from typing import Any, AsyncIterator
 
 from openai import AsyncOpenAI
@@ -47,7 +55,7 @@ async def iter_gemini_stream(
     request: ChatStreamRequest,
     tools: list[dict[str, Any]] | None = None,
 ) -> AsyncIterator[Any]:
-    base_url = (request.base_url or DEFAULT_GEMINI_BASE_URL).strip() or DEFAULT_GEMINI_BASE_URL
+    base_url = (request.base_url or "").strip() or DEFAULT_GEMINI_BASE_URL
     client = AsyncOpenAI(
         api_key=request.api_key,
         base_url=base_url,
