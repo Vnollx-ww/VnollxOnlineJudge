@@ -40,6 +40,9 @@ public class TokenFilter implements Filter {
             "/api/v1/competition/\\d+",
             "/api/v1/competition/problem/\\d+/\\d+",
             "/api/v1/competition/ranklist/\\d+",
+            "/api/v1/competition/ranklist-detail",
+            "/api/v1/competition/ranklist-submissions",
+            "/api/v1/competition/confirm",
             "/api/v1/competition/submission/\\d+",
             "/api/v1/solve/publish/\\d+"
     };

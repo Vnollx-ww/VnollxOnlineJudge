@@ -488,6 +488,7 @@ const CompetitionRanklist: React.FC = () => {
     ranklistTableWidth,
     handleToggleRow,
     returnTo,
+    cancelPasswordModal,
   } = useCompetitionRanklist();
 
   if (loading && !competition) {
@@ -609,7 +610,7 @@ const CompetitionRanklist: React.FC = () => {
         }
         open={passwordModalVisible}
         onOk={handleVerifyPassword}
-        onCancel={() => navigate('/competitions')}
+        onCancel={cancelPasswordModal}
         okText="验证"
         cancelText="取消"
         closable={false}

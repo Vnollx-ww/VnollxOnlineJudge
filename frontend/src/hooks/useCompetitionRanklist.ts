@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { competitionApi } from '@/lib';
-import { isAuthenticated } from '@/utils/auth';
 import { useCompetitionFirstBloodWebSocket } from '@/hooks/useCompetitionFirstBloodWebSocket';
 
 export interface Competition {
@@ -141,23 +140,27 @@ export const useCompetitionRanklist = () => {
       : `/competition/${id}`;
 
   const loadCompetition = async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     try {
-      const data = await competitionApi.list<Competition[]>();
-      if (data.code === 200) {
-        const comp = data.data.find((c: Competition) => c.id.toString() === id);
-        if (comp) setCompetition(comp);
-        else {
-          toast.error('比赛不存在');
-          navigate('/competitions');
-        }
-      }
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        toast.error('请先登录！');
-        navigate('/login');
+      const data = await competitionApi.get<Competition>(id);
+      if (data.code === 200 && data.data) {
+        const c = data.data;
+        setCompetition({
+          id: Number(c.id),
+          title: c.title,
+          beginTime: c.beginTime,
+          endTime: c.endTime,
+          needPassword: Boolean(c.needPassword),
+        });
       } else {
-        toast.error('加载比赛信息失败');
+        toast.error(data.msg || '比赛不存在');
+        navigate('/competitions');
       }
+    } catch {
+      toast.error('加载比赛信息失败');
     } finally {
       setLoading(false);
     }
@@ -220,24 +223,14 @@ export const useCompetitionRanklist = () => {
           return changed ? merged : prev;
         });
       }
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        toast.error('请先登录！');
-        navigate('/login');
-      } else {
-        toast.error('加载排行榜失败');
-      }
+    } catch {
+      toast.error('加载排行榜失败');
     } finally {
       if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      toast.error('请先登录！');
-      navigate('/login');
-      return;
-    }
     loadCompetition();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -338,5 +331,6 @@ export const useCompetitionRanklist = () => {
     ranklistTableWidth,
     handleToggleRow,
     returnTo,
+    cancelPasswordModal: () => navigate(-1),
   };
 };

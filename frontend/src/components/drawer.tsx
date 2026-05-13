@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { acquireBodyScrollLock, releaseBodyScrollLock } from '@/utils/bodyScrollLock';
 
 interface DrawerProps {
   open?: boolean;
@@ -35,11 +36,10 @@ const Drawer: React.FC<DrawerProps> = ({
       if (event.key === 'Escape' && closable) onClose?.();
     };
     document.addEventListener('keydown', handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    acquireBodyScrollLock();
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
+      releaseBodyScrollLock();
     };
   }, [open, onClose, closable]);
 

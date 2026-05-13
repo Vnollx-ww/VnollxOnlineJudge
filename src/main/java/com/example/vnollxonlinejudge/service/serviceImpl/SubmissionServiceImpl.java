@@ -193,7 +193,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     String beginTimeStr=redisService.getValueByKey(timeBeginKey);
                     Long penalty= TimeUtils.calculateMin(beginTimeStr,createTime);
                     redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,participantName,penalty);//如果是比赛那就需要更新缓存了
-                    pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantDisplayName);
+                    pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantDisplayName, judgeinfo.getSnowflakeId());
                 }
             } else { //已经 AC 过，再次 AC：只累加 submit/pass 计数，不动榜单分数和罚时
                 if (!rankCompetition) {
@@ -219,12 +219,16 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
     }
 
-    private void pushCompetitionFirstBloodIfNeeded(Long cid, Long pid, String problemTitle, String participantName) {
+    private void pushCompetitionFirstBloodIfNeeded(Long cid, Long pid, String problemTitle, String participantName, Long currentSnowflakeId) {
         QueryWrapper<Submission> wrapper = new QueryWrapper<>();
         wrapper.eq("cid", cid)
                 .eq("pid", pid)
-                .eq("status", "答案正确");
-        if (this.baseMapper.selectCount(wrapper) == 1) {
+                .eq("status", "答案正确")
+                .orderByAsc("snow_flake_id")
+                .orderByAsc("id")
+                .last("LIMIT 1");
+        Submission firstAccepted = this.baseMapper.selectOne(wrapper);
+        if (firstAccepted != null && Objects.equals(firstAccepted.getSnowflakeId(), currentSnowflakeId)) {
             competitionFirstBloodWebSocketHandler.sendFirstBlood(cid, pid, getCompetitionProblemLabel(cid, pid), problemTitle, participantName);
         }
     }
@@ -249,7 +253,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     public List<SubmissionVo> getSubmissionList(SubmissionQuery submissionQuery) {
         QueryWrapper<Submission> wrapper = buildQueryWrapper(submissionQuery);
 
-        wrapper.orderByDesc("id");
+        wrapper.orderByDesc("snow_flake_id").orderByDesc("id");
         Page<Submission> page = new Page<>(submissionQuery.getPageNum(), submissionQuery.getPageSize());
         Page<Submission> result = this.page(page, wrapper);
 

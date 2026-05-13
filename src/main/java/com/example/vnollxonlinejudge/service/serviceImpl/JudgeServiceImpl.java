@@ -25,6 +25,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class JudgeServiceImpl implements JudgeService {
@@ -36,6 +39,8 @@ public class JudgeServiceImpl implements JudgeService {
     private final CompetitionService competitionService;
     private final CompetitionTeamService competitionTeamService;
     private final UserService userService;
+    private static final ZoneId BEIJING_ZONE = ZoneId.of("Asia/Shanghai");
+    private static final DateTimeFormatter SUBMISSION_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final SnowflakeIdGenerator gen =
             new SnowflakeIdGenerator(SnowflakeIdGenerator.defaultMachineId());
     @Autowired
@@ -64,6 +69,7 @@ public class JudgeServiceImpl implements JudgeService {
         }
         Long teamId = resolveTeamId(cid, uid);
         Long snowflakeId = gen.nextId();
+        String createTime = LocalDateTime.now(BEIJING_ZONE).format(SUBMISSION_TIME_FORMATTER);
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
                 .language(req.getOption())
@@ -73,7 +79,7 @@ public class JudgeServiceImpl implements JudgeService {
                 .uid(uid)
                 .teamId(teamId)
                 .pid(Long.parseLong(req.getPid()))
-                .createTime(req.getCreate_time())
+                .createTime(createTime)
                 .uname(req.getUname())
                 .snowflakeId(snowflakeId)
                 .build();

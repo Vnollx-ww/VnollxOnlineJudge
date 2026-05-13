@@ -661,7 +661,6 @@ export const useProblemDetail = () => {
         title: problem.title,
         uname: userInfo.name,
         cid: '0',
-        create_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
         time: String(problem.timeLimit || 1000),
         memory: String(problem.memoryLimit || 256),
       };
