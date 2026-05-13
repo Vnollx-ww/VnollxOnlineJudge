@@ -6,8 +6,10 @@ import com.example.vnollxonlinejudge.model.dto.admin.AdminAiModelSaveDTO;
 import com.example.vnollxonlinejudge.model.entity.AiModel;
 import com.example.vnollxonlinejudge.model.result.Result;
 import com.example.vnollxonlinejudge.model.vo.ai.AdminAiModelDetailVo;
+import com.example.vnollxonlinejudge.model.vo.ai.AdminAiModelConversationVo;
 import com.example.vnollxonlinejudge.model.vo.ai.AiModelVo;
 import com.example.vnollxonlinejudge.model.vo.ai.AiPlatformVo;
+import com.example.vnollxonlinejudge.service.AdminAiModelConversationService;
 import com.example.vnollxonlinejudge.service.AiModelService;
 import com.example.vnollxonlinejudge.service.AiPlatformService;
 import jakarta.validation.Valid;
@@ -26,10 +28,16 @@ public class AdminAiModelController {
     private static final Logger logger = LoggerFactory.getLogger(AdminAiModelController.class);
     private final AiModelService aiModelService;
     private final AiPlatformService aiPlatformService;
+    private final AdminAiModelConversationService adminAiModelConversationService;
 
-    public AdminAiModelController(AiModelService aiModelService, AiPlatformService aiPlatformService) {
+    public AdminAiModelController(
+            AiModelService aiModelService,
+            AiPlatformService aiPlatformService,
+            AdminAiModelConversationService adminAiModelConversationService
+    ) {
         this.aiModelService = aiModelService;
         this.aiPlatformService = aiPlatformService;
+        this.adminAiModelConversationService = adminAiModelConversationService;
     }
 
     @GetMapping("/platforms")
@@ -58,6 +66,12 @@ public class AdminAiModelController {
                 .proxyType(entity.getProxyType())
                 .build();
         return Result.Success(vo);
+    }
+
+    @GetMapping("/{id}/conversations")
+    @RequirePermission(PermissionCode.AI_CONFIG_VIEW)
+    public Result<AdminAiModelConversationVo> conversations(@PathVariable Long id) {
+        return Result.Success(adminAiModelConversationService.getConversationsByModelId(id));
     }
 
     @PostMapping("/save")

@@ -10,6 +10,48 @@ export interface AiModelVo {
   sortOrder: number;
 }
 
+export interface AdminAiModelRecordItem {
+  id: number;
+  userMessage?: string;
+  modelReply?: string;
+  thinkingContent?: string;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  latencyMs?: number;
+  status?: string;
+  errorMessage?: string;
+  createTime?: number;
+  replyTime?: number;
+}
+
+export interface AdminAiModelSessionGroup {
+  sessionId: string;
+  title: string;
+  recordCount: number;
+  lastActiveAt?: number;
+  records: AdminAiModelRecordItem[];
+}
+
+export interface AdminAiModelUserGroup {
+  userId: number;
+  userName: string;
+  email?: string;
+  avatar?: string;
+  sessionCount: number;
+  recordCount: number;
+  lastActiveAt?: number;
+  sessions: AdminAiModelSessionGroup[];
+}
+
+export interface AdminAiModelConversationData {
+  modelId: number;
+  userCount: number;
+  sessionCount: number;
+  recordCount: number;
+  users: AdminAiModelUserGroup[];
+}
+
 export interface AdminAiModelDetail {
   id: number;
   name: string;
@@ -46,6 +88,12 @@ export const useAdminAiModels = () => {
   const [modelForm, setModelForm] = useState<AiModelFormValues>(defaultModelForm);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<AiModelVo | null>(null);
+  const [conversationVisible, setConversationVisible] = useState(false);
+  const [conversationLoading, setConversationLoading] = useState(false);
+  const [conversationModel, setConversationModel] = useState<AiModelVo | null>(null);
+  const [conversationData, setConversationData] = useState<AdminAiModelConversationData | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const loadList = async () => {
     setLoading(true);
@@ -105,6 +153,31 @@ export const useAdminAiModels = () => {
       }
     } catch {
       toast.error('删除失败');
+    }
+  };
+
+  const handleViewConversations = async (model: AiModelVo) => {
+    setConversationModel(model);
+    setConversationVisible(true);
+    setConversationLoading(true);
+    setConversationData(null);
+    setSelectedUserId(null);
+    setSelectedSessionId(null);
+    try {
+      const res = (await adminAiModelApi.conversations<AdminAiModelConversationData>(model.id)) as ApiResponse<AdminAiModelConversationData>;
+      if (res.code === 200 && res.data) {
+        setConversationData(res.data);
+        const firstUser = res.data.users?.[0];
+        const firstSession = firstUser?.sessions?.[0];
+        setSelectedUserId(firstUser?.userId ?? null);
+        setSelectedSessionId(firstSession?.sessionId ?? null);
+      } else {
+        toast.error((res as any).msg || '加载模型对话失败');
+      }
+    } catch {
+      toast.error('加载模型对话失败');
+    } finally {
+      setConversationLoading(false);
     }
   };
 
@@ -169,10 +242,20 @@ export const useAdminAiModels = () => {
     setDeleteModalVisible,
     modelToDelete,
     setModelToDelete,
+    conversationVisible,
+    setConversationVisible,
+    conversationLoading,
+    conversationModel,
+    conversationData,
+    selectedUserId,
+    setSelectedUserId,
+    selectedSessionId,
+    setSelectedSessionId,
     loadList,
     handleAdd,
     handleEdit,
     handleDelete,
+    handleViewConversations,
     handleLogoUpload,
     updateModelForm,
     handleSubmit,

@@ -1,10 +1,61 @@
+import { useMemo } from 'react';
 import { Button, Modal, InputNumber, FilePicker, Field, Empty, Spin } from '@/components';
-import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon } from 'lucide-react';
+import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon, MessageSquare, Users, Clock3 } from 'lucide-react';
 import Select from '@/components/select';
 import Input from '@/components/input';
 import PermissionGuard from '@/components/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import { useAdminAiModels } from '@/hooks/useAdminAiModels';
+import type { AdminAiModelRecordItem } from '@/hooks/useAdminAiModels';
+
+const formatTime = (value?: number) => {
+  if (!value) return '暂无时间';
+  return new Date(value).toLocaleString();
+};
+
+const previewText = (value?: string, fallback = '暂无内容') => {
+  const text = (value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return fallback;
+  return text.length > 72 ? `${text.slice(0, 72)}...` : text;
+};
+
+const Metric: React.FC<{ label: string; value: number | string }> = ({ label, value }) => (
+  <div className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+    <div className="text-xs text-gray-500">{label}</div>
+    <div className="mt-1 text-base font-semibold text-gray-900">{value}</div>
+  </div>
+);
+
+const ConversationRecord: React.FC<{ record: AdminAiModelRecordItem }> = ({ record }) => (
+  <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
+      <span>#{record.id} · {formatTime(record.createTime)}</span>
+      <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">{record.status || 'unknown'}</span>
+    </div>
+    <div className="space-y-3">
+      <div className="rounded-xl bg-blue-50/70 p-3">
+        <div className="mb-1 text-xs font-semibold text-blue-700">用户提问</div>
+        <div className="whitespace-pre-wrap text-sm leading-6 text-gray-800">{record.userMessage || '暂无内容'}</div>
+      </div>
+      {record.thinkingContent && (
+        <div className="rounded-xl bg-amber-50/70 p-3">
+          <div className="mb-1 text-xs font-semibold text-amber-700">思考过程</div>
+          <div className="max-h-40 overflow-auto whitespace-pre-wrap text-sm leading-6 text-gray-700">{record.thinkingContent}</div>
+        </div>
+      )}
+      <div className="rounded-xl bg-gray-50 p-3">
+        <div className="mb-1 text-xs font-semibold text-gray-700">模型回复</div>
+        <div className="whitespace-pre-wrap text-sm leading-6 text-gray-800">{record.modelReply || record.errorMessage || '暂无回复'}</div>
+      </div>
+    </div>
+    <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+      <span>Token: {record.totalTokens ?? '-'}</span>
+      <span>Prompt: {record.promptTokens ?? '-'}</span>
+      <span>Completion: {record.completionTokens ?? '-'}</span>
+      <span>耗时: {record.latencyMs != null ? `${record.latencyMs}ms` : '-'}</span>
+    </div>
+  </div>
+);
 
 const AdminAiModels: React.FC = () => {
   const {
@@ -23,10 +74,29 @@ const AdminAiModels: React.FC = () => {
     handleAdd,
     handleEdit,
     handleDelete,
+    handleViewConversations,
     handleLogoUpload,
     updateModelForm,
     handleSubmit,
+    conversationVisible,
+    setConversationVisible,
+    conversationLoading,
+    conversationModel,
+    conversationData,
+    selectedUserId,
+    setSelectedUserId,
+    selectedSessionId,
+    setSelectedSessionId,
   } = useAdminAiModels();
+
+  const selectedUser = useMemo(
+    () => conversationData?.users.find((user) => user.userId === selectedUserId) || null,
+    [conversationData, selectedUserId],
+  );
+  const selectedSession = useMemo(
+    () => selectedUser?.sessions.find((session) => session.sessionId === selectedSessionId) || selectedUser?.sessions[0] || null,
+    [selectedUser, selectedSessionId],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden text-gray-900">
@@ -79,8 +149,17 @@ const AdminAiModels: React.FC = () => {
                   <div className="truncate text-sm font-semibold text-gray-900">{model.name}</div>
                   <div className="mt-0.5 text-xs text-gray-400">排序: {model.sortOrder}</div>
                 </div>
-                <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
-                  <div className="flex shrink-0 items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-slate-100 hover:text-slate-700"
+                    onClick={() => handleViewConversations(model)}
+                    title="查看对话"
+                  >
+                    <MessageSquare size={16} />
+                  </button>
+                  <PermissionGuard permission={PermissionCode.AI_CONFIG_UPDATE}>
+                    <>
                     <button
                       type="button"
                       className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600"
@@ -100,8 +179,9 @@ const AdminAiModels: React.FC = () => {
                     >
                       <Trash2 size={16} />
                     </button>
-                  </div>
-                </PermissionGuard>
+                    </>
+                  </PermissionGuard>
+                </div>
               </div>
             ))}
           </div>
@@ -185,6 +265,135 @@ const AdminAiModels: React.FC = () => {
             </div>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        title={null}
+        open={conversationVisible}
+        onCancel={() => setConversationVisible(false)}
+        footer={null}
+        width={1180}
+        centered
+      >
+        <div className="flex max-h-[78vh] min-h-[620px] flex-col overflow-hidden">
+          <div className="border-b border-gray-100 px-1 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-gray-100">
+                  {conversationModel?.logoUrl ? (
+                    <img src={conversationModel.logoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Bot className="h-5 w-5 text-gray-400" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-base font-semibold text-gray-900">{conversationModel?.name || '模型对话'}</div>
+                  <div className="text-xs text-gray-500">按用户和会话整理该模型产生的所有问答记录</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Metric label="用户" value={conversationData?.userCount ?? 0} />
+                <Metric label="会话" value={conversationData?.sessionCount ?? 0} />
+                <Metric label="问答" value={conversationData?.recordCount ?? 0} />
+              </div>
+            </div>
+          </div>
+
+          {conversationLoading ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-gray-400">
+              <Spin spinning />
+              <span>正在加载对话...</span>
+            </div>
+          ) : !conversationData || conversationData.recordCount === 0 ? (
+            <div className="flex flex-1 items-center justify-center">
+              <Empty description="该模型暂无对话记录" />
+            </div>
+          ) : (
+            <div className="grid min-h-0 flex-1 grid-cols-[260px_300px_1fr] gap-4 overflow-hidden pt-4">
+              <div className="min-h-0 overflow-auto rounded-2xl border border-gray-100 bg-gray-50/70 p-2">
+                <div className="mb-2 flex items-center gap-2 px-2 text-xs font-semibold text-gray-500">
+                  <Users className="h-4 w-4" />
+                  用户分组
+                </div>
+                <div className="space-y-2">
+                  {conversationData.users.map((user) => (
+                    <button
+                      key={user.userId}
+                      type="button"
+                      onClick={() => {
+                        setSelectedUserId(user.userId);
+                        setSelectedSessionId(user.sessions[0]?.sessionId ?? null);
+                      }}
+                      className={`w-full rounded-xl border p-3 text-left transition ${
+                        selectedUserId === user.userId
+                          ? 'border-slate-300 bg-white shadow-sm'
+                          : 'border-transparent bg-transparent hover:bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gray-200 text-xs font-semibold text-gray-600">
+                          {user.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : user.userName?.slice(0, 1)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold text-gray-900">{user.userName}</div>
+                          <div className="truncate text-xs text-gray-500">{user.email || `ID: ${user.userId}`}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                        <span>{user.sessionCount} 会话 / {user.recordCount} 问答</span>
+                        <Clock3 className="h-3.5 w-3.5" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="min-h-0 overflow-auto rounded-2xl border border-gray-100 bg-white p-2">
+                <div className="mb-2 px-2 text-xs font-semibold text-gray-500">会话列表</div>
+                <div className="space-y-2">
+                  {selectedUser?.sessions.map((session) => (
+                    <button
+                      key={session.sessionId}
+                      type="button"
+                      onClick={() => setSelectedSessionId(session.sessionId)}
+                      className={`w-full rounded-xl border p-3 text-left transition ${
+                        selectedSession?.sessionId === session.sessionId
+                          ? 'border-slate-300 bg-slate-50'
+                          : 'border-gray-100 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="line-clamp-2 text-sm font-semibold text-gray-900">{session.title || '未命名会话'}</div>
+                      <div className="mt-2 text-xs text-gray-500">{session.recordCount} 条 · {formatTime(session.lastActiveAt)}</div>
+                      <div className="mt-2 line-clamp-2 text-xs leading-5 text-gray-400">
+                        {previewText(session.records[0]?.userMessage)}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="min-h-0 overflow-auto rounded-2xl border border-gray-100 bg-gray-50/60 p-3">
+                {selectedSession ? (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-gray-100 bg-white p-4">
+                      <div className="text-sm font-semibold text-gray-900">{selectedSession.title || '未命名会话'}</div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        {selectedUser?.userName} · {selectedSession.recordCount} 条问答 · 最近 {formatTime(selectedSession.lastActiveAt)}
+                      </div>
+                    </div>
+                    {selectedSession.records.map((record) => (
+                      <ConversationRecord key={record.id} record={record} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <Empty description="请选择一个会话" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* 删除模型确认弹窗 */}

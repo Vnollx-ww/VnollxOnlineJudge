@@ -22,7 +22,7 @@ public interface UserService {
     void updateSubmitCount(Long uid,int ok);
     //!!! ADMIN
     void deleteUserByAdmin(Long id,String currentIdentity);
-    void addUserByAdmin(String name,String email,String identity);
+    void addUserByAdmin(String name,String email,String identity,String currentIdentity);
     void updateUserInfoByAdmin(String email,String name,String identity,Long uid,String currentIdentity);
     Long getCountByAdmin(String keyword,String identity);
     Long getCount();

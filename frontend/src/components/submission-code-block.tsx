@@ -44,12 +44,12 @@ export default function SubmissionCodeBlock({
   };
 
   const highlighter = (
-    <div className="overflow-auto" style={{ maxHeight }}>
+    <div className="overflow-auto bg-[#1e1e1e]" style={{ maxHeight }}>
       <SyntaxHighlighter
         language={getCodeHighlightLanguage(language)}
         style={vscDarkPlus}
         showLineNumbers
-        customStyle={{ margin: 0, borderRadius: 12, fontSize: 14 }}
+        customStyle={{ margin: 0, borderRadius: 0, fontSize: 14, minHeight: '100%' }}
       >
         {code || '（暂无代码）'}
       </SyntaxHighlighter>
@@ -64,7 +64,7 @@ export default function SubmissionCodeBlock({
             复制代码
           </Button>
         </div>
-        <div className="rounded-xl border border-gray-800 overflow-hidden">{highlighter}</div>
+        <div className="rounded-xl border border-gray-800 overflow-hidden bg-[#1e1e1e]">{highlighter}</div>
       </div>
     );
   }

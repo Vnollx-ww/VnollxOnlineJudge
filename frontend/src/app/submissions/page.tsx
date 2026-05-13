@@ -200,40 +200,30 @@ const Submissions: React.FC = () => {
             width="80%"
             centered
         >
-          <div className="space-y-4">
+          <div className="space-y-5">
             {currentSubmission && (
               <div
-                  className="overflow-hidden rounded-3xl border"
+                  className="overflow-hidden rounded-2xl border"
                   style={{
                     borderColor: 'var(--gemini-border-light)',
-                    background: 'linear-gradient(135deg, rgba(26,115,232,0.10), rgba(124,58,237,0.08), rgba(255,255,255,0.92))',
+                    backgroundColor: 'var(--gemini-surface)',
                   }}
               >
-                <div className="p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div className="border-b px-5 py-4" style={{ borderColor: 'var(--gemini-border-light)' }}>
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
+                      <div className="mb-2 flex min-w-0 items-center gap-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
                         <Hash className="w-3.5 h-3.5" />
-                        <span>提交 #{currentSubmission.id}</span>
+                        <span className="shrink-0">提交 #{currentSubmission.id}</span>
                         {currentSubmission.snowflakeId && (
-                            <span className="font-mono truncate">· {currentSubmission.snowflakeId}</span>
+                            <span className="min-w-0 truncate font-mono">· {currentSubmission.snowflakeId}</span>
                         )}
                       </div>
                       <div className="text-xl font-bold truncate" style={{ color: 'var(--gemini-text-primary)' }}>
                         {currentSubmission.problemName || `题目 #${currentSubmission.pid}`}
                       </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-                        <span className="inline-flex items-center gap-1.5">
-                          <User className="w-4 h-4" />
-                          {currentSubmission.userName || '未知用户'}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5">
-                          <CalendarDays className="w-4 h-4" />
-                          {currentSubmission.createTime || '未知时间'}
-                        </span>
-                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       <span
                           className="px-3 py-1.5 rounded-full text-sm font-semibold"
                           style={{
@@ -246,8 +236,10 @@ const Submissions: React.FC = () => {
                       <LanguageBadge language={currentSubmission.language} />
                     </div>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                <div className="grid grid-cols-1 gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <MetricCard
                         icon={<Clock className="w-4 h-4" />}
                         label="运行时间"
@@ -267,6 +259,34 @@ const Submissions: React.FC = () => {
                             : '暂无'
                         }
                     />
+                  </div>
+
+                  <div
+                      className="rounded-xl border p-4"
+                      style={{
+                        borderColor: 'var(--gemini-border-light)',
+                        backgroundColor: 'var(--gemini-bg)',
+                      }}
+                  >
+                    <div className="mb-3 text-sm font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
+                      提交信息
+                    </div>
+                    <div className="space-y-3 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 shrink-0" />
+                        <span className="shrink-0">提交用户</span>
+                        <span className="ml-auto min-w-0 truncate font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
+                          {currentSubmission.userName || '未知用户'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4 shrink-0" />
+                        <span className="shrink-0">提交时间</span>
+                        <span className="ml-auto min-w-0 truncate font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
+                          {currentSubmission.createTime || '未知时间'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -291,9 +311,10 @@ const Submissions: React.FC = () => {
             )}
 
             <SubmissionCodeBlock
-                copyPlacement="top-bar"
+                copyPlacement="floating"
                 language={currentSubmission?.language}
                 code={currentSubmission?.code}
+                maxHeight="52vh"
             />
           </div>
         </Modal>

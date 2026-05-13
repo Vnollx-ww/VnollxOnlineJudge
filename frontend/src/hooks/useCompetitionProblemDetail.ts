@@ -94,12 +94,14 @@ const languageTemplates: Record<string, string> = {
   cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n\n    // 请在此处编写你的代码\n\n    return 0;\n}\n`,
   python: `# 请在此处编写你的代码\ndef main():\n    pass\n\nif __name__ == \"__main__\":\n    main()\n`,
   java: `import java.io.*;\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) throws Exception {\n        // 请在此处编写你的代码\n    }\n}\n`,
-  golang: `package main\n\nimport (\n    \"bufio\"\n    \"fmt\"\n    \"os\"\n)\n\nfunc main() {\n    in := bufio.NewReader(os.Stdin)\n    out := bufio.NewWriter(os.Stdout)\n    defer out.Flush()\n\n    // 请在此处编写你的代码\n    _ = in\n    fmt.Fprintln(out)\n}\n`,
+  go: `package main\n\nimport (\n    \"bufio\"\n    \"fmt\"\n    \"os\"\n)\n\nfunc main() {\n    in := bufio.NewReader(os.Stdin)\n    out := bufio.NewWriter(os.Stdout)\n    defer out.Flush()\n\n    // 请在此处编写你的代码\n    _ = in\n    fmt.Fprintln(out)\n}\n`,
   javascript: `const fs = require('fs');\n\nconst input = fs.readFileSync(0, 'utf8').trim().split(/\\s+/);\nlet idx = 0;\n\n// 请在此处编写你的代码\n`,
 };
 
 const getLanguageTemplate = (language: string) =>
-  languageTemplates[language] || languageTemplates[language.toLowerCase()] || '';
+  languageTemplates[language] ||
+  languageTemplates[language.toLowerCase()] ||
+  (language.toLowerCase() === 'golang' ? languageTemplates.go : '');
 
 const buildSubmitLanguageOptions = (data?: DictData[]) => {
   const options = (data || [])
@@ -113,6 +115,8 @@ const buildSubmitLanguageOptions = (data?: DictData[]) => {
 };
 
 export const MY_SUBMISSIONS_PAGE_SIZE = 10;
+const COMPETITION_ENDED_MESSAGE = '比赛已结束，无法提交题目';
+const USER_COMPETITION_ENDED_MESSAGE = '你已确认结束本场比赛，无法再次提交';
 
 export const useCompetitionProblemDetail = () => {
   const { cid, id } = useParams<{ cid: string; id: string }>();
@@ -135,6 +139,7 @@ export const useCompetitionProblemDetail = () => {
   const [isCompetitionOpen, setIsCompetitionOpen] = useState(true);
   const [isCompetitionEnd, setIsCompetitionEnd] = useState(false);
   const [isUserCompetitionEnded, setIsUserCompetitionEnded] = useState(false);
+  const [submitDisabledReason, setSubmitDisabledReason] = useState('');
   const [competitionStatusLoaded, setCompetitionStatusLoaded] = useState(false);
   const [finishCompetitionLoading, setFinishCompetitionLoading] = useState(false);
   const [finishCompetitionModalOpen, setFinishCompetitionModalOpen] = useState(false);
@@ -254,7 +259,6 @@ export const useCompetitionProblemDetail = () => {
           );
         }
       }
-      window.dispatchEvent(new Event('notification-updated'));
     }
   }, [id, problem?.id]);
 
@@ -341,6 +345,13 @@ export const useCompetitionProblemDetail = () => {
       setIsCompetitionOpen(openRes.code === 200);
       setIsCompetitionEnd(endRes.code !== 200);
       setIsUserCompetitionEnded(Boolean(finishRes.data));
+      if (endRes.code !== 200) {
+        setSubmitDisabledReason(COMPETITION_ENDED_MESSAGE);
+      } else if (Boolean(finishRes.data)) {
+        setSubmitDisabledReason(USER_COMPETITION_ENDED_MESSAGE);
+      } else {
+        setSubmitDisabledReason('');
+      }
     } catch (err) {
       console.warn('比赛状态判断失败', err);
     } finally {
@@ -594,7 +605,7 @@ export const useCompetitionProblemDetail = () => {
 
   const handleSubmitCode = async () => {
     setActiveBottomTab('result');
-    if (isUserCompetitionEnded) { toast.error('你已确认结束本场比赛，无法再次提交'); return; }
+    if (isUserCompetitionEnded) { toast.error(USER_COMPETITION_ENDED_MESSAGE); return; }
     if (!code.trim()) { toast('请先输入代码', { icon: '⚠️' }); return; }
     setCodeLoading((prev) => ({ ...prev, submit: true }));
     setRunResult({ variant: 'info', source: 'submit', headline: '等待评测', description: '等待评测：正在保存提交并加入评测队列…' });
@@ -635,12 +646,33 @@ export const useCompetitionProblemDetail = () => {
             description: data.data.description || '等待评测：已加入评测队列。',
           });
         }
-        window.dispatchEvent(new Event('notification-updated'));
       } else {
-        setRunResult({ variant: 'error', source: 'submit', headline: data.msg || '提交失败' });
+        const message = data.msg || '提交失败';
+        if (message === COMPETITION_ENDED_MESSAGE) {
+          setIsCompetitionEnd(true);
+          setIsCompetitionOpen(false);
+          setSubmitDisabledReason(message);
+          toast.error(message);
+        } else if (message === USER_COMPETITION_ENDED_MESSAGE) {
+          setIsUserCompetitionEnded(true);
+          setSubmitDisabledReason(message);
+          toast.error(message);
+        }
+        setRunResult({ variant: 'error', source: 'submit', headline: message });
       }
     } catch (error: any) {
-      setRunResult({ variant: 'error', source: 'submit', headline: error?.response?.data?.msg || '提交失败，请稍后重试' });
+      const message = error?.response?.data?.msg || '提交失败，请稍后重试';
+      if (message === COMPETITION_ENDED_MESSAGE) {
+        setIsCompetitionEnd(true);
+        setIsCompetitionOpen(false);
+        setSubmitDisabledReason(message);
+        toast.error(message);
+      } else if (message === USER_COMPETITION_ENDED_MESSAGE) {
+        setIsUserCompetitionEnded(true);
+        setSubmitDisabledReason(message);
+        toast.error(message);
+      }
+      setRunResult({ variant: 'error', source: 'submit', headline: message });
     } finally {
       setCodeLoading((prev) => ({ ...prev, submit: false }));
     }
@@ -653,6 +685,7 @@ export const useCompetitionProblemDetail = () => {
       const data = await competitionApi.finish(cid);
       if (data.code === 200) {
         setIsUserCompetitionEnded(true);
+        setSubmitDisabledReason(USER_COMPETITION_ENDED_MESSAGE);
         setFinishCompetitionModalOpen(false);
         if (document.fullscreenElement) {
           await document.exitFullscreen().catch(() => undefined);
@@ -737,6 +770,7 @@ export const useCompetitionProblemDetail = () => {
     isCompetitionOpen,
     isCompetitionEnd,
     isUserCompetitionEnded,
+    submitDisabledReason,
     competitionStatusLoaded,
     finishCompetitionLoading,
     finishCompetitionModalOpen,

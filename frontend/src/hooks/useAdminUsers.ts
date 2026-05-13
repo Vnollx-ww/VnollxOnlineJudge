@@ -48,6 +48,7 @@ export const useAdminUsers = () => {
   const [userForm, setUserForm] = useState<UserFormValues>(defaultUserForm);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const currentIdentity = localStorage.getItem('identity');
 
   const loadRoles = async () => {
     try {
@@ -92,6 +93,10 @@ export const useAdminUsers = () => {
   };
 
   const handleEdit = (user: User) => {
+    if (!canOperateUser(user)) {
+      toast.error('无权限操作该用户');
+      return;
+    }
     setEditingUser(user);
     setUserForm({ name: user.name, email: user.email, identity: user.identity });
     setModalVisible(true);
@@ -149,7 +154,18 @@ export const useAdminUsers = () => {
     };
   };
 
-  const identityOptions = roles.map((role) => ({ value: role.code, label: role.name }));
+  const canOperateUser = (user: User) => {
+    if (currentIdentity === 'SUPER_ADMIN') return user.identity !== 'SUPER_ADMIN';
+    if (currentIdentity === 'ADMIN') return user.identity === 'USER' || user.identity === 'VIP';
+    return false;
+  };
+  const identityOptions = roles
+    .filter((role) => {
+      if (currentIdentity === 'SUPER_ADMIN') return role.code !== 'SUPER_ADMIN';
+      if (currentIdentity === 'ADMIN') return role.code === 'USER' || role.code === 'VIP';
+      return false;
+    })
+    .map((role) => ({ value: role.code, label: role.name }));
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const totalSubmitCount = useMemo(() => users.reduce((sum, user) => sum + (user.submitCount || 0), 0), [users]);
   const totalPassCount = useMemo(() => users.reduce((sum, user) => sum + (user.passCount || 0), 0), [users]);
@@ -185,6 +201,7 @@ export const useAdminUsers = () => {
     updateUserForm,
     handleSubmit,
     getIdentityMeta,
+    canOperateUser,
     identityOptions,
     totalPages,
     passRate,

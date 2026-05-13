@@ -64,12 +64,15 @@ public class JudgeServiceImpl implements JudgeService {
     @Override
     public JudgeResultVO judgeSubmission(SubmitCodeDTO req, Long uid) {
         Long cid = parseLong(req.getCid());
-        if (cid != null && cid > 0 && competitionUserService.hasFinishedCompetition(cid, uid)) {
-            throw new BusinessException("你已确认结束本场比赛，无法再次提交");
+        String createTime = LocalDateTime.now(BEIJING_ZONE).format(SUBMISSION_TIME_FORMATTER);
+        if (cid != null && cid > 0) {
+            competitionService.judgeIsOpenById(createTime, cid);
+            if (competitionUserService.hasFinishedCompetition(cid, uid)) {
+                throw new BusinessException("你已确认结束本场比赛，无法再次提交");
+            }
         }
         Long teamId = resolveTeamId(cid, uid);
         Long snowflakeId = gen.nextId();
-        String createTime = LocalDateTime.now(BEIJING_ZONE).format(SUBMISSION_TIME_FORMATTER);
         JudgeInfo judgeInfo=JudgeInfo.builder()
                 .code(req.getCode())
                 .language(req.getOption())

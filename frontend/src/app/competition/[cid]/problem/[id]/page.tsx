@@ -39,6 +39,7 @@ const CompetitionProblemDetail: React.FC = () => {
     isCompetitionOpen,
     isCompetitionEnd,
     isUserCompetitionEnded,
+    submitDisabledReason,
     competitionStatusLoaded,
     finishCompetitionLoading,
     finishCompetitionModalOpen,
@@ -480,8 +481,9 @@ const CompetitionProblemDetail: React.FC = () => {
       onClick={handleTestCode}
       disabled={isCompetitionEnd || isUserCompetitionEnded || codeLoading.submit || !problem.examples?.length}
       style={{ padding: '0 16px', height: 32, fontSize: 14 }}
+      title={submitDisabledReason || undefined}
     >
-      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : codeLoading.test ? '运行中...' : '自测运行'}
+      {isCompetitionEnd || isUserCompetitionEnded ? (submitDisabledReason || '比赛已结束') : codeLoading.test ? '运行中...' : '自测运行'}
     </Button>
   );
 
@@ -493,8 +495,9 @@ const CompetitionProblemDetail: React.FC = () => {
       onClick={handleSubmitCode}
       disabled={isCompetitionEnd || isUserCompetitionEnded || codeLoading.test}
       style={{ padding: '0 18px', height: 34, fontSize: 14, fontWeight: 500 }}
+      title={submitDisabledReason || undefined}
     >
-      {isCompetitionEnd || isUserCompetitionEnded ? '比赛已结束' : codeLoading.submit ? '提交中...' : '保存并提交'}
+      {isCompetitionEnd || isUserCompetitionEnded ? (submitDisabledReason || '比赛已结束') : codeLoading.submit ? '提交中...' : '保存并提交'}
     </Button>
   );
 

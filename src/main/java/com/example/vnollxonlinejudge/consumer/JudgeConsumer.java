@@ -78,13 +78,28 @@ public class JudgeConsumer {
             RunResult result = judgeAgentClient.submit(req);
             // 获取错误信息（如果有）
             String errorInfo = null;
-            if (result.getFiles() != null && result.getFiles().getStderr() != null) {
-                errorInfo = result.getFiles().getStderr();
+            String actualOutput = null;
+            if (result.getFiles() != null) {
+                if (result.getFiles().getStderr() != null) {
+                    errorInfo = result.getFiles().getStderr();
+                }
+                if (result.getFiles().getStdout() != null) {
+                    actualOutput = result.getFiles().getStdout();
+                }
             }
             boolean competition = judgeInfo.getCid() != null && judgeInfo.getCid() != 0;
             String storedError = competition ? null : errorInfo;
             Integer storedPass = competition ? null : result.getPassCount();
             Integer storedTest = competition ? null : result.getTestCount();
+            // 失败用例的输入 / 期望输出 / 用户实际输出：仅非比赛、非 AC 时随 WebSocket 推送给前端，不入库
+            String pushCaseInput = null;
+            String pushCaseExpected = null;
+            String pushActualOutput = null;
+            if (!competition && !"答案正确".equals(result.getStatus())) {
+                pushCaseInput = result.getCaseInput();
+                pushCaseExpected = result.getCaseExpected();
+                pushActualOutput = truncate(actualOutput, 400);
+            }
             submissionService.updateSubmissionJudgeStatusBySnowflake(
                     judgeInfo.getSnowflakeId(),
                     result.getStatus(),
@@ -95,7 +110,8 @@ public class JudgeConsumer {
                     storedTest
             );
             submissionService.processSubmission(judgeInfo,result.getStatus());
-            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), storedError, storedPass, storedTest);
+            sendUpdate(judgeInfo, result.getStatus(), result.getRunTime(), result.getMemory(), storedError, storedPass, storedTest,
+                    pushCaseInput, pushCaseExpected, pushActualOutput);
             logger.info("评测完成: snowflakeId={}", judgeInfo.getSnowflakeId());
 
         } catch (IOException e) {
@@ -105,6 +121,12 @@ public class JudgeConsumer {
     }
 
     private void sendUpdate(JudgeInfo judgeInfo, String status, Long time, Long memory, String errorInfo, Integer passCount, Integer testCount) {
+        sendUpdate(judgeInfo, status, time, memory, errorInfo, passCount, testCount, null, null, null);
+    }
+
+    private void sendUpdate(JudgeInfo judgeInfo, String status, Long time, Long memory, String errorInfo,
+                            Integer passCount, Integer testCount,
+                            String caseInput, String caseExpected, String actualOutput) {
         try {
             Map<String, Object> data = new HashMap<>();
             data.put("snowflakeId", String.valueOf(judgeInfo.getSnowflakeId())); // Ensure it's a string for JS
@@ -115,11 +137,21 @@ public class JudgeConsumer {
             data.put("errorInfo", errorInfo);
             data.put("passCount", passCount);
             data.put("testCount", testCount);
+            // 仅在非比赛 + 非 AC 时由调用方填入；为空则不下发，避免泄露给比赛页面
+            if (caseInput != null) data.put("caseInput", caseInput);
+            if (caseExpected != null) data.put("caseExpected", caseExpected);
+            if (actualOutput != null) data.put("actualOutput", actualOutput);
 
             String json = objectMapper.writeValueAsString(data);
             judgeWebSocketHandler.sendMessageToUser(judgeInfo.getUid(), json);
         } catch (Exception e) {
             logger.error("Failed to send WebSocket update", e);
         }
+    }
+
+    private static String truncate(String text, int max) {
+        if (text == null) return null;
+        if (text.length() <= max) return text;
+        return text.substring(0, max) + "\n...(已截断)";
     }
 }

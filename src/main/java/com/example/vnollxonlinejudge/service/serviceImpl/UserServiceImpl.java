@@ -45,6 +45,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private static final String IDENTITY_SUPER_ADMIN = "SUPER_ADMIN";
     private static final String IDENTITY_ADMIN = "ADMIN";
     private static final String IDENTITY_USER = "USER";
+    private static final String IDENTITY_VIP = "VIP";
 
     // 错误消息常量
     private static final String ERROR_USER_NOT_EXIST = "用户不存在";
@@ -186,9 +187,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (IDENTITY_ADMIN.equals(identity)) {
             // 管理员只能看到普通用户和VIP用户
             queryWrapper.in("identity", IDENTITY_USER, "VIP");
-        } else if (IDENTITY_SUPER_ADMIN.equals(identity)) {
-            // 超级管理员可以看到除超级管理员外的所有用户
-            queryWrapper.ne("identity", IDENTITY_SUPER_ADMIN);
         }
 
         // 关键字查询
@@ -265,6 +263,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void deleteUserByAdmin(Long id,String currentIdentity) {
         User user=this.getById(id);
+        validateUserExists(user);
         if (currentIdentity.equals(IDENTITY_SUPER_ADMIN)){
             if (user.getIdentity().equals(IDENTITY_SUPER_ADMIN))throw new BusinessException("无权限");
         }else if (currentIdentity.equals(IDENTITY_ADMIN)){
@@ -275,7 +274,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    public void addUserByAdmin(String name, String email, String identity) {
+    public void addUserByAdmin(String name, String email, String identity, String currentIdentity) {
+        validateAdminTargetIdentity(currentIdentity, identity);
         if (lambdaQuery().eq(User::getEmail, email).exists()) {
             throw new BusinessException(ERROR_EMAIL_EXISTS);
         }
@@ -310,11 +310,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             String identity, Long uid,String currentIdentity
     ) {
         User user=this.getById(uid);
+        validateUserExists(user);
         if (currentIdentity.equals(IDENTITY_SUPER_ADMIN)){
             if (user.getIdentity().equals(IDENTITY_SUPER_ADMIN))throw new BusinessException("无权限");
         }else if (currentIdentity.equals(IDENTITY_ADMIN)){
             if (!user.getIdentity().equals(IDENTITY_USER))throw new BusinessException("无权限");
         }
+        validateAdminTargetIdentity(currentIdentity, identity);
         if (lambdaQuery().eq(User::getEmail, email).ne(User::getId, uid).exists()) {
             throw new BusinessException(ERROR_EMAIL_EXISTS);
         }
@@ -344,9 +346,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (IDENTITY_ADMIN.equals(identity)) {
             // 管理员只能看到普通用户和VIP用户
             wrapper.in("identity", IDENTITY_USER, "VIP");
-        } else if (IDENTITY_SUPER_ADMIN.equals(identity)) {
-            // 超级管理员可以看到除超级管理员外的所有用户
-            wrapper.ne("identity", IDENTITY_SUPER_ADMIN);
         }
 
         if (StringUtils.isNotBlank(keyword)) {
@@ -355,6 +354,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     .like("email", keyword));
         }
         return this.count(wrapper);
+    }
+
+    private void validateAdminTargetIdentity(String currentIdentity, String targetIdentity) {
+        if (IDENTITY_SUPER_ADMIN.equals(currentIdentity)) {
+            if (IDENTITY_SUPER_ADMIN.equals(targetIdentity)) {
+                throw new BusinessException("无权限");
+            }
+            return;
+        }
+        if (IDENTITY_ADMIN.equals(currentIdentity)) {
+            if (!IDENTITY_USER.equals(targetIdentity) && !IDENTITY_VIP.equals(targetIdentity)) {
+                throw new BusinessException("无权限");
+            }
+            return;
+        }
+        throw new BusinessException("无权限");
     }
 
     @Override

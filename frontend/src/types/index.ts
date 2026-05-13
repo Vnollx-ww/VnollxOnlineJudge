@@ -187,6 +187,12 @@ export interface JudgeMessage {
   errorInfo?: string | null;
   passCount?: number | null;
   testCount?: number | null;
+  /** 仅普通题目页（非比赛）非 AC 时由后端推送：失败用例输入 */
+  caseInput?: string | null;
+  /** 仅普通题目页（非比赛）非 AC 时由后端推送：失败用例期望输出（已截断） */
+  caseExpected?: string | null;
+  /** 仅普通题目页（非比赛）非 AC 时由后端推送：用户程序实际输出（已截断） */
+  actualOutput?: string | null;
 }
 
 // 表单类型

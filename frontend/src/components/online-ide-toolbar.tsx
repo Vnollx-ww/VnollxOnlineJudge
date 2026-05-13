@@ -33,7 +33,7 @@ const getFileExtension = (language: string) => {
   if (language === 'cpp') return 'cpp';
   if (language === 'java') return 'java';
   if (language === 'python') return 'py';
-  if (language === 'golang') return 'go';
+  if (language === 'go' || language === 'golang') return 'go';
   if (language === 'javascript') return 'js';
   return 'txt';
 };

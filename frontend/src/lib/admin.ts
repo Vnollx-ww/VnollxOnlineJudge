@@ -90,6 +90,7 @@ export const adminDictApi = {
 export const adminAiModelApi = {
   list: <T = unknown>() => api.get<T>('/admin/ai-model/list'),
   detail: <T = unknown>(id: string | number) => api.get<T>(`/admin/ai-model/${id}`),
+  conversations: <T = unknown>(id: string | number) => api.get<T>(`/admin/ai-model/${id}/conversations`),
   delete: <T = unknown>(id: string | number) => api.delete<T>(`/admin/ai-model/${id}`),
   save: <T = unknown>(payload: Record<string, unknown>) => api.post<T>('/admin/ai-model/save', payload),
 };

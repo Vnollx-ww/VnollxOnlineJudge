@@ -101,7 +101,7 @@ public class Main {
     }
 }
 `,
-  golang: `package main
+  go: `package main
 
 import (
     "bufio"
@@ -129,7 +129,9 @@ let idx = 0;
 };
 
 const getLanguageTemplate = (language: string) =>
-  languageTemplates[language] || languageTemplates[language.toLowerCase()] || '';
+  languageTemplates[language] ||
+  languageTemplates[language.toLowerCase()] ||
+  (language.toLowerCase() === 'golang' ? languageTemplates.go : '');
 
 const buildSubmitLanguageOptions = (data?: DictData[]) => {
   const options = (data || [])
@@ -254,6 +256,7 @@ export const useProblemDetail = () => {
         cpp: 'cpp', 'c++': 'cpp', c: 'cpp',
         python: 'python', py: 'python', python3: 'python',
         java: 'java',
+        go: 'go', golang: 'go',
       };
       const mappedLang = langMap[lang.toLowerCase()] || language;
       if (mappedLang !== language) setLanguage(mappedLang);
@@ -272,6 +275,9 @@ export const useProblemDetail = () => {
           setRunResult({ variant: 'info', source: 'submit', headline: status, bodyText: '正在进行评测...' });
         } else {
           const hasTests = msg.testCount != null && msg.testCount > 0;
+          const hasFailureDiff =
+            status !== '答案正确' &&
+            (msg.caseInput != null || msg.caseExpected != null || msg.actualOutput != null);
           setRunResult({
             variant: mapJudgeStatusToVariant(status),
             source: 'submit',
@@ -283,6 +289,13 @@ export const useProblemDetail = () => {
               ...(hasTests ? { passCount: msg.passCount ?? 0, testCount: msg.testCount! } : {}),
             },
             errorInfo: msg.errorInfo || undefined,
+            diff: hasFailureDiff
+              ? {
+                  input: msg.caseInput ?? undefined,
+                  expected: msg.caseExpected ?? undefined,
+                  actual: msg.actualOutput ?? undefined,
+                }
+              : undefined,
           });
         }
         if (status === '答案正确') setShowCelebration(true);
@@ -300,7 +313,6 @@ export const useProblemDetail = () => {
                 : current,
             );
           }
-          window.dispatchEvent(new Event('notification-updated'));
         }
       }
     },
@@ -683,7 +695,6 @@ export const useProblemDetail = () => {
           headline: data.data.status || '等待评测',
           description: data.data.description || '等待评测：已加入评测队列。',
         });
-        window.dispatchEvent(new Event('notification-updated'));
       } else {
         setRunResult({ variant: 'error', source: 'submit', headline: (data as any).msg || '提交失败' });
       }

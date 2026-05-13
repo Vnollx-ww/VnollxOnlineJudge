@@ -55,6 +55,7 @@ const AdminUsers: React.FC = () => {
     updateUserForm,
     handleSubmit,
     getIdentityMeta,
+    canOperateUser,
     identityOptions,
     passRate,
     adminCount,
@@ -136,6 +137,7 @@ const AdminUsers: React.FC = () => {
               ) : users.map((user) => {
                 const identity = getIdentityMeta(user.identity);
                 const passPercent = getPassPercent(user);
+                const canOperate = canOperateUser(user);
                 return (
                   <tr key={user.id} className="group transition-colors hover:bg-blue-50/20">
                     <td className="px-6 py-5">
@@ -175,14 +177,22 @@ const AdminUsers: React.FC = () => {
                         <PermissionGuard permission={PermissionCode.USER_UPDATE}>
                           <button
                             type="button"
-                            className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600"
+                            className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                            disabled={!canOperate}
+                            title={canOperate ? '编辑' : '无权限操作该用户'}
                             onClick={() => handleEdit(user)}
                           >
                             <Edit3 size={16} />
                           </button>
                         </PermissionGuard>
                         <PermissionGuard permission={PermissionCode.USER_DELETE}>
-                          <button type="button" className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600" onClick={() => { setUserToDelete(user); setDeleteModalVisible(true); }}>
+                          <button
+                            type="button"
+                            className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                            disabled={!canOperate}
+                            title={canOperate ? '删除' : '无权限操作该用户'}
+                            onClick={() => { setUserToDelete(user); setDeleteModalVisible(true); }}
+                          >
                             <Trash2 size={16} />
                           </button>
                         </PermissionGuard>
@@ -269,7 +279,7 @@ const AdminUsers: React.FC = () => {
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <Button onClick={() => { setDeleteModalVisible(false); setUserToDelete(null); }}>取消</Button>
-          <Button type="primary" danger onClick={() => { if (userToDelete) { handleDelete(userToDelete.id); } setDeleteModalVisible(false); setUserToDelete(null); }}>确定</Button>
+          <Button type="primary" danger disabled={!!userToDelete && !canOperateUser(userToDelete)} onClick={() => { if (userToDelete && canOperateUser(userToDelete)) { handleDelete(userToDelete.id); } setDeleteModalVisible(false); setUserToDelete(null); }}>确定</Button>
         </div>
       </Modal>
     </div>

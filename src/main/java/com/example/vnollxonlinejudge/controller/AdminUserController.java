@@ -65,8 +65,8 @@ public class AdminUserController {
      */
     @PostMapping("/add")
     @RequirePermission(PermissionCode.USER_CREATE)
-    public Result<Void> createUser(@Valid @RequestBody AdminSaveUserDTO request) {
-        userService.addUserByAdmin(request.getName(), request.getEmail(), request.getIdentity());
+    public Result<Void> createUser(@Valid @RequestBody AdminSaveUserDTO request, HttpServletRequest req) {
+        userService.addUserByAdmin(request.getName(), request.getEmail(), request.getIdentity(), getCurrentIdentity(req));
         return Result.Success("添加用户成功");
     }
 
