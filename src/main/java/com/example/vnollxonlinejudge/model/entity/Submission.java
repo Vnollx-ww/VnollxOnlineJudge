@@ -46,7 +46,7 @@ public class Submission {
 
     @Column(name = "pid")
     private Long pid;
-    @Column(name="snow_flake_id")
+    @Column(name = "snowflake_id")
     private Long snowflakeId;
 
     @Column(name = "error_info", columnDefinition = "TEXT")

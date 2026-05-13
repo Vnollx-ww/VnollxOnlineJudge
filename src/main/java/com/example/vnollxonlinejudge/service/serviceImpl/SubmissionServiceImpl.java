@@ -224,7 +224,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         wrapper.eq("cid", cid)
                 .eq("pid", pid)
                 .eq("status", "答案正确")
-                .orderByAsc("snow_flake_id")
+                .orderByAsc("snowflake_id")
                 .orderByAsc("id")
                 .last("LIMIT 1");
         Submission firstAccepted = this.baseMapper.selectOne(wrapper);
@@ -253,7 +253,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
     public List<SubmissionVo> getSubmissionList(SubmissionQuery submissionQuery) {
         QueryWrapper<Submission> wrapper = buildQueryWrapper(submissionQuery);
 
-        wrapper.orderByDesc("snow_flake_id").orderByDesc("id");
+        wrapper.orderByDesc("snowflake_id").orderByDesc("id");
         Page<Submission> page = new Page<>(submissionQuery.getPageNum(), submissionQuery.getPageSize());
         Page<Submission> result = this.page(page, wrapper);
 
@@ -309,7 +309,7 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
         }
         if (!hasWaiting) return;
         QueryWrapper<Submission> w = new QueryWrapper<>();
-        w.select("snow_flake_id").eq("status", "等待评测").orderByAsc("snow_flake_id");
+        w.select("snowflake_id").eq("status", "等待评测").orderByAsc("snowflake_id");
         List<Long> waitingIds = this.baseMapper.selectList(w).stream()
                 .map(Submission::getSnowflakeId)
                 .filter(Objects::nonNull)

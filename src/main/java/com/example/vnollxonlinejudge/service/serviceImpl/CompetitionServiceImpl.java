@@ -409,7 +409,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         Map<Long, String> firstAcceptedMap = new HashMap<>();
 
         QueryWrapper<Submission> submissionWrapper = new QueryWrapper<>();
-        submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("snow_flake_id").orderByAsc("id");
+        submissionWrapper.eq("cid", cid).orderByAsc("create_time").orderByAsc("snowflake_id").orderByAsc("id");
         List<Submission> submissions = submissionMapper.selectList(submissionWrapper);
         for (Submission submission : submissions) {
             if (!problemOrderMap.containsKey(submission.getPid())) {
@@ -511,7 +511,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         } else {
             submissionWrapper.eq("uid", userId);
         }
-        submissionWrapper.orderByAsc("create_time").orderByAsc("snow_flake_id").orderByAsc("id");
+        submissionWrapper.orderByAsc("create_time").orderByAsc("snowflake_id").orderByAsc("id");
         List<CompetitionRanklistVo.SubmissionRankVo> result = new ArrayList<>();
         for (Submission submission : submissionMapper.selectList(submissionWrapper)) {
             if (!problemLabelMap.containsKey(submission.getPid())) {
