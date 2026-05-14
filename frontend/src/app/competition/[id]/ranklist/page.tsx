@@ -2,7 +2,7 @@ import { Fragment, useState, useEffect, useMemo, memo, useCallback } from 'react
 import { createPortal } from 'react-dom';
 import { Spin, Empty, Modal, Space, BalloonIcon } from '@/components';
 import { ArrowLeft, Lock } from 'lucide-react';
-import Input from '@/components/input';
+import Input from '@/components/ui/input';
 import {
   useCompetitionRanklist,
   getUserKey,
@@ -10,7 +10,7 @@ import {
   type ProblemHeader,
   type SubmissionRank,
   type RankUser as User,
-} from '@/hooks/useCompetitionRanklist';
+} from '@/hooks/competition/useCompetitionRanklist';
 
 
 type DetailSubmission = {

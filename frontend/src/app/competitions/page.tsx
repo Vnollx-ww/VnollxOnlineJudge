@@ -1,4 +1,4 @@
-import Input from '@/components/input';
+import Input from '@/components/ui/input';
 import { CalendarDays, Clock, Search } from 'lucide-react';
 import { Select, CompetitionStatusBadge, PageSurface, Button } from '@/components';
 import {
@@ -6,7 +6,7 @@ import {
   calculateCompetitionStatus,
   formatCompetitionTime,
   formatCompetitionDuration,
-} from '@/hooks/useCompetitions';
+} from '@/hooks/competition/useCompetitions';
 
 const Competitions: React.FC = () => {
   const {

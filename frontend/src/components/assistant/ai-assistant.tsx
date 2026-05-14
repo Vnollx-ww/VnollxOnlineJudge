@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import Avatar from './avatar';
+import Avatar from '../ui/avatar';
 import { Bot, Send, Trash2, User, Copy, Check, Code2, ChevronRight, ChevronDown, Sparkles, Loader2, MessageSquarePlus, Menu, Plus, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';

@@ -1,9 +1,9 @@
 import { Tag, Empty, Button } from '@/components';
 import { ArrowLeft, Edit3, User, Clock } from 'lucide-react';
 import dayjs from 'dayjs';
-import PermissionGuard from '@/components/permission-guard';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useSolutionList } from '@/hooks/useSolutionList';
+import { useSolutionList } from '@/hooks/solution/useSolutionList';
 
 const SolutionListPage: React.FC = () => {
   const {

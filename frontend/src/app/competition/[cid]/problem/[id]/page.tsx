@@ -1,16 +1,16 @@
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { Card, Table, Tag, Avatar, Modal, Button, Space, Spin, Divider, Popconfirm, Drawer } from '@/components';
-import { JudgeStatusBadge, LanguageBadge } from '@/components/status-badge';
-import PagePagination from '@/components/page-pagination';
+import { JudgeStatusBadge, LanguageBadge } from '@/components/common/status-badge';
+import PagePagination from '@/components/common/page-pagination';
 import { ArrowLeft, MessageSquare, History, Minimize2, Copy, Trophy, CheckCircle2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { CodeEditor, Input, OnlineIdeToolbar, ProblemWorkbench, Select, SubmissionCodeBlock, WorkbenchResult } from '@/components';
-import SuccessCelebration from '@/components/success-celebration';
-import { useCompetitionProblemDetail, type Submission, type Comment } from '@/hooks/useCompetitionProblemDetail';
+import SuccessCelebration from '@/components/common/success-celebration';
+import { useCompetitionProblemDetail, type Submission, type Comment } from '@/hooks/competition/useCompetitionProblemDetail';
 
 const { TextArea } = Input;
 

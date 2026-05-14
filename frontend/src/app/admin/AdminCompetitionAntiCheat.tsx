@@ -1,8 +1,8 @@
 import { Drawer, Tag, Button, Modal, Empty, Field, DataTable, DataColumn } from '@/components';
 import { Download, Eye, RefreshCw, ShieldAlert, ShieldCheck, ShieldX } from 'lucide-react';
 import dayjs from 'dayjs';
-import Input from '@/components/input';
-import Select from '@/components/select';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
 import {
   useAdminCompetitionAntiCheat,
   RISK_COLOR,
@@ -13,7 +13,7 @@ import {
   EVENT_TYPE_LABEL,
   formatSeconds,
   type AntiCheatSummary,
-} from '@/hooks/useAdminCompetitionAntiCheat';
+} from '@/hooks/admin/useAdminCompetitionAntiCheat';
 
 interface Props {
   open: boolean;

@@ -1,10 +1,10 @@
 import { Button, Modal, Tag, Spin, Field, DataTable, DataColumn } from '@/components';
 import { RefreshCw, Plus, Trash2, Edit, Key } from 'lucide-react';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import PermissionGuard from '@/components/permission-guard';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useAdminRoles, defaultPermissionForm, type Role, type Permission } from '@/hooks/useAdminRoles';
+import { useAdminRoles, defaultPermissionForm, type Role, type Permission } from '@/hooks/admin/useAdminRoles';
 
 const AdminRoles: React.FC = () => {
   const {

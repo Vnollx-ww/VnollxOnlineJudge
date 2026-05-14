@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { confirm, Dropdown } from '../../components';
-import Avatar from '../avatar';
-import Badge from '../badge';
+import Avatar from '../ui/avatar';
+import Badge from '../ui/badge';
 import {
   Home,
   BookOpen,
@@ -20,7 +20,7 @@ import {
 import { notificationApi, userApi } from '@/lib';
 import { isAuthenticated, removeToken } from '../../utils/auth';
 import type { User as UserType, ApiResponse } from '../../types';
-import AuthModal, { type AuthMode } from '../auth-modal';
+import AuthModal, { type AuthMode } from '../auth/auth-modal';
 
 interface HeaderProps {
   layoutMode: 'top' | 'left';

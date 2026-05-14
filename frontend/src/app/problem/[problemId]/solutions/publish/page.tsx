@@ -1,9 +1,9 @@
 import { Button, Modal } from '@/components';
 import { ArrowLeft, Eye, Send } from 'lucide-react';
-import Input from '@/components/input';
+import Input from '@/components/ui/input';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
-import { useSolutionPublish } from '@/hooks/useSolutionPublish';
+import { useSolutionPublish } from '@/hooks/solution/useSolutionPublish';
 
 const { TextArea } = Input;
 

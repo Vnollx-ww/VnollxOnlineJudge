@@ -7,7 +7,7 @@ import {
   Bot,
 } from 'lucide-react';
 import { CountUp, CodeWindow } from '@/components';
-import { useHome } from '@/hooks/useHome';
+import { useHome } from '@/hooks/home/useHome';
 
 const Home: React.FC = () => {
   const { stats, handleStartCoding, handleViewRank } = useHome();

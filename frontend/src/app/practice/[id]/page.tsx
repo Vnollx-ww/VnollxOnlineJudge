@@ -1,8 +1,8 @@
 import { Button, Progress } from '@/components';
 import { BookOpen, ArrowLeft, CheckCircle2, MinusCircle, RotateCw } from 'lucide-react';
-import { DifficultyBadge } from '@/components/status-badge';
+import { DifficultyBadge } from '@/components/common/status-badge';
 import { Table, Spin, Tag } from '@/components';
-import { usePracticeDetail, type Problem } from '@/hooks/usePracticeDetail';
+import { usePracticeDetail, type Problem } from '@/hooks/practice/usePracticeDetail';
 
 const PracticeDetail: React.FC = () => {
   const {

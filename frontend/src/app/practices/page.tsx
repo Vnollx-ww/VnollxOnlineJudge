@@ -1,7 +1,7 @@
-import Input from '@/components/input';
+import Input from '@/components/ui/input';
 import { BookOpen, CalendarDays, FileText, Search } from 'lucide-react';
 import { Select, PageSurface, Tag, Progress } from '@/components';
-import { usePractices } from '@/hooks/usePractices';
+import { usePractices } from '@/hooks/practice/usePractices';
 
 const Practices: React.FC = () => {
   const {

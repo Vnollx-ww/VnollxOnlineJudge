@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { AlertCircle, BarChart3, RefreshCw, BookOpen, Users, Code2, Trophy, TrendingUp } from 'lucide-react';
-import Select from '@/components/select';
+import Select from '@/components/ui/select';
 import {
   useAdminStatistics,
   CHART_ANIMATION,
@@ -23,7 +23,7 @@ import {
   type ErrorPatternStat,
   type LanguageStat,
   type SolvedProblemItem,
-} from '@/hooks/useAdminStatistics';
+} from '@/hooks/admin/useAdminStatistics';
 
 const AdminStatistics: React.FC = () => {
   const {

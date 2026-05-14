@@ -11,10 +11,10 @@ import {
   DataColumn,
 } from '@/components';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle } from 'lucide-react';
-import Input from '@/components/input';
-import PermissionGuard from '@/components/permission-guard';
+import Input from '@/components/ui/input';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useAdminPractices, type Practice } from '@/hooks/useAdminPractices';
+import { useAdminPractices, type Practice } from '@/hooks/admin/useAdminPractices';
 
 const AdminPractices: React.FC = () => {
   const {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { dictApi, submissionApi, userApi } from '@/lib';
 import { isAuthenticated, getUserInfo, setUserInfo } from '@/utils/auth';
-import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
+import { useJudgeWebSocket } from '@/hooks/judge/useJudgeWebSocket';
 import type { ApiResponse, JudgeMessage } from '@/types';
 
 export interface Submission {

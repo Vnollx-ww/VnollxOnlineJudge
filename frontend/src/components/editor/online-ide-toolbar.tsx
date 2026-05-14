@@ -1,6 +1,6 @@
 import { Download, Maximize2, Minimize2, Moon, RotateCcw, Sun, WrapText } from 'lucide-react';
 import toast from 'react-hot-toast';
-import Select from './select';
+import Select from '../ui/select';
 import { copyTextToClipboard } from '@/utils/clipboard';
 
 export interface OnlineIdeLanguageOption {

@@ -1,7 +1,7 @@
 import { ArrowLeft, Bell, CheckCircle2, Trash2 } from 'lucide-react';
 import { Spin, Tag, Button, Space } from '@/components';
 import dayjs from 'dayjs';
-import { useNotificationDetail } from '@/hooks/useNotificationDetail';
+import { useNotificationDetail } from '@/hooks/notification/useNotificationDetail';
 
 const NotificationDetail: React.FC = () => {
   const {

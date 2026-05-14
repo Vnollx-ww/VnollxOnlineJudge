@@ -10,7 +10,7 @@ import AdminDicts from './AdminDicts';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
 import AdminStatistics from './AdminStatistics';
-import { useAdmin, SIDER_WIDTH, SIDER_COLLAPSED_WIDTH } from '@/hooks/useAdmin';
+import { useAdmin, SIDER_WIDTH, SIDER_COLLAPSED_WIDTH } from '@/hooks/admin/useAdmin';
 
 const Admin: React.FC = () => {
   const {

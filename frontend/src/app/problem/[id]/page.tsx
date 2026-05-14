@@ -1,8 +1,8 @@
 import { createPortal } from 'react-dom';
 import { Table, Tag, Avatar, Modal, Button, Spin, Popconfirm, Drawer } from '@/components';
-import { DifficultyBadge, JudgeStatusBadge, LanguageBadge } from '@/components/status-badge';
-import PagePagination from '@/components/page-pagination';
-import Input from '@/components/input';
+import { DifficultyBadge, JudgeStatusBadge, LanguageBadge } from '@/components/common/status-badge';
+import PagePagination from '@/components/common/page-pagination';
+import Input from '@/components/ui/input';
 import {
   ArrowLeft,
   MessageSquare,
@@ -18,12 +18,12 @@ import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
 import { CodeEditor, OnlineIdeToolbar, PermissionGuard, ProblemWorkbench, SubmissionCodeBlock, WorkbenchResult } from '@/components';
 import { PermissionCode } from '@/constants/permissions';
-import SuccessCelebration from '@/components/success-celebration';
+import SuccessCelebration from '@/components/common/success-celebration';
 import {
   useProblemDetail,
   type Comment,
   type Submission,
-} from '@/hooks/useProblemDetail';
+} from '@/hooks/problem/useProblemDetail';
 
 const { TextArea } = Input;
 

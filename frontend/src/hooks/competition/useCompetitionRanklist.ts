@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { competitionApi } from '@/lib';
-import { useCompetitionFirstBloodWebSocket } from '@/hooks/useCompetitionFirstBloodWebSocket';
+import { useCompetitionFirstBloodWebSocket } from '@/hooks/competition/useCompetitionFirstBloodWebSocket';
 
 export interface Competition {
   id: number;

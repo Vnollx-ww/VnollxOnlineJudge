@@ -1,11 +1,11 @@
 import { Button, Modal, Field } from '@/components';
 import { Users, UserPlus, Search, RefreshCw, Edit3, Trash2, Filter, CheckCircle2, Clock } from 'lucide-react';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import PagePagination from '@/components/page-pagination';
-import PermissionGuard from '@/components/permission-guard';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import PagePagination from '@/components/common/page-pagination';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useAdminUsers } from '@/hooks/useAdminUsers';
+import { useAdminUsers } from '@/hooks/admin/useAdminUsers';
 
 const StatCard = ({
   title,

@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import 'github-markdown-css/github-markdown.css';
 import './index.css';
-import { preloadMonacoEditor } from './components/code-editor';
+import { preloadMonacoEditor } from './components/editor/code-editor';
 
 // 预加载 Monaco Editor（不阻塞首屏渲染）
 preloadMonacoEditor();

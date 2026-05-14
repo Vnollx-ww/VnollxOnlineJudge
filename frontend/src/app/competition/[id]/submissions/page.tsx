@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Button, Space } from '@/components';
 import { Lock, List as ListIcon, History } from 'lucide-react';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import { JudgeStatusBadge, LanguageBadge } from '@/components/status-badge';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import { JudgeStatusBadge, LanguageBadge } from '@/components/common/status-badge';
 import { Table, Empty, Spin, Modal } from '@/components';
-import PagePagination from '@/components/page-pagination';
-import { useCompetitionSubmissions, type Submission } from '@/hooks/useCompetitionSubmissions';
+import PagePagination from '@/components/common/page-pagination';
+import { useCompetitionSubmissions, type Submission } from '@/hooks/competition/useCompetitionSubmissions';
 
 const CompetitionSubmissions: React.FC = () => {
   const {

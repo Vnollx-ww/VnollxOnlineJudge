@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import { MessageCircle, Bell } from 'lucide-react';
 import Sidebar from './Sidebar';
-import AIAssistant from '../ai-assistant';
-import ParticleBackground from '../particle-background';
-import AuthModal, { type AuthMode } from '../auth-modal';
+import AIAssistant from '../assistant/ai-assistant';
+import ParticleBackground from '../common/particle-background';
+import AuthModal, { type AuthMode } from '../auth/auth-modal';
 import { notificationApi, userApi } from '@/lib';
 import { isAuthenticated, setUserInfo } from '../../utils/auth';
-import { useNotificationWebSocket, type NotificationMessage } from '../../hooks/useNotificationWebSocket';
+import { useNotificationWebSocket, type NotificationMessage } from '@/hooks/notification/useNotificationWebSocket';
 import type { User, ApiResponse } from '../../types';
 
 const AUTH_MODAL_EVENT = 'open-auth-modal';

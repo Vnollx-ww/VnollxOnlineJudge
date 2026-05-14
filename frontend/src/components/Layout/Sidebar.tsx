@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { confirm, Dropdown } from '../../components';
-import Avatar from '../avatar';
-import Badge from '../badge';
-import Tooltip from '../tooltip';
+import Avatar from '../ui/avatar';
+import Badge from '../ui/badge';
+import Tooltip from '../ui/tooltip';
 import {
   Home,
   BookOpen,

@@ -1,8 +1,8 @@
 import { Empty, Spin, Avatar, Badge, Tabs } from '@/components';
 import { Search, Send, UserPlus, Check, X, Trash2, Smile } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
-import Input from '@/components/input';
-import { useFriends } from '@/hooks/useFriends';
+import Input from '@/components/ui/input';
+import { useFriends } from '@/hooks/user/useFriends';
 
 const Friends: React.FC = () => {
   const {

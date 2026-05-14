@@ -1,10 +1,10 @@
 import { Button, Modal, Tag, DataTable, DataColumn } from '@/components';
 import { RefreshCw, Check, X, Trash2 } from 'lucide-react';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import PermissionGuard from '@/components/permission-guard';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useAdminSolves, type Solve } from '@/hooks/useAdminSolves';
+import { useAdminSolves, type Solve } from '@/hooks/admin/useAdminSolves';
 
 const AdminSolves: React.FC = () => {
   const {

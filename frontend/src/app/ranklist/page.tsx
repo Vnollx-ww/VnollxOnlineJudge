@@ -1,7 +1,7 @@
 import { Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { PageSurface, PagePagination } from '@/components';
-import { useRanklist } from '@/hooks/useRanklist';
+import { useRanklist } from '@/hooks/user/useRanklist';
 
 const Ranklist: React.FC = () => {
   const {

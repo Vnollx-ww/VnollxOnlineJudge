@@ -1,10 +1,10 @@
 import { Bell, CheckCircle2, Trash2, Eye, RotateCw } from 'lucide-react';
 import { Tag, Button, Empty, Spin } from '@/components';
-import PagePagination from '@/components/page-pagination';
+import PagePagination from '@/components/common/page-pagination';
 import dayjs from 'dayjs';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import { useNotifications, NOTIFICATIONS_PAGE_SIZE, type Notification } from '@/hooks/useNotifications';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import { useNotifications, NOTIFICATIONS_PAGE_SIZE, type Notification } from '@/hooks/notification/useNotifications';
 
 const PAGE_SIZE = NOTIFICATIONS_PAGE_SIZE;
 

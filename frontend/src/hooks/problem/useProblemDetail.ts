@@ -8,7 +8,7 @@ import katex from 'katex';
 import { commentApi, fetchDictWithCache, judgeApi, problemApi, readCachedDict, submissionApi } from '@/lib';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getUserInfo, isAuthenticated } from '@/utils/auth';
-import { useJudgeWebSocket } from '@/hooks/useJudgeWebSocket';
+import { useJudgeWebSocket } from '@/hooks/judge/useJudgeWebSocket';
 import { mapJudgeStatusToVariant } from '@/components';
 import type { OnlineIdeSettings, WorkbenchResultData } from '@/components';
 import type { ApiResponse, JudgeMessage } from '@/types';

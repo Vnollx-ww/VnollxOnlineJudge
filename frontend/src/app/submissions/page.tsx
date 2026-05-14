@@ -1,14 +1,14 @@
 import { AlertCircle, Clock, HardDrive, Layers, Hash, User, CalendarDays } from 'lucide-react';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import PageSurface from '@/components/page-surface';
-import PagePagination from '@/components/page-pagination';
-import SubmissionCodeBlock from '@/components/submission-code-block';
-import MetricCard from '@/components/metric-card';
-import { JudgeStatusBadge, LanguageBadge } from '@/components/status-badge';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import PageSurface from '@/components/common/page-surface';
+import PagePagination from '@/components/common/page-pagination';
+import SubmissionCodeBlock from '@/components/editor/submission-code-block';
+import MetricCard from '@/components/common/metric-card';
+import { JudgeStatusBadge, LanguageBadge } from '@/components/common/status-badge';
 import { Button, Switch, Table, Modal } from '@/components';
 import { getJudgeStatusTone } from '@/constants/badges';
-import { useSubmissions, type Submission } from '@/hooks/useSubmissions';
+import { useSubmissions, type Submission } from '@/hooks/submission/useSubmissions';
 
 const Submissions: React.FC = () => {
   const {

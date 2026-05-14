@@ -12,12 +12,12 @@ import {
   DataColumn,
 } from '@/components';
 import { Plus, RefreshCw, Edit, Trash2, Settings, PlusCircle, ArrowUp, ArrowDown, ShieldAlert, Users, Phone, Mail, Building2, Download } from 'lucide-react';
-import Input from '@/components/input';
-import Select from '@/components/select';
-import PermissionGuard from '@/components/permission-guard';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import AdminCompetitionAntiCheat from './AdminCompetitionAntiCheat';
-import { useAdminCompetitions, type Competition } from '@/hooks/useAdminCompetitions';
+import { useAdminCompetitions, type Competition } from '@/hooks/admin/useAdminCompetitions';
 
 const crc32Table = (() => {
   const table: number[] = [];

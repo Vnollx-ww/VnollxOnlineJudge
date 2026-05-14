@@ -1,7 +1,7 @@
 import { Avatar, Button, FormItem, Upload } from '@/components';
 import { User, Mail, Lock, Settings as SettingsIcon, Camera } from 'lucide-react';
-import Input from '@/components/input';
-import { useSettings } from '@/hooks/useSettings';
+import Input from '@/components/ui/input';
+import { useSettings } from '@/hooks/user/useSettings';
 
 const accentBtnStyle = {
   backgroundColor: 'var(--gemini-accent)',

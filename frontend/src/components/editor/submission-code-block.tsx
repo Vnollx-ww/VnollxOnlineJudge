@@ -3,9 +3,9 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { CSSProperties } from 'react';
-import Button from './button';
-import { copyTextToClipboard } from '../utils/clipboard';
-import { getCodeHighlightLanguage } from '../constants/badges';
+import Button from '../ui/button';
+import { copyTextToClipboard } from '@/utils/clipboard';
+import { getCodeHighlightLanguage } from '@/constants/badges';
 
 export type SubmissionCodeBlockProps = {
   language?: string;

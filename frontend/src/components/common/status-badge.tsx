@@ -7,7 +7,7 @@ import {
   getLanguageTone,
   getPassRateTone,
   type BadgeTone,
-} from '../constants/badges';
+} from '@/constants/badges';
 
 type BaseProps = {
   className?: string;

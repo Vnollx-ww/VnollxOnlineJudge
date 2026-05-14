@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { competitionApi, dictApi, submissionApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
-import { useCompetitionFirstBloodWebSocket } from '@/hooks/useCompetitionFirstBloodWebSocket';
+import { useCompetitionFirstBloodWebSocket } from '@/hooks/competition/useCompetitionFirstBloodWebSocket';
 
 export interface Competition {
   id: number;

@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { Button, Modal, InputNumber, FilePicker, Field, Empty, Spin } from '@/components';
 import { Plus, RefreshCw, Edit, Trash2, Bot, Upload as UploadIcon, MessageSquare, Users, Clock3 } from 'lucide-react';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import PermissionGuard from '@/components/permission-guard';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
-import { useAdminAiModels, PROVIDER_OPTIONS } from '@/hooks/useAdminAiModels';
-import type { AdminAiModelRecordItem } from '@/hooks/useAdminAiModels';
+import { useAdminAiModels, PROVIDER_OPTIONS } from '@/hooks/admin/useAdminAiModels';
+import type { AdminAiModelRecordItem } from '@/hooks/admin/useAdminAiModels';
 
 const formatTime = (value?: number) => {
   if (!value) return '暂无时间';

@@ -1,9 +1,9 @@
 import { type ChangeEvent } from 'react';
 import { CheckCircle2, Edit, Layers3, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { Button, Empty, Field, InputNumber, Modal, Spin, Tag } from '@/components';
-import Input from '@/components/input';
-import Select from '@/components/select';
-import { useAdminDicts, statusOptions, defaultOptions } from '@/hooks/useAdminDicts';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import { useAdminDicts, statusOptions, defaultOptions } from '@/hooks/admin/useAdminDicts';
 
 const AdminDicts: React.FC = () => {
   const {

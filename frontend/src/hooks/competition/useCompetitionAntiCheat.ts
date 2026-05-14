@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
-import api from '../utils/api';
+import api from '@/utils/api';
 
 export type AntiCheatEventType =
   | 'PAGE_HIDDEN'

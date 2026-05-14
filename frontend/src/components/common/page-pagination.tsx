@@ -1,5 +1,5 @@
-import Pagination from './pagination';
-import type { PaginationProps } from './pagination';
+import Pagination from '../ui/pagination';
+import type { PaginationProps } from '../ui/pagination';
 import { useCallback, type ReactNode } from 'react';
 
 export type PagePaginationProps = {

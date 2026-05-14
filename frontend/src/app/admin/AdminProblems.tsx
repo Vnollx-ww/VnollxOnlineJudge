@@ -28,12 +28,12 @@ import DOMPurify from 'dompurify';
 import 'highlight.js/styles/github.css';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import Select from '@/components/select';
-import Input from '@/components/input';
-import PermissionGuard from '@/components/permission-guard';
+import Select from '@/components/ui/select';
+import Input from '@/components/ui/input';
+import PermissionGuard from '@/components/common/permission-guard';
 import { PermissionCode } from '@/constants/permissions';
 import toast from 'react-hot-toast';
-import { useAdminProblems, type Problem } from '@/hooks/useAdminProblems';
+import { useAdminProblems, type Problem } from '@/hooks/admin/useAdminProblems';
 
 marked.setOptions({
   gfm: true,

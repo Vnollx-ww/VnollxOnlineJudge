@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'highlight.js/styles/github.css';
 import 'katex/dist/katex.min.css';
-import { useSolutionDetail } from '@/hooks/useSolutionDetail';
+import { useSolutionDetail } from '@/hooks/solution/useSolutionDetail';
 
 const SolutionDetailPage: React.FC = () => {
   const {

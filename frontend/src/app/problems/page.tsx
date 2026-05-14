@@ -1,11 +1,11 @@
 import { CheckCircle, Circle } from 'lucide-react';
-import Input from '@/components/input';
-import PageSurface from '@/components/page-surface';
-import PagePagination from '@/components/page-pagination';
-import TagMultiSelect from '@/components/tag-multi-select';
+import Input from '@/components/ui/input';
+import PageSurface from '@/components/common/page-surface';
+import PagePagination from '@/components/common/page-pagination';
+import TagMultiSelect from '@/components/common/tag-multi-select';
 import { Button, Table } from '@/components';
-import { DifficultyBadge, PassRateBadge } from '@/components/status-badge';
-import { useProblems, type Problem } from '@/hooks/useProblems';
+import { DifficultyBadge, PassRateBadge } from '@/components/common/status-badge';
+import { useProblems, type Problem } from '@/hooks/problem/useProblems';
 
 const Problems: React.FC = () => {
   const {

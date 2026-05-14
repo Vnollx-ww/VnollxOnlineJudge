@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Table, Tag, Spin, Empty, Modal, Button, Space, BalloonIcon } from '@/components';
 import { Trophy, Clock, Lock, List as ListIcon, History, Maximize2 } from 'lucide-react';
-import Input from '@/components/input';
+import Input from '@/components/ui/input';
 import {
   useCompetitionDetail,
   formatCompetitionDetailTime,
   type CompetitionProblem as Problem,
-} from '@/hooks/useCompetitionDetail';
-import { balloonColors } from '@/hooks/useCompetitionRanklist';
+} from '@/hooks/competition/useCompetitionDetail';
+import { balloonColors } from '@/hooks/competition/useCompetitionRanklist';
 
 const CompetitionDetail: React.FC = () => {
   const {

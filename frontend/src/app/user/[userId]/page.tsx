@@ -6,9 +6,9 @@ import {
   Tooltip as RechartsTooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from 'recharts';
 import { PermissionCode } from '@/constants/permissions';
-import Select from '@/components/select';
+import Select from '@/components/ui/select';
 import { usePermission } from '@/contexts/PermissionContext';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUserProfile } from '@/hooks/user/useUserProfile';
 
 const CHART_COLORS = ['#1a73e8', '#34a853', '#f9ab00', '#d93025', '#9334e6', '#0d9488'];
 
