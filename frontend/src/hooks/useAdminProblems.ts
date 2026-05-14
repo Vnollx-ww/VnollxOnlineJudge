@@ -159,7 +159,8 @@ export const useAdminProblems = () => {
       const data = (await adminProblemApi.delete(id)) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除题目成功');
-        loadProblems();
+        setProblems((current) => current.filter((problem) => problem.id !== id));
+        setTotal((current) => Math.max(0, current - 1));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -204,14 +205,21 @@ export const useAdminProblems = () => {
         return;
       }
 
-      let data: ApiResponse;
-      if (editingProblem) data = (await adminProblemApi.update(formData)) as ApiResponse;
-      else data = (await adminProblemApi.add(formData)) as ApiResponse;
+      let data: ApiResponse<Problem>;
+      if (editingProblem) data = (await adminProblemApi.update<Problem>(formData)) as ApiResponse<Problem>;
+      else data = (await adminProblemApi.add<Problem>(formData)) as ApiResponse<Problem>;
 
       if (data.code === 200) {
         toast.success(editingProblem ? '更新题目成功' : '创建题目成功');
         setModalVisible(false);
-        loadProblems();
+        if (data.data) {
+          if (editingProblem) {
+            setProblems((current) => current.map((problem) => (problem.id === data.data!.id ? data.data! : problem)));
+          } else {
+            setProblems((current) => [data.data!, ...current].slice(0, pageSize));
+            setTotal((current) => current + 1);
+          }
+        }
       } else {
         toast.error((data as any).msg || '操作失败');
       }

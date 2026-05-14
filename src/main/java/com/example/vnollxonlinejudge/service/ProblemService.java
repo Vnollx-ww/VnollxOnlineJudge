@@ -13,10 +13,10 @@ public interface ProblemService {
     /** 仅查询 id、title，避免加载题面与样例 */
     Problem getProblemTitleRow(Long pid);
 
-    void createProblem(AdminSaveProblemDTO dto);
+    ProblemVo createProblem(AdminSaveProblemDTO dto);
 
     void deleteProblemByAdmin(Long id);
-    void updateProblem(AdminSaveProblemDTO dto);
+    ProblemVo updateProblem(AdminSaveProblemDTO dto);
 
     ProblemVo getProblemInfo(Long pid, Long cid,String name);
 

@@ -55,9 +55,9 @@ public class AdminDictController {
 
     @PostMapping("/type/save")
     @RequirePermission(PermissionCode.SYSTEM_SETTINGS)
-    public Result<Long> saveType(@RequestBody AdminSaveDictTypeDTO dto) {
+    public Result<DictTypeVo> saveType(@RequestBody AdminSaveDictTypeDTO dto) {
         Long id = dictService.saveType(dto);
-        return Result.Success(id, "保存字典类型成功");
+        return Result.Success(dictService.getTypeById(id), "保存字典类型成功");
     }
 
     @DeleteMapping("/type/{id}")
@@ -82,9 +82,9 @@ public class AdminDictController {
 
     @PostMapping("/data/save")
     @RequirePermission(PermissionCode.SYSTEM_SETTINGS)
-    public Result<Long> saveData(@RequestBody AdminSaveDictDataDTO dto) {
+    public Result<DictDataVo> saveData(@RequestBody AdminSaveDictDataDTO dto) {
         Long id = dictService.saveData(dto);
-        return Result.Success(id, "保存字典数据成功");
+        return Result.Success(dictService.getDataById(id), "保存字典数据成功");
     }
 
     @DeleteMapping("/data/{id}")

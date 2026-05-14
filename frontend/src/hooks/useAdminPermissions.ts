@@ -99,10 +99,14 @@ export const useAdminPermissions = () => {
   const handleAssignRoleToUser = async () => {
     if (!selectedUser || !selectedRoleToAssign) { toast.error('请选择用户和角色'); return; }
     try {
-      const data = (await adminRoleApi.assignUserRole(selectedUser.id, selectedRoleToAssign)) as ApiResponse;
+      const data = (await adminRoleApi.assignUserRole<Role[]>(selectedUser.id, selectedRoleToAssign)) as ApiResponse<Role[]>;
       if (data.code === 200) {
         toast.success('分配角色成功');
-        loadUserRolesAndPermissions(selectedUser.id);
+        if (data.data) setUserRoles(data.data);
+        else {
+          const role = roles.find((item) => item.id === selectedRoleToAssign);
+          if (role) setUserRoles((current) => current.some((item) => item.id === role.id) ? current : [...current, role]);
+        }
         setAssignRoleModalVisible(false);
         setSelectedRoleToAssign(null);
       } else { toast.error((data as any).msg || '分配角色失败'); }
@@ -112,10 +116,10 @@ export const useAdminPermissions = () => {
   const handleRemoveRoleFromUser = async (roleId: number) => {
     if (!selectedUser) return;
     try {
-      const data = (await adminRoleApi.removeUserRole(selectedUser.id, roleId)) as ApiResponse;
+      const data = (await adminRoleApi.removeUserRole<Role[]>(selectedUser.id, roleId)) as ApiResponse<Role[]>;
       if (data.code === 200) {
         toast.success('移除角色成功');
-        loadUserRolesAndPermissions(selectedUser.id);
+        setUserRoles(data.data || userRoles.filter((role) => role.id !== roleId));
       } else { toast.error((data as any).msg || '移除角色失败'); }
     } catch { toast.error('移除角色失败'); }
   };
@@ -132,7 +136,17 @@ export const useAdminPermissions = () => {
       if (successCount === selectedPermissionsToAssign.length) toast.success(`成功分配 ${successCount} 个权限`);
       else if (successCount > 0) toast.error(`部分分配成功：${successCount}/${selectedPermissionsToAssign.length}`);
       else toast.error('分配权限失败');
-      await loadRolePermissions(selectedRole.id);
+      const latestPermissions = results
+        .map((r) => (r.status === 'fulfilled' && Array.isArray(r.value.data) ? r.value.data as Permission[] : null))
+        .find((value): value is Permission[] => !!value);
+      if (latestPermissions) setRolePermissions(latestPermissions);
+      else if (successCount > 0) {
+        const assigned = permissions.filter((permission) => selectedPermissionsToAssign.includes(permission.id));
+        setRolePermissions((current) => {
+          const existingIds = new Set(current.map((permission) => permission.id));
+          return [...current, ...assigned.filter((permission) => !existingIds.has(permission.id))];
+        });
+      }
       if (successCount > 0) {
         setAssignPermissionModalVisible(false);
         setSelectedPermissionsToAssign([]);
@@ -143,10 +157,10 @@ export const useAdminPermissions = () => {
   const handleRemovePermissionFromRole = async (permissionId: number) => {
     if (!selectedRole) return;
     try {
-      const data = (await adminRoleApi.removePermission(selectedRole.id, permissionId)) as ApiResponse;
+      const data = (await adminRoleApi.removePermission<Permission[]>(selectedRole.id, permissionId)) as ApiResponse<Permission[]>;
       if (data.code === 200) {
         toast.success('移除权限成功');
-        loadRolePermissions(selectedRole.id);
+        setRolePermissions(data.data || rolePermissions.filter((permission) => permission.id !== permissionId));
       } else { toast.error((data as any).msg || '移除权限失败'); }
     } catch { toast.error('移除权限失败'); }
   };

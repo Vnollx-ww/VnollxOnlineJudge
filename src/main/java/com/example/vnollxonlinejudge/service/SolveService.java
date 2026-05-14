@@ -10,9 +10,9 @@ public interface SolveService {
     
     // 管理员功能
     List<SolveVo> getAllSolvesForAdmin(int page, int size, String keyword, Integer status);
-    void createSolveForAdmin(String content, String name, Long pid, String title, String problemName);
-    void updateSolve(Long id, String content, String name, Long pid, String title, String problemName);
-    void updateSolveStatus(Long id, Integer status);
+    SolveVo createSolveForAdmin(String content, String name, Long pid, String title, String problemName);
+    SolveVo updateSolve(Long id, String content, String name, Long pid, String title, String problemName);
+    SolveVo updateSolveStatus(Long id, Integer status);
     void deleteSolve(Long id);
     Long getSolveCount(String keyword, Integer status);
 }

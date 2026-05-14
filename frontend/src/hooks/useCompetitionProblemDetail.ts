@@ -62,6 +62,8 @@ export interface Comment {
   username: string;
   content: string;
   createTime: string;
+  parentId?: number;
+  parentUsername?: string;
   subcommentList?: Comment[];
   children?: Comment[];
 }
@@ -407,6 +409,27 @@ export const useCompetitionProblemDetail = () => {
   const formatComments = (list: Comment[] = []): Comment[] =>
     list.map((item) => ({ ...item, children: formatComments(item.subcommentList || []) }));
 
+  const normalizeComment = (comment: Comment): Comment => ({
+    ...comment,
+    children: formatComments(comment.subcommentList || comment.children || []),
+  });
+
+  const addCommentToTree = (list: Comment[], comment: Comment): Comment[] => {
+    const nextComment = normalizeComment(comment);
+    if (!nextComment.parentId) return [nextComment, ...list];
+    return list.map((item) => {
+      if (item.id === nextComment.parentId) {
+        return { ...item, children: [nextComment, ...(item.children || [])] };
+      }
+      return { ...item, children: addCommentToTree(item.children || [], nextComment) };
+    });
+  };
+
+  const removeCommentFromTree = (list: Comment[], commentId: number): Comment[] =>
+    list
+      .filter((item) => item.id !== commentId)
+      .map((item) => ({ ...item, children: removeCommentFromTree(item.children || [], commentId) }));
+
   const loadComments = async (pid: number) => {
     setCommentLoading(true);
     try {
@@ -714,12 +737,12 @@ export const useCompetitionProblemDetail = () => {
         content: commentContent.trim(),
         createTime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
       };
-      const data = await commentApi.publish(payload);
+      const data = await commentApi.publish<Comment>(payload);
       if (data.code === 200) {
         toast.success('发布成功');
         setCommentContent('');
         setReplyTarget(null);
-        loadComments(problem!.id);
+        if (data.data) setComments((current) => addCommentToTree(current, data.data!));
       } else {
         toast.error(data.msg || '发布失败');
       }
@@ -735,7 +758,7 @@ export const useCompetitionProblemDetail = () => {
       const data = await commentApi.delete(commentId);
       if (data.code === 200) {
         toast.success('删除成功');
-        loadComments(problem!.id);
+        setComments((current) => removeCommentFromTree(current, commentId));
       } else {
         toast.error(data.msg || '删除失败');
       }

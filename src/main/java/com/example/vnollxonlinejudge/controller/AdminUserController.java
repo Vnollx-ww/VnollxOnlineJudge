@@ -65,9 +65,9 @@ public class AdminUserController {
      */
     @PostMapping("/add")
     @RequirePermission(PermissionCode.USER_CREATE)
-    public Result<Void> createUser(@Valid @RequestBody AdminSaveUserDTO request, HttpServletRequest req) {
-        userService.addUserByAdmin(request.getName(), request.getEmail(), request.getIdentity(), getCurrentIdentity(req));
-        return Result.Success("添加用户成功");
+    public Result<UserVo> createUser(@Valid @RequestBody AdminSaveUserDTO request, HttpServletRequest req) {
+        UserVo user = userService.addUserByAdmin(request.getName(), request.getEmail(), request.getIdentity(), getCurrentIdentity(req));
+        return Result.Success(user, "添加用户成功");
     }
 
     /**
@@ -75,17 +75,17 @@ public class AdminUserController {
      */
     @PutMapping("/update")
     @RequirePermission(PermissionCode.USER_UPDATE)
-    public Result<Void> updateUser(@Valid @RequestBody AdminSaveUserDTO request,HttpServletRequest req) {
+    public Result<UserVo> updateUser(@Valid @RequestBody AdminSaveUserDTO request,HttpServletRequest req) {
         // 确保路径参数和请求体中的ID一致
 
-        userService.updateUserInfoByAdmin(
+        UserVo user = userService.updateUserInfoByAdmin(
                 request.getEmail(),
                 request.getName(),
                 request.getIdentity(),
                 request.getId(),
                 getCurrentIdentity(req)
         );
-        return Result.Success("修改用户信息成功");
+        return Result.Success(user, "修改用户信息成功");
     }
 
     /**

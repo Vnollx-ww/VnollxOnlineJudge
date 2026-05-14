@@ -164,7 +164,7 @@ export const useAdminAiModels = () => {
       const res = (await adminAiModelApi.delete(id)) as ApiResponse;
       if (res.code === 200) {
         toast.success('删除成功');
-        loadList();
+        setList((current) => current.filter((item) => item.id !== id));
       } else {
         toast.error((res as any).msg || '删除失败');
       }
@@ -253,11 +253,17 @@ export const useAdminAiModels = () => {
         status: values.status ?? 1,
         proxyType: values.proxyType ?? 'overseas',
       };
-      const res = (await adminAiModelApi.save<number>(payload)) as ApiResponse<number>;
+      const res = (await adminAiModelApi.save<AiModelVo>(payload)) as ApiResponse<AiModelVo>;
       if (res.code === 200) {
         toast.success(editingId ? '更新成功' : '创建成功');
         setModalVisible(false);
-        loadList();
+        if (res.data) {
+          if (editingId) {
+            setList((current) => current.map((item) => (item.id === res.data!.id ? res.data! : item)));
+          } else {
+            setList((current) => [res.data!, ...current]);
+          }
+        }
       } else {
         toast.error((res as any).msg || '保存失败');
       }

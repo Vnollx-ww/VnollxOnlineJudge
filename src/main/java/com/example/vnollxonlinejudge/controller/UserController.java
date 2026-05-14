@@ -75,14 +75,14 @@ public class UserController {
         return Result.Success("修改密码成功");
     }
     @PutMapping("/update/profile")
-    public Result<Void> updateUserInfo(@Valid @ModelAttribute UpdateUserInfoDTO request) {
+    public Result<UserVo> updateUserInfo(@Valid @ModelAttribute UpdateUserInfoDTO request) {
         Long userId = UserContextHolder.getCurrentUserId();
-        userService.updateUserInfo(
+        UserVo user = userService.updateUserInfo(
                 request.getAvatar(),request.getEmail(), request.getName(),
                 request.getSignature(),userId, request.getOption(),
                 request.getVerifyCode()
         );
-        return Result.Success("修改个人信息成功");
+        return Result.Success(user, "修改个人信息成功");
     }
 
     /** 上传图片（与头像同 bucket），用于头像、AI 模型 Logo 等。prefix 默认 avatar，传 ai-model 时存到 ai-model/ 目录 */

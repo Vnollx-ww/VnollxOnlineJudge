@@ -122,20 +122,22 @@ export const useAdminRoles = () => {
   const handleRoleSubmit = async (values: RoleFormValues) => {
     try {
       if (editingRole) {
-        const data = (await adminRoleApi.updateRole(editingRole.id, { ...values })) as ApiResponse;
+        const data = (await adminRoleApi.updateRole<Role>(editingRole.id, { ...values })) as ApiResponse<Role>;
         if (data.code === 200) {
           toast.success('更新角色成功');
           setRoleModalVisible(false);
-          loadRoles();
+          const nextRole = data.data || { ...editingRole, ...values };
+          setRoles((current) => current.map((role) => (role.id === editingRole.id ? { ...role, ...nextRole } : role)));
+          setSelectedRole((current) => (current?.id === editingRole.id ? { ...current, ...nextRole } : current));
         } else {
           toast.error((data as any).msg || '更新失败');
         }
       } else {
-        const data = (await adminRoleApi.createRole({ ...values })) as ApiResponse;
+        const data = (await adminRoleApi.createRole<Role>({ ...values })) as ApiResponse<Role>;
         if (data.code === 200) {
           toast.success('创建角色成功');
           setRoleModalVisible(false);
-          loadRoles();
+          if (data.data) setRoles((current) => [data.data!, ...current]);
         } else {
           toast.error((data as any).msg || '创建失败');
         }
@@ -154,7 +156,7 @@ export const useAdminRoles = () => {
           setSelectedRole(null);
           setRolePermissions([]);
         }
-        loadRoles();
+        setRoles((current) => current.filter((role) => role.id !== roleId));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -182,7 +184,17 @@ export const useAdminRoles = () => {
       else if (successCount > 0) toast.error(`部分分配成功：${successCount}/${selectedPermissionsToAssign.length}`);
       else toast.error('分配权限失败');
 
-      await loadRolePermissions(selectedRole.id);
+      const latestPermissions = results
+        .map((result) => (result.status === 'fulfilled' && Array.isArray(result.value.data) ? result.value.data as Permission[] : null))
+        .find((value): value is Permission[] => !!value);
+      if (latestPermissions) setRolePermissions(latestPermissions);
+      else if (successCount > 0) {
+        const assigned = permissions.filter((permission) => selectedPermissionsToAssign.includes(permission.id));
+        setRolePermissions((current) => {
+          const existingIds = new Set(current.map((permission) => permission.id));
+          return [...current, ...assigned.filter((permission) => !existingIds.has(permission.id))];
+        });
+      }
       if (successCount > 0) {
         setAssignPermissionModalVisible(false);
         setSelectedPermissionsToAssign([]);
@@ -195,10 +207,10 @@ export const useAdminRoles = () => {
   const handleRemovePermissionFromRole = async (permissionId: number) => {
     if (!selectedRole) return;
     try {
-      const data = (await adminRoleApi.removePermission(selectedRole.id, permissionId)) as ApiResponse;
+      const data = (await adminRoleApi.removePermission<Permission[]>(selectedRole.id, permissionId)) as ApiResponse<Permission[]>;
       if (data.code === 200) {
         toast.success('移除权限成功');
-        loadRolePermissions(selectedRole.id);
+        setRolePermissions(data.data || rolePermissions.filter((permission) => permission.id !== permissionId));
       } else {
         toast.error((data as any).msg || '移除失败');
       }
@@ -209,12 +221,12 @@ export const useAdminRoles = () => {
 
   const handleCreatePermission = async (values: PermissionFormValues) => {
     try {
-      const data = (await adminRoleApi.createPermission({ ...values })) as ApiResponse;
+      const data = (await adminRoleApi.createPermission<Permission>({ ...values })) as ApiResponse<Permission>;
       if (data.code === 200) {
         toast.success('创建权限成功');
         setPermissionModalVisible(false);
         setPermissionFormValues(defaultPermissionForm);
-        loadPermissions();
+        if (data.data) setPermissions((current) => [data.data!, ...current]);
       } else {
         toast.error((data as any).msg || '创建失败');
       }

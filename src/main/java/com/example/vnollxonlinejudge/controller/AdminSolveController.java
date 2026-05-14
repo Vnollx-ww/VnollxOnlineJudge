@@ -62,21 +62,21 @@ public class AdminSolveController {
     
     @PostMapping
     @RequirePermission(PermissionCode.SOLVE_CREATE)
-    public Result<Void> createSolve(@RequestBody CreateSolveDTO req) {
-        solveService.createSolveForAdmin(
+    public Result<SolveVo> createSolve(@RequestBody CreateSolveDTO req) {
+        SolveVo solve = solveService.createSolveForAdmin(
                 req.getContent(),
                 req.getName(),
                 Long.parseLong(req.getPid()),
                 req.getTitle(),
                 req.getProblemName()
         );
-        return Result.Success("创建题解成功");
+        return Result.Success(solve, "创建题解成功");
     }
     
     @PutMapping("/{id}")
     @RequirePermission(PermissionCode.SOLVE_UPDATE)
-    public Result<Void> updateSolve(@PathVariable Long id, @RequestBody CreateSolveDTO req) {
-        solveService.updateSolve(
+    public Result<SolveVo> updateSolve(@PathVariable Long id, @RequestBody CreateSolveDTO req) {
+        SolveVo solve = solveService.updateSolve(
                 id,
                 req.getContent(),
                 req.getName(),
@@ -84,15 +84,15 @@ public class AdminSolveController {
                 req.getTitle(),
                 req.getProblemName()
         );
-        return Result.Success("更新题解成功");
+        return Result.Success(solve, "更新题解成功");
     }
     
     @PutMapping("/{id}/status")
     @RequirePermission(PermissionCode.SOLVE_AUDIT)
-    public Result<Void> updateSolveStatus(@PathVariable Long id, @RequestParam Integer status) {
-        solveService.updateSolveStatus(id, status);
+    public Result<SolveVo> updateSolveStatus(@PathVariable Long id, @RequestParam Integer status) {
+        SolveVo solve = solveService.updateSolveStatus(id, status);
         String message = status == 1 ? "题解审核通过" : status == 2 ? "题解审核不通过" : "题解状态更新";
-        return Result.Success(message);
+        return Result.Success(solve, message);
     }
     
     @DeleteMapping("/{id}")

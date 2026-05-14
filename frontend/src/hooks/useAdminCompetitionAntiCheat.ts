@@ -170,13 +170,25 @@ export const useAdminCompetitionAntiCheat = (
     if (!competitionId || !reviewTarget) return;
     try {
       setReviewSubmitting(true);
-      const data = (await adminAntiCheatApi.review(competitionId, reviewTarget.userId, { ...reviewFormValues })) as ApiResponse;
+      const data = (await adminAntiCheatApi.review<UserDetail>(competitionId, reviewTarget.userId, { ...reviewFormValues })) as ApiResponse<UserDetail>;
       if (data.code === 200) {
         toast.success('复核已保存');
         setReviewModalOpen(false);
         setReviewTarget(null);
-        await loadAll();
-        if (activeUserId === reviewTarget.userId) await openUserDetail(reviewTarget.userId);
+        if (data.data) {
+          setDetail((current) => (activeUserId === reviewTarget.userId ? data.data! : current));
+          if (data.data.summary) {
+            setSummaries((current) => current.map((item) => (
+              item.userId === reviewTarget.userId ? data.data!.summary! : item
+            )));
+          }
+        } else {
+          const nextSummary = { ...reviewTarget, ...reviewFormValues };
+          setSummaries((current) => current.map((item) => (item.userId === reviewTarget.userId ? nextSummary : item)));
+          if (activeUserId === reviewTarget.userId) {
+            setDetail((current) => current ? { ...current, summary: nextSummary } : current);
+          }
+        }
       } else {
         toast.error((data as any).msg || '保存失败');
       }
@@ -194,10 +206,19 @@ export const useAdminCompetitionAntiCheat = (
   const quickReview = async (record: AntiCheatSummary, status: string, result?: string) => {
     if (!competitionId) return;
     try {
-      const data = (await adminAntiCheatApi.review(competitionId, record.userId, { reviewStatus: status, reviewResult: result })) as ApiResponse;
+      const data = (await adminAntiCheatApi.review<UserDetail>(competitionId, record.userId, { reviewStatus: status, reviewResult: result })) as ApiResponse<UserDetail>;
       if (data.code === 200) {
         toast.success('已更新');
-        await loadAll();
+        if (data.data?.summary) {
+          setSummaries((current) => current.map((item) => (item.userId === record.userId ? data.data!.summary! : item)));
+          setDetail((current) => (activeUserId === record.userId ? data.data! : current));
+        } else {
+          const nextSummary = { ...record, reviewStatus: status, reviewResult: result };
+          setSummaries((current) => current.map((item) => (item.userId === record.userId ? nextSummary : item)));
+          if (activeUserId === record.userId) {
+            setDetail((current) => current ? { ...current, summary: nextSummary } : current);
+          }
+        }
       } else {
         toast.error((data as any).msg || '操作失败');
       }

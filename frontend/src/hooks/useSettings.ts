@@ -227,10 +227,10 @@ export const useSettings = () => {
       formData.append('signature', user!.signature || '');
       formData.append('verifyCode', '');
 
-      const data = await userApi.updateProfile(formData);
+      const data = await userApi.updateProfile<SettingsUser>(formData);
       if (data.code === 200) {
         toast.success('头像更新成功');
-        await loadUserInfo();
+        if (data.data) setUser(data.data);
         onSuccess?.(data);
       } else {
         toast.error(data.msg || '头像上传失败');

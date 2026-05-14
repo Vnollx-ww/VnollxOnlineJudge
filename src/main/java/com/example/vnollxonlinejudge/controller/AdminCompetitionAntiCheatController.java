@@ -97,13 +97,13 @@ public class AdminCompetitionAntiCheatController {
     /** 人工复核 */
     @PutMapping("/{cid}/anti-cheat/users/{uid}/review")
     @RequirePermission(PermissionCode.COMPETITION_ANTI_CHEAT_REVIEW)
-    public Result<Void> review(
+    public Result<AntiCheatUserDetailVo> review(
             @PathVariable Long cid,
             @PathVariable Long uid,
             @RequestBody AdminAntiCheatReviewDTO req
     ) {
         Long reviewerId = UserContextHolder.getCurrentUserId();
         antiCheatService.review(cid, uid, reviewerId, req);
-        return Result.Success("复核已保存");
+        return Result.Success(antiCheatService.getUserDetail(cid, uid, null), "复核已保存");
     }
 }

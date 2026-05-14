@@ -92,7 +92,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         return new CompetitionVo(competition);
     }
     @Override
-    public void createCompetition(String title, String description, String beginTime, String endTime, String password,boolean needPassword,String antiCheatMode,String participantType) {
+    public CompetitionVo createCompetition(String title, String description, String beginTime, String endTime, String password,boolean needPassword,String antiCheatMode,String participantType) {
         Competition competition = new Competition();
         competition.setTitle(title);
         competition.setDescription(description);
@@ -104,10 +104,11 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         competition.setParticipantType(normalizeParticipantType(participantType));
 
         this.save(competition);
+        return new CompetitionVo(competition);
     }
 
     @Override
-    public void updateCompetition(Long id, String title, String description, String beginTime, String endTime, String password, boolean needPassword,String antiCheatMode,String participantType) {
+    public CompetitionVo updateCompetition(Long id, String title, String description, String beginTime, String endTime, String password, boolean needPassword,String antiCheatMode,String participantType) {
         Competition competition=this.getById(id);
         if (competition==null){
             throw new BusinessException("比赛不存在或已被删除");
@@ -121,6 +122,7 @@ public class CompetitionServiceImpl extends ServiceImpl<CompetitionMapper, Compe
         competition.setAntiCheatMode(normalizeAntiCheatMode(antiCheatMode));
         competition.setParticipantType(normalizeParticipantType(participantType));
         this.updateById(competition);
+        return new CompetitionVo(competition);
     }
 
     private String normalizeAntiCheatMode(String mode) {

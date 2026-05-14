@@ -27,10 +27,9 @@ public class CommentController {
     }
     @PostMapping("/publish")
     @RequirePermission(PermissionCode.COMMENT_CREATE)
-    public Result<Void> publishComment(@RequestBody PublishCommentDTO dto) {
+    public Result<CommentInfoVO> publishComment(@RequestBody PublishCommentDTO dto) {
         Long uid=UserContextHolder.getCurrentUserId();
-        commentService.publishComment(dto,uid);
-        return Result.Success("发布评论成功");
+        return Result.Success(commentService.publishComment(dto,uid), "发布评论成功");
     }
     @GetMapping("/list")
     public Result<List<CommentInfoVO>> getCommentList(@RequestParam Long pid) {

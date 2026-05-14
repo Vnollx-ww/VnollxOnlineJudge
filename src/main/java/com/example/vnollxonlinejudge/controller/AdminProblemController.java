@@ -39,11 +39,10 @@ public class AdminProblemController {
     }
     @PostMapping(value ="/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @RequirePermission(PermissionCode.PROBLEM_CREATE)
-    public Result<Void> createProblem(
+    public Result<ProblemVo> createProblem(
             @Valid @ModelAttribute AdminSaveProblemDTO dto
     ) {
-        problemService.createProblem(dto);
-        return Result.Success("创建题目成功");
+        return Result.Success(problemService.createProblem(dto), "创建题目成功");
     }
     @DeleteMapping("/delete/{id}")
     @RequirePermission(PermissionCode.PROBLEM_DELETE)
@@ -53,11 +52,10 @@ public class AdminProblemController {
     }
     @PutMapping("/update")
     @RequirePermission(PermissionCode.PROBLEM_UPDATE)
-    public Result<Void> updateProblem(
+    public Result<ProblemVo> updateProblem(
             @Valid @ModelAttribute AdminSaveProblemDTO dto
     ){
-        problemService.updateProblem(dto);
-        return Result.Success("更新题目信息成功");
+        return Result.Success(problemService.updateProblem(dto), "更新题目信息成功");
     }
     @GetMapping("/count")
     @RequirePermission(PermissionCode.PROBLEM_VIEW)

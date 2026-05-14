@@ -161,7 +161,8 @@ export const useAdminCompetitions = () => {
       const data = (await adminCompetitionApi.delete(id)) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除比赛成功');
-        loadCompetitions();
+        setCompetitions((current) => current.filter((competition) => competition.id !== id));
+        setTotal((current) => Math.max(0, current - 1));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -198,12 +199,12 @@ export const useAdminCompetitions = () => {
   const handleBatchAddProblems = async () => {
     if (selectedProblems.length === 0) { toast('请至少选择一个题目'); return; }
     try {
-      const data = (await adminCompetitionApi.addProblems(currentCompetitionId!, selectedProblems.map((p) => p.toString()))) as ApiResponse;
+      const data = (await adminCompetitionApi.addProblems<Problem[]>(currentCompetitionId!, selectedProblems.map((p) => p.toString()))) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         toast.success('批量添加题目成功');
         setAddProblemModalVisible(false);
         setSelectedProblems([]);
-        loadCompetitionProblems(currentCompetitionId!);
+        setCompetitionProblems(data.data || []);
       } else {
         toast.error((data as any).msg || '添加失败');
       }
@@ -214,10 +215,10 @@ export const useAdminCompetitions = () => {
 
   const handleDeleteProblemFromCompetition = async (pid: number) => {
     try {
-      const data = (await adminCompetitionApi.deleteProblem(currentCompetitionId!, pid)) as ApiResponse;
+      const data = (await adminCompetitionApi.deleteProblem<Problem[]>(currentCompetitionId!, pid)) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         toast.success('删除题目成功');
-        loadCompetitionProblems(currentCompetitionId!);
+        setCompetitionProblems(data.data || competitionProblems.filter((problem) => problem.id !== pid));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -266,12 +267,19 @@ export const useAdminCompetitions = () => {
         ...(editingCompetition ? { id: editingCompetition.id } : {}),
       };
       const data = (await (editingCompetition
-        ? adminCompetitionApi.update(submitData)
-        : adminCompetitionApi.create(submitData))) as ApiResponse;
+        ? adminCompetitionApi.update<Competition>(submitData)
+        : adminCompetitionApi.create<Competition>(submitData))) as ApiResponse<Competition>;
       if (data.code === 200) {
         toast.success(editingCompetition ? '更新比赛成功' : '创建比赛成功');
         setModalVisible(false);
-        loadCompetitions();
+        if (data.data) {
+          if (editingCompetition) {
+            setCompetitions((current) => current.map((competition) => (competition.id === data.data!.id ? data.data! : competition)));
+          } else {
+            setCompetitions((current) => [data.data!, ...current].slice(0, pageSize));
+            setTotal((current) => current + 1);
+          }
+        }
       } else {
         toast.error((data as any).msg || '操作失败');
       }
@@ -326,12 +334,11 @@ export const useAdminCompetitions = () => {
         school: teamForm.school.trim(),
         member2Name: teamForm.member2Name.trim(),
         member3Name: teamForm.member3Name.trim(),
-      })) as ApiResponse;
+      })) as ApiResponse<CompetitionTeam[]>;
       if (data.code === 200) {
         toast.success('保存队伍成功，可继续添加下一个队伍');
         setTeamForm(defaultTeamForm);
-        loadCompetitions();
-        loadCompetitionTeams(teamImportCompetition.id);
+        setCompetitionTeams(data.data || []);
       } else {
         toast.error((data as any).msg || '保存队伍失败');
       }
@@ -346,12 +353,11 @@ export const useAdminCompetitions = () => {
     try {
       const formData = new FormData();
       formData.append('file', teamExcelFile);
-      const data = (await adminCompetitionApi.importTeams(teamImportCompetition.id, formData)) as ApiResponse;
+      const data = (await adminCompetitionApi.importTeams<CompetitionTeam[]>(teamImportCompetition.id, formData)) as ApiResponse<CompetitionTeam[]>;
       if (data.code === 200) {
         toast.success('导入队伍成功');
         setTeamExcelFile(null);
-        loadCompetitions();
-        loadCompetitionTeams(teamImportCompetition.id);
+        setCompetitionTeams(data.data || []);
       } else {
         toast.error((data as any).msg || '导入队伍失败');
       }
@@ -366,8 +372,7 @@ export const useAdminCompetitions = () => {
       const data = (await adminCompetitionApi.deleteTeam(teamId)) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除队伍成功');
-        loadCompetitionTeams(teamImportCompetition.id);
-        loadCompetitions();
+        setCompetitionTeams((current) => current.filter((team) => team.id !== teamId));
       } else {
         toast.error((data as any).msg || '删除队伍失败');
       }

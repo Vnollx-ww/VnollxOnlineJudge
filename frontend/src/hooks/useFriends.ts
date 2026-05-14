@@ -239,7 +239,9 @@ export const useFriends = () => {
       const data = (await friendApi.request(userId)) as ApiResponse<void>;
       if (data.code === 200) {
         toast.success('好友请求已发送');
-        searchUsers(searchKeyword);
+        setSearchResults((current) => current.map((user) => (
+          user.id === userId ? { ...user, friendStatus: 0, isRequester: true } : user
+        )));
       }
     } catch (error: any) {
       toast.error(error.response?.data?.msg || '发送失败');
@@ -251,8 +253,11 @@ export const useFriends = () => {
       const data = (await friendApi.accept(requesterId)) as ApiResponse<void>;
       if (data.code === 200) {
         toast.success('已同意好友请求');
-        loadFriends();
-        loadPendingRequests();
+        const request = pendingRequests.find((item) => item.userId === requesterId);
+        if (request) {
+          setFriends((current) => current.some((item) => item.userId === requesterId) ? current : [{ ...request, status: 1, unreadCount: 0 }, ...current]);
+        }
+        setPendingRequests((current) => current.filter((item) => item.userId !== requesterId));
       }
     } catch (error: any) {
       toast.error(error.response?.data?.msg || '操作失败');
@@ -264,7 +269,7 @@ export const useFriends = () => {
       const data = (await friendApi.reject(requesterId)) as ApiResponse<void>;
       if (data.code === 200) {
         toast.success('已拒绝好友请求');
-        loadPendingRequests();
+        setPendingRequests((current) => current.filter((item) => item.userId !== requesterId));
       }
     } catch (error: any) {
       toast.error(error.response?.data?.msg || '操作失败');
@@ -301,12 +306,45 @@ export const useFriends = () => {
     const unsubscribe = subscribe((msg) => {
       if (msg.type === 'friend_request') {
         toast.success(`${msg.requesterName} 向你发送了好友请求`);
-        loadPendingRequests();
+        const requesterId = Number(msg.requesterId);
+        if (requesterId) {
+          setPendingRequests((current) => current.some((item) => item.userId === requesterId) ? current : [{
+            id: Date.now(),
+            userId: requesterId,
+            userName: msg.requesterName || '未知用户',
+            userAvatar: msg.requesterAvatar || null,
+            userSignature: null,
+            status: 0,
+            createTime: new Date().toISOString(),
+            unreadCount: 0,
+            lastMessage: null,
+            lastMessageTime: null,
+            isOnline: false,
+          }, ...current]);
+        }
         return;
       }
       if (msg.type === 'friend_accepted') {
         toast.success(`${msg.accepterName} 已同意你的好友请求`);
-        loadFriends();
+        const accepterId = Number(msg.accepterId);
+        if (accepterId) {
+          setFriends((current) => current.some((item) => item.userId === accepterId) ? current : [{
+            id: Date.now(),
+            userId: accepterId,
+            userName: msg.accepterName || '未知用户',
+            userAvatar: msg.accepterAvatar || null,
+            userSignature: null,
+            status: 1,
+            createTime: new Date().toISOString(),
+            unreadCount: 0,
+            lastMessage: null,
+            lastMessageTime: null,
+            isOnline: false,
+          }, ...current]);
+          setSearchResults((current) => current.map((user) => (
+            user.id === accepterId ? { ...user, friendStatus: 1, isRequester: false } : user
+          )));
+        }
         return;
       }
       if (msg.type === 'online_status') {

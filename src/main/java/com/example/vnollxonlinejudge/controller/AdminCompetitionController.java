@@ -50,9 +50,9 @@ public class AdminCompetitionController {
 
     @PostMapping("/create")
     @RequirePermission(PermissionCode.COMPETITION_CREATE)
-    public Result<Void> createCompetition(@RequestBody AdminSaveCompetitionDTO req){
-        competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword(), req.getAntiCheatMode(), req.getParticipantType());
-        return Result.Success("创建比赛成功！！！");
+    public Result<CompetitionVo> createCompetition(@RequestBody AdminSaveCompetitionDTO req){
+        CompetitionVo competition = competitionService.createCompetition(req.getTitle(),req.getDescription(), req.getBeginTime(), req.getEndTime(), req.getPassword(), req.getNeedPassword(), req.getAntiCheatMode(), req.getParticipantType());
+        return Result.Success(competition, "创建比赛成功！！！");
     }
     @GetMapping("/list")
     @RequirePermission(PermissionCode.COMPETITION_VIEW)
@@ -76,15 +76,16 @@ public class AdminCompetitionController {
     }
     @PutMapping("/update")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> updateCompetition(@RequestBody AdminSaveCompetitionDTO req){
-        competitionService.updateCompetition(req.getId(),req.getTitle(),req.getDescription(),req.getBeginTime(),req.getEndTime(),req.getPassword(),req.getNeedPassword(), req.getAntiCheatMode(), req.getParticipantType());
-        return Result.Success("修改比赛信息成功");
+    public Result<CompetitionVo> updateCompetition(@RequestBody AdminSaveCompetitionDTO req){
+        CompetitionVo competition = competitionService.updateCompetition(req.getId(),req.getTitle(),req.getDescription(),req.getBeginTime(),req.getEndTime(),req.getPassword(),req.getNeedPassword(), req.getAntiCheatMode(), req.getParticipantType());
+        return Result.Success(competition, "修改比赛信息成功");
     }
     @PostMapping("/add/problem")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> addProblem(@RequestBody AdminAddProblemDTO req){
-        competitionProblemService.addRecord(Long.parseLong(req.getPid()),Long.parseLong(req.getCid()));
-        return Result.Success("添加题目至比赛中成功");
+    public Result<List<ProblemBasicVo>> addProblem(@RequestBody AdminAddProblemDTO req){
+        Long cid = Long.parseLong(req.getCid());
+        competitionProblemService.addRecord(Long.parseLong(req.getPid()), cid);
+        return Result.Success(getCompetitionProblemBasicList(cid), "添加题目至比赛中成功");
     }
     
     @GetMapping("/problems")
@@ -95,19 +96,19 @@ public class AdminCompetitionController {
     
     @PostMapping("/add/problems/batch")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> batchAddProblems(@RequestBody AdminBatchAddProblemDTO req){
+    public Result<List<ProblemBasicVo>> batchAddProblems(@RequestBody AdminBatchAddProblemDTO req){
         Long cid = Long.parseLong(req.getCid());
         for (String pid : req.getPids()) {
             competitionProblemService.addRecord(Long.parseLong(pid), cid);
         }
-        return Result.Success("批量添加题目至比赛中成功");
+        return Result.Success(getCompetitionProblemBasicList(cid), "批量添加题目至比赛中成功");
     }
     
     @DeleteMapping("/{cid}/problems/{pid}")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> deleteProblemFromCompetition(@PathVariable Long cid, @PathVariable Long pid){
+    public Result<List<ProblemBasicVo>> deleteProblemFromCompetition(@PathVariable Long cid, @PathVariable Long pid){
         competitionProblemService.deleteProblemFromCompetition(pid, cid);
-        return Result.Success("从比赛中删除题目成功");
+        return Result.Success(getCompetitionProblemBasicList(cid), "从比赛中删除题目成功");
     }
 
     @PutMapping("/{cid}/problems/order")
@@ -120,14 +121,17 @@ public class AdminCompetitionController {
     @GetMapping("/{cid}/problems")
     @RequirePermission(PermissionCode.COMPETITION_VIEW)
     public Result<List<ProblemBasicVo>> getCompetitionProblems(@PathVariable Long cid){
+        return Result.Success(getCompetitionProblemBasicList(cid), "获取比赛题目列表成功");
+    }
+
+    private List<ProblemBasicVo> getCompetitionProblemBasicList(Long cid) {
         List<CompetitionProblem> competitionProblems = competitionProblemService.getProblemList(cid);
-        List<ProblemBasicVo> problems = competitionProblems.stream()
+        return competitionProblems.stream()
                 .map(cp -> {
                     ProblemVo problemVo = problemService.getProblemInfo(cp.getProblemId(), cid, null);
                     return new ProblemBasicVo(problemVo.getId(), problemVo.getTitle(), problemVo.getDifficulty());
                 })
                 .collect(java.util.stream.Collectors.toList());
-        return Result.Success(problems, "获取比赛题目列表成功");
     }
 
     @GetMapping("/{cid}/teams")
@@ -138,24 +142,24 @@ public class AdminCompetitionController {
 
     @PostMapping("/{cid}/teams")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> saveCompetitionTeam(@PathVariable Long cid, @RequestBody AdminCompetitionTeamDTO req){
+    public Result<List<CompetitionTeamVo>> saveCompetitionTeam(@PathVariable Long cid, @RequestBody AdminCompetitionTeamDTO req){
         req.setCompetitionId(cid);
         competitionTeamService.saveTeam(req);
-        return Result.Success("保存比赛队伍成功");
+        return Result.Success(competitionTeamService.getTeams(cid), "保存比赛队伍成功");
     }
 
     @PostMapping("/{cid}/teams/import")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> importCompetitionTeams(@PathVariable Long cid, @RequestBody List<AdminCompetitionTeamDTO> req){
+    public Result<List<CompetitionTeamVo>> importCompetitionTeams(@PathVariable Long cid, @RequestBody List<AdminCompetitionTeamDTO> req){
         competitionTeamService.importTeams(cid, req);
-        return Result.Success("导入比赛队伍成功");
+        return Result.Success(competitionTeamService.getTeams(cid), "导入比赛队伍成功");
     }
 
     @PostMapping("/{cid}/teams/import/excel")
     @RequirePermission(PermissionCode.COMPETITION_UPDATE)
-    public Result<Void> importCompetitionTeamsExcel(@PathVariable Long cid, @RequestParam("file") MultipartFile file){
+    public Result<List<CompetitionTeamVo>> importCompetitionTeamsExcel(@PathVariable Long cid, @RequestParam("file") MultipartFile file){
         competitionTeamService.importTeamsFromExcel(cid, file);
-        return Result.Success("Excel 导入比赛队伍成功");
+        return Result.Success(competitionTeamService.getTeams(cid), "Excel 导入比赛队伍成功");
     }
 
     @DeleteMapping("/teams/{teamId}")

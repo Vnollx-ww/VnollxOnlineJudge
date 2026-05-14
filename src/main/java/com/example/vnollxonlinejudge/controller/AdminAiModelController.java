@@ -68,13 +68,17 @@ public class AdminAiModelController {
 
     @PostMapping("/save")
     @RequirePermission(PermissionCode.AI_CONFIG_UPDATE)
-    public Result<Long> save(@RequestBody @Valid AdminAiModelSaveDTO dto) {
+    public Result<AiModelVo> save(@RequestBody @Valid AdminAiModelSaveDTO dto) {
+        Long id;
         if (dto.getId() != null && dto.getId() > 0) {
             aiModelService.update(dto);
-            return Result.Success(dto.getId(), "更新成功");
+            id = dto.getId();
+            AiModel entity = aiModelService.getById(id);
+            return Result.Success(AiModelVo.builder().id(entity.getId()).name(entity.getName()).logoUrl(entity.getLogoUrl()).sortOrder(entity.getSortOrder()).build(), "更新成功");
         }
-        Long id = aiModelService.create(dto);
-        return Result.Success(id, "创建成功");
+        id = aiModelService.create(dto);
+        AiModel entity = aiModelService.getById(id);
+        return Result.Success(AiModelVo.builder().id(entity.getId()).name(entity.getName()).logoUrl(entity.getLogoUrl()).sortOrder(entity.getSortOrder()).build(), "创建成功");
     }
 
     @DeleteMapping("/{id}")

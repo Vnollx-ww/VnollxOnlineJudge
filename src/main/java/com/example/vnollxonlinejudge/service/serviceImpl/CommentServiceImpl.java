@@ -42,11 +42,22 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @Override
     @Transactional
-    public void publishComment(PublishCommentDTO dto,Long uid) {
+    public CommentInfoVO publishComment(PublishCommentDTO dto,Long uid) {
         Comment comment = commentConvert.toEntity(dto, uid);
         this.save(comment);
+        CommentInfoVO commentInfoVO = new CommentInfoVO(comment);
+        User user = userMapper.selectById(uid);
+        if (user != null) {
+            commentInfoVO.setUserAvatar(user.getAvatar());
+        }
+        if (comment.getParentId() != null && comment.getParentId() != 0) {
+            Comment parent = this.getById(comment.getParentId());
+            if (parent != null) {
+                commentInfoVO.setParentUsername(parent.getUsername());
+            }
+        }
 
-        if (dto.getReceiveUserId()==null||dto.getReceiveUserId()==0||Objects.equals(uid, dto.getReceiveUserId()))return ;
+        if (dto.getReceiveUserId()==null||dto.getReceiveUserId()==0||Objects.equals(uid, dto.getReceiveUserId()))return commentInfoVO;
 
         Instant now = Instant.now();
         DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT;
@@ -67,6 +78,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         Comment newComment=this.getOne(wrapper);
         notification.setCommentId(newComment.getId());
         notificationProducer.sendNotification(notification);
+        return commentInfoVO;
     }
 
     @Override

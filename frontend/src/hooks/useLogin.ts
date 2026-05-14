@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authApi, userApi } from '@/lib';
-import { setToken, setUserInfo } from '@/utils/auth';
+import { getRememberedLogin, setRememberedLogin, setToken, setUserInfo } from '@/utils/auth';
 
 export interface LoginFormData {
   account: string;
@@ -12,7 +12,7 @@ export interface LoginFormData {
 export const useLogin = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<LoginFormData>({ account: '', password: '' });
+  const [formData, setFormData] = useState<LoginFormData>(() => getRememberedLogin());
 
   const updateField = <K extends keyof LoginFormData>(key: K, value: LoginFormData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -25,6 +25,7 @@ export const useLogin = () => {
       const data = await authApi.login(formData);
       if (data.code === 200) {
         setToken(data.data);
+        setRememberedLogin(formData);
         const userRes = await userApi.getProfile<{ id: string; name: string; identity: string }>();
         if (userRes.code === 200) setUserInfo(userRes.data);
         toast.success('登录成功', { duration: 2000 });

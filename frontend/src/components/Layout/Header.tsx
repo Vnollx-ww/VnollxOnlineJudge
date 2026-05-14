@@ -132,6 +132,8 @@ const Header: React.FC<HeaderProps> = ({ layoutMode: _, toggleLayoutMode }) => {
         setUser(null);
         navigate('/');
         messageApi.success('已退出登录');
+        window.dispatchEvent(new Event('auth-changed'));
+        window.dispatchEvent(new Event('storage'));
       },
     });
   };

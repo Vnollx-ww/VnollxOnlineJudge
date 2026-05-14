@@ -34,7 +34,7 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
     @Override
     @Transactional
-    public void sendNotification(Notification notification, Long uid) {
+    public List<NotificationVo> sendNotification(Notification notification, Long uid) {
         if (!uid.equals(0L)) {
             List<Notification> notificationList = userService.getUserIdList(uid).stream()
                     .map(id -> Notification.builder()
@@ -42,25 +42,36 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
                             .description(notification.getDescription())
                             .createTime(notification.getCreateTime())
                             .uid((long) id)
+                            .isRead(false)
                             .build())
                     .collect(Collectors.toList());
             this.saveBatch(notificationList);
-            // 通过 WebSocket 推送通知给每个用户
             for (Notification n : notificationList) {
                 notificationWebSocketHandler.sendNotificationToUser(n.getUid(), new NotificationVo(n));
             }
+            return notificationList.stream()
+                    .map(NotificationVo::new)
+                    .collect(Collectors.toList());
         } else {
+            if (notification.getIsRead() == null) {
+                notification.setIsRead(false);
+            }
             this.save(notification);
-            // 通过 WebSocket 推送通知
             notificationWebSocketHandler.sendNotificationToUser(notification.getUid(), new NotificationVo(notification));
+            return List.of(new NotificationVo(notification));
         }
     }
 
     @Override
-    public void updateNotification(Long id, String title, String description) {
-        UpdateWrapper<Notification> updateWrapper=new UpdateWrapper<>();
-        updateWrapper.eq("id",id).set("title",title).set("description",description);
-        this.update(updateWrapper);
+    public NotificationVo updateNotification(Long id, String title, String description) {
+        Notification notification = this.getById(id);
+        if (notification == null) {
+            throw new BusinessException("通知不存在或已被删除");
+        }
+        notification.setTitle(title);
+        notification.setDescription(description);
+        this.updateById(notification);
+        return new NotificationVo(notification);
     }
 
 
@@ -119,9 +130,10 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     }
 
     @Override
-    public void markAsRead(Long id) {
+    public NotificationVo markAsRead(Long id) {
         UpdateWrapper<Notification> updateWrapper = new UpdateWrapper<>();
         updateWrapper.eq("id", id).set("is_read", true);
         this.update(updateWrapper);
+        return new NotificationVo(this.getById(id));
     }
 }

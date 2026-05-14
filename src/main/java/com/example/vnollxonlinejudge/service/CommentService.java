@@ -7,7 +7,7 @@ import java.util.List;
 
 
 public interface CommentService {
-    void publishComment(PublishCommentDTO dto,Long uid);
+    CommentInfoVO publishComment(PublishCommentDTO dto,Long uid);
     void deleteComment(Long id);
     List<CommentInfoVO> getCommentList(Long pid);
 }

@@ -51,7 +51,7 @@ export const useAdminSolves = () => {
       const data = (await adminSolveApi.delete(id)) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除题解成功');
-        loadSolves();
+        setSolves((current) => current.filter((solve) => solve.id !== id));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -65,7 +65,7 @@ export const useAdminSolves = () => {
       const data = (await adminSolveApi.audit(id, status)) as ApiResponse;
       if (data.code === 200) {
         toast.success((data as any).msg || '审核成功');
-        loadSolves();
+        setSolves((current) => current.map((solve) => (solve.id === id ? { ...solve, status } : solve)));
       } else {
         toast.error((data as any).msg || '审核失败');
       }

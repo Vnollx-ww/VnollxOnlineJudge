@@ -17,8 +17,8 @@ function Toast({ toast }: ToastProps) {
   const success = toast.type === 'success';
 
   return (
-    <div className="fixed left-1/2 top-6 z-[1200] -translate-x-1/2 animate-slide-up">
-      <div className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium shadow-xl backdrop-blur-xl ${
+    <div className="fixed left-1/2 top-6 z-[1200] -translate-x-1/2">
+      <div className={`flex animate-slide-up items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium shadow-xl backdrop-blur-xl ${
         success
           ? 'border-emerald-100 bg-emerald-50/95 text-emerald-700'
           : 'border-red-100 bg-red-50/95 text-red-700'

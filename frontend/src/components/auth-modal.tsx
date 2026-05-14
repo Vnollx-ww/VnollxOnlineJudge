@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { ArrowRight, Eye, EyeOff, Lock, Mail, User, X } from 'lucide-react';
 import { Toast, type ToastState } from '@/components';
 import { authApi } from '@/lib';
-import { setToken } from '@/utils/auth';
+import { getRememberedLogin, setRememberedLogin, setToken } from '@/utils/auth';
 import type { ApiResponse } from '@/types';
 
 export type AuthMode = 'login' | 'register' | 'forget';
@@ -172,6 +172,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
   }, [open]);
 
   useEffect(() => {
+    if (open && mode === 'login') {
+      setLoginForm(getRememberedLogin());
+    }
+  }, [open, mode]);
+
+  useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       setMousePos({ x: event.clientX, y: event.clientY });
     };
@@ -246,10 +252,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
     setForgotErrors((current) => ({ ...current, [field]: '' }));
   };
 
-  const validateLogin = () => {
+  const validateLogin = (values = loginForm) => {
     const errors: FormErrors<LoginFormValues> = {
-      account: loginForm.account.trim() ? '' : '请输入邮箱或用户名',
-      password: loginForm.password ? '' : '请输入密码',
+      account: values.account.trim() ? '' : '请输入邮箱或用户名',
+      password: values.password ? '' : '请输入密码',
     };
     setLoginErrors(errors);
     return !Object.values(errors).some(Boolean);
@@ -281,12 +287,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
 
   const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!validateLogin()) return;
+    const submittedLogin = {
+      account: String(new FormData(event.currentTarget).get('username') || loginForm.account),
+      password: String(new FormData(event.currentTarget).get('password') || loginForm.password),
+    };
+    setLoginForm(submittedLogin);
+    if (!validateLogin(submittedLogin)) return;
     setLoginLoading(true);
     try {
-      const data = await authApi.login(loginForm) as ApiResponse<string>;
+      const data = await authApi.login(submittedLogin) as ApiResponse<string>;
       if (data.code === 200) {
         setToken(data.data);
+        setRememberedLogin(submittedLogin);
         notify('success', '登录成功');
         onClose?.();
         window.dispatchEvent(new Event('auth-changed'));
@@ -461,14 +473,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
               </div>
 
               {mode === 'login' && (
-                <form className="space-y-6" onSubmit={handleLogin}>
+                <form className="space-y-6" onSubmit={handleLogin} autoComplete="on">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 ml-1 uppercase tracking-widest">邮箱或用户名</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <User size={20} />
                       </div>
-                      <input type="text" autoComplete="username" placeholder="请输入邮箱或用户名" value={loginForm.account} onChange={updateLogin('account')} className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type="text" name="username" autoComplete="username" placeholder="请输入邮箱或用户名" value={loginForm.account} onChange={updateLogin('account')} className="block w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     </div>
                     {renderError(loginErrors.account)}
                   </div>
@@ -478,7 +490,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <Lock size={20} />
                       </div>
-                      <input type={showLoginPassword ? 'text' : 'password'} placeholder="••••••••" value={loginForm.password} onChange={updateLogin('password')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type={showLoginPassword ? 'text' : 'password'} name="password" autoComplete="current-password" placeholder="••••••••" value={loginForm.password} onChange={updateLogin('password')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full pl-12 pr-12 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                       {renderPasswordToggle(showLoginPassword, () => setShowLoginPassword((current) => !current))}
                     </div>
                     {renderError(loginErrors.password)}
@@ -500,7 +512,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <User size={20} />
                       </div>
-                      <input placeholder="用户名" value={registerForm.name} onChange={updateRegister('name')} className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input name="name" autoComplete="name" placeholder="用户名" value={registerForm.name} onChange={updateRegister('name')} className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     </div>
                     {renderError(registerErrors.name)}
                   </div>
@@ -509,7 +521,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <Mail size={20} />
                       </div>
-                      <input type="email" placeholder="电子邮箱" value={registerForm.email} onChange={updateRegister('email')} className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type="email" name="email" autoComplete="email" placeholder="电子邮箱" value={registerForm.email} onChange={updateRegister('email')} className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     </div>
                     {renderError(registerErrors.email)}
                   </div>
@@ -527,13 +539,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <Lock size={20} />
                       </div>
-                      <input type={showRegisterPassword ? 'text' : 'password'} placeholder="登录密码" value={registerForm.password} onChange={updateRegister('password')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full pl-12 pr-12 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type={showRegisterPassword ? 'text' : 'password'} name="new-password" autoComplete="new-password" placeholder="登录密码" value={registerForm.password} onChange={updateRegister('password')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full pl-12 pr-12 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                       {renderPasswordToggle(showRegisterPassword, () => setShowRegisterPassword((current) => !current))}
                     </div>
                     {renderError(registerErrors.password)}
                   </div>
                   <div>
-                    <input type={showRegisterPassword ? 'text' : 'password'} placeholder="确认密码" value={registerForm.repassword} onChange={updateRegister('repassword')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full px-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                    <input type={showRegisterPassword ? 'text' : 'password'} name="confirm-password" autoComplete="new-password" placeholder="确认密码" value={registerForm.repassword} onChange={updateRegister('repassword')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full px-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     {renderError(registerErrors.repassword)}
                   </div>
                   <button type="submit" disabled={registerLoading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 active:scale-[0.98] transition-all shadow-xl disabled:opacity-60">
@@ -550,7 +562,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <Mail size={20} />
                       </div>
-                      <input type="email" placeholder="注册邮箱" value={forgotForm.email} onChange={updateForgot('email')} className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type="email" name="email" autoComplete="email" placeholder="注册邮箱" value={forgotForm.email} onChange={updateForgot('email')} className="block w-full pl-12 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     </div>
                     {renderError(forgotErrors.email)}
                   </div>
@@ -568,13 +580,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode = 'login', onClose, on
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-300 group-focus-within:text-indigo-500 transition-colors">
                         <Lock size={20} />
                       </div>
-                      <input type={showForgotPassword ? 'text' : 'password'} placeholder="新密码" value={forgotForm.newPassword} onChange={updateForgot('newPassword')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full pl-12 pr-12 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                      <input type={showForgotPassword ? 'text' : 'password'} name="new-password" autoComplete="new-password" placeholder="新密码" value={forgotForm.newPassword} onChange={updateForgot('newPassword')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full pl-12 pr-12 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                       {renderPasswordToggle(showForgotPassword, () => setShowForgotPassword((current) => !current))}
                     </div>
                     {renderError(forgotErrors.newPassword)}
                   </div>
                   <div>
-                    <input type={showForgotPassword ? 'text' : 'password'} placeholder="确认新密码" value={forgotForm.confirmPassword} onChange={updateForgot('confirmPassword')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full px-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
+                    <input type={showForgotPassword ? 'text' : 'password'} name="confirm-new-password" autoComplete="new-password" placeholder="确认新密码" value={forgotForm.confirmPassword} onChange={updateForgot('confirmPassword')} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} className="block w-full px-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-indigo-500 transition-all outline-none" />
                     {renderError(forgotErrors.confirmPassword)}
                   </div>
                   <button type="submit" disabled={forgotLoading} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 active:scale-[0.98] transition-all shadow-xl disabled:opacity-60">

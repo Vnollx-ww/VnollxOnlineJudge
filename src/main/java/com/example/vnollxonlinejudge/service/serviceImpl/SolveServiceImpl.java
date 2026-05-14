@@ -103,7 +103,7 @@ public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements 
     }
 
     @Override
-    public void createSolveForAdmin(String content, String name, Long pid, String title, String problemName) {
+    public SolveVo createSolveForAdmin(String content, String name, Long pid, String title, String problemName) {
         Solve solve = Solve.builder()
                 .content(content)
                 .name(name)
@@ -116,10 +116,11 @@ public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements 
                 .build();
 
         this.save(solve);
+        return new SolveVo(solve);
     }
 
     @Override
-    public void updateSolve(Long id, String content, String name, Long pid, String title, String problemName) {
+    public SolveVo updateSolve(Long id, String content, String name, Long pid, String title, String problemName) {
         Solve solve = getById(id);
         if (solve == null) {
             throw new BusinessException("题解不存在");
@@ -132,11 +133,12 @@ public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements 
         solve.setProblemName(problemName);
         
         this.updateById(solve);
+        return new SolveVo(solve);
     }
 
     @Override
     @Transactional
-    public void updateSolveStatus(Long id, Integer status) {
+    public SolveVo updateSolveStatus(Long id, Integer status) {
         Solve solve = getById(id);
         if (solve == null) {
             throw new BusinessException("题解不存在");
@@ -160,6 +162,7 @@ public class SolveServiceImpl extends ServiceImpl<SolveMapper,Solve> implements 
                 .uid(solve.getUid())
                 .build();
         notificationProducer.sendNotification(notification);
+        return new SolveVo(solve);
     }
 
     @Override

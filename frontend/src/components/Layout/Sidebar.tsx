@@ -75,7 +75,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         localStorage.removeItem('identity');
         navigate('/');
         messageApi.success('已退出登录');
-        window.location.reload();
+        window.dispatchEvent(new Event('auth-changed'));
+        window.dispatchEvent(new Event('storage'));
       },
     });
   };

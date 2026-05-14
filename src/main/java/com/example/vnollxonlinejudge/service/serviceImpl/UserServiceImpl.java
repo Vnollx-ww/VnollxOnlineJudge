@@ -220,7 +220,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     //@DS("master")
     @Override
-    public void updateUserInfo(
+    public UserVo updateUserInfo(
             MultipartFile avatar, String email, String name, String signature, Long uid,
             String option, String verifyCode
     ) {
@@ -249,6 +249,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         updateById(user);
         redisService.deleteKey(key);
+        return getUserById(uid);
     }
     //@DS("master")
     @Override
@@ -274,7 +275,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    public void addUserByAdmin(String name, String email, String identity, String currentIdentity) {
+    public UserVo addUserByAdmin(String name, String email, String identity, String currentIdentity) {
         validateAdminTargetIdentity(currentIdentity, identity);
         if (lambdaQuery().eq(User::getEmail, email).exists()) {
             throw new BusinessException(ERROR_EMAIL_EXISTS);
@@ -302,10 +303,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             userId = savedUser.getId();
         }
         permissionService.syncUserRoleByIdentity(userId, identity, false);
+        User savedUser = this.getById(userId);
+        return new UserVo(savedUser);
     }
 
     @Override
-    public void updateUserInfoByAdmin(
+    public UserVo updateUserInfoByAdmin(
             String email, String name,
             String identity, Long uid,String currentIdentity
     ) {
@@ -332,6 +335,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         
         // 同步用户角色（根据身份分配对应角色，会自动使token失效）
         permissionService.syncUserRoleByIdentity(uid, identity, true);
+        return new UserVo(this.getById(uid));
     }
 
     @Override

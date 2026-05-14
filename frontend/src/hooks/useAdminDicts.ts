@@ -173,11 +173,19 @@ export const useAdminDicts = () => {
       return;
     }
     try {
-      const res = (await adminDictApi.saveType<number>({ id: editingTypeId ?? undefined, ...typeForm })) as ApiResponse<number>;
+      const res = (await adminDictApi.saveType<DictTypeVo>({ id: editingTypeId ?? undefined, ...typeForm })) as ApiResponse<DictTypeVo>;
       if (res.code === 200) {
         toast.success(editingTypeId ? '字典类型已更新' : '字典类型已创建');
         setTypeModalVisible(false);
-        await loadTypes();
+        if (res.data) {
+          if (editingTypeId) {
+            setTypes((current) => current.map((item) => (item.id === res.data!.id ? res.data! : item)));
+            setSelectedType((current) => (current?.id === res.data!.id ? res.data! : current));
+          } else {
+            setTypes((current) => [res.data!, ...current]);
+            setSelectedType((current) => current ?? res.data!);
+          }
+        }
       } else {
         toast.error(getErrorMessage(res, '保存失败'));
       }
@@ -193,11 +201,17 @@ export const useAdminDicts = () => {
     }
     try {
       const payload = { ...dataForm, id: editingDataId ?? undefined, sort: Number(dataForm.sort) || 0 };
-      const res = (await adminDictApi.saveData<number>(payload)) as ApiResponse<number>;
+      const res = (await adminDictApi.saveData<DictDataVo>(payload)) as ApiResponse<DictDataVo>;
       if (res.code === 200) {
         toast.success(editingDataId ? '字典数据已更新' : '字典数据已创建');
         setDataModalVisible(false);
-        if (selectedType) loadData(selectedType.dictType);
+        if (res.data) {
+          if (editingDataId) {
+            setDataList((current) => current.map((item) => (item.id === res.data!.id ? res.data! : item)));
+          } else {
+            setDataList((current) => [res.data!, ...current]);
+          }
+        }
       } else {
         toast.error(getErrorMessage(res, '保存失败'));
       }
@@ -216,8 +230,12 @@ export const useAdminDicts = () => {
         toast.success('删除成功');
         setDeleteModalVisible(false);
         setDeleteTarget(null);
-        if (deleteTarget.kind === 'type') await loadTypes();
-        else if (selectedType) await loadData(selectedType.dictType);
+        if (deleteTarget.kind === 'type') {
+          setTypes((current) => current.filter((item) => item.id !== deleteTarget.id));
+          setSelectedType((current) => (current?.id === deleteTarget.id ? null : current));
+        } else {
+          setDataList((current) => current.filter((item) => item.id !== deleteTarget.id));
+        }
       } else {
         toast.error(getErrorMessage(res, '删除失败'));
       }

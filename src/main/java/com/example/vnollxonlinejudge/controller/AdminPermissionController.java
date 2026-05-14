@@ -117,14 +117,16 @@ public class AdminPermissionController {
      */
     @PostMapping("/role")
     @RequirePermission(PermissionCode.ROLE_CREATE)
-    public Result<Long> createRole(@Valid @RequestBody AdminSaveRoleDTO dto) {
+    public Result<Role> createRole(@Valid @RequestBody AdminSaveRoleDTO dto) {
         Role role = Role.builder()
                 .code(dto.getCode())
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .build();
         Long id = permissionService.createRole(role);
-        return Result.Success(id, "创建角色成功");
+        role.setId(id);
+        role.setStatus(1);
+        return Result.Success(role, "创建角色成功");
     }
     
     /**
@@ -132,7 +134,7 @@ public class AdminPermissionController {
      */
     @PutMapping("/role/{roleId}")
     @RequirePermission(PermissionCode.ROLE_UPDATE)
-    public Result<Void> updateRole(@PathVariable Long roleId, @Valid @RequestBody AdminSaveRoleDTO dto) {
+    public Result<Role> updateRole(@PathVariable Long roleId, @Valid @RequestBody AdminSaveRoleDTO dto) {
         Role role = Role.builder()
                 .id(roleId)
                 .code(dto.getCode())
@@ -140,7 +142,8 @@ public class AdminPermissionController {
                 .description(dto.getDescription())
                 .build();
         permissionService.updateRole(role);
-        return Result.Success("更新角色成功");
+        role.setStatus(1);
+        return Result.Success(role, "更新角色成功");
     }
     
     /**
@@ -158,7 +161,7 @@ public class AdminPermissionController {
      */
     @PostMapping("/permission")
     @RequirePermission(PermissionCode.PERMISSION_ASSIGN)
-    public Result<Long> createPermission(@Valid @RequestBody AdminSavePermissionDTO dto) {
+    public Result<Permission> createPermission(@Valid @RequestBody AdminSavePermissionDTO dto) {
         Permission permission = Permission.builder()
                 .code(dto.getCode())
                 .name(dto.getName())
@@ -166,7 +169,9 @@ public class AdminPermissionController {
                 .description(dto.getDescription())
                 .build();
         Long id = permissionService.createPermission(permission);
-        return Result.Success(id, "创建权限成功");
+        permission.setId(id);
+        permission.setStatus(1);
+        return Result.Success(permission, "创建权限成功");
     }
     
     /**
@@ -174,9 +179,9 @@ public class AdminPermissionController {
      */
     @PostMapping("/user/{userId}/role/{roleId}")
     @RequirePermission(PermissionCode.PERMISSION_ASSIGN)
-    public Result<Void> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
+    public Result<List<Role>> assignRoleToUser(@PathVariable Long userId, @PathVariable Long roleId) {
         permissionService.assignRoleToUser(userId, roleId);
-        return Result.Success("分配角色成功");
+        return Result.Success(permissionService.getUserRoles(userId), "分配角色成功");
     }
     
     /**
@@ -184,9 +189,9 @@ public class AdminPermissionController {
      */
     @DeleteMapping("/user/{userId}/role/{roleId}")
     @RequirePermission(PermissionCode.PERMISSION_ASSIGN)
-    public Result<Void> removeRoleFromUser(@PathVariable Long userId, @PathVariable Long roleId) {
+    public Result<List<Role>> removeRoleFromUser(@PathVariable Long userId, @PathVariable Long roleId) {
         permissionService.removeRoleFromUser(userId, roleId);
-        return Result.Success("移除角色成功");
+        return Result.Success(permissionService.getUserRoles(userId), "移除角色成功");
     }
     
     /**
@@ -194,9 +199,9 @@ public class AdminPermissionController {
      */
     @PostMapping("/role/{roleId}/permission/{permissionId}")
     @RequirePermission(PermissionCode.PERMISSION_ASSIGN)
-    public Result<Void> assignPermissionToRole(@PathVariable Long roleId, @PathVariable Long permissionId) {
+    public Result<List<Permission>> assignPermissionToRole(@PathVariable Long roleId, @PathVariable Long permissionId) {
         permissionService.assignPermissionToRole(roleId, permissionId);
-        return Result.Success("分配权限成功");
+        return Result.Success(permissionService.getRolePermissions(roleId), "分配权限成功");
     }
     
     /**
@@ -204,9 +209,9 @@ public class AdminPermissionController {
      */
     @DeleteMapping("/role/{roleId}/permission/{permissionId}")
     @RequirePermission(PermissionCode.PERMISSION_ASSIGN)
-    public Result<Void> removePermissionFromRole(@PathVariable Long roleId, @PathVariable Long permissionId) {
+    public Result<List<Permission>> removePermissionFromRole(@PathVariable Long roleId, @PathVariable Long permissionId) {
         permissionService.removePermissionFromRole(roleId, permissionId);
-        return Result.Success("移除权限成功");
+        return Result.Success(permissionService.getRolePermissions(roleId), "移除权限成功");
     }
     
     /**

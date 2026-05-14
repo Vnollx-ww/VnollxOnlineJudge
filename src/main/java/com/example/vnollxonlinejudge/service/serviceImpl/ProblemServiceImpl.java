@@ -92,7 +92,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     @Transactional
-    public void createProblem(AdminSaveProblemDTO dto) {
+    public ProblemVo createProblem(AdminSaveProblemDTO dto) {
         if (dto.getTestCaseFile() == null || dto.getTestCaseFile().isEmpty()) {
             throw new BusinessException("新建题目必须上传测试数据文件");
         }
@@ -146,6 +146,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
         }
         problem.setDatazip(problem.getId()+".zip");
         updateById(problem);
+        return getProblemInfo(problem.getId(), 0L, null);
     }
 
     @Override
@@ -191,7 +192,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 
     @Override
     @Transactional
-    public void updateProblem(AdminSaveProblemDTO dto)  {
+    public ProblemVo updateProblem(AdminSaveProblemDTO dto)  {
         QueryWrapper<Problem> wrapper = new QueryWrapper<>();
         wrapper.eq("id", dto.getId());
 
@@ -245,6 +246,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
             problem.setVersion(current + 1);
         }
         updateById(problem);
+        return getProblemInfo(problem.getId(), 0L, null);
     }
 
     @Override

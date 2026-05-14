@@ -18,12 +18,12 @@ public interface UserService {
     List<UserSolvedProblem> getSolveProblem(Long uid);
     List<UserVo> getAllUserByAdmin(int pageNum, int pageSize, String keyword, Long uid);
     void updatePassword(String old_password,String password,Long uid);
-    void updateUserInfo(MultipartFile avatar, String email, String name, String signature, Long uid, String option, String verifyCode);
+    UserVo updateUserInfo(MultipartFile avatar, String email, String name, String signature, Long uid, String option, String verifyCode);
     void updateSubmitCount(Long uid,int ok);
     //!!! ADMIN
     void deleteUserByAdmin(Long id,String currentIdentity);
-    void addUserByAdmin(String name,String email,String identity,String currentIdentity);
-    void updateUserInfoByAdmin(String email,String name,String identity,Long uid,String currentIdentity);
+    UserVo addUserByAdmin(String name,String email,String identity,String currentIdentity);
+    UserVo updateUserInfoByAdmin(String email,String name,String identity,Long uid,String currentIdentity);
     Long getCountByAdmin(String keyword,String identity);
     Long getCount();
     List<UserVo> getAllUser();

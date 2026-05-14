@@ -107,7 +107,8 @@ export const useAdminUsers = () => {
       const data = (await adminUserApi.delete(id)) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除用户成功');
-        loadUsers();
+        setUsers((current) => current.filter((user) => user.id !== id));
+        setTotal((current) => Math.max(0, current - 1));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -123,20 +124,24 @@ export const useAdminUsers = () => {
   const handleSubmit = async (values: UserFormValues) => {
     try {
       if (editingUser) {
-        const data = (await adminUserApi.update({ id: editingUser.id, ...values } as Record<string, unknown>)) as ApiResponse;
+        const data = (await adminUserApi.update<User>({ id: editingUser.id, ...values } as Record<string, unknown>)) as ApiResponse<User>;
         if (data.code === 200) {
           toast.success('更新用户成功');
           setModalVisible(false);
-          loadUsers();
+          const nextUser = data.data || { ...editingUser, ...values };
+          setUsers((current) => current.map((user) => (user.id === editingUser.id ? { ...user, ...nextUser } : user)));
         } else {
           toast.error((data as any).msg || '更新失败');
         }
       } else {
-        const data = (await adminUserApi.add({ ...values })) as ApiResponse;
+        const data = (await adminUserApi.add<User>({ ...values })) as ApiResponse<User>;
         if (data.code === 200) {
           toast.success('添加用户成功');
           setModalVisible(false);
-          loadUsers();
+          if (data.data) {
+            setUsers((current) => [data.data!, ...current].slice(0, pageSize));
+            setTotal((current) => current + 1);
+          }
         } else {
           toast.error((data as any).msg || '添加失败');
         }

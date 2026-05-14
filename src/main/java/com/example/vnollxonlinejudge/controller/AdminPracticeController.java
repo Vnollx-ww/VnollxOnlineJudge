@@ -42,9 +42,9 @@ public class AdminPracticeController {
     
     @PostMapping("/create")
     @RequirePermission(PermissionCode.PRACTICE_CREATE)
-    public Result<Void> createPractice(@RequestBody AdminSavePracticeDTO req) {
-        practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic());
-        return Result.Success("创建练习成功");
+    public Result<PracticeVo> createPractice(@RequestBody AdminSavePracticeDTO req) {
+        PracticeVo practice = practiceService.createPractice(req.getTitle(), req.getDescription(), req.getIsPublic());
+        return Result.Success(practice, "创建练习成功");
     }
     
     @GetMapping("/list")
@@ -75,9 +75,9 @@ public class AdminPracticeController {
     
     @PutMapping("/update")
     @RequirePermission(PermissionCode.PRACTICE_UPDATE)
-    public Result<Void> updatePractice(@RequestBody AdminSavePracticeDTO req) {
-        practiceService.updatePractice(req.getId(), req.getTitle(), req.getDescription(), req.getIsPublic());
-        return Result.Success("修改练习信息成功");
+    public Result<PracticeVo> updatePractice(@RequestBody AdminSavePracticeDTO req) {
+        PracticeVo practice = practiceService.updatePractice(req.getId(), req.getTitle(), req.getDescription(), req.getIsPublic());
+        return Result.Success(practice, "修改练习信息成功");
     }
     
     @GetMapping("/problems")
@@ -88,32 +88,35 @@ public class AdminPracticeController {
     
     @PostMapping("/add/problems")
     @RequirePermission(PermissionCode.PRACTICE_UPDATE)
-    public Result<Void> addProblems(@RequestBody AdminAddPracticeProblemDTO req) {
+    public Result<List<ProblemBasicVo>> addProblems(@RequestBody AdminAddPracticeProblemDTO req) {
         Long practiceId = Long.parseLong(req.getPracticeId());
         List<Long> problemIds = req.getProblemIds().stream()
                 .map(Long::parseLong)
                 .collect(Collectors.toList());
         practiceProblemService.addProblems(practiceId, problemIds);
-        return Result.Success("添加题目至练习成功");
+        return Result.Success(getPracticeProblemBasicList(practiceId), "添加题目至练习成功");
     }
     
     @DeleteMapping("/{practiceId}/problems/{problemId}")
     @RequirePermission(PermissionCode.PRACTICE_UPDATE)
-    public Result<Void> deleteProblemFromPractice(@PathVariable Long practiceId, @PathVariable Long problemId) {
+    public Result<List<ProblemBasicVo>> deleteProblemFromPractice(@PathVariable Long practiceId, @PathVariable Long problemId) {
         practiceProblemService.deleteProblem(practiceId, problemId);
-        return Result.Success("从练习中删除题目成功");
+        return Result.Success(getPracticeProblemBasicList(practiceId), "从练习中删除题目成功");
     }
     
     @GetMapping("/{practiceId}/problems")
     @RequirePermission(PermissionCode.PRACTICE_VIEW)
     public Result<List<ProblemBasicVo>> getPracticeProblems(@PathVariable Long practiceId) {
+        return Result.Success(getPracticeProblemBasicList(practiceId), "获取练习题目列表成功");
+    }
+
+    private List<ProblemBasicVo> getPracticeProblemBasicList(Long practiceId) {
         List<PracticeProblem> practiceProblems = practiceProblemService.getProblemList(practiceId);
-        List<ProblemBasicVo> problems = practiceProblems.stream()
+        return practiceProblems.stream()
                 .map(pp -> {
                     ProblemVo problemVo = problemService.getProblemInfo(pp.getProblemId(), 0L, null);
                     return new ProblemBasicVo(problemVo.getId(), problemVo.getTitle(), problemVo.getDifficulty());
                 })
                 .collect(Collectors.toList());
-        return Result.Success(problems, "获取练习题目列表成功");
     }
 }

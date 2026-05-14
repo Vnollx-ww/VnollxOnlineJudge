@@ -95,7 +95,8 @@ export const useAdminPractices = () => {
       const data = (await adminPracticeApi.delete(id)) as ApiResponse;
       if (data.code === 200) {
         toast.success('删除练习成功');
-        loadPractices();
+        setPractices((current) => current.filter((practice) => practice.id !== id));
+        setTotal((current) => Math.max(0, current - 1));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -135,12 +136,15 @@ export const useAdminPractices = () => {
       return;
     }
     try {
-      const data = (await adminPracticeApi.addProblems(currentPracticeId!, selectedProblems.map((p) => p.toString()))) as ApiResponse;
+      const data = (await adminPracticeApi.addProblems<Problem[]>(currentPracticeId!, selectedProblems.map((p) => p.toString()))) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         toast.success('批量添加题目成功');
         setAddProblemModalVisible(false);
         setSelectedProblems([]);
-        loadPracticeProblems(currentPracticeId!);
+        setPracticeProblems(data.data || []);
+        setPractices((current) => current.map((practice) => (
+          practice.id === currentPracticeId ? { ...practice, problemCount: (data.data || []).length } : practice
+        )));
       } else {
         toast.error((data as any).msg || '添加失败');
       }
@@ -151,10 +155,14 @@ export const useAdminPractices = () => {
 
   const handleDeleteProblemFromPractice = async (problemId: number) => {
     try {
-      const data = (await adminPracticeApi.deleteProblem(currentPracticeId!, problemId)) as ApiResponse;
+      const data = (await adminPracticeApi.deleteProblem<Problem[]>(currentPracticeId!, problemId)) as ApiResponse<Problem[]>;
       if (data.code === 200) {
         toast.success('删除题目成功');
-        loadPracticeProblems(currentPracticeId!);
+        const nextProblems = data.data || practiceProblems.filter((problem) => problem.id !== problemId);
+        setPracticeProblems(nextProblems);
+        setPractices((current) => current.map((practice) => (
+          practice.id === currentPracticeId ? { ...practice, problemCount: nextProblems.length } : practice
+        )));
       } else {
         toast.error((data as any).msg || '删除失败');
       }
@@ -176,12 +184,19 @@ export const useAdminPractices = () => {
         ...(editingPractice ? { id: editingPractice.id } : {}),
       };
       const data = (await (editingPractice
-        ? adminPracticeApi.update(submitData)
-        : adminPracticeApi.create(submitData))) as ApiResponse;
+        ? adminPracticeApi.update<Practice>(submitData)
+        : adminPracticeApi.create<Practice>(submitData))) as ApiResponse<Practice>;
       if (data.code === 200) {
         toast.success(editingPractice ? '更新练习成功' : '创建练习成功');
         setModalVisible(false);
-        loadPractices();
+        if (data.data) {
+          if (editingPractice) {
+            setPractices((current) => current.map((practice) => (practice.id === data.data!.id ? data.data! : practice)));
+          } else {
+            setPractices((current) => [data.data!, ...current].slice(0, pageSize));
+            setTotal((current) => current + 1);
+          }
+        }
       } else {
         toast.error((data as any).msg || '操作失败');
       }

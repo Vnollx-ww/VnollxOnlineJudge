@@ -45,7 +45,7 @@ export const adminProblemApi = {
   count: (params?: Record<string, unknown>) => api.get<number>('/admin/problem/count', { params }),
   examples: <T = unknown>(pid: string | number) => api.get<T>('/admin/problem/examples', { params: { pid } }),
   delete: <T = unknown>(id: string | number) => api.delete<T>(`/admin/problem/delete/${id}`),
-  add: <T = unknown>(payload: FormData) => api.post<T>('/admin/problem/add', payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  add: <T = unknown>(payload: FormData) => api.post<T>('/admin/problem/create', payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
   update: <T = unknown>(payload: FormData) => api.put<T>('/admin/problem/update', payload, { headers: { 'Content-Type': 'multipart/form-data' } }),
 };
 

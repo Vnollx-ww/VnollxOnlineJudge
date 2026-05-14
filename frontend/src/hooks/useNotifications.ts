@@ -112,10 +112,15 @@ export const useNotifications = () => {
 
   const handleMarkRead = async (id: number) => {
     try {
-      await notificationApi.read(id);
+      const data = await notificationApi.read<Notification>(id);
       messageApi.success('已标记为已读');
       dispatchNotificationUpdate();
-      loadNotifications(currentPage);
+      if (status === 'false') {
+        setNotifications((current) => current.filter((item) => item.id !== id));
+        setTotal((current) => Math.max(0, current - 1));
+      } else {
+        setNotifications((current) => current.map((item) => (item.id === id ? data.data || { ...item, is_read: true } : item)));
+      }
     } catch (error) {
       console.error(error);
       messageApi.error('操作失败，请稍后重试');
@@ -134,8 +139,9 @@ export const useNotifications = () => {
           await notificationApi.delete(id);
           messageApi.success('删除成功');
           dispatchNotificationUpdate();
-          const nextPage = notifications.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
-          loadNotifications(nextPage);
+          setNotifications((current) => current.filter((item) => item.id !== id));
+          setTotal((current) => Math.max(0, current - 1));
+          if (notifications.length === 1 && currentPage > 1) setCurrentPage((page) => page - 1);
         } catch (error) {
           console.error(error);
           messageApi.error('删除失败，请稍后重试');
@@ -156,6 +162,9 @@ export const useNotifications = () => {
         try {
           await notificationApi.read(item.id);
           dispatchNotificationUpdate();
+          setNotifications((current) => current.map((notification) => (
+            notification.id === item.id ? { ...notification, is_read: true } : notification
+          )));
         } catch (error) {
           console.error('标记已读失败:', error);
         }

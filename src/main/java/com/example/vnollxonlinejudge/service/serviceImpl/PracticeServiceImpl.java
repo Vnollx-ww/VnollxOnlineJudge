@@ -44,17 +44,18 @@ public class PracticeServiceImpl extends ServiceImpl<PracticeMapper, Practice> i
     }
     
     @Override
-    public void createPractice(String title, String description, Boolean isPublic) {
+    public PracticeVo createPractice(String title, String description, Boolean isPublic) {
         Practice practice = new Practice();
         practice.setTitle(title);
         practice.setDescription(description);
         practice.setIsPublic(isPublic != null ? isPublic : true);
         practice.setCreateTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         this.save(practice);
+        return new PracticeVo(practice, 0, 0);
     }
     
     @Override
-    public void updatePractice(Long id, String title, String description, Boolean isPublic) {
+    public PracticeVo updatePractice(Long id, String title, String description, Boolean isPublic) {
         Practice practice = this.getById(id);
         if (practice == null) {
             throw new BusinessException("练习不存在");
@@ -63,6 +64,7 @@ public class PracticeServiceImpl extends ServiceImpl<PracticeMapper, Practice> i
         practice.setDescription(description);
         practice.setIsPublic(isPublic != null ? isPublic : true);
         this.updateById(practice);
+        return new PracticeVo(practice, practiceProblemService.getProblemCount(id), 0);
     }
     
     @Override
