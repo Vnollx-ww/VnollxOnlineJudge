@@ -95,6 +95,12 @@ export const adminAiModelApi = {
   save: <T = unknown>(payload: Record<string, unknown>) => api.post<T>('/admin/ai-model/save', payload),
 };
 
+export const adminNotificationApi = {
+  send: <T = unknown>(payload: Record<string, unknown>) => api.post<T>('/admin/notification/send', payload),
+  update: <T = unknown>(id: string | number, payload: Record<string, unknown>) => api.put<T>(`/admin/notification/update/${id}`, payload),
+  searchUsers: <T = unknown>(params?: Record<string, unknown>) => api.get<T>('/admin/user/list', { params }),
+};
+
 export const adminAntiCheatApi = {
   summaries: <T = unknown>(competitionId: string | number, params?: Record<string, unknown>) => api.get<T>(`/admin/competition/${competitionId}/anti-cheat/summaries`, { params }),
   statistics: <T = unknown>(competitionId: string | number) => api.get<T>(`/admin/competition/${competitionId}/anti-cheat/statistics`),

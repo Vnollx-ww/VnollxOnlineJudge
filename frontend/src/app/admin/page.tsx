@@ -10,6 +10,7 @@ import AdminDicts from './AdminDicts';
 import AdminPermissions from './AdminPermissions';
 import AdminRoles from './AdminRoles';
 import AdminStatistics from './AdminStatistics';
+import AdminNotifications from './AdminNotifications';
 import { useAdmin, SIDER_WIDTH, SIDER_COLLAPSED_WIDTH } from '@/hooks/admin/useAdmin';
 
 const Admin: React.FC = () => {
@@ -117,6 +118,7 @@ const Admin: React.FC = () => {
             <Route path="permissions" element={<AdminPermissions />} />
             <Route path="ai-models" element={<AdminAiModels />} />
             <Route path="dicts" element={<AdminDicts />} />
+            <Route path="notifications" element={<AdminNotifications />} />
             <Route path="*" element={<AdminUsers />} />
           </Routes>
         </main>

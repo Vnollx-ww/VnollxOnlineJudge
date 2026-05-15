@@ -12,6 +12,7 @@ import {
   BarChart3,
   Bot,
   BookMarked,
+  Bell,
 } from 'lucide-react';
 import { userApi } from '@/lib';
 import { isAuthenticated } from '@/utils/auth';
@@ -106,6 +107,7 @@ export const useAdmin = () => {
     { key: '/admin/permissions', icon: Key, label: '权限分配', permissions: [PermissionCode.PERMISSION_ASSIGN] },
     { key: '/admin/ai-models', icon: Bot, label: 'AI 模型', permissions: [PermissionCode.AI_CONFIG_VIEW] },
     { key: '/admin/dicts', icon: BookMarked, label: '字典管理', permissions: [PermissionCode.SYSTEM_SETTINGS] },
+    { key: '/admin/notifications', icon: Bell, label: '通知管理', permissions: [PermissionCode.NOTIFICATION_CREATE] },
   ];
 
   const menuItems = useMemo(

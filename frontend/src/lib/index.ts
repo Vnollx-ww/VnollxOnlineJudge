@@ -25,6 +25,7 @@ export {
   adminCompetitionApi,
   adminDictApi,
   adminAiModelApi,
+  adminNotificationApi,
   adminAntiCheatApi,
 } from './admin';
 export { default as api } from './http';
