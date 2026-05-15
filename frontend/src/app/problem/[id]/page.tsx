@@ -406,7 +406,7 @@ const ProblemDetail: React.FC = () => {
     />
   );
 
-  // ---- 自测输入区域 ----
+  // ---- 程序输入区域 ----
   const inputArea = (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex-1 min-h-0 [&>div]:h-full">
@@ -525,7 +525,7 @@ const ProblemDetail: React.FC = () => {
         }
         bottomTabs={[
           { key: 'result', label: '运行结果' },
-          { key: 'input', label: '自测输入' },
+          { key: 'input', label: '程序输入' },
         ]}
         activeBottomTab={activeBottomTab}
         onBottomTabChange={(k) => setActiveBottomTab(k as 'result' | 'input')}

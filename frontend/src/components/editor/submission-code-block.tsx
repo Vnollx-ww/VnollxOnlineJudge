@@ -1,9 +1,9 @@
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Copy } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import type { CSSProperties } from 'react';
-import Button from '../ui/button';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { getCodeHighlightLanguage } from '@/constants/badges';
 
@@ -37,11 +37,20 @@ export default function SubmissionCodeBlock({
   className = '',
   style,
 }: SubmissionCodeBlockProps) {
+  const [copied, setCopied] = useState(false);
+
   const handleCopy = async () => {
     const ok = await copyTextToClipboard(code || '');
-    if (ok) toast.success(copySuccessText);
-    else toast.error(copyFailText);
+    if (ok) {
+      toast.success(copySuccessText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error(copyFailText);
+    }
   };
+
+  const borderColor = 'var(--gemini-border-light)';
 
   const highlighter = (
     <div className="overflow-auto bg-[#1e1e1e]" style={{ maxHeight }}>
@@ -58,34 +67,54 @@ export default function SubmissionCodeBlock({
 
   if (copyPlacement === 'top-bar') {
     return (
-      <div className={className} style={style}>
-        <div className="mb-2 flex gap-2">
-          <Button icon={<Copy className="w-4 h-4" />} onClick={handleCopy}>
-            复制代码
-          </Button>
+      <div className={`rounded-xl border overflow-hidden ${className}`} style={{ borderColor, ...style }}>
+        <div
+          className="flex items-center justify-between border-b px-4 py-2.5"
+          style={{ backgroundColor: 'var(--gemini-bg)', borderColor }}
+        >
+          <span className="text-xs font-medium" style={{ color: 'var(--gemini-text-secondary)' }}>
+            {language || '源代码'}
+          </span>
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors"
+            style={{
+              color: 'var(--gemini-text-secondary)',
+              backgroundColor: 'var(--gemini-surface)',
+              border: '1px solid var(--gemini-border-light)',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--gemini-surface-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--gemini-surface)'; }}
+          >
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? '已复制' : '复制'}
+          </button>
         </div>
-        <div className="rounded-xl border border-gray-800 overflow-hidden bg-[#1e1e1e]">{highlighter}</div>
+        {highlighter}
       </div>
     );
   }
 
   return (
     <div
-      className={`relative rounded-xl border border-gray-800 overflow-hidden ${className}`}
-      style={style}
+      className={`relative rounded-xl border overflow-hidden ${className}`}
+      style={{ borderColor, ...style }}
     >
-      <Button
-        size="small"
-        type="text"
-        icon={<Copy className="w-4 h-4" />}
-        className="!absolute !top-3 !right-3 !z-10"
-        style={{
-          backgroundColor: 'rgba(255,255,255,0.9)',
-          border: '1px solid rgba(255,255,255,0.35)',
-          color: '#0f172a',
-        }}
+      <button
+        type="button"
         onClick={handleCopy}
-      />
+        className="absolute right-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all"
+        style={{
+          color: 'rgba(255,255,255,0.9)',
+          backgroundColor: 'rgba(30,30,30,0.85)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          backdropFilter: 'blur(4px)',
+        }}
+      >
+        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+        {copied ? '已复制' : '复制'}
+      </button>
       {highlighter}
     </div>
   );

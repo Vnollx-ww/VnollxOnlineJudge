@@ -62,8 +62,6 @@ interface Props {
   data: WorkbenchResultData;
 }
 
-const LABEL_WIDTH = 68;
-
 const WorkbenchResult: React.FC<Props> = ({ data }) => {
   const { variant, headline, description, bodyText, metrics, errorInfo, diff } = data;
   const c = COLOR[variant];
@@ -74,9 +72,9 @@ const WorkbenchResult: React.FC<Props> = ({ data }) => {
   const hasMemo = !!description || !!errorInfo;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2 h-full min-h-0">
       {/* 状态总览：上方深底标题栏 + 下方浅底说明/错误日志 */}
-      <div className="rounded-md overflow-hidden" style={{ color: c.fg }}>
+      <div className="flex-none rounded-md overflow-hidden" style={{ color: c.fg }}>
         <div
           className="flex flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2"
           style={{ backgroundColor: c.bgTop }}
@@ -114,13 +112,15 @@ const WorkbenchResult: React.FC<Props> = ({ data }) => {
         )}
       </div>
 
-      {/* 自测输入 / 预期输出 / 实际输出 区（编译错误时不展示） */}
+      {/* 程序输入 / 预期输出 / 实际输出 区（编译错误时不展示） */}
       {showDiffSection && (
-        <DiffSection
-          input={diff?.input}
-          expected={diff?.expected}
-          actual={diff?.actual ?? bodyText}
-        />
+        <div className="flex-auto min-h-0">
+          <DiffSection
+            input={diff?.input}
+            expected={diff?.expected}
+            actual={diff?.actual ?? bodyText}
+          />
+        </div>
       )}
     </div>
   );
@@ -142,52 +142,42 @@ interface DiffSectionProps {
   actual?: string;
 }
 
+const LABEL_WIDTH = 68;
+
 const DiffSection: React.FC<DiffSectionProps> = ({ input, expected, actual }) => (
-  <div className="flex flex-col gap-2">
+  <div className="flex flex-col h-full min-h-0 gap-1">
     {input !== undefined && (
-      <DiffRow label="自测输入" value={input} maxRows={6} />
+      <DiffRow label="程序输入" value={input} />
     )}
-    {(expected !== undefined || actual !== undefined) && (
-      <div className="flex items-stretch gap-2">
-        <div className="flex-auto flex flex-col gap-2 min-w-0">
-          {expected !== undefined && (
-            <DiffRow label="预期输出" value={expected} maxRows={4} />
-          )}
-          {actual !== undefined && (
-            <DiffRow label="实际输出" value={actual} maxRows={4} />
-          )}
-        </div>
-      </div>
+    {expected !== undefined && (
+      <DiffRow label="预期输出" value={expected} />
+    )}
+    {actual !== undefined && (
+      <DiffRow label="实际输出" value={actual} />
     )}
   </div>
 );
 
-const DiffRow: React.FC<{ label: string; value: string; maxRows?: number }> = ({ label, value, maxRows = 4 }) => {
-  const lines = value === '' ? 1 : value.split('\n').length;
-  const rows = Math.min(maxRows, Math.max(1, lines));
-  return (
-    <div className="flex items-start gap-3">
-      <span
-        className="flex-none text-xs pt-1.5"
-        style={{ width: LABEL_WIDTH, color: 'var(--gemini-text-secondary, #6b7280)' }}
-      >
-        {label}
-      </span>
-      <textarea
-        readOnly
-        value={value}
-        rows={rows}
-        className="flex-auto rounded-md font-mono text-xs px-2 py-1.5"
-        style={{
-          backgroundColor: 'var(--gemini-bg, #f7f8fa)',
-          border: '1px solid var(--gemini-border-light, #e5e7eb)',
-          color: 'var(--gemini-text-primary, #1f2937)',
-          resize: 'none',
-          minHeight: 30,
-        }}
-      />
-    </div>
-  );
-};
+const DiffRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex items-start gap-3 flex-1 min-h-0">
+    <span
+      className="flex-none text-xs pt-1.5"
+      style={{ width: LABEL_WIDTH, color: 'var(--gemini-text-secondary, #6b7280)' }}
+    >
+      {label}
+    </span>
+    <textarea
+      readOnly
+      value={value}
+      className="flex-auto rounded-md font-mono text-xs px-2 py-1.5 min-h-0 h-full"
+      style={{
+        backgroundColor: 'var(--gemini-bg, #f7f8fa)',
+        border: '1px solid var(--gemini-border-light, #e5e7eb)',
+        color: 'var(--gemini-text-primary, #1f2937)',
+        resize: 'none',
+      }}
+    />
+  </div>
+);
 
 export default WorkbenchResult;

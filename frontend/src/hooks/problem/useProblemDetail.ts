@@ -37,6 +37,7 @@ export interface Problem {
   hint: string;
   submitCount: number;
   passCount: number;
+  judgeMode?: string;
 }
 
 export interface Comment {
@@ -656,11 +657,18 @@ export const useProblemDetail = () => {
           const hasTests = data.data.testCount != null && data.data.testCount > 0;
           const status = data.data.status || '测试完成';
           const isCompileError = status === '编译错误' || status === 'Compile Error';
+          const isSpecialJudge = problem?.judgeMode === 'special';
+          // 构造题（SPJ）自测时不直接判定对错，让用户自行比对
+          const displayStatus = isSpecialJudge && !isCompileError ? '自测完成' : status;
+          const displayVariant = isSpecialJudge && !isCompileError ? 'info' as const : mapJudgeStatusToVariant(status);
+          const displayDesc = isSpecialJudge && !isCompileError
+            ? '本题为构造题（Special Judge），样例输出仅供参考，请自行比对实际输出是否正确。'
+            : (data.data.description || status);
           setRunResult({
-            variant: mapJudgeStatusToVariant(status),
+            variant: displayVariant,
             source: 'test',
-            headline: status,
-            description: data.data.description || status,
+            headline: displayStatus,
+            description: displayDesc,
             metrics: hasTests
               ? { passCount: data.data.passCount ?? 0, testCount: data.data.testCount! }
               : undefined,

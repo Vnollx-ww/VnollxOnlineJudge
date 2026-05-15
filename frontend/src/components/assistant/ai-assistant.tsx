@@ -170,8 +170,10 @@ const SyncToEditorButton: React.FC<{ code: string; language: string }> = ({ code
 const AI_ASSISTANT_MODEL_KEY = 'ai_assistant_model_id';
 const AI_ASSISTANT_SESSION_KEY = 'ai_assistant_session_id';
 const AI_ASSISTANT_BUTTON_POSITION_KEY = 'ai_assistant_button_position';
-const AI_BUTTON_SIZE = 60;
+const AI_BUTTON_SIZE = 56;
 const AI_BUTTON_MARGIN = 16;
+const AI_BUTTON_DRAG_THRESHOLD = 6;
+const AI_BUTTON_SNAP_DURATION = 260;
 
 interface FloatingButtonPosition {
   x: number;
@@ -246,17 +248,19 @@ ${context.code || ''}
 const AIAssistant: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [buttonPosition, setButtonPosition] = useState<FloatingButtonPosition>(() => {
+    // 始终贴右，仅保留垂直方向上的位置偏好
+    const rightX = typeof window !== 'undefined' ? window.innerWidth - AI_BUTTON_SIZE - AI_BUTTON_MARGIN : 0;
     const fallback = {
-      x: typeof window !== 'undefined' ? window.innerWidth - AI_BUTTON_SIZE - 40 : 0,
+      x: rightX,
       y: typeof window !== 'undefined' ? window.innerHeight - AI_BUTTON_SIZE - 48 : 0,
     };
     try {
       const cached = localStorage.getItem(AI_ASSISTANT_BUTTON_POSITION_KEY);
       if (!cached) return fallback;
       const parsed = JSON.parse(cached) as FloatingButtonPosition;
-      if (!Number.isFinite(parsed.x) || !Number.isFinite(parsed.y)) return fallback;
+      if (!Number.isFinite(parsed.y)) return fallback;
       return {
-        x: Math.min(Math.max(AI_BUTTON_MARGIN, parsed.x), window.innerWidth - AI_BUTTON_SIZE - AI_BUTTON_MARGIN),
+        x: rightX,
         y: Math.min(Math.max(AI_BUTTON_MARGIN, parsed.y), window.innerHeight - AI_BUTTON_SIZE - AI_BUTTON_MARGIN),
       };
     } catch (_) {
@@ -266,9 +270,15 @@ const AIAssistant: React.FC = () => {
   const dragStateRef = useRef<{
     dragging: boolean;
     moved: boolean;
+    startX: number;
+    startY: number;
     offsetX: number;
     offsetY: number;
-  }>({ dragging: false, moved: false, offsetX: 0, offsetY: 0 });
+  }>({ dragging: false, moved: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 });
+  const [buttonSnapping, setButtonSnapping] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState<number>(
+    typeof window !== 'undefined' ? window.innerWidth : 0
+  );
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
@@ -312,6 +322,7 @@ const AIAssistant: React.FC = () => {
   const skipNextHistoryLoadSessionRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const messageApi = {
     info: (msg: string) => toast(msg),
     success: (msg: string) => toast.success(msg),
@@ -340,11 +351,27 @@ const AIAssistant: React.FC = () => {
   }, []);
 
   const handleButtonMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
     dragStateRef.current = {
       dragging: true,
       moved: false,
+      startX: e.clientX,
+      startY: e.clientY,
       offsetX: e.clientX - buttonPosition.x,
       offsetY: e.clientY - buttonPosition.y,
+    };
+  }, [buttonPosition]);
+
+  const handleButtonTouchStart = useCallback((e: React.TouchEvent<HTMLButtonElement>) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    dragStateRef.current = {
+      dragging: true,
+      moved: false,
+      startX: t.clientX,
+      startY: t.clientY,
+      offsetX: t.clientX - buttonPosition.x,
+      offsetY: t.clientY - buttonPosition.y,
     };
   }, [buttonPosition]);
 
@@ -361,27 +388,55 @@ const AIAssistant: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleMove = (e: MouseEvent) => {
-      if (!dragStateRef.current.dragging) return;
+    const updateFromPointer = (clientX: number, clientY: number) => {
+      const dx = clientX - dragStateRef.current.startX;
+      const dy = clientY - dragStateRef.current.startY;
+      if (!dragStateRef.current.moved && Math.hypot(dx, dy) < AI_BUTTON_DRAG_THRESHOLD) {
+        return false;
+      }
       dragStateRef.current.moved = true;
       setButtonPosition(clampButtonPosition(
-        e.clientX - dragStateRef.current.offsetX,
-        e.clientY - dragStateRef.current.offsetY
+        clientX - dragStateRef.current.offsetX,
+        clientY - dragStateRef.current.offsetY
       ));
+      return true;
+    };
+
+    const handleMove = (e: MouseEvent) => {
+      if (!dragStateRef.current.dragging) return;
+      updateFromPointer(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!dragStateRef.current.dragging) return;
+      if (e.touches.length === 0) return;
+      const t = e.touches[0];
+      const moved = updateFromPointer(t.clientX, t.clientY);
+      // 仅在确认拖动后阻止页面滚动，避免误吞普通滑动
+      if (moved && e.cancelable) e.preventDefault();
     };
 
     const handleUp = () => {
       if (!dragStateRef.current.dragging) return;
+      const wasMoved = dragStateRef.current.moved;
       dragStateRef.current.dragging = false;
+      if (!wasMoved) return;
       setButtonPosition((prev) => {
-        persistButtonPosition(prev);
-        return prev;
+        // 始终吸附到屏幕右侧
+        const targetX = window.innerWidth - AI_BUTTON_SIZE - AI_BUTTON_MARGIN;
+        const next = clampButtonPosition(targetX, prev.y);
+        persistButtonPosition(next);
+        setButtonSnapping(true);
+        return next;
       });
     };
 
     const handleResize = () => {
+      setViewportWidth(window.innerWidth);
       setButtonPosition((prev) => {
-        const next = clampButtonPosition(prev.x, prev.y);
+        // 视口尺寸变化时也保持贴右
+        const targetX = window.innerWidth - AI_BUTTON_SIZE - AI_BUTTON_MARGIN;
+        const next = clampButtonPosition(targetX, prev.y);
         persistButtonPosition(next);
         return next;
       });
@@ -389,13 +444,25 @@ const AIAssistant: React.FC = () => {
 
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleUp);
+    window.addEventListener('touchcancel', handleUp);
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleUp);
+      window.removeEventListener('touchcancel', handleUp);
       window.removeEventListener('resize', handleResize);
     };
   }, [clampButtonPosition, persistButtonPosition]);
+
+  useEffect(() => {
+    if (!buttonSnapping) return;
+    const id = window.setTimeout(() => setButtonSnapping(false), AI_BUTTON_SNAP_DURATION);
+    return () => window.clearTimeout(id);
+  }, [buttonSnapping]);
 
   useEffect(() => {
     currentSessionIdRef.current = currentSessionId;
@@ -784,6 +851,26 @@ const AIAssistant: React.FC = () => {
     setOpen(false);
   }, [cleanupPendingSessions]);
 
+  // Esc 关闭对话弹窗
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseAssistant();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, handleCloseAssistant]);
+
+  // 弹窗打开且有可用会话时自动聚焦输入框
+  useEffect(() => {
+    if (!open) return;
+    if (!currentSessionId) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 120);
+    return () => window.clearTimeout(id);
+  }, [open, currentSessionId]);
+
   const sendChatRef = useRef<(msg: string, targetSessionId?: string | null, modelIdOverride?: number | null) => void>(() => {});
   useEffect(() => {
     sendChatRef.current = sendChat;
@@ -1062,33 +1149,66 @@ const AIAssistant: React.FC = () => {
           from { opacity: 0; transform: scaleY(0.92); }
           to   { opacity: 1; transform: scaleY(1); }
         }
+        @keyframes assistantOverlayIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes assistantContentIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         .gemini-scrollbar::-webkit-scrollbar { width: 4px; }
         .gemini-scrollbar::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
         .gemini-scrollbar-light::-webkit-scrollbar { width: 6px; }
         .gemini-scrollbar-light::-webkit-scrollbar-thumb { background: #e9ecef; border-radius: 10px; }
       `}</style>
 
-      {/* 悬浮按钮 - 需要AI使用权限 */}
-      {hasPermission(PermissionCode.AI_CHAT) && (
-        <button
-          onMouseDown={handleButtonMouseDown}
-          onClick={handleButtonClick}
-          title="AI 助手"
-          className="fixed z-50 flex h-[60px] w-[60px] cursor-grab select-none items-center justify-center rounded-[22px] border border-white/60 bg-white/75 shadow-[0_18px_40px_rgba(15,23,42,0.18)] backdrop-blur-xl transition-shadow duration-300 hover:shadow-[0_24px_48px_rgba(15,23,42,0.24)] active:cursor-grabbing"
-          style={{ left: buttonPosition.x, top: buttonPosition.y }}
-        >
-          <div className="relative flex h-[44px] w-[44px] items-center justify-center rounded-[16px] bg-gradient-to-br from-slate-900 via-slate-700 to-blue-500 shadow-[0_10px_24px_rgba(37,99,235,0.22)]">
-            <div className="absolute inset-[1.5px] rounded-[15px] bg-white/88 backdrop-blur-xl" />
-            <div className="absolute inset-[6px] rounded-[11px] bg-gradient-to-br from-sky-50 via-white to-violet-50" />
-            <Sparkles className="relative z-10 h-5 w-5 text-slate-700" />
-            <span className="absolute top-[5px] right-[5px] h-2.5 w-2.5 rounded-full bg-blue-500 ring-2 ring-white" />
+      {/* 悬浮按钮 - 需要AI使用权限，对话打开时隐藏 */}
+      {!open && hasPermission(PermissionCode.AI_CHAT) && (() => {
+        const onRightHalf = buttonPosition.x + AI_BUTTON_SIZE / 2 > viewportWidth / 2;
+        return (
+          <div
+            className="group fixed z-40"
+            style={{
+              left: buttonPosition.x,
+              top: buttonPosition.y,
+              transition: buttonSnapping
+                ? `left ${AI_BUTTON_SNAP_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1), top ${AI_BUTTON_SNAP_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1)`
+                : 'none',
+            }}
+          >
+            {/* Hover 标签：跟随按钮所处屏幕一侧自动换边 */}
+            <span
+              className={`pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900/95 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-md transition-opacity duration-200 group-hover:opacity-100 motion-reduce:transition-none ${
+                onRightHalf ? 'right-[calc(100%+10px)]' : 'left-[calc(100%+10px)]'
+              }`}
+            >
+              AI 助手
+            </span>
+            <button
+              type="button"
+              aria-label="打开 AI 助手"
+              title="AI 助手"
+              onMouseDown={handleButtonMouseDown}
+              onTouchStart={handleButtonTouchStart}
+              onClick={handleButtonClick}
+              style={{ width: AI_BUTTON_SIZE, height: AI_BUTTON_SIZE, touchAction: 'none' }}
+              className="relative flex cursor-grab select-none items-center justify-center overflow-hidden rounded-full bg-white text-sky-500 shadow-[0_8px_22px_rgba(15,23,42,0.10),0_2px_6px_rgba(15,23,42,0.06)] ring-1 ring-slate-200/80 transition-[transform,box-shadow,color] duration-200 ease-out hover:scale-[1.06] hover:text-sky-600 hover:shadow-[0_14px_30px_rgba(15,23,42,0.14),0_4px_10px_rgba(15,23,42,0.08)] active:scale-95 active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:scale-100"
+            >
+              {/* 极淡的天蓝晕染，仅作背景点缀，不喧宾夺主 */}
+              <span className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-sky-50 to-blue-50 opacity-90" />
+              <Sparkles className="relative h-[22px] w-[22px]" strokeWidth={1.8} />
+            </button>
           </div>
-        </button>
-      )}
+        );
+      })()}
 
       {/* 聊天弹窗 - 全屏覆盖 */}
       {open && (
-        <div className="fixed inset-0 z-50 flex w-full h-full bg-white">
+        <div
+          className="fixed inset-0 z-50 flex w-full h-full bg-white"
+          style={{ animation: 'assistantOverlayIn 220ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+        >
           {/* 侧边栏 */}
           <aside className={`${sidebarOpen ? 'w-[280px]' : 'w-0'} bg-[#f0f4f9] flex flex-col transition-all duration-300 ease-in-out relative overflow-hidden shrink-0`}>
             <div className="flex flex-col h-full p-3">
@@ -1214,51 +1334,46 @@ const AIAssistant: React.FC = () => {
             >
               <div className="max-w-[800px] mx-auto px-6 py-6">
               {!currentSessionId ? (
-                <div className="flex flex-col items-center justify-center h-[60vh] text-[#5f6368]">
-                  <Sparkles className="w-12 h-12 mb-4 opacity-50" />
-                  <p className="text-lg font-normal">选择或新建一个会话开始聊天</p>
+                <div className="flex h-[60vh] flex-col items-center justify-center text-slate-500">
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200/80">
+                    <MessageSquarePlus className="h-6 w-6 text-slate-400" strokeWidth={1.6} />
+                  </div>
+                  <p className="text-base font-medium text-slate-900">还没有选择会话</p>
+                  <p className="mt-1.5 text-sm text-slate-500">在左侧新建一个会话开始聊天</p>
                 </div>
               ) : !historyLoaded ? (
                 <div className="flex items-center justify-center h-[60vh]">
                   <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
                 </div>
               ) : messages.length === 0 && !thinking && !loadingMore ? (
-                <div className="mt-16">
-                  <h1 className="text-2xl font-normal text-gray-800 mb-6">你好，我是 AI 助手</h1>
-                  <div className="text-gray-600 space-y-4 leading-relaxed mb-10">
-                    <p>我可以帮助你：</p>
-                    <ul className="list-disc pl-5 space-y-2">
-                      <li>解答编程问题和算法疑惑</li>
-                      <li>分析代码，找出潜在问题</li>
-                      <li>提供解题思路和优化建议</li>
-                      <li>讲解算法原理和复杂度分析</li>
-                    </ul>
+                <div
+                  className="flex flex-col items-center pt-10 text-center"
+                  style={{ animation: 'assistantContentIn 280ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+                >
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-50 ring-1 ring-sky-100">
+                    <Sparkles className="h-6 w-6 text-sky-500" strokeWidth={1.6} />
                   </div>
-                  <div className="grid grid-cols-2 gap-3 max-w-xl">
-                    <button
-                      onClick={() => setInputValue('帮我分析这道题的解题思路')}
-                      className="px-4 py-3 bg-[#f0f4f9] hover:bg-[#e3e8ef] rounded-xl text-sm text-left text-[#1f1f1f] transition-colors"
-                    >
-                      帮我分析这道题的解题思路
-                    </button>
-                    <button
-                      onClick={() => setInputValue('这段代码有什么问题？')}
-                      className="px-4 py-3 bg-[#f0f4f9] hover:bg-[#e3e8ef] rounded-xl text-sm text-left text-[#1f1f1f] transition-colors"
-                    >
-                      这段代码有什么问题？
-                    </button>
-                    <button
-                      onClick={() => setInputValue('能帮我优化一下算法复杂度吗？')}
-                      className="px-4 py-3 bg-[#f0f4f9] hover:bg-[#e3e8ef] rounded-xl text-sm text-left text-[#1f1f1f] transition-colors"
-                    >
-                      能帮我优化一下算法复杂度吗？
-                    </button>
-                    <button
-                      onClick={() => setInputValue('讲解一下这个算法的原理')}
-                      className="px-4 py-3 bg-[#f0f4f9] hover:bg-[#e3e8ef] rounded-xl text-sm text-left text-[#1f1f1f] transition-colors"
-                    >
-                      讲解一下这个算法的原理
-                    </button>
+                  <h1 className="mb-2 text-2xl font-medium tracking-tight text-slate-900">你好，我是 AI 助手</h1>
+                  <p className="mb-10 max-w-md text-sm text-slate-500">解答编程问题、分析代码、推荐解题思路与复杂度优化建议。</p>
+                  <div className="grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+                    {[
+                      { title: '解题思路', desc: '帮我分析这道题的解题思路' },
+                      { title: '代码审查', desc: '这段代码有什么问题？' },
+                      { title: '复杂度优化', desc: '能帮我优化一下算法复杂度吗？' },
+                      { title: '原理讲解', desc: '讲解一下这个算法的原理' },
+                    ].map((p) => (
+                      <button
+                        key={p.title}
+                        onClick={() => {
+                          setInputValue(p.desc);
+                          inputRef.current?.focus();
+                        }}
+                        className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-[0_8px_22px_rgba(15,23,42,0.06)] motion-reduce:hover:translate-y-0"
+                      >
+                        <div className="text-sm font-medium text-slate-900 group-hover:text-sky-700">{p.title}</div>
+                        <div className="mt-1 text-xs leading-5 text-slate-500">{p.desc}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               ) : (
@@ -1282,7 +1397,7 @@ const AIAssistant: React.FC = () => {
                   {messages.map((msg, index) => (
                     <div key={index} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                        msg.role === 'user' ? 'bg-purple-600 text-white' : ''
+                        msg.role === 'user' ? 'bg-slate-700 text-white' : ''
                       }`}>
                         {msg.role === 'user' ? (
                           userAvatar ? (
@@ -1407,7 +1522,7 @@ const AIAssistant: React.FC = () => {
                         {thinkingModelLogoRef.current ? (
                           <Avatar size={32} src={thinkingModelLogoRef.current} />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 via-blue-500 to-indigo-500 flex items-center justify-center animate-pulse">
+                          <div className="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center animate-pulse">
                             <Sparkles className="text-white" size={16} />
                           </div>
                         )}
@@ -1442,6 +1557,7 @@ const AIAssistant: React.FC = () => {
                     style={{ maxHeight: isInputCollapsed ? 0 : 200, opacity: isInputCollapsed ? 0 : 1 }}
                   >
                     <textarea
+                      ref={inputRef}
                       value={inputValue}
                       onChange={(e) => {
                         setInputValue(e.target.value);
@@ -1531,20 +1647,20 @@ const AIAssistant: React.FC = () => {
                                   }}
                                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
                                     selectedModelId === m.id 
-                                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700' 
-                                      : 'hover:bg-gray-50 text-gray-700'
+                                      ? 'bg-sky-50 text-sky-700' 
+                                      : 'hover:bg-slate-50 text-slate-700'
                                   }`}
                                 >
                                   {m.logoUrl ? (
-                                    <img src={m.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover shrink-0 ring-1 ring-gray-100" />
+                                    <img src={m.logoUrl} alt="" className="w-6 h-6 rounded-lg object-cover shrink-0 ring-1 ring-slate-100" />
                                   ) : (
-                                    <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shrink-0">
+                                    <div className="w-6 h-6 rounded-lg bg-sky-500 flex items-center justify-center shrink-0">
                                       <Bot className="w-3.5 h-3.5 text-white" />
                                     </div>
                                   )}
                                   <span className="min-w-0 flex-1 truncate whitespace-nowrap text-left font-medium">{m.name}</span>
                                   {selectedModelId === m.id && (
-                                    <Check className="w-4 h-4 shrink-0 text-blue-500" />
+                                    <Check className="w-4 h-4 shrink-0 text-sky-500" />
                                   )}
                                 </button>
                               ))}

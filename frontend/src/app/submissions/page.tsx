@@ -1,4 +1,4 @@
-import { AlertCircle, Clock, HardDrive, Layers, Hash, User, CalendarDays } from 'lucide-react';
+import { AlertCircle, Clock, HardDrive, Layers } from 'lucide-react';
 import Select from '@/components/ui/select';
 import Input from '@/components/ui/input';
 import PageSurface from '@/components/common/page-surface';
@@ -7,7 +7,6 @@ import SubmissionCodeBlock from '@/components/editor/submission-code-block';
 import MetricCard from '@/components/common/metric-card';
 import { JudgeStatusBadge, LanguageBadge } from '@/components/common/status-badge';
 import { Button, Switch, Table, Modal } from '@/components';
-import { getJudgeStatusTone } from '@/constants/badges';
 import { useSubmissions, type Submission } from '@/hooks/submission/useSubmissions';
 
 const Submissions: React.FC = () => {
@@ -197,124 +196,92 @@ const Submissions: React.FC = () => {
             open={codeModalVisible}
             onCancel={closeSubmissionDetail}
             footer={null}
-            width="80%"
+            width={960}
             centered
         >
           <div className="space-y-5">
             {currentSubmission && (
-              <div
-                  className="overflow-hidden rounded-2xl border"
-                  style={{
-                    borderColor: 'var(--gemini-border-light)',
-                    backgroundColor: 'var(--gemini-surface)',
-                  }}
-              >
-                <div className="border-b px-5 py-4" style={{ borderColor: 'var(--gemini-border-light)' }}>
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0">
-                      <div className="mb-2 flex min-w-0 items-center gap-2 text-xs" style={{ color: 'var(--gemini-text-secondary)' }}>
-                        <Hash className="w-3.5 h-3.5" />
-                        <span className="shrink-0">提交 #{currentSubmission.id}</span>
-                        {currentSubmission.snowflakeId && (
-                            <span className="min-w-0 truncate font-mono">· {currentSubmission.snowflakeId}</span>
-                        )}
-                      </div>
-                      <div className="text-xl font-bold truncate" style={{ color: 'var(--gemini-text-primary)' }}>
-                        {currentSubmission.problemName || `题目 #${currentSubmission.pid}`}
-                      </div>
+              <>
+                {/* 头部信息 */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <button
+                        onClick={() => navigate(`/problem/${currentSubmission.pid}`)}
+                        className="text-left text-lg font-semibold truncate transition-colors hover:underline"
+                        style={{ color: 'var(--gemini-accent-strong)' }}
+                    >
+                      {currentSubmission.problemName || `题目 #${currentSubmission.pid}`}
+                    </button>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
+                      <span>{currentSubmission.userName || '未知用户'}</span>
+                      <span>·</span>
+                      <span>{currentSubmission.createTime ? new Date(currentSubmission.createTime).toLocaleString('zh-CN') : '未知时间'}</span>
+                      {currentSubmission.snowflakeId && (
+                          <>
+                            <span>·</span>
+                            <span className="font-mono text-xs">{currentSubmission.snowflakeId}</span>
+                          </>
+                      )}
                     </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      <span
-                          className="px-3 py-1.5 rounded-full text-sm font-semibold"
-                          style={{
-                            color: getJudgeStatusTone(currentSubmission.status).color,
-                            backgroundColor: getJudgeStatusTone(currentSubmission.status).bg,
-                          }}
-                      >
-                        {currentSubmission.status}
-                      </span>
-                      <LanguageBadge language={currentSubmission.language} />
-                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <JudgeStatusBadge status={currentSubmission.status} />
+                    <LanguageBadge language={currentSubmission.language} />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <MetricCard
-                        icon={<Clock className="w-4 h-4" />}
-                        label="运行时间"
-                        value={currentSubmission.time != null ? `${currentSubmission.time}ms` : '暂无'}
-                    />
-                    <MetricCard
-                        icon={<HardDrive className="w-4 h-4" />}
-                        label="占用内存"
-                        value={currentSubmission.memory != null ? `${currentSubmission.memory}MB` : '暂无'}
-                    />
-                    <MetricCard
-                        icon={<Layers className="w-4 h-4" />}
-                        label="通过测试点"
-                        value={
-                          currentSubmission.testCount != null && currentSubmission.testCount > 0
-                            ? `${currentSubmission.passCount ?? 0} / ${currentSubmission.testCount}`
-                            : '暂无'
-                        }
-                    />
-                  </div>
+                {/* 分隔线 */}
+                <div className="gemini-divider" style={{ margin: 0 }} />
 
-                  <div
-                      className="rounded-xl border p-4"
-                      style={{
-                        borderColor: 'var(--gemini-border-light)',
-                        backgroundColor: 'var(--gemini-bg)',
-                      }}
-                  >
-                    <div className="mb-3 text-sm font-semibold" style={{ color: 'var(--gemini-text-primary)' }}>
-                      提交信息
-                    </div>
-                    <div className="space-y-3 text-sm" style={{ color: 'var(--gemini-text-secondary)' }}>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 shrink-0" />
-                        <span className="shrink-0">提交用户</span>
-                        <span className="ml-auto min-w-0 truncate font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-                          {currentSubmission.userName || '未知用户'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4 shrink-0" />
-                        <span className="shrink-0">提交时间</span>
-                        <span className="ml-auto min-w-0 truncate font-medium" style={{ color: 'var(--gemini-text-primary)' }}>
-                          {currentSubmission.createTime || '未知时间'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                {/* 指标卡片 */}
+                <div className="grid grid-cols-3 gap-3">
+                  <MetricCard
+                      icon={<Clock className="w-4 h-4" />}
+                      label="运行时间"
+                      value={currentSubmission.time != null ? `${currentSubmission.time} ms` : '暂无'}
+                  />
+                  <MetricCard
+                      icon={<HardDrive className="w-4 h-4" />}
+                      label="占用内存"
+                      value={currentSubmission.memory != null ? `${currentSubmission.memory} MB` : '暂无'}
+                  />
+                  <MetricCard
+                      icon={<Layers className="w-4 h-4" />}
+                      label="通过测试点"
+                      value={
+                        currentSubmission.testCount != null && currentSubmission.testCount > 0
+                          ? `${currentSubmission.passCount ?? 0} / ${currentSubmission.testCount}`
+                          : '暂无'
+                      }
+                  />
                 </div>
-              </div>
+              </>
             )}
+
             {/* 错误信息展示区 */}
             {currentSubmission?.errorInfo && (
                 <div
-                    className="p-4 rounded-xl border flex flex-col gap-2"
+                    className="rounded-xl border p-4 flex flex-col gap-2"
                     style={{
                       backgroundColor: 'var(--gemini-error-bg)',
-                      borderColor: 'var(--gemini-error)'
+                      borderColor: 'var(--gemini-error)',
                     }}
                 >
-                  <div className="flex items-center gap-2 font-bold" style={{ color: 'var(--gemini-error)' }}>
-                    <AlertCircle size={18} />
+                  <div className="flex items-center gap-2 font-semibold text-sm" style={{ color: 'var(--gemini-error)' }}>
+                    <AlertCircle size={16} />
                     <span>错误详情 ({currentSubmission.status})</span>
                   </div>
                   <pre className="text-sm font-mono whitespace-pre-wrap m-0 p-0" style={{ color: 'var(--gemini-error)' }}>
-                  {currentSubmission.errorInfo}
-                </pre>
+                    {currentSubmission.errorInfo}
+                  </pre>
                 </div>
             )}
 
             <SubmissionCodeBlock
-                copyPlacement="floating"
+                copyPlacement="top-bar"
                 language={currentSubmission?.language}
                 code={currentSubmission?.code}
-                maxHeight="52vh"
+                maxHeight="50vh"
             />
           </div>
         </Modal>

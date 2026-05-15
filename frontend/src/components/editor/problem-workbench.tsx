@@ -367,8 +367,10 @@ const ProblemWorkbench: React.FC<ProblemWorkbenchProps> = ({
               </span>
             </div>
             {!bottomCollapsed && (
-              <div className="flex-auto min-h-0 overflow-auto px-2 py-2">
-                {bottomContent}
+              <div className="flex-auto min-h-0 flex flex-col px-2 py-2">
+                <div className="flex-auto min-h-0">
+                  {bottomContent}
+                </div>
               </div>
             )}
           </div>
