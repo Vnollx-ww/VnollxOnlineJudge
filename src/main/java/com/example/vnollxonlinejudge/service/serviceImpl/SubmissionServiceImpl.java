@@ -195,12 +195,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper,Submissi
                     redisService.updateIfPass(userPassKey,userPenaltyKey,problemPassKey,problemSubmitKey,rankingKey,participantName,penalty);//如果是比赛那就需要更新缓存了
                     pushCompetitionFirstBloodIfNeeded(cid, pid, problem.getTitle(), participantDisplayName, judgeinfo.getSnowflakeId());
                 }
-            } else { //已经 AC 过，再次 AC：只累加 submit/pass 计数，不动榜单分数和罚时
+            } else { //已经 AC 过，再次 AC：只累加 submit 计数，不动榜单分数和罚时
                 if (!rankCompetition) {
-                    userService.updateSubmitCount(uid,1);
-                    problemService.updatePassCount(pid,1);
+                    userService.updateSubmitCount(uid,0);
+                    problemService.updatePassCount(pid,0);
                 } else {
-                    redisService.incrementProblemPassAndSubmit(problemPassKey, problemSubmitKey);
+                    redisService.incrementProblemSubmit(problemSubmitKey);
                 }
             }
         } else {//未通过

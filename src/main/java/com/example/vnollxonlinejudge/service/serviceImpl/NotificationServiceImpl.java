@@ -63,6 +63,36 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
     }
 
     @Override
+    @Transactional
+    public List<NotificationVo> sendTargetedNotification(Notification notification, Long senderUid, List<Long> targetUserIds) {
+        List<Long> recipientIds;
+        if (targetUserIds == null || targetUserIds.isEmpty()) {
+            recipientIds = userService.getUserIdList(senderUid).stream()
+                    .map(id -> (long) (int) id)
+                    .collect(Collectors.toList());
+        } else {
+            recipientIds = targetUserIds;
+        }
+
+        List<Notification> notificationList = recipientIds.stream()
+                .map(id -> Notification.builder()
+                        .title(notification.getTitle())
+                        .description(notification.getDescription())
+                        .createTime(notification.getCreateTime())
+                        .uid(id)
+                        .isRead(false)
+                        .build())
+                .collect(Collectors.toList());
+        this.saveBatch(notificationList);
+        for (Notification n : notificationList) {
+            notificationWebSocketHandler.sendNotificationToUser(n.getUid(), new NotificationVo(n));
+        }
+        return notificationList.stream()
+                .map(NotificationVo::new)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public NotificationVo updateNotification(Long id, String title, String description) {
         Notification notification = this.getById(id);
         if (notification == null) {

@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface NotificationService {
     List<NotificationVo> sendNotification(Notification notification,Long uid);
+    List<NotificationVo> sendTargetedNotification(Notification notification, Long senderUid, List<Long> targetUserIds);
     NotificationVo updateNotification(Long id,String title,String description);
     void deleteNotification(Long id);
     List<NotificationVo> getNotificationList(Long uid,int pageNum, int pageSize, String keyword, String status);

@@ -43,9 +43,8 @@ public class AdminNotificationController {
                 .title(req.getTitle())
                 .description(req.getDescription())
                 .createTime(req.getCreateTime())
-                .uid(0L)
                 .build();
 
-        return Result.Success(notificationService.sendNotification(notification, userId), "创建通知成功");
+        return Result.Success(notificationService.sendTargetedNotification(notification, userId, req.getTargetUserIds()), "发送通知成功");
     }
 }
